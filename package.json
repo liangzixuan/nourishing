@@ -1,0 +1,20 @@
+{
+  "name": "nourishing",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.23.4"
+  },
+  "scripts": {
+    "start": "node dist/server/entry.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "build": "astro build",
+    "dev": "astro dev"
+  },
+  "dependencies": {
+    "@astrojs/node": "11.1.13",
+    "astro": "7.4.12",
+    "node-appwrite": "31.2.0"
+  }
+}

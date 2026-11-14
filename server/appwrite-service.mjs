@@ -1,0 +1,46 @@
+import {Client,Account,TablesDB,ID,Permission,Role,Query} from 'node-appwrite';
+import {createHash} from 'node:crypto';
+
+export function createAppwriteService(config, key, userAgent='') {
+  const client=()=>new Client().setEndpoint(config.endpoint).setProject(config.project).setForwardedUserAgent(userAgent);
+  const anonymous=()=>new Account(client());
+  const elevated=()=>{if(!key)throw Object.assign(Error('Cloud credentials unavailable.'),{code:503});return client().setKey(key);};
+  const session=secret=>{if(!secret)throw Object.assign(Error('Sign in.'),{code:401});return client().setSession(secret);};
+  const profileArgs=id=>({databaseId:config.database,tableId:config.profileTable,rowId:id});
+  const profileData=row=>({timeZone:row.timeZone,units:row.units});
+  async function ensureProfile(secret,account) {
+    const db=new TablesDB(session(secret));const args=profileArgs(account.$id);
+    try{return profileData(await db.getRow(args));}catch(error){if(error.code!==404)throw error;}
+    // Only the server can create profile IDs. Browser clients cannot reserve another user's ID.
+    try {await new TablesDB(elevated()).createRow({...args,data:{timeZone:'UTC',units:'metric'},permissions:[Permission.read(Role.user(account.$id)),Permission.update(Role.user(account.$id)),Permission.delete(Role.user(account.$id))]});}
+    catch(error){if(error.code!==409)throw error;}
+    return profileData(await db.getRow(args));
+  }
+  async function budget(email) {
+    const db=new TablesDB(elevated()),now=Date.now(),hour=Math.floor(now/3600000);
+    const rowId=createHash('sha256').update(`${hour}:${email.trim().toLowerCase()}`).digest('hex').slice(0,32);
+    const args={databaseId:config.database,tableId:'login_limits',rowId};
+    let row;
+    try{row=await db.createRow({...args,data:{attempts:1,expiresAt:new Date((hour+2)*3600000).toISOString()},permissions:[]});}
+    catch(error){if(error.code!==409)throw error;row=await db.incrementRowColumn({...args,column:'attempts',value:1});}
+    if(row.attempts>20)throw Object.assign(Error('Too many sign-in attempts. Try again later.'),{code:429});
+    // Bound retention without a process-local timer. Never retain email addresses in this table.
+    const expired=await db.listRows({databaseId:config.database,tableId:'login_limits',queries:[Query.lessThan('expiresAt',new Date(now).toISOString()),Query.limit(25)]});
+    for(const item of expired.rows)try{await db.deleteRow({...args,rowId:item.$id});}catch(error){if(error.code!==404)throw error;}
+  }
+  async function login({email,password}) {
+    await budget(email);
+    return new Account(elevated()).createEmailPasswordSession({email,password,duration:2592000});
+  }
+  return {
+    login,
+    async register({email,password,name}) {await anonymous().create({userId:ID.unique(),email,password,name});return login({email,password});},
+    async current(secret) {const account=await new Account(session(secret)).get();return {id:account.$id,email:account.email,name:account.name,emailVerified:account.emailVerification,profile:await ensureProfile(secret,account)};},
+    async updateProfile(secret,data) {const account=await new Account(session(secret)).get();await ensureProfile(secret,account);return profileData(await new TablesDB(session(secret)).updateRow({...profileArgs(account.$id),data}));},
+    async logout(secret) {if(secret)await new Account(session(secret)).deleteSession({sessionId:'current'});},
+    async requestRecovery({email}) {try{await anonymous().createRecovery({email,url:`${config.origin}/reset-password`});}catch(error){if(!['user_not_found','user_invalid_credentials'].includes(error.type))throw error;}},
+    async resetPassword(data) {await anonymous().updateRecovery(data);},
+    async requestVerification(secret) {await new Account(session(secret)).createVerification({url:`${config.origin}/verify-email`});},
+    async verifyEmail(data) {await anonymous().updateVerification(data);}
+  };
+}
