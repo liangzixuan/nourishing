@@ -1,5 +1,6 @@
-import {Client,Account,TablesDB,ID,Permission,Role,Query} from 'node-appwrite';
+import {Client,Account,TablesDB,Storage,ID,Permission,Role,Query} from 'node-appwrite';
 import {createHash} from 'node:crypto';
+import {createDataRepository} from './data-repository.mjs';
 
 export function createAppwriteService(config, key, userAgent='') {
   const client=()=>new Client().setEndpoint(config.endpoint).setProject(config.project).setForwardedUserAgent(userAgent);
@@ -8,6 +9,7 @@ export function createAppwriteService(config, key, userAgent='') {
   const session=secret=>{if(!secret)throw Object.assign(Error('Sign in.'),{code:401});return client().setSession(secret);};
   const profileArgs=id=>({databaseId:config.database,tableId:config.profileTable,rowId:id});
   const profileData=row=>({timeZone:row.timeZone,units:row.units});
+  async function data(secret){const client=session(secret),account=await new Account(client).get();return {repository:createDataRepository(new TablesDB(client),account.$id),storage:new Storage(client)};}
   async function ensureProfile(secret,account) {
     const db=new TablesDB(session(secret));const args=profileArgs(account.$id);
     try{return profileData(await db.getRow(args));}catch(error){if(error.code!==404)throw error;}
@@ -33,6 +35,11 @@ export function createAppwriteService(config, key, userAgent='') {
     return new Account(elevated()).createEmailPasswordSession({email,password,duration:2592000});
   }
   return {
+    async readDiary(secret,date){return (await data(secret)).repository.diary(date);},
+    async catalogStatus(secret){return (await data(secret)).repository.catalogStatus();},
+    async searchCatalog(secret,input){return (await data(secret)).repository.search(input);},
+    async readCatalogFood(secret,id){return (await data(secret)).repository.food(id);},
+    async readMedia(secret,namespace,id){const {repository,storage}=await data(secret),fileId=await repository.media(namespace,id);return storage.getFileView({bucketId:'private-media',fileId});},
     login,
     async register({email,password,name}) {await anonymous().create({userId:ID.unique(),email,password,name});return login({email,password});},
     async current(secret) {const account=await new Account(session(secret)).get();return {id:account.$id,email:account.email,name:account.name,emailVerified:account.emailVerification,profile:await ensureProfile(secret,account)};},

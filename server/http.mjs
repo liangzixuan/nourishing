@@ -12,7 +12,7 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
     headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     const json=(status,value)=>{headers.set('Content-Type','application/json; charset=utf-8');return new Response(JSON.stringify(value),{status,headers});};
     try {
-      const path=new URL(req.url,config.origin).pathname;
+      const url=new URL(req.url,config.origin),path=url.pathname;
       if(req.method==='GET'&&path==='/healthz')return json(200,{status:'ok',service:'nourishing-cloud-accounts'});
       if(req.method==='GET'&&!path.startsWith('/api/')) {
         const asset=assets.get(path)||(['/', '/login','/register','/forgot-password','/reset-password','/verify-email','/account'].includes(path)?assets.get('/'):undefined);
@@ -24,6 +24,18 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
         if(req.headers.get('content-type')?.split(';')[0]!=='application/json')fail(415,'Use JSON.');
       }
       const api=service??serviceForRequest(req),secret=readSession(req.headers.get('cookie')??''),body=req.method==='GET'?null:await readBody(req);
+      if(req.method==='GET'&&['/api/diary','/api/catalog/status','/api/catalog/search','/api/catalog/food','/api/media'].includes(path)){
+        if(!secret)fail(401,'Please sign in.');
+        const allowed={'/api/diary':['date'],'/api/catalog/status':[],'/api/catalog/search':['q','offset','limit'],'/api/catalog/food':['id'],'/api/media':['namespace','id']}[path];
+        if([...url.searchParams.keys()].some(key=>!allowed.includes(key)||url.searchParams.getAll(key).length!==1))fail(400,'Invalid query.');
+        if(path==='/api/diary'){const date=url.searchParams.get('date'),parsed=new Date(`${date}T12:00:00Z`);if(!/^\d{4}-\d{2}-\d{2}$/.test(date??'')||!Number.isFinite(parsed.valueOf())||parsed.toISOString().slice(0,10)!==date)fail(400,'Choose a valid date.');return json(200,await api.readDiary(secret,date));}
+        if(path==='/api/catalog/status')return json(200,await api.catalogStatus(secret));
+        if(path==='/api/catalog/search'){const query=url.searchParams.get('q')??'',offset=Number(url.searchParams.get('offset')??0),limit=Number(url.searchParams.get('limit')??25);if(query.length>200||!Number.isSafeInteger(offset)||offset<0||offset>100000||!Number.isInteger(limit)||limit<1||limit>100)fail(400,'Invalid search.');return json(200,await api.searchCatalog(secret,{query,offset,limit}));}
+        const id=string(url.searchParams.get('id'),1,1000);
+        if(path==='/api/catalog/food')return json(200,await api.readCatalogFood(secret,id));
+        const namespace=url.searchParams.get('namespace');if(!['meal_photos','note_photos','progress_photos'].includes(namespace)||!/^([a-f0-9]{64})$/.test(id))fail(400,'Invalid image.');
+        const bytes=await api.readMedia(secret,namespace,id);headers.set('Content-Type','image/jpeg');return new Response(bytes,{headers});
+      }
       if(req.method==='GET'&&path==='/api/account') {if(!secret)fail(401,'Please sign in.');return json(200,await api.current(secret));}
       if(req.method==='PUT'&&path==='/api/profile') {
         fields(body,['timeZone','units']);string(body.timeZone,1,100);try{new Intl.DateTimeFormat('en',{timeZone:body.timeZone});}catch{fail(400,'Choose a valid time zone.');}

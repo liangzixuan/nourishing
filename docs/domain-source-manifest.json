@@ -1,0 +1,395 @@
+{
+  "purpose": "Nutrition calculation modules copied from the existing Nourishing application. Package aliases resolved to the same local modules; arithmetic unchanged.",
+  "files": [
+    {
+      "source": "server/nutrition.mjs",
+      "target": "server/domain/nutrition.mjs",
+      "sourceSha256": "08f0761f0f825d260c3262e50b5ce6708f5856acf13c1904737226dd66ca31d1",
+      "outputSha256": "e4e32face0b31b74fee4d6eb6302783aee99783d77a7159ea77e9a6217064868"
+    },
+    {
+      "source": "server/nutrient-target-modes.mjs",
+      "target": "server/domain/nutrient-target-modes.mjs",
+      "sourceSha256": "62b892460ef93d636e6c2fbfa3173267c1df8552b2797bc114c3858c61cef32d",
+      "outputSha256": "62b892460ef93d636e6c2fbfa3173267c1df8552b2797bc114c3858c61cef32d"
+    },
+    {
+      "source": "server/nutrient-catalog.mjs",
+      "target": "server/domain/nutrient-catalog.mjs",
+      "sourceSha256": "de826a4f65e73f241e46f69d102acd6fd9b85bb5be3a06f507f44cc6ac3013e9",
+      "outputSha256": "de826a4f65e73f241e46f69d102acd6fd9b85bb5be3a06f507f44cc6ac3013e9"
+    },
+    {
+      "source": "server/expenditure-breakdown.mjs",
+      "target": "server/domain/expenditure-breakdown.mjs",
+      "sourceSha256": "f29cf6a818e18b268e0d1b6e472316855f73ea79efb9bfbd6291dda38dec4ce8",
+      "outputSha256": "f29cf6a818e18b268e0d1b6e472316855f73ea79efb9bfbd6291dda38dec4ce8"
+    },
+    {
+      "source": "server/score-limitations.mjs",
+      "target": "server/domain/score-limitations.mjs",
+      "sourceSha256": "8aa16875830824afdef1b6984d6dfae3cfa61596922733cc347f6d471f8bda62",
+      "outputSha256": "8aa16875830824afdef1b6984d6dfae3cfa61596922733cc347f6d471f8bda62"
+    },
+    {
+      "source": "server/recipe-entry.mjs",
+      "target": "server/domain/recipe-entry.mjs",
+      "sourceSha256": "b44053defc62e23b1079e908555790dfc50286a251dbc1b7432378a0ebf2ffad",
+      "outputSha256": "b44053defc62e23b1079e908555790dfc50286a251dbc1b7432378a0ebf2ffad"
+    },
+    {
+      "source": "server/composite-source.mjs",
+      "target": "server/domain/composite-source.mjs",
+      "sourceSha256": "6823f80dc6c84ea74e5d1d6a57c3b61926ac084a7a26a8252a78665bcb8f9ed7",
+      "outputSha256": "6823f80dc6c84ea74e5d1d6a57c3b61926ac084a7a26a8252a78665bcb8f9ed7"
+    },
+    {
+      "source": "server/resource-reference.mjs",
+      "target": "server/domain/resource-reference.mjs",
+      "sourceSha256": "0d8ed6d98592503774d9b82fe75019db1bf222e1354902316a34e78868134b6b",
+      "outputSha256": "e662bf00ec8cbd8f48ed5eadc724cf95db1b64ab11fa8b51c859522183d9b5da"
+    },
+    {
+      "source": "server/food-quantity.mjs",
+      "target": "server/domain/food-quantity.mjs",
+      "sourceSha256": "9b6b6b79e2439d866843741fae3ca541944c18802d1c94e0dc35c97406679ac2",
+      "outputSha256": "9b6b6b79e2439d866843741fae3ca541944c18802d1c94e0dc35c97406679ac2"
+    },
+    {
+      "source": "server/quantity-units.mjs",
+      "target": "server/domain/quantity-units.mjs",
+      "sourceSha256": "ce12199b592ab64a12be353502822628b3b69ffed33079b7891bae70014492ae",
+      "outputSha256": "ce12199b592ab64a12be353502822628b3b69ffed33079b7891bae70014492ae"
+    },
+    {
+      "source": "server/recipe-measurement.mjs",
+      "target": "server/domain/recipe-measurement.mjs",
+      "sourceSha256": "7924088abb355b9c6c2816e6d4f1227456f3cab249022c58e6ae7bf28451491e",
+      "outputSha256": "7924088abb355b9c6c2816e6d4f1227456f3cab249022c58e6ae7bf28451491e"
+    },
+    {
+      "source": "server/recipe-portion-schema.mjs",
+      "target": "server/domain/recipe-portion-schema.mjs",
+      "sourceSha256": "f7f80c167db93f39a90b139699af06f54aa8329f5f0643dd92fb2d2582bc9cd3",
+      "outputSha256": "f7f80c167db93f39a90b139699af06f54aa8329f5f0643dd92fb2d2582bc9cd3"
+    },
+    {
+      "source": "server/measure-translations.mjs",
+      "target": "server/domain/measure-translations.mjs",
+      "sourceSha256": "4991eca41609395924e04e6c82f9759790202e48d214197b1cc0a397dc2c1beb",
+      "outputSha256": "4991eca41609395924e04e6c82f9759790202e48d214197b1cc0a397dc2c1beb"
+    },
+    {
+      "source": "server/recipe-weight.mjs",
+      "target": "server/domain/recipe-weight.mjs",
+      "sourceSha256": "c88dbf51d7371ac2786ba2b1003991795e4189e16dab7948ec03578480989e85",
+      "outputSha256": "c88dbf51d7371ac2786ba2b1003991795e4189e16dab7948ec03578480989e85"
+    },
+    {
+      "source": "server/resource-dependencies.mjs",
+      "target": "server/domain/resource-dependencies.mjs",
+      "sourceSha256": "389fde51f951512134a4b4d1f2b2960ae42749bae546a8cf724b7fc62f659993",
+      "outputSha256": "389fde51f951512134a4b4d1f2b2960ae42749bae546a8cf724b7fc62f659993"
+    },
+    {
+      "source": "server/consumed-energy.mjs",
+      "target": "server/domain/consumed-energy.mjs",
+      "sourceSha256": "54b57a322c80a635857447a85aae1ac7344f05643d992044bbee91eec0036902",
+      "outputSha256": "54b57a322c80a635857447a85aae1ac7344f05643d992044bbee91eec0036902"
+    },
+    {
+      "source": "server/catalog-source.mjs",
+      "target": "server/domain/catalog-source.mjs",
+      "sourceSha256": "3307d50453202bb88143041ad0eca3964ce1e6eff32ea767dc82bbe82861e515",
+      "outputSha256": "3307d50453202bb88143041ad0eca3964ce1e6eff32ea767dc82bbe82861e515"
+    },
+    {
+      "source": "server/meal-entry.mjs",
+      "target": "server/domain/meal-entry.mjs",
+      "sourceSha256": "befac9ae6243569ad126c3edbec90a138498bca53956f8d8078132b51e29280d",
+      "outputSha256": "befac9ae6243569ad126c3edbec90a138498bca53956f8d8078132b51e29280d"
+    },
+    {
+      "source": "server/food-quality-capture.mjs",
+      "target": "server/domain/food-quality-capture.mjs",
+      "sourceSha256": "8852a63b58a9f2d4aafec3836870182957fbc2989c4a918f66df1dfcba09b02c",
+      "outputSha256": "8852a63b58a9f2d4aafec3836870182957fbc2989c4a918f66df1dfcba09b02c"
+    },
+    {
+      "source": "server/food-quality-guidance.mjs",
+      "target": "server/domain/food-quality-guidance.mjs",
+      "sourceSha256": "686ca36c05d3e57314adbc58c282600b74d02d605777e6df01b56d8fb7ef8bcf",
+      "outputSha256": "686ca36c05d3e57314adbc58c282600b74d02d605777e6df01b56d8fb7ef8bcf"
+    },
+    {
+      "source": "server/source-data-quality.mjs",
+      "target": "server/domain/source-data-quality.mjs",
+      "sourceSha256": "34ca8aefffcdc0de859aa0c01543ae6b43d2cf6fc5e169e9327fe49572663575",
+      "outputSha256": "34ca8aefffcdc0de859aa0c01543ae6b43d2cf6fc5e169e9327fe49572663575"
+    },
+    {
+      "source": "server/source-nutrient-registry.mjs",
+      "target": "server/domain/source-nutrient-registry.mjs",
+      "sourceSha256": "87b75bda3b75ae4e19f356aba781169ce1955462cb57443556f519941bb434f0",
+      "outputSha256": "87b75bda3b75ae4e19f356aba781169ce1955462cb57443556f519941bb434f0"
+    },
+    {
+      "source": "server/source-score-display.mjs",
+      "target": "server/domain/source-score-display.mjs",
+      "sourceSha256": "78b1a0cecd3e241a764983b3875cb63980d7cc982ad61ced4d0532d1e5fca2b5",
+      "outputSha256": "78b1a0cecd3e241a764983b3875cb63980d7cc982ad61ced4d0532d1e5fca2b5"
+    },
+    {
+      "source": "server/calcium-score.mjs",
+      "target": "server/domain/calcium-score.mjs",
+      "sourceSha256": "834880beae4796892a0ff9f55c0c42ec1e3733b866ebc868e32045647da408ec",
+      "outputSha256": "834880beae4796892a0ff9f55c0c42ec1e3733b866ebc868e32045647da408ec"
+    },
+    {
+      "source": "server/diary-group-display.mjs",
+      "target": "server/domain/diary-group-display.mjs",
+      "sourceSha256": "6a2239b2ed6efa20b1a35f8cbbb40f317fdc6a5bc9410c767ab3b0f0039f42fc",
+      "outputSha256": "6a2239b2ed6efa20b1a35f8cbbb40f317fdc6a5bc9410c767ab3b0f0039f42fc"
+    },
+    {
+      "source": "server/overall-score.mjs",
+      "target": "server/domain/overall-score.mjs",
+      "sourceSha256": "8a01d8f5b03267eb754458fd6032b11b008fa32e3d440cb380cf1eea1c57738e",
+      "outputSha256": "8a01d8f5b03267eb754458fd6032b11b008fa32e3d440cb380cf1eea1c57738e"
+    },
+    {
+      "source": "server/source-score.mjs",
+      "target": "server/domain/source-score.mjs",
+      "sourceSha256": "28f64cfa8adce7572865a99a0f781d5d315ce3c546df79e0bf8e352696ea786c",
+      "outputSha256": "28f64cfa8adce7572865a99a0f781d5d315ce3c546df79e0bf8e352696ea786c"
+    },
+    {
+      "source": "server/carbohydrate-facts.mjs",
+      "target": "server/domain/carbohydrate-facts.mjs",
+      "sourceSha256": "f09c8f3467daf88ba1a94edfe02d079884fbd37c6b23f987704c44450418e634",
+      "outputSha256": "f09c8f3467daf88ba1a94edfe02d079884fbd37c6b23f987704c44450418e634"
+    },
+    {
+      "source": "server/carbohydrate-policy.mjs",
+      "target": "server/domain/carbohydrate-policy.mjs",
+      "sourceSha256": "59167c173ee18b9e3a09eee3c1da068536976fd0cf76519dd2c9d7ef7851972f",
+      "outputSha256": "59167c173ee18b9e3a09eee3c1da068536976fd0cf76519dd2c9d7ef7851972f"
+    },
+    {
+      "source": "server/energy-decimal.mjs",
+      "target": "server/domain/energy-decimal.mjs",
+      "sourceSha256": "b1af7ae145d01899e0e5e5af9f865be9cfe89fae3500bdcaa7d931edca8b791b",
+      "outputSha256": "b1af7ae145d01899e0e5e5af9f865be9cfe89fae3500bdcaa7d931edca8b791b"
+    },
+    {
+      "source": "server/progress-score.mjs",
+      "target": "server/domain/progress-score.mjs",
+      "sourceSha256": "d2e6a266b4dba46206d1150ebdbaaf735dee01cbfd8294f3cb6f19a4a82e6975",
+      "outputSha256": "d2e6a266b4dba46206d1150ebdbaaf735dee01cbfd8294f3cb6f19a4a82e6975"
+    },
+    {
+      "source": "server/oral-score.mjs",
+      "target": "server/domain/oral-score.mjs",
+      "sourceSha256": "fadd08fb27d9ed6c29a6d044cc3905ab22e261d3eccc6b32fa686ca0866ddcb2",
+      "outputSha256": "fadd08fb27d9ed6c29a6d044cc3905ab22e261d3eccc6b32fa686ca0866ddcb2"
+    },
+    {
+      "source": "server/keto-score.mjs",
+      "target": "server/domain/keto-score.mjs",
+      "sourceSha256": "179e2422c5c36d15f24c58e84e4584bf745d3a155ff297e289a950b88bff09e5",
+      "outputSha256": "179e2422c5c36d15f24c58e84e4584bf745d3a155ff297e289a950b88bff09e5"
+    },
+    {
+      "source": "server/nutrition-score-policy.mjs",
+      "target": "server/domain/nutrition-score-policy.mjs",
+      "sourceSha256": "d7642f119ffa6e34b83ee1003e6fd5f22d44c14c20b31d566264cdcf2047cb5f",
+      "outputSha256": "d7642f119ffa6e34b83ee1003e6fd5f22d44c14c20b31d566264cdcf2047cb5f"
+    },
+    {
+      "source": "server/diary-day-status.mjs",
+      "target": "server/domain/diary-day-status.mjs",
+      "sourceSha256": "cc83bc4ff61c882bb646d7f0b6237430e307d060771787a645b287b12b483549",
+      "outputSha256": "cc83bc4ff61c882bb646d7f0b6237430e307d060771787a645b287b12b483549"
+    },
+    {
+      "source": "server/water-measurement.mjs",
+      "target": "server/domain/water-measurement.mjs",
+      "sourceSha256": "f933ce8f5567c882820a5c3897770671ddb19287393e3c9c9854d595150a5dbe",
+      "outputSha256": "f933ce8f5567c882820a5c3897770671ddb19287393e3c9c9854d595150a5dbe"
+    },
+    {
+      "source": "server/nutrient-balance-projection.mjs",
+      "target": "server/domain/nutrient-balance-projection.mjs",
+      "sourceSha256": "50552fdb2bd55237254c8e164c24807f20204e604726a4a8c0c3f64ac3b5d1c0",
+      "outputSha256": "0f95de58021873337f302d41ecd71619e36e7006d04c2c3f63542f3752d67c85"
+    },
+    {
+      "source": "server/balance-guidance.mjs",
+      "target": "server/domain/balance-guidance.mjs",
+      "sourceSha256": "c5c747b8812193a036c5b6aa286ceb38b6682888421f83e80cbd1b5cbb42c0c2",
+      "outputSha256": "c5c747b8812193a036c5b6aa286ceb38b6682888421f83e80cbd1b5cbb42c0c2"
+    },
+    {
+      "source": "server/nutrient-balance-settings.mjs",
+      "target": "server/domain/nutrient-balance-settings.mjs",
+      "sourceSha256": "f4b21dcada898aad347687caf0b7f94392f2ca67176330dbfd197b4c2100be0a",
+      "outputSha256": "f4b21dcada898aad347687caf0b7f94392f2ca67176330dbfd197b4c2100be0a"
+    },
+    {
+      "source": "server/calcium-absorption.mjs",
+      "target": "server/domain/calcium-absorption.mjs",
+      "sourceSha256": "c7bf790174044485cce799334bab41e78ac6644634b8eadb6005ccc85b977aca",
+      "outputSha256": "c7bf790174044485cce799334bab41e78ac6644634b8eadb6005ccc85b977aca"
+    },
+    {
+      "source": "server/carbohydrate-values.mjs",
+      "target": "server/domain/carbohydrate-values.mjs",
+      "sourceSha256": "53e95e3b0fe28bb67392ee056332a51abfcf5ef5d2e0ece3b438394a8a20a285",
+      "outputSha256": "53e95e3b0fe28bb67392ee056332a51abfcf5ef5d2e0ece3b438394a8a20a285"
+    },
+    {
+      "source": "server/recipe-quantity.mjs",
+      "target": "server/domain/recipe-quantity.mjs",
+      "sourceSha256": "e472d6092edca798dfdf4293dc2a0636dcc32d57f43454b75ee7bc191d0aa3b0",
+      "outputSha256": "e472d6092edca798dfdf4293dc2a0636dcc32d57f43454b75ee7bc191d0aa3b0"
+    },
+    {
+      "source": "server/food-classification.mjs",
+      "target": "server/domain/food-classification.mjs",
+      "sourceSha256": "75d0457161f5068ca88ff1e960124b4043666e0af9d548aa82d8396168643380",
+      "outputSha256": "75d0457161f5068ca88ff1e960124b4043666e0af9d548aa82d8396168643380"
+    },
+    {
+      "source": "server/energy-policy.mjs",
+      "target": "server/domain/energy-policy.mjs",
+      "sourceSha256": "afd55f9ded3791f40118aa977a0157f06793a6d596c22ca78d38ee7518efc109",
+      "outputSha256": "afd55f9ded3791f40118aa977a0157f06793a6d596c22ca78d38ee7518efc109"
+    },
+    {
+      "source": "server/calendar.mjs",
+      "target": "server/domain/calendar.mjs",
+      "sourceSha256": "229b5891f511ae7dfec0e71f01a053820ec43191e07e80bd28f26181fe65633f",
+      "outputSha256": "229b5891f511ae7dfec0e71f01a053820ec43191e07e80bd28f26181fe65633f"
+    },
+    {
+      "source": "server/calendar-age.mjs",
+      "target": "server/domain/calendar-age.mjs",
+      "sourceSha256": "c579f05eae8b1ba0df82f042e2af19787e12f1a27b189f9b50e2322af8481595",
+      "outputSha256": "c579f05eae8b1ba0df82f042e2af19787e12f1a27b189f9b50e2322af8481595"
+    },
+    {
+      "source": "server/weight-goal.mjs",
+      "target": "server/domain/weight-goal.mjs",
+      "sourceSha256": "9d5f1af5f5d83d7ae29fe686aff3d40ffe18e57aac58c756505ac18289ee10c4",
+      "outputSha256": "9d5f1af5f5d83d7ae29fe686aff3d40ffe18e57aac58c756505ac18289ee10c4"
+    },
+    {
+      "source": "server/weight-guidance.mjs",
+      "target": "server/domain/weight-guidance.mjs",
+      "sourceSha256": "ec247f0a60ceca66a56ab1efc1b86080979a8cbd60f8214c215f26c2e0a415d7",
+      "outputSha256": "ec247f0a60ceca66a56ab1efc1b86080979a8cbd60f8214c215f26c2e0a415d7"
+    },
+    {
+      "source": "server/macro-policy.mjs",
+      "target": "server/domain/macro-policy.mjs",
+      "sourceSha256": "47b560177f6bfad12eeb280d852f03a5055bbc628d053c20d5110c20369a784f",
+      "outputSha256": "47b560177f6bfad12eeb280d852f03a5055bbc628d053c20d5110c20369a784f"
+    },
+    {
+      "source": "server/macro-guidance.mjs",
+      "target": "server/domain/macro-guidance.mjs",
+      "sourceSha256": "f1b50db561f62a8bc5361da5b89d29a6c13e2005835cb94411bd1e99e331aeec",
+      "outputSha256": "f1b50db561f62a8bc5361da5b89d29a6c13e2005835cb94411bd1e99e331aeec"
+    },
+    {
+      "source": "server/macro-templates.mjs",
+      "target": "server/domain/macro-templates.mjs",
+      "sourceSha256": "c6abe2faa90955df062eb6fd90e872a1d89262e25e7221c6afe9c6c41e5394ea",
+      "outputSha256": "c6abe2faa90955df062eb6fd90e872a1d89262e25e7221c6afe9c6c41e5394ea"
+    },
+    {
+      "source": "server/body-composition.mjs",
+      "target": "server/domain/body-composition.mjs",
+      "sourceSha256": "a0fe444ec6ad42b57742e4609e727cb7ad03df162b494f7856357a3340e63014",
+      "outputSha256": "a0fe444ec6ad42b57742e4609e727cb7ad03df162b494f7856357a3340e63014"
+    },
+    {
+      "source": "server/body-guidance.mjs",
+      "target": "server/domain/body-guidance.mjs",
+      "sourceSha256": "c63f37a21b41cd10e9acf04d04925d4025ba3067601fb6e6c6aac0e25e015760",
+      "outputSha256": "c63f37a21b41cd10e9acf04d04925d4025ba3067601fb6e6c6aac0e25e015760"
+    },
+    {
+      "source": "server/weight-units.mjs",
+      "target": "server/domain/weight-units.mjs",
+      "sourceSha256": "e6a761168ef696927a51c5a114e94f5a79418bdff0727b0880a2e2367830351f",
+      "outputSha256": "e6a761168ef696927a51c5a114e94f5a79418bdff0727b0880a2e2367830351f"
+    },
+    {
+      "source": "server/biometric-metrics.mjs",
+      "target": "server/domain/biometric-metrics.mjs",
+      "sourceSha256": "eb4ecafbaefc27e42334775f668b34bb763ed232c3cb48d964d69f1cf13123e1",
+      "outputSha256": "eb4ecafbaefc27e42334775f668b34bb763ed232c3cb48d964d69f1cf13123e1"
+    },
+    {
+      "source": "server/nutrient-upper-limits.mjs",
+      "target": "server/domain/nutrient-upper-limits.mjs",
+      "sourceSha256": "2b0cf4b86494cf732f021257ffa448917c308b088149616b86c4ad13d3d70cf7",
+      "outputSha256": "2b0cf4b86494cf732f021257ffa448917c308b088149616b86c4ad13d3d70cf7"
+    },
+    {
+      "source": "server/nutrient-references.mjs",
+      "target": "server/domain/nutrient-references.mjs",
+      "sourceSha256": "197b17f88536bffad153fa4dc3dd26474c234f1bd78f0fff2dce9f562367808d",
+      "outputSha256": "197b17f88536bffad153fa4dc3dd26474c234f1bd78f0fff2dce9f562367808d"
+    },
+    {
+      "source": "server/reference-guidance.mjs",
+      "target": "server/domain/reference-guidance.mjs",
+      "sourceSha256": "51e2df3235dd52192921e47eb0e8f26600d26c7ab78532f6fadfbe5651f23c7c",
+      "outputSha256": "51e2df3235dd52192921e47eb0e8f26600d26c7ab78532f6fadfbe5651f23c7c"
+    },
+    {
+      "source": "server/nutrient-reference-data.mjs",
+      "target": "server/domain/nutrient-reference-data.mjs",
+      "sourceSha256": "cac1361c20da8b6b8a3c47beec399aa7434a6c2a27773d08b6547b6df7dde32d",
+      "outputSha256": "cac1361c20da8b6b8a3c47beec399aa7434a6c2a27773d08b6547b6df7dde32d"
+    },
+    {
+      "source": "server/nutrient-upper-limit-data.mjs",
+      "target": "server/domain/nutrient-upper-limit-data.mjs",
+      "sourceSha256": "7bb4b559f1643197fedd3b54f70ae5a44ba3e16f1ffcd6fc8afeeb7a39c07aee",
+      "outputSha256": "7bb4b559f1643197fedd3b54f70ae5a44ba3e16f1ffcd6fc8afeeb7a39c07aee"
+    },
+    {
+      "source": "server/nutrient-display.mjs",
+      "target": "server/domain/nutrient-display.mjs",
+      "sourceSha256": "7e5ac7568b55e76f0e1d3a4ea5fcdb19ec0d328d623a0ead5429c5f3e242b368",
+      "outputSha256": "7e5ac7568b55e76f0e1d3a4ea5fcdb19ec0d328d623a0ead5429c5f3e242b368"
+    },
+    {
+      "source": "server/diary-display.mjs",
+      "target": "server/domain/diary-display.mjs",
+      "sourceSha256": "44ec80cbcdce9185c438190fabd5b6ae2957a98e1c6b29586455a3a650ff8c42",
+      "outputSha256": "44ec80cbcdce9185c438190fabd5b6ae2957a98e1c6b29586455a3a650ff8c42"
+    },
+    {
+      "source": "server/contribution-guidance.mjs",
+      "target": "server/domain/contribution-guidance.mjs",
+      "sourceSha256": "5d1c5068106596c4037e21b99f6709ddad3c25c447799014a614952e4560da15",
+      "outputSha256": "5d1c5068106596c4037e21b99f6709ddad3c25c447799014a614952e4560da15"
+    },
+    {
+      "source": "server/data-completeness.mjs",
+      "target": "server/domain/data-completeness.mjs",
+      "sourceSha256": "f73dde11cca49d4862d4da2cd138d7903d243396e8fb3a1a46065221942593dd",
+      "outputSha256": "f73dde11cca49d4862d4da2cd138d7903d243396e8fb3a1a46065221942593dd"
+    },
+    {
+      "source": "server/completeness-guidance.mjs",
+      "target": "server/domain/completeness-guidance.mjs",
+      "sourceSha256": "683788e50be12b0c9ce3f395d29a5cbeb3060660b27a1d6478183264264c8692",
+      "outputSha256": "683788e50be12b0c9ce3f395d29a5cbeb3060660b27a1d6478183264264c8692"
+    }
+  ]
+}
