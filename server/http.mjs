@@ -24,9 +24,16 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
         if(req.headers.get('content-type')?.split(';')[0]!=='application/json')fail(415,'Use JSON.');
       }
       const api=service??serviceForRequest(req),secret=readSession(req.headers.get('cookie')??''),body=req.method==='GET'?null:await readBody(req);
-      if(req.method==='POST'&&path==='/api/diary/command'){if(!secret)fail(401,'Please sign in.');return json(200,await api.diaryCommand(secret,body));}
+      if(req.method==='POST'&&path==='/api/workspace/command'){if(!secret)fail(401,'Please sign in.');return json(200,await api.workspaceCommand(secret,body));}
+      if(req.method==='POST'&&path==='/api/library/preview'){if(!secret)fail(401,'Please sign in.');return json(200,await api.previewLibrary(secret,body));}
+      if(req.method==='GET'&&path==='/api/library'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');return json(200,await api.library(secret));}
+      if(req.method==='GET'&&path==='/api/library/item'){
+        if(!secret)fail(401,'Please sign in.');
+        if([...url.searchParams.keys()].some(k=>!['kind','id','entryId'].includes(k)||url.searchParams.getAll(k).length!==1))fail(400,'Invalid query.');
+        const kind=url.searchParams.get('kind');if(!['food','recipe','meal'].includes(kind))fail(400,'Choose a library item.');
+        return json(200,await api.libraryItem(secret,kind,string(url.searchParams.get('id'),1,1000),url.searchParams.has('entryId')?string(url.searchParams.get('entryId'),1,1000):null));
+      }
       if(req.method==='POST'&&path==='/api/diary/preview'){if(!secret)fail(401,'Please sign in.');return json(200,await api.previewDiary(secret,body));}
-      if(req.method==='GET'&&path==='/api/diary/food'){if(!secret)fail(401,'Please sign in.');if([...url.searchParams.keys()].some(k=>k!=='id')||url.searchParams.getAll('id').length!==1)fail(400,'Invalid query.');return json(200,await api.readDiaryFood(secret,string(url.searchParams.get('id'),1,1000)));}
       if(req.method==='GET'&&['/api/diary','/api/catalog/status','/api/catalog/search','/api/catalog/food','/api/media'].includes(path)){
         if(!secret)fail(401,'Please sign in.');
         const allowed={'/api/diary':['date'],'/api/catalog/status':[],'/api/catalog/search':['q','offset','limit'],'/api/catalog/food':['id'],'/api/media':['namespace','id']}[path];

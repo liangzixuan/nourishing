@@ -7,5 +7,5 @@ export async function request(path,body,signal){
 }
 export async function command(revision,type,payload){
  const signature=JSON.stringify({revision,type,payload});if(pending?.signature!==signature)pending={signature,body:{revision,type,payload,requestId:crypto.randomUUID()}};
- const result=await request('/api/diary/command',pending.body);pending=null;return result;
+ const result=await request('/api/workspace/command',pending.body);pending=null;return result;
 }

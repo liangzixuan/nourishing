@@ -3,7 +3,8 @@ import {createHash} from 'node:crypto';
 import {createDataRepository} from './data-repository.mjs';
 import {createWorkspaceStore} from './workspace-store.mjs';
 import {previewDiaryItem,captureCatalogFood} from './domain/workspace.mjs';
-import {validateAction} from './diary-commands.mjs';
+import {validateAction,validateLibraryPreview,previewLibrary,readActionFoods,captureActionFoods} from './workspace-commands.mjs';
+import {libraryView,libraryItem} from './library-view.mjs';
 
 export function createAppwriteService(config, key, userAgent='') {
   const client=()=>new Client().setEndpoint(config.endpoint).setProject(config.project).setForwardedUserAgent(userAgent);
@@ -13,6 +14,7 @@ export function createAppwriteService(config, key, userAgent='') {
   const profileArgs=id=>({databaseId:config.database,tableId:config.profileTable,rowId:id});
   const profileData=row=>({timeZone:row.timeZone,units:row.units});
   async function data(secret){const client=session(secret),account=await new Account(client).get();return {owner:account.$id,repository:createDataRepository(new TablesDB(client),account.$id),storage:new Storage(client)};}
+  const catalogReader=repository=>async id=>{try{return (await repository.food(id)).food;}catch(error){if(error.code===404)return null;throw error;}};
   async function ensureProfile(secret,account) {
     const db=new TablesDB(session(secret));const args=profileArgs(account.$id);
     try{return profileData(await db.getRow(args));}catch(error){if(error.code!==404)throw error;}
@@ -39,8 +41,10 @@ export function createAppwriteService(config, key, userAgent='') {
   }
   return {
     async readDiary(secret,date){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();return repository.diary(date);},
-    async diaryCommand(secret,input){const {owner,repository}=await data(secret);return createWorkspaceStore(new TablesDB(elevated()),owner).command(input,async id=>{try{return (await repository.food(id)).food;}catch(error){if(error.code===404)return null;throw error;}});},
-    async readDiaryFood(secret,id){const {repository}=await data(secret),state=await repository.readState();const food=state.foods.find(row=>row.id===id);return food?{food}:repository.food(id);},
+    async workspaceCommand(secret,input){const {owner,repository}=await data(secret);return createWorkspaceStore(new TablesDB(elevated()),owner).command(input,catalogReader(repository));},
+    async library(secret){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();return libraryView(await repository.readState());},
+    async libraryItem(secret,kind,id,entryId){const {repository}=await data(secret),state=await repository.readState();const entry=entryId?state.entries.find(row=>row.id===entryId):null;if(entryId&&!entry)throw Object.assign(Error('This diary entry no longer exists.'),{code:404});const resource=state[kind+'s'].find(row=>row.id===id)??(kind==='food'?(await repository.food(id)).food:null);const viewState=kind==='food'&&!state.foods.some(row=>row.id===id)?{...state,foods:[...state.foods,resource]}:state;return libraryItem(viewState,kind,resource,entry);},
+    async previewLibrary(secret,input){const action=validateLibraryPreview(input),{repository}=await data(secret),state=await repository.readState();const prepared=captureActionFoods(state,action,await readActionFoods(action,catalogReader(repository)));return previewLibrary(state,{...input,draft:prepared.payload});},
     async previewDiary(secret,payload){const {repository}=await data(secret),state=await repository.readState();validateAction({type:payload?.id?'entry.update':'entry.add',payload});const p={...payload};try{if(p.foodId&&!state.foods.some(row=>row.id===p.foodId))p.foodId=captureCatalogFood(state,(await repository.food(p.foodId)).food).id;return previewDiaryItem(state,p);}catch(error){if([400,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}},
     async catalogStatus(secret){return (await data(secret)).repository.catalogStatus();},
     async searchCatalog(secret,input){return (await data(secret)).repository.search(input);},

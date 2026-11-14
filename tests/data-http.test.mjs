@@ -4,9 +4,19 @@ import {createWebHandler} from '../server/http.mjs';
 const config={origin:'https://candidate.example'};
 const cookie='__Host-nourishing_session=account-session';
 const req=(path,signed=true)=>new Request(config.origin+path,{headers:signed?{cookie}:{}});
+test('library reads and previews require session, reject owner overrides and keep responses private',async()=>{
+ let calls=0;const handle=createWebHandler({config,service:{library:async()=>{calls++;return {items:[]};},libraryItem:async(s,kind,id)=>({kind,id}),previewLibrary:async()=>{calls++;return {};}}});
+ assert.equal((await handle(req('/api/library',false))).status,401);
+ assert.equal((await handle(req('/api/library?ownerId=another'))).status,400);
+ assert.equal((await handle(req('/api/library/item?kind=recipe&id=x&ownerId=another'))).status,400);
+ assert.equal(calls,0);const result=await handle(req('/api/library'));assert.equal(result.status,200);assert.equal(result.headers.get('cache-control'),'no-store');
+ assert.equal((await handle(req('/api/library/item?kind=profile&id=x'))).status,400);
+ const post=origin=>new Request(config.origin+'/api/library/preview',{method:'POST',headers:{cookie,origin,'Content-Type':'application/json'},body:'{}'});
+ assert.equal((await handle(post('https://another.example'))).status,403);assert.equal((await handle(post(config.origin))).status,200);
+});
 test('diary commands require an authenticated same-origin request',async()=>{
- let called=0;const handle=createWebHandler({config,service:{diaryCommand:async(secret,body)=>{called++;assert.equal(secret,'account-session');return {ok:true};}}});
- const make=(signed,origin)=>new Request(config.origin+'/api/diary/command',{method:'POST',headers:{...(signed?{cookie}:{}),origin,'Content-Type':'application/json'},body:'{}'});
+ let called=0;const handle=createWebHandler({config,service:{workspaceCommand:async(secret,body)=>{called++;assert.equal(secret,'account-session');return {ok:true};}}});
+ const make=(signed,origin)=>new Request(config.origin+'/api/workspace/command',{method:'POST',headers:{...(signed?{cookie}:{}),origin,'Content-Type':'application/json'},body:'{}'});
  assert.equal((await handle(make(false,config.origin))).status,401);assert.equal((await handle(make(true,'https://elsewhere.example'))).status,403);assert.equal(called,0);
  const response=await handle(make(true,config.origin));assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'no-store');assert.equal(called,1);
 });

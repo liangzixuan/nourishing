@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import {writeFileSync} from 'node:fs';
+import {randomUUID} from 'node:crypto';
+import {chromium} from 'playwright-core';
+import {ID,Query} from 'node-appwrite';
+import {operator,allRows,databaseId} from './operator.mjs';
+const origin='https://nourishing-cloud.appwrite.network',{users,db}=operator(),owner=ID.unique(),email=`library-${owner}@example.com`,password=randomUUID()+'Aa1!';
+let browser,page,primaryError;const created=[],errors=[],report={at:new Date().toISOString()};
+writeFileSync('.local/library-browser-fixture.json',JSON.stringify({owner}));
+async function clean(id){for(const tableId of ['command_receipts','workspace_records','workspace_media'])for(const row of await allRows(db,tableId,[Query.equal('ownerId',id)]))await db.deleteRow({databaseId,tableId,rowId:row.$id});for(const tableId of ['workspace_heads','profiles'])try{await db.deleteRow({databaseId,tableId,rowId:id});}catch(e){if(e.code!==404)throw e;}await users.delete({userId:id});}
+try{
+ await users.create({userId:owner,email,password,name:'Library browser fixture'});created.push(owner);
+ browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+ const context=await browser.newContext({viewport:{width:412,height:915},deviceScaleFactor:1,isMobile:true,hasTouch:true});page=await context.newPage();page.setDefaultTimeout(30000);page.on('pageerror',e=>errors.push(e.message));
+ const button=name=>page.getByRole('button',{name,exact:true}),field=name=>page.getByLabel(name,{exact:true});
+ const saved=async()=>{await button('Save').click();await page.locator('#sheet').waitFor({state:'hidden'});};
+ const foods=async()=>{await button('Foods').click();await button('＋ Create').waitFor();};
+ await page.goto(origin+'/login');await field('Email').fill(email);await field('Password').fill(password);await button('Sign in').click();await page.waitForURL('**/diary');await page.locator('.calorie-summary').waitFor();
+ await foods();await button('＋ Create').click();await field('Name').fill('Fixture oats');await field('Energy (kcal)').fill('200');await field('Protein (g)').fill('10');await page.locator('.nutrition-preview strong').waitFor();await page.screenshot({path:'.local/cloud-custom-food.png'});await saved();
+ await page.reload();await page.locator('.calorie-summary').waitFor();await foods();await page.locator('[data-library-item]').filter({hasText:'Fixture oats'}).waitFor();
+ await button('Recipes').click();await button('＋ Create').click();await field('Name').fill('Fixture porridge');await field('Servings').fill('2');await button('＋ Add').click();await button('My Foods').click();await page.locator('.ingredient-picker .search-results button').filter({hasText:'Fixture oats'}).click();await field('Amount').fill('150');await field('Serving').selectOption('g');await button('Use ingredient').click();
+ await page.locator('.ingredient-list strong').filter({hasText:'Fixture oats'}).waitFor();await page.locator('.nutrition-preview strong').filter({hasText:'150 kcal'}).waitFor();await page.screenshot({path:'.local/cloud-recipe-editor.png'});await saved();
+ await button('Meals').click();await button('＋ Create').click();await field('Name').fill('Fixture breakfast');await button('＋ Add').click();await page.locator('.ingredient-picker').getByRole('button',{name:'Recipes',exact:true}).click();await page.locator('.ingredient-picker .search-results button').filter({hasText:'Fixture porridge'}).click();await button('Use ingredient').click();await page.locator('.nutrition-preview strong').filter({hasText:'150 kcal'}).waitFor();await saved();
+ await page.locator('[data-library-item]').filter({hasText:'Fixture breakfast'}).click();await button('Add to diary').click();await field('Group').selectOption('Breakfast');await button('Add to diary').click();await page.locator('#sheet').waitFor({state:'hidden'});
+ await page.locator('[data-library-item]').filter({hasText:'Fixture breakfast'}).click();await saved();
+ await button('Diary').click();await page.locator('.entry-name').filter({hasText:'Fixture breakfast'}).click();await field('Amount').fill('2');await button('Save changes').click();await page.locator('#sheet').waitFor({state:'hidden'});await page.locator('.energy-ring strong').filter({hasText:'300'}).waitFor();await page.screenshot({path:'.local/cloud-library-diary.png'});
+ await foods();await page.locator('[data-library-item]').filter({hasText:'Fixture oats'}).click();await field('Energy (kcal)').fill('240');await saved();await button('Diary').click();await page.locator('.energy-ring strong').filter({hasText:'360'}).waitFor();
+ await foods();await page.locator('[data-library-item]').filter({hasText:'Fixture oats'}).click();await button('Delete').click();await button('Delete').click();await page.locator('#sheet [role=status]').filter({hasText:/in use/i}).waitFor();await button('Close').click();
+ await button('Recipes').click();await button('＋ Create').click();await field('Name').fill('Catalog rice recipe');await button('＋ Add').click();const found=page.waitForResponse(r=>r.url().includes('/api/catalog/search?')&&r.url().includes('rice')&&r.status()===200);await page.getByRole('searchbox',{name:'Search foods'}).fill('rice cooked');await found;await page.locator('.ingredient-picker .search-results button').first().click();await field('Amount').fill('50');await field('Serving').selectOption('g');await button('Use ingredient').click();await page.locator('.nutrition-preview strong').waitFor();await saved();await page.locator('[data-library-item]').filter({hasText:'Catalog rice recipe'}).waitFor();
+ const own=(await (await context.request.get(origin+'/api/library')).json()).items.find(i=>i.name==='Fixture oats');
+ const otherId=ID.unique(),otherPassword=randomUUID()+'Aa1!';await users.create({userId:otherId,email:`other-${otherId}@example.com`,password:otherPassword,name:'Library isolation fixture'});created.push(otherId);writeFileSync('.local/library-browser-fixture.json',JSON.stringify({owner,created}));
+ const other=await browser.newContext();const login=await other.request.post(origin+'/api/auth/login',{headers:{Origin:origin},data:{email:`other-${otherId}@example.com`,password:otherPassword}});assert.equal(login.status(),200);
+ const empty=await (await other.request.get(origin+'/api/library')).json();assert.deepEqual(empty.items,[]);
+ const denied=await other.request.get(origin+'/api/library/item?kind=food&id='+own.id);assert.ok([400,403,404].includes(denied.status()));
+ const write=await other.request.post(origin+'/api/workspace/command',{headers:{Origin:origin},data:{revision:empty.revision,requestId:randomUUID(),type:'food.save',payload:{id:own.id,name:'Forbidden'}}});assert.equal(write.status(),400);await other.close();
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(errors,[]);
+ report.checks=['custom food create and reload','recipe with measured custom ingredient','recipe with server-captured catalog ingredient','meal with nested recipe','meal logging and quantity edit','food edits update dependent nutrition','in-use deletion rejected','cross-account read and write denied','no overflow or browser errors'];report.status='passed';
+}catch(error){primaryError=error;await page?.screenshot({path:'.local/cloud-library-failure.png'}).catch(()=>{});}finally{await browser?.close();const failures=[];for(const id of created)try{await clean(id);}catch(error){failures.push(error);}if(failures.length){writeFileSync('.local/library-cleanup-pending.json',JSON.stringify({created,at:new Date().toISOString()}));if(!primaryError)primaryError=failures[0];}}
+if(primaryError)throw primaryError;
+report.fixtureRemoved=true;writeFileSync('.local/library-browser-verification.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));

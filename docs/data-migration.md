@@ -44,9 +44,13 @@ Search returns `nextOffset`; filtered search totals are `null` because Appwrite 
 
 The current diary reader reconstructs the account's complete workspace for the existing nutrition calculation. This has been checked against the migration baseline, not load-tested for large multi-year accounts. The imported calculation dependency closure and its source hashes are recorded in `domain-source-manifest.json`.
 
-## Diary writes
+## Workspace writes
 
-`POST /api/diary/command` accepts `requestId`, `revision`, `type`, and a strictly checked `payload`. Supported commands are `entry.add`, `entry.update`, `entry.delete`, `note.add`, `note.delete`, and `day.complete`. The public interface currently exposes note addition, not note deletion. `POST /api/diary/preview` uses the same quantity and nutrition rules without saving. `GET /api/diary/food?id=...` resolves the account's saved food snapshot before the catalog.
+`POST /api/workspace/command` accepts `requestId`, `revision`, `type`, and a strictly checked `payload`. Supported commands are `entry.add`, `entry.update`, `entry.delete`, `note.add`, `note.delete`, `day.complete`, `food.save`, `food.delete`, `recipe.save`, `recipe.delete`, `meal.save`, and `meal.delete`. The public interface currently exposes note addition, not note deletion. `POST /api/diary/preview` uses the same quantity and nutrition rules without saving.
+
+`GET /api/library` returns the owner's private item list and nutrient definitions. `GET /api/library/item?kind=food|recipe|meal&id=...` returns a saved item and its supported quantity choices; food lookup falls back to the shared catalog. An optional `entryId` uses that owner's diary occurrence for recipe quantity overrides. `POST /api/library/preview` validates and calculates an unsaved library draft without persisting it. No endpoint accepts a caller-selected owner.
+
+Custom food nutrients are explicit user input. Recipe and meal ingredients accept only food/recipe identities and quantities. The server reads any shared catalog ingredients and captures their authoritative source facts before saving; client nutrition or provenance cannot replace those facts. Partial library edits merge into the owner's existing item before domain validation, preserving fields outside the editor. Existing dependencies and measured consumers are validated by the original domain code. A saved item cannot be deleted while diary entries, recipes, meals or repeat items use it. The editor currently supports basic fields and preserves existing named portions, source histories and other metadata; advanced library tools remain pending.
 
 After authenticating the session, the server uses its row-write key to stage the workspace head, validate its revision, read the records, and apply a permitted domain command. Only changed rows are staged. The final head and a `command_receipts` row commit in the same transaction. A duplicate request returns its stored result; reuse with different input fails. Competing saves conflict on the shared head. Failed operations roll back, with the provider's transaction TTL as the final expiry bound. No automatic conflict overwrite is performed.
 
