@@ -1,6 +1,9 @@
 import {Client,Account,TablesDB,Storage,ID,Permission,Role,Query} from 'node-appwrite';
 import {createHash} from 'node:crypto';
 import {createDataRepository} from './data-repository.mjs';
+import {createWorkspaceStore} from './workspace-store.mjs';
+import {previewDiaryItem,captureCatalogFood} from './domain/workspace.mjs';
+import {validateAction} from './diary-commands.mjs';
 
 export function createAppwriteService(config, key, userAgent='') {
   const client=()=>new Client().setEndpoint(config.endpoint).setProject(config.project).setForwardedUserAgent(userAgent);
@@ -9,7 +12,7 @@ export function createAppwriteService(config, key, userAgent='') {
   const session=secret=>{if(!secret)throw Object.assign(Error('Sign in.'),{code:401});return client().setSession(secret);};
   const profileArgs=id=>({databaseId:config.database,tableId:config.profileTable,rowId:id});
   const profileData=row=>({timeZone:row.timeZone,units:row.units});
-  async function data(secret){const client=session(secret),account=await new Account(client).get();return {repository:createDataRepository(new TablesDB(client),account.$id),storage:new Storage(client)};}
+  async function data(secret){const client=session(secret),account=await new Account(client).get();return {owner:account.$id,repository:createDataRepository(new TablesDB(client),account.$id),storage:new Storage(client)};}
   async function ensureProfile(secret,account) {
     const db=new TablesDB(session(secret));const args=profileArgs(account.$id);
     try{return profileData(await db.getRow(args));}catch(error){if(error.code!==404)throw error;}
@@ -35,7 +38,10 @@ export function createAppwriteService(config, key, userAgent='') {
     return new Account(elevated()).createEmailPasswordSession({email,password,duration:2592000});
   }
   return {
-    async readDiary(secret,date){return (await data(secret)).repository.diary(date);},
+    async readDiary(secret,date){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();return repository.diary(date);},
+    async diaryCommand(secret,input){const {owner,repository}=await data(secret);return createWorkspaceStore(new TablesDB(elevated()),owner).command(input,async id=>{try{return (await repository.food(id)).food;}catch(error){if(error.code===404)return null;throw error;}});},
+    async readDiaryFood(secret,id){const {repository}=await data(secret),state=await repository.readState();const food=state.foods.find(row=>row.id===id);return food?{food}:repository.food(id);},
+    async previewDiary(secret,payload){const {repository}=await data(secret),state=await repository.readState();validateAction({type:payload?.id?'entry.update':'entry.add',payload});const p={...payload};try{if(p.foodId&&!state.foods.some(row=>row.id===p.foodId))p.foodId=captureCatalogFood(state,(await repository.food(p.foodId)).food).id;return previewDiaryItem(state,p);}catch(error){if([400,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}},
     async catalogStatus(secret){return (await data(secret)).repository.catalogStatus();},
     async searchCatalog(secret,input){return (await data(secret)).repository.search(input);},
     async readCatalogFood(secret,id){return (await data(secret)).repository.food(id);},

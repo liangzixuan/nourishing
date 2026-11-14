@@ -14,8 +14,18 @@
   },
   "dependencies": {
     "@astrojs/node": "11.1.13",
+    "@js-temporal/polyfill": "0.5.1",
     "astro": "7.4.12",
     "big.js": "7.0.1",
-    "node-appwrite": "31.2.0"
+    "cheerio": "1.2.0",
+    "node-appwrite": "31.2.0",
+    "numeric-quantity": "3.2.1",
+    "papaparse": "5.7.0",
+    "parse-ingredient": "2.2.0",
+    "rdfa-streaming-parser": "3.0.2",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "playwright-core": "1.58.2"
   }
 }

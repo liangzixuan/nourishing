@@ -5,6 +5,7 @@ const integer=key=>({key,type:'integer',required:true});
 const index=(key,attributes)=>({key,type:'key',attributes});
 const common=[varchar('generation',36),varchar('digest',64)];
 export const tables=[
+ {id:'command_receipts',name:'Private diary command receipts',columns:[varchar('ownerId',36),varchar('fingerprint',64),text('result')],indexes:[]},
  {id:'workspace_records',name:'Private workspace records',columns:[...common,varchar('ownerId',36),varchar('family',64),text('sourceId'),integer('position'),varchar('day',10),text('payload','mediumtext')],indexes:[index('owner_generation',['ownerId','generation']),index('owner_family_day',['ownerId','generation','family','day'])]},
  {id:'workspace_heads',name:'Verified workspace imports',columns:[...common,varchar('ownerId',36),text('layout')],indexes:[]},
  {id:'workspace_media',name:'Private image metadata',columns:[varchar('ownerId',36),varchar('generation',36),varchar('namespace',32),varchar('sourceId',64),varchar('fileId',36),varchar('digest',64),integer('width'),integer('height'),integer('bytes')],indexes:[index('owner_generation',['ownerId','generation'])]},

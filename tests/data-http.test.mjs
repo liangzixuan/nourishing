@@ -4,6 +4,12 @@ import {createWebHandler} from '../server/http.mjs';
 const config={origin:'https://candidate.example'};
 const cookie='__Host-nourishing_session=account-session';
 const req=(path,signed=true)=>new Request(config.origin+path,{headers:signed?{cookie}:{}});
+test('diary commands require an authenticated same-origin request',async()=>{
+ let called=0;const handle=createWebHandler({config,service:{diaryCommand:async(secret,body)=>{called++;assert.equal(secret,'account-session');return {ok:true};}}});
+ const make=(signed,origin)=>new Request(config.origin+'/api/diary/command',{method:'POST',headers:{...(signed?{cookie}:{}),origin,'Content-Type':'application/json'},body:'{}'});
+ assert.equal((await handle(make(false,config.origin))).status,401);assert.equal((await handle(make(true,'https://elsewhere.example'))).status,403);assert.equal(called,0);
+ const response=await handle(make(true,config.origin));assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'no-store');assert.equal(called,1);
+});
 test('data reads require a session and do not accept caller-selected owners',async()=>{
  let calls=0;const handle=createWebHandler({config,service:{readDiary:async()=>{calls++;return {};}}});
  assert.equal((await handle(req('/api/diary?date=2026-11-14',false))).status,401);

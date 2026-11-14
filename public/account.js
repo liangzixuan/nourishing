@@ -20,7 +20,7 @@ function accountForm(mode){
     const body=Object.fromEntries(new FormData(form));
     if(reset){if(!token.userId||!token.secret)throw Error('Open the reset link from your email.');await api('/api/auth/reset',{...token,password:body.password});token.secret=null;form.reset();message('Password updated. You can sign in.');return;}
     if(forgot){await api('/api/auth/recovery',body);message('If an account exists, a reset link is on its way.');return;}
-    await api(`/api/auth/${register?'register':'login'}`,body);form.reset();location.replace('/account');
+    await api(`/api/auth/${register?'register':'login'}`,body);form.reset();location.replace(register?'/account':'/diary');
   });};
 }
 function verification(){
@@ -32,6 +32,7 @@ async function profile(){
   const zone=user.profile.timeZone==='UTC'?Intl.DateTimeFormat().resolvedOptions().timeZone:user.profile.timeZone;
   root.innerHTML=`<h1>Account</h1><section class="card"><p><strong>${escape(user.name)}</strong></p><p class="muted">${escape(user.email)}</p><p>${user.emailVerified?'Email verified':'Email not verified'}</p>${user.emailVerified?'':'<button class="secondary" id="verify">Send verification email</button>'}</section><form><label>Time zone<input name="timeZone" value="${escape(zone)}" required maxlength="100"></label><label>Units<select name="units"><option value="metric">Metric</option><option value="imperial">Imperial</option></select></label><button>Save settings</button></form>${notice()}<button class="secondary signout" id="signout">Sign out</button>`;
   const form=root.querySelector('form');form.elements.units.value=user.profile.units;
+  const diaryLink=document.createElement('a');diaryLink.href='/diary';diaryLink.textContent='Open diary';diaryLink.className='links';root.prepend(diaryLink);
   form.onsubmit=e=>{e.preventDefault();busy(form,async()=>{await api('/api/profile',Object.fromEntries(new FormData(form)),'PUT');message('Saved.');});};
   const verify=root.querySelector('#verify');if(verify)verify.onclick=()=>busy(verify.parentElement,async()=>{await api('/api/auth/verification',{});message('Verification email sent.');});
   root.querySelector('#signout').onclick=()=>busy(root,async()=>{await api('/api/auth/logout',{});user=null;root.replaceChildren();location.replace('/login');});

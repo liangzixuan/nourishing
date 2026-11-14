@@ -1,0 +1,1405 @@
+{
+  "version": 1,
+  "source": {
+    "version": "wake-oxalate-v1",
+    "institution": "Wake Forest University Baptist Medical Center, Urology",
+    "url": "https://www.wakehealth.edu/-/media/wakeforest/clinical/files/urology/oxalate-food-list.pdf",
+    "pdfSha256": "91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae",
+    "pdfCreatedYear": 2008,
+    "limitations": [
+      "The source reports mg oxalate per 100 g. The total-versus-soluble fraction is not specified.",
+      "The assay method, analytical date, sample variability and detection limit are not supplied. PDF creation in 2008 does not date the measurements.",
+      "A reported zero is retained as zero; it does not establish absence below a detection limit. Unmatched foods remain unknown.",
+      "The selected source description and preparation must be reviewed against the food. No name-based match is applied automatically.",
+      "Five rows with unexplained asterisks and two conflicting duplicate cake rows are excluded from selection."
+    ]
+  },
+  "rows": [
+    {
+      "page": 1,
+      "rowOnPage": 1,
+      "descriptionRaw": "ALFALFA SEEDS,SPROUTED,RAW",
+      "valueRaw": "0.9",
+      "mgPer100g": 0.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r1",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 2,
+      "descriptionRaw": "ASPARAGUS,CKD,BLD,DRND",
+      "valueRaw": "17.2",
+      "mgPer100g": 17.2,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r2",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 3,
+      "descriptionRaw": "AVOCADOS,RAW,ALL COMM VAR",
+      "valueRaw": "9.5",
+      "mgPer100g": 9.5,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r3",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 4,
+      "descriptionRaw": "BANANAS,RAW",
+      "valueRaw": "0.2",
+      "mgPer100g": 0.2,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r4",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 5,
+      "descriptionRaw": "BARLEY",
+      "valueRaw": "0.0",
+      "mgPer100g": 0.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r5",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 6,
+      "descriptionRaw": "BARLEY FLR",
+      "valueRaw": "0.0",
+      "mgPer100g": 0.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r6",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 7,
+      "descriptionRaw": "BEANS, KIDNEY, CND",
+      "valueRaw": "4.9",
+      "mgPer100g": 4.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r7",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 8,
+      "descriptionRaw": "BEANS,NAVY,MATURE SEEDS,CND",
+      "valueRaw": "18.0",
+      "mgPer100g": 18.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r8",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 9,
+      "descriptionRaw": "BEANS,SNAP,GRN,FRZ,CKD,BLD,DRND WO/SALT",
+      "valueRaw": "13.5",
+      "mgPer100g": 13.5,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r9",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 10,
+      "descriptionRaw": "BEEF,VAR MEATS&BY-PRODUCTS,LIVER,CKD,PAN-FRIED",
+      "valueRaw": "0.1",
+      "mgPer100g": 0.1,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r10",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 11,
+      "descriptionRaw": "BLUEBERRIES,RAW",
+      "valueRaw": "2.9",
+      "mgPer100g": 2.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r11",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 12,
+      "descriptionRaw": "BREAD,CORNBREAD,DRY MIX,PREP",
+      "valueRaw": "6.2",
+      "mgPer100g": 6.2,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r12",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 13,
+      "descriptionRaw": "BREAD,OAT BRAN",
+      "valueRaw": "12.8",
+      "mgPer100g": 12.8,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r13",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 14,
+      "descriptionRaw": "BREAD,OATMEAL",
+      "valueRaw": "14.9",
+      "mgPer100g": 14.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r14",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 15,
+      "descriptionRaw": "BREAD,RYE",
+      "valueRaw": "20.8",
+      "mgPer100g": 20.8,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r15",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 16,
+      "descriptionRaw": "BREWER'S YEAST POWDER",
+      "valueRaw": "41.7",
+      "mgPer100g": 41.7,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r16",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 17,
+      "descriptionRaw": "BUCKWHEAT GROATS,RSTD,CKD",
+      "valueRaw": "78.9",
+      "mgPer100g": 78.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r17",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 18,
+      "descriptionRaw": "BULGUR,COOKED",
+      "valueRaw": "47.2",
+      "mgPer100g": 47.2,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r18",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 19,
+      "descriptionRaw": "BUTTER,SALTED",
+      "valueRaw": "0.1",
+      "mgPer100g": 0.1,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r19",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 20,
+      "descriptionRaw": "CAKE,SNACK CAKES,CREME-FILLED,SPONGE",
+      "valueRaw": "5.9",
+      "mgPer100g": 5.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r20",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 21,
+      "descriptionRaw": "CAKE,YEL,COMMLY PREP,W/CHOC FRSTNG",
+      "valueRaw": "17.9",
+      "mgPer100g": 17.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r21",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 22,
+      "descriptionRaw": "CANDIES,M&M MARS,SNICKERS BAR",
+      "valueRaw": "67.0",
+      "mgPer100g": 67.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r22",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 23,
+      "descriptionRaw": "CARNATION INSTANT BREAKFAST POWDER",
+      "valueRaw": "3.1",
+      "mgPer100g": 3.1,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r23",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 24,
+      "descriptionRaw": "CARROTS,CKD,BLD,DRND,WO/SALT",
+      "valueRaw": "11.1",
+      "mgPer100g": 11.1,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r24",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 25,
+      "descriptionRaw": "CARROTS,RAW",
+      "valueRaw": "18.5",
+      "mgPer100g": 18.5,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r25",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 26,
+      "descriptionRaw": "CASHEW NUTS,OIL RSTD,WO/SALT",
+      "valueRaw": "175.5",
+      "mgPer100g": 175.5,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r26",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 27,
+      "descriptionRaw": "CATSUP",
+      "valueRaw": "10.1",
+      "mgPer100g": 10.1,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r27",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 28,
+      "descriptionRaw": "CELERY,RAW",
+      "valueRaw": "21.7",
+      "mgPer100g": 21.7,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r28",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 29,
+      "descriptionRaw": "CEREAL POST BRAN FLAKES",
+      "valueRaw": "118.5",
+      "mgPer100g": 118.5,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r29",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 30,
+      "descriptionRaw": "CEREAL, GENERAL MILLS FIBER ONE",
+      "valueRaw": "42.6",
+      "mgPer100g": 42.6,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r30",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 31,
+      "descriptionRaw": "CEREAL, GENERAL MILLS FROSTED CHEERIOS",
+      "valueRaw": "18.4",
+      "mgPer100g": 18.4,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r31",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 32,
+      "descriptionRaw": "CEREAL, GENERAL MILLS TOTAL WHEAT FLAKES",
+      "valueRaw": "26.1",
+      "mgPer100g": 26.1,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r32",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 33,
+      "descriptionRaw": "CEREAL, KELLOGG'S CORN FLAKES",
+      "valueRaw": "2.6",
+      "mgPer100g": 2.6,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r33",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 34,
+      "descriptionRaw": "CEREAL, KELLOGG'S FROSTED MINIWHEATS",
+      "valueRaw": "54.9",
+      "mgPer100g": 54.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r34",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 35,
+      "descriptionRaw": "CEREAL, KELLOGG'S PUFFED KASHI",
+      "valueRaw": "51.7",
+      "mgPer100g": 51.7,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r35",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 36,
+      "descriptionRaw": "CEREAL, KELLOGG'S RICE KRISPIES",
+      "valueRaw": "11.8",
+      "mgPer100g": 11.8,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r36",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 37,
+      "descriptionRaw": "CEREAL, KELLOGG'S SPECIAL K",
+      "valueRaw": "9.1",
+      "mgPer100g": 9.1,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r37",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 38,
+      "descriptionRaw": "CEREAL, POST GRAPENUTS",
+      "valueRaw": "30.2",
+      "mgPer100g": 30.2,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r38",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 39,
+      "descriptionRaw": "CEREAL, POST SHREDDED WHEAT",
+      "valueRaw": "90.9",
+      "mgPer100g": 90.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r39",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 40,
+      "descriptionRaw": "CEREAL, QUAKER PUFFED WHEAT",
+      "valueRaw": "61.6",
+      "mgPer100g": 61.6,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r40",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 41,
+      "descriptionRaw": "CEREALS KELLOGG'S COCOA KRISPIES",
+      "valueRaw": "35.8",
+      "mgPer100g": 35.8,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r41",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 42,
+      "descriptionRaw": "CEREALS RTE,WHEAT GERM,TSTD,PLN",
+      "valueRaw": "19.5",
+      "mgPer100g": 19.5,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r42",
+      "exclusion": null
+    },
+    {
+      "page": 1,
+      "rowOnPage": 43,
+      "descriptionRaw": "CEREALS,CREAM OF WHEAT,QUICK,CKD W/ H2O,WO/ SALT",
+      "valueRaw": "7.4",
+      "mgPer100g": 7.4,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p1:r43",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 1,
+      "descriptionRaw": "CEREALS,OATS,REG & QUICK & INST,NOT FORT,DRY",
+      "valueRaw": "0.0",
+      "mgPer100g": 0.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r1",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 2,
+      "descriptionRaw": "CEREALS,OATS,REG & QUICK & INST,UNENR,CKD W/ H2O,WO/ SALT",
+      "valueRaw": "0.1",
+      "mgPer100g": 0.1,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r2",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 3,
+      "descriptionRaw": "CHEESE,CHEDDAR",
+      "valueRaw": "0.4",
+      "mgPer100g": 0.4,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r3",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 4,
+      "descriptionRaw": "CHEESE,CREAM",
+      "valueRaw": "0.4",
+      "mgPer100g": 0.4,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r4",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 5,
+      "descriptionRaw": "CHEESE,PAST PROCESS,AMERICAN,W/DI NA PO4",
+      "valueRaw": "0.9",
+      "mgPer100g": 0.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r5",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 6,
+      "descriptionRaw": "CHICKEN,LIVER,ALL CLASSES,CKD,SIMMRD",
+      "valueRaw": "0.3",
+      "mgPer100g": 0.3,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r6",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 7,
+      "descriptionRaw": "CHOCOLATE SYRUP",
+      "valueRaw": "97.0",
+      "mgPer100g": 97.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r7",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 8,
+      "descriptionRaw": "COCOA,DRY PDR,UNSWTND",
+      "valueRaw": "951.5",
+      "mgPer100g": 951.5,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r8",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 9,
+      "descriptionRaw": "COCONUT MEAT,DRIED (DESICCATED),SWTND,SHREDDED",
+      "valueRaw": "1.1",
+      "mgPer100g": 1.1,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r9",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 10,
+      "descriptionRaw": "COFFEE,BREWED FROM GROUNDS,PREP W/ TAP H2O",
+      "valueRaw": "1.0",
+      "mgPer100g": 1.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r10",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 11,
+      "descriptionRaw": "COMMERCIAL BRAN MUFFIN",
+      "valueRaw": "10.0",
+      "mgPer100g": 10.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r11",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 12,
+      "descriptionRaw": "COMMERCIAL LOW FAT BRAN MUFFIN**",
+      "valueRaw": "0.0",
+      "mgPer100g": 0.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r12",
+      "exclusion": "Unexplained asterisk marker in the source description."
+    },
+    {
+      "page": 2,
+      "rowOnPage": 13,
+      "descriptionRaw": "COOKIES,BROWNIES,COMMLY PREP",
+      "valueRaw": "112.1",
+      "mgPer100g": 112.1,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r13",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 14,
+      "descriptionRaw": "COOKIES,CHOC CHIP,COMMLY PREP,REG,HIGHER FAT,ENR",
+      "valueRaw": "104.3",
+      "mgPer100g": 104.3,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r14",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 15,
+      "descriptionRaw": "COOKIES,FIG BARS",
+      "valueRaw": "22.2",
+      "mgPer100g": 22.2,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r15",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 16,
+      "descriptionRaw": "COOKIES,GRAHAM CRACKERS,PLN OR HONEY (INCL CINN)",
+      "valueRaw": "11.3",
+      "mgPer100g": 11.3,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r16",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 17,
+      "descriptionRaw": "COOKIES,OATMEAL,COMMLY PREP,REG",
+      "valueRaw": "21.2",
+      "mgPer100g": 21.2,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r17",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 18,
+      "descriptionRaw": "CORN BRAN,CRUDE*",
+      "valueRaw": "0.0",
+      "mgPer100g": 0.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r18",
+      "exclusion": "Unexplained asterisk marker in the source description."
+    },
+    {
+      "page": 2,
+      "rowOnPage": 19,
+      "descriptionRaw": "CORN,SWT,YEL,FRZ,KRNLS CUT OFF COB,BLD,DRND,WO/SALT",
+      "valueRaw": "1.0",
+      "mgPer100g": 1.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r19",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 20,
+      "descriptionRaw": "CORNMEAL,DEGERMED,ENR,YEL",
+      "valueRaw": "40.1",
+      "mgPer100g": 40.1,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r20",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 21,
+      "descriptionRaw": "COUSCOUS,COOKED",
+      "valueRaw": "9.6",
+      "mgPer100g": 9.6,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r21",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 22,
+      "descriptionRaw": "CRACKERS,NABISCO RITZ CRACKERS",
+      "valueRaw": "15.3",
+      "mgPer100g": 15.3,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r22",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 23,
+      "descriptionRaw": "CRACKERS,SALTINES (INCL OYSTER,SODA,SOUP)",
+      "valueRaw": "19.7",
+      "mgPer100g": 19.7,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r23",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 24,
+      "descriptionRaw": "CRACKERS,WHEAT,REGULAR",
+      "valueRaw": "28.8",
+      "mgPer100g": 28.8,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r24",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 25,
+      "descriptionRaw": "CRANBERRIES, DRIED SWEETENED",
+      "valueRaw": "1.7",
+      "mgPer100g": 1.7,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r25",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 26,
+      "descriptionRaw": "CRANBERRY JUC COCKTAIL,BTLD",
+      "valueRaw": "0.9",
+      "mgPer100g": 0.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r26",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 27,
+      "descriptionRaw": "DANISH PASTRY,FRUIT,ENR",
+      "valueRaw": "4.9",
+      "mgPer100g": 4.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r27",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 28,
+      "descriptionRaw": "DOUGHNUTS,CAKE-TYPE,PLN (INCL UNSUGARED,OLD-FASHIONED)",
+      "valueRaw": "10.5",
+      "mgPer100g": 10.5,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r28",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 29,
+      "descriptionRaw": "ENGLISH MUFFINS,PLN,ENR,W/CA PROP (INCL SOURDOUGH)",
+      "valueRaw": "14.4",
+      "mgPer100g": 14.4,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r29",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 30,
+      "descriptionRaw": "ENTREES,PIZZA WITH CHEESE",
+      "valueRaw": "5.4",
+      "mgPer100g": 5.4,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r30",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 31,
+      "descriptionRaw": "FIGS,RAW",
+      "valueRaw": "7.8",
+      "mgPer100g": 7.8,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r31",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 32,
+      "descriptionRaw": "FRUIT COCKTAIL,CND,HVY SYRUP,SOL&LIQUIDS",
+      "valueRaw": "1.0",
+      "mgPer100g": 1.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r32",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 33,
+      "descriptionRaw": "GARLIC POWDER",
+      "valueRaw": "16.8",
+      "mgPer100g": 16.8,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r33",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 34,
+      "descriptionRaw": "GRAPEFRUIT,RAW,PINK&RED&WHITE,ALL AREAS",
+      "valueRaw": "10.3",
+      "mgPer100g": 10.3,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r34",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 35,
+      "descriptionRaw": "GRAPES,RED OR GRN(EURO TYPE VAR,SUCH AS,THOMPSON SDLESS),RAW",
+      "valueRaw": "1.6",
+      "mgPer100g": 1.6,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r35",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 36,
+      "descriptionRaw": "GUAR GUM*",
+      "valueRaw": "0.0",
+      "mgPer100g": 0.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r36",
+      "exclusion": "Unexplained asterisk marker in the source description."
+    },
+    {
+      "page": 2,
+      "rowOnPage": 37,
+      "descriptionRaw": "HORSERADISH,PREPARED",
+      "valueRaw": "1.8",
+      "mgPer100g": 1.8,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r37",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 38,
+      "descriptionRaw": "KRAFT FREE SINGLES AMERICAN NONFAT PAST PROCESS CHS PRODUCT",
+      "valueRaw": "1.1",
+      "mgPer100g": 1.1,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r38",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 39,
+      "descriptionRaw": "LETTUCE,ICEBERG (INCL CRISPHEAD TYPES),RAW",
+      "valueRaw": "0.6",
+      "mgPer100g": 0.6,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r39",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 40,
+      "descriptionRaw": "MELONS,CANTALOUPE,RAW",
+      "valueRaw": "1.0",
+      "mgPer100g": 1.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r40",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 41,
+      "descriptionRaw": "METAMUCIL FIBER SUPPLEMENT",
+      "valueRaw": "2.4",
+      "mgPer100g": 2.4,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r41",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 42,
+      "descriptionRaw": "MILK,CHOC,FLUID,COMM,LOWFAT",
+      "valueRaw": "2.9",
+      "mgPer100g": 2.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r42",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 43,
+      "descriptionRaw": "MILK,WHL,3.25% MILKFAT",
+      "valueRaw": "0.2",
+      "mgPer100g": 0.2,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r43",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 44,
+      "descriptionRaw": "MUFFINS,BLUEBERRY,COMMLY PREP",
+      "valueRaw": "7.8",
+      "mgPer100g": 7.8,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r44",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 45,
+      "descriptionRaw": "MUSHROOMS,RAW",
+      "valueRaw": "0.1",
+      "mgPer100g": 0.1,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r45",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 46,
+      "descriptionRaw": "MUSTARD, PREP, YELLOW",
+      "valueRaw": "11.1",
+      "mgPer100g": 11.1,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r46",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 47,
+      "descriptionRaw": "OAT BRAN,RAW",
+      "valueRaw": "0.0",
+      "mgPer100g": 0.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r47",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 48,
+      "descriptionRaw": "OIL, CANOLA",
+      "valueRaw": "0.0",
+      "mgPer100g": 0.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r48",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 49,
+      "descriptionRaw": "OIL, OLIVE,",
+      "valueRaw": "0.0",
+      "mgPer100g": 0.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r49",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 50,
+      "descriptionRaw": "OIL, PEANUT",
+      "valueRaw": "0.2",
+      "mgPer100g": 0.2,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r50",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 51,
+      "descriptionRaw": "OIL, SOYBEAN",
+      "valueRaw": "0.1",
+      "mgPer100g": 0.1,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r51",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 52,
+      "descriptionRaw": "ONIONS,RAW",
+      "valueRaw": "1.9",
+      "mgPer100g": 1.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r52",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 53,
+      "descriptionRaw": "ORANGE JUC,FRZ CONC,UNSWTND,DIL W/3 VOLUME H2O",
+      "valueRaw": "2.8",
+      "mgPer100g": 2.8,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r53",
+      "exclusion": null
+    },
+    {
+      "page": 2,
+      "rowOnPage": 54,
+      "descriptionRaw": "ORANGES,SECTION",
+      "valueRaw": "1.8",
+      "mgPer100g": 1.8,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p2:r54",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 1,
+      "descriptionRaw": "PANCAKES,PLN,PREP FROM RECIPE",
+      "valueRaw": "9.8",
+      "mgPer100g": 9.8,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r1",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 2,
+      "descriptionRaw": "PEACHES,CND,HVY SYRUP PK,SOL&LIQUIDS",
+      "valueRaw": "0.7",
+      "mgPer100g": 0.7,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r2",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 3,
+      "descriptionRaw": "PEARS,CND,HVY SYRUP PK,SOL&LIQUIDS",
+      "valueRaw": "0.4",
+      "mgPer100g": 0.4,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r3",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 4,
+      "descriptionRaw": "PEARS,RAW",
+      "valueRaw": "1.0",
+      "mgPer100g": 1.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r4",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 5,
+      "descriptionRaw": "PEAS,GRN,FRZ,CKD,BLD,DRND,WO/SALT",
+      "valueRaw": "0.6",
+      "mgPer100g": 0.6,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r5",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 6,
+      "descriptionRaw": "PEPPER,BLACK",
+      "valueRaw": "112.3",
+      "mgPer100g": 112.3,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r6",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 7,
+      "descriptionRaw": "PEPPERS,HOT CHILI,GRN,CND,PODS,EXCLUDING SEEDS,SOL&LIQUIDS",
+      "valueRaw": "7.0",
+      "mgPer100g": 7.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r7",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 8,
+      "descriptionRaw": "PEPPERS,SWEET,GREEN,RAW",
+      "valueRaw": "10.0",
+      "mgPer100g": 10.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r8",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 9,
+      "descriptionRaw": "PIE,APPL,COMMLY PREP,ENR FLR",
+      "valueRaw": "3.7",
+      "mgPer100g": 3.7,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r9",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 10,
+      "descriptionRaw": "PINEAPPLE,CND,HVY SYRUP PK,SOL&LIQUIDS",
+      "valueRaw": "9.4",
+      "mgPer100g": 9.4,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r10",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 11,
+      "descriptionRaw": "PLUMS,RAW",
+      "valueRaw": "0.2",
+      "mgPer100g": 0.2,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r11",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 12,
+      "descriptionRaw": "POPCORN,AIR-POPPED",
+      "valueRaw": "54.3",
+      "mgPer100g": 54.3,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r12",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 13,
+      "descriptionRaw": "POPCORN,OIL-POPPED",
+      "valueRaw": "40.7",
+      "mgPer100g": 40.7,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r13",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 14,
+      "descriptionRaw": "POTATO CHIPS,PLAIN,SALTED",
+      "valueRaw": "74.3",
+      "mgPer100g": 74.3,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r14",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 15,
+      "descriptionRaw": "POTATO,BKD,FLESH & SKN,WO/ SALT",
+      "valueRaw": "56.3",
+      "mgPer100g": 56.3,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r15",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 16,
+      "descriptionRaw": "POTATOES,MICROWAVED,CKD IN SKN,FLESH,WO/SALT",
+      "valueRaw": "40.3",
+      "mgPer100g": 40.3,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r16",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 17,
+      "descriptionRaw": "POTATOES,MSHD,HOME-PREPARED,WHL MILK ADDED",
+      "valueRaw": "13.9",
+      "mgPer100g": 13.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r17",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 18,
+      "descriptionRaw": "PRUNE JUICE,CANNED",
+      "valueRaw": "2.9",
+      "mgPer100g": 2.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r18",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 19,
+      "descriptionRaw": "PRUNES,CND,HVY SYRUP PK,SOL&LIQUIDS*",
+      "valueRaw": "0.0",
+      "mgPer100g": 0.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r19",
+      "exclusion": "Unexplained asterisk marker in the source description."
+    },
+    {
+      "page": 3,
+      "rowOnPage": 20,
+      "descriptionRaw": "PUDDINGS,CHOC,DRY MIX,INST,PREP W/ 2% MILK",
+      "valueRaw": "13.9",
+      "mgPer100g": 13.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r20",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 21,
+      "descriptionRaw": "PUDDINGS,VANILLA,DRY MIX,REG,PREP W/ WHL MILK",
+      "valueRaw": "0.5",
+      "mgPer100g": 0.5,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r21",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 22,
+      "descriptionRaw": "RADISHES,RAW",
+      "valueRaw": "0.9",
+      "mgPer100g": 0.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r22",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 23,
+      "descriptionRaw": "RAISINS,SEEDLESS",
+      "valueRaw": "10.7",
+      "mgPer100g": 10.7,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r23",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 24,
+      "descriptionRaw": "RICE BRAN,CRUDE",
+      "valueRaw": "237.7",
+      "mgPer100g": 237.7,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r24",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 25,
+      "descriptionRaw": "RICE,BROWN,LONG-GRAIN,CKD",
+      "valueRaw": "12.5",
+      "mgPer100g": 12.5,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r25",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 26,
+      "descriptionRaw": "ROLL, CINNAMON LOW FAT***",
+      "valueRaw": "0.0",
+      "mgPer100g": 0.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r26",
+      "exclusion": "Unexplained asterisk marker in the source description."
+    },
+    {
+      "page": 3,
+      "rowOnPage": 27,
+      "descriptionRaw": "ROLL, CINNAMON COFFEE CAKE PREP MIX",
+      "valueRaw": "19.0",
+      "mgPer100g": 19.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r27",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 28,
+      "descriptionRaw": "SALAD DRSNG,ITALIAN DRSNG,COMM,REG",
+      "valueRaw": "1.8",
+      "mgPer100g": 1.8,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r28",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 29,
+      "descriptionRaw": "SALAD DRSNG,ITALIAN DRSNG,RED FAT",
+      "valueRaw": "0.7",
+      "mgPer100g": 0.7,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r29",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 30,
+      "descriptionRaw": "SALAD DRSNG,KRAFT FREE FAT FREE ITALIAN DRSNG",
+      "valueRaw": "1.3",
+      "mgPer100g": 1.3,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r30",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 31,
+      "descriptionRaw": "SALAD DRSNG,MAYO,SOYBN OIL,W/SALT",
+      "valueRaw": "0.0",
+      "mgPer100g": 0.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r31",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 32,
+      "descriptionRaw": "SARDINE,ATLANTIC,CND IN OIL,DRND SOL W/BONE",
+      "valueRaw": "0.3",
+      "mgPer100g": 0.3,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r32",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 33,
+      "descriptionRaw": "SAUCE,PASTA,SPAGHETTI/MARINARA,RTS",
+      "valueRaw": "13.4",
+      "mgPer100g": 13.4,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r33",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 34,
+      "descriptionRaw": "SAUCE,RTS,SALSA",
+      "valueRaw": "4.3",
+      "mgPer100g": 4.3,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r34",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 35,
+      "descriptionRaw": "SEEDS, FLAXSEED",
+      "valueRaw": "2.9",
+      "mgPer100g": 2.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r35",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 36,
+      "descriptionRaw": "SEEDS, SESAME",
+      "valueRaw": "105.9",
+      "mgPer100g": 105.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r36",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 37,
+      "descriptionRaw": "SIDE DISHES,POTATO SALAD",
+      "valueRaw": "17.8",
+      "mgPer100g": 17.8,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r37",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 38,
+      "descriptionRaw": "SNACKS, TORTILLA CHIPS, PLAIN",
+      "valueRaw": "25.3",
+      "mgPer100g": 25.3,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r38",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 39,
+      "descriptionRaw": "SOY MILK FLUID",
+      "valueRaw": "1.6",
+      "mgPer100g": 1.6,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r39",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 40,
+      "descriptionRaw": "SOY SAU MADE FROM SOY&WHEAT (SHOYU)",
+      "valueRaw": "17.9",
+      "mgPer100g": 17.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r40",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 41,
+      "descriptionRaw": "SPAGHETTI,CKD,ENR,WO/ SALT",
+      "valueRaw": "8.1",
+      "mgPer100g": 8.1,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r41",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 42,
+      "descriptionRaw": "SPINACH,CKD,BLD,DRND,WO/ SALT",
+      "valueRaw": "751.0",
+      "mgPer100g": 751.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r42",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 43,
+      "descriptionRaw": "SQUASH,SMMR,ZUCCHINI,INCL SKN,CKD,BLD,DRND,WO/SALT",
+      "valueRaw": "0.7",
+      "mgPer100g": 0.7,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r43",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 44,
+      "descriptionRaw": "SQUASH,WNTR,ALL VAR,CKD,BKD,WO/SALT",
+      "valueRaw": "0.5",
+      "mgPer100g": 0.5,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r44",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 45,
+      "descriptionRaw": "STRAWBERRIES,RAW",
+      "valueRaw": "2.0",
+      "mgPer100g": 2.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r45",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 46,
+      "descriptionRaw": "TEA,BREWED,PREP W/TAP H2O",
+      "valueRaw": "2.1",
+      "mgPer100g": 2.1,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r46",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 47,
+      "descriptionRaw": "TEA,INST,SWTND W/SUGAR,LEMON-FLAVORED,WO/ VIT C,PDR",
+      "valueRaw": "8.8",
+      "mgPer100g": 8.8,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r47",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 48,
+      "descriptionRaw": "TOFU,SOFT,PREP W/CA SULFATE&MAGNESIUM CHLORIDE (NIGARI)",
+      "valueRaw": "12.8",
+      "mgPer100g": 12.8,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r48",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 49,
+      "descriptionRaw": "TOMATO JUC,CND,W/SALT",
+      "valueRaw": "2.1",
+      "mgPer100g": 2.1,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r49",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 50,
+      "descriptionRaw": "TORTILLAS,RTB OR -FRY,FLR",
+      "valueRaw": "15.0",
+      "mgPer100g": 15.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r50",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 51,
+      "descriptionRaw": "VEGETABLES,MXD,FRZ,CKD,BLD,DRND,WO/SALT",
+      "valueRaw": "5.0",
+      "mgPer100g": 5.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r51",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 52,
+      "descriptionRaw": "WALNUTS,ENGLISH",
+      "valueRaw": "109.6",
+      "mgPer100g": 109.6,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r52",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 53,
+      "descriptionRaw": "WHEAT FLR,WHITE,ALL-PURPOSE,ENR,BLEACHED",
+      "valueRaw": "13.4",
+      "mgPer100g": 13.4,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r53",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 54,
+      "descriptionRaw": "WORTHINGTON FOODS,NAT TOUCH VEGAN BURGERS,FRZ",
+      "valueRaw": "12.0",
+      "mgPer100g": 12.0,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r54",
+      "exclusion": null
+    },
+    {
+      "page": 3,
+      "rowOnPage": 55,
+      "descriptionRaw": "YELLOW CAKE MIX PREPARED W/CHOC FROSTING",
+      "valueRaw": "17.9",
+      "mgPer100g": 17.9,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p3:r55",
+      "exclusion": "Identical source description reports conflicting amounts, 17.9 and 24.1 mg per 100 g."
+    },
+    {
+      "page": 4,
+      "rowOnPage": 1,
+      "descriptionRaw": "YELLOW CAKE MIX PREPARED W/CHOC FROSTING",
+      "valueRaw": "24.1",
+      "mgPer100g": 24.1,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p4:r1",
+      "exclusion": "Identical source description reports conflicting amounts, 17.9 and 24.1 mg per 100 g."
+    },
+    {
+      "page": 4,
+      "rowOnPage": 2,
+      "descriptionRaw": "YOGURT,PLN,LOFAT,12 GRAMS PROT PER 8 OZ",
+      "valueRaw": "0.7",
+      "mgPer100g": 0.7,
+      "id": "wake:91f07d07689d2c15d52c412b0aeea75f1ef3299946ec1d8ace9348f2588689ae:p4:r2",
+      "exclusion": null
+    }
+  ]
+}

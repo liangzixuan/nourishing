@@ -1,0 +1,18 @@
+import {nutritionScoreDefinitions} from './nutrition-score-policy.mjs';
+// Owned report identities plus captured wording; no display-text inference.
+export const scoreReportGuidance=Object.freeze({
+ "confidence-means":'Confidence means average the captured daily source availability values, including zero on food-empty dates; they are not computed from average intake.',
+ "daily-display-means":'Each mean uses displayed daily scores. Source-derived scores display zero when there are no food entries, while retaining formula values and unknown intake. A zero-quantity or unmeasured food entry still counts. Unknown local scores are excluded. The mean is not recalculated from average intake.',
+ "current-rules":'Scores use current target rules on each eligible date. Partial recorded amounts can contribute; coverage is shown. Keto gives unmeasured intake zero weighted credit. Oral substitutes zero for unmeasured input, which can award sugar-limit formula credit even without measured intake. The no-food display rule still shows zero. Neither marks the intake as measured.',
+ "method-scope":'Each score identifies its calculation method. Overall, Plant, Antioxidants, Keto, Oral and the fixed-member progress groups use weights and component rules derived from public web code with local target inputs. Other scores retain independent local calculations. Authenticated equivalence and the original range-report formula remain unverified.',
+ "oral-rules":'Oral uses six equally weighted components with a fixed denominator. Sugar credit is max(0, 1 - intake / maximum), with no credit for a zero or unavailable maximum. Its 100 g reference applies only without a custom sugar target or maximum. Unmeasured sugar is treated as zero for this calculation and may receive full limit credit; measured values and coverage stay unknown. Other components receive 90% credit when above both target and maximum. This score does not assess dental health.',
+ "keto-rules":'Keto uses fat weight 10, Net carbohydrate weight 0 and six other weights of 1. Missing or disabled components contribute zero without changing the denominator of 16. Protein above its maximum receives zero credit. The active Total or Net carbohydrate amount subtracts 0.5 points per gram above its maximum. Sodium retains custom targets; otherwise it uses the 4000 mg score reference. These rules do not assess ketosis.',
+ "all-scores":'All available scores are captured regardless of Diary visibility or score selection. The report date, day, today and supplement filters apply to these same daily values.',
+ "calcium-method":nutritionScoreDefinitions.find(row=>row.id==='calciumAbsorption').description,
+ "plant-reference":nutritionScoreDefinitions.find(row=>row.id==='plant').calculationNote,
+ "antioxidant-reference":nutritionScoreDefinitions.find(row=>row.id==='antioxidants').calculationNote,
+ "immune-components":'Immune nutrient target progress follows the nine public web constructor components, including separate omega-3 and omega-6 values. The captured formula has no ratio term. All nine weights remain in the denominator; credit falls to 90% above both target and maximum. Authenticated and mobile behavior remain unverified.',
+});
+export const scoreReportGuidanceCodes=Object.freeze(Object.keys(scoreReportGuidance));
+export const captureScoreReportGuidance=()=>Object.entries(scoreReportGuidance).map(([code,text])=>({code,text}));
+export const isScoreReportGuidance=value=>value!==null&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).length===2&&Object.hasOwn(value,'code')&&Object.hasOwn(value,'text')&&typeof value.code==='string'&&value.code.length>0&&typeof value.text==='string'&&value.text.length>0;

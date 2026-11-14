@@ -1,11 +1,77 @@
 {
-  "purpose": "Nutrition calculation modules copied from the existing Nourishing application. Package aliases resolved to the same local modules; arithmetic unchanged.",
+  "purpose": "Existing Nourishing workspace and nutrition static dependency closure. Package aliases resolve to the same modules; source arithmetic and validation are retained. Trailing blank lines are normalized.",
   "files": [
     {
-      "source": "server/nutrition.mjs",
-      "target": "server/domain/nutrition.mjs",
-      "sourceSha256": "08f0761f0f825d260c3262e50b5ce6708f5856acf13c1904737226dd66ca31d1",
-      "outputSha256": "e4e32face0b31b74fee4d6eb6302783aee99783d77a7159ea77e9a6217064868"
+      "source": "server/workspace.mjs",
+      "target": "server/domain/workspace.mjs",
+      "sourceSha256": "a57a9f5a01a67394e4bcf54c58c964a0a5060e52f431d21e15923b4b56a9f1b0",
+      "outputSha256": "a57a9f5a01a67394e4bcf54c58c964a0a5060e52f431d21e15923b4b56a9f1b0"
+    },
+    {
+      "source": "server/score-display-controls.mjs",
+      "target": "server/domain/score-display-controls.mjs",
+      "sourceSha256": "f25f47906ae7285f0e25f821f779e899f8fa01903e99b37bfa164434abf8e744",
+      "outputSha256": "f25f47906ae7285f0e25f821f779e899f8fa01903e99b37bfa164434abf8e744"
+    },
+    {
+      "source": "server/nutrition-score-policy.mjs",
+      "target": "server/domain/nutrition-score-policy.mjs",
+      "sourceSha256": "d7642f119ffa6e34b83ee1003e6fd5f22d44c14c20b31d566264cdcf2047cb5f",
+      "outputSha256": "d7642f119ffa6e34b83ee1003e6fd5f22d44c14c20b31d566264cdcf2047cb5f"
+    },
+    {
+      "source": "server/shared-item-graph.mjs",
+      "target": "server/domain/shared-item-graph.mjs",
+      "sourceSha256": "8765f77874579bb37641c9e6086478062f86462055246e66a772d45c1637b74b",
+      "outputSha256": "8765f77874579bb37641c9e6086478062f86462055246e66a772d45c1637b74b"
+    },
+    {
+      "source": "server/resource-dependencies.mjs",
+      "target": "server/domain/resource-dependencies.mjs",
+      "sourceSha256": "389fde51f951512134a4b4d1f2b2960ae42749bae546a8cf724b7fc62f659993",
+      "outputSha256": "389fde51f951512134a4b4d1f2b2960ae42749bae546a8cf724b7fc62f659993"
+    },
+    {
+      "source": "server/resource-reference.mjs",
+      "target": "server/domain/resource-reference.mjs",
+      "sourceSha256": "0d8ed6d98592503774d9b82fe75019db1bf222e1354902316a34e78868134b6b",
+      "outputSha256": "e662bf00ec8cbd8f48ed5eadc724cf95db1b64ab11fa8b51c859522183d9b5da"
+    },
+    {
+      "source": "server/energy-target-state.mjs",
+      "target": "server/domain/energy-target-state.mjs",
+      "sourceSha256": "c1dc0beb368de285d5b3df7927a5a1ced0b01d4c14adf49c925bbe14e13960ff",
+      "outputSha256": "c1dc0beb368de285d5b3df7927a5a1ced0b01d4c14adf49c925bbe14e13960ff"
+    },
+    {
+      "source": "server/energy-policy.mjs",
+      "target": "server/domain/energy-policy.mjs",
+      "sourceSha256": "afd55f9ded3791f40118aa977a0157f06793a6d596c22ca78d38ee7518efc109",
+      "outputSha256": "afd55f9ded3791f40118aa977a0157f06793a6d596c22ca78d38ee7518efc109"
+    },
+    {
+      "source": "server/calendar.mjs",
+      "target": "server/domain/calendar.mjs",
+      "sourceSha256": "229b5891f511ae7dfec0e71f01a053820ec43191e07e80bd28f26181fe65633f",
+      "outputSha256": "229b5891f511ae7dfec0e71f01a053820ec43191e07e80bd28f26181fe65633f"
+    },
+    {
+      "source": "server/calendar-age.mjs",
+      "target": "server/domain/calendar-age.mjs",
+      "sourceSha256": "c579f05eae8b1ba0df82f042e2af19787e12f1a27b189f9b50e2322af8481595",
+      "outputSha256": "c579f05eae8b1ba0df82f042e2af19787e12f1a27b189f9b50e2322af8481595"
+    },
+    {
+      "source": "server/weight-goal.mjs",
+      "target": "server/domain/weight-goal.mjs",
+      "sourceSha256": "9d5f1af5f5d83d7ae29fe686aff3d40ffe18e57aac58c756505ac18289ee10c4",
+      "outputSha256": "9d5f1af5f5d83d7ae29fe686aff3d40ffe18e57aac58c756505ac18289ee10c4"
+    },
+    {
+      "source": "server/weight-guidance.mjs",
+      "target": "server/domain/weight-guidance.mjs",
+      "sourceSha256": "ec247f0a60ceca66a56ab1efc1b86080979a8cbd60f8214c215f26c2e0a415d7",
+      "outputSha256": "ec247f0a60ceca66a56ab1efc1b86080979a8cbd60f8214c215f26c2e0a415d7"
     },
     {
       "source": "server/nutrient-target-modes.mjs",
@@ -18,6 +84,72 @@
       "target": "server/domain/nutrient-catalog.mjs",
       "sourceSha256": "de826a4f65e73f241e46f69d102acd6fd9b85bb5be3a06f507f44cc6ac3013e9",
       "outputSha256": "de826a4f65e73f241e46f69d102acd6fd9b85bb5be3a06f507f44cc6ac3013e9"
+    },
+    {
+      "source": "server/nutrient-references.mjs",
+      "target": "server/domain/nutrient-references.mjs",
+      "sourceSha256": "197b17f88536bffad153fa4dc3dd26474c234f1bd78f0fff2dce9f562367808d",
+      "outputSha256": "197b17f88536bffad153fa4dc3dd26474c234f1bd78f0fff2dce9f562367808d"
+    },
+    {
+      "source": "server/reference-guidance.mjs",
+      "target": "server/domain/reference-guidance.mjs",
+      "sourceSha256": "51e2df3235dd52192921e47eb0e8f26600d26c7ab78532f6fadfbe5651f23c7c",
+      "outputSha256": "51e2df3235dd52192921e47eb0e8f26600d26c7ab78532f6fadfbe5651f23c7c"
+    },
+    {
+      "source": "server/nutrient-reference-data.mjs",
+      "target": "server/domain/nutrient-reference-data.mjs",
+      "sourceSha256": "cac1361c20da8b6b8a3c47beec399aa7434a6c2a27773d08b6547b6df7dde32d",
+      "outputSha256": "cac1361c20da8b6b8a3c47beec399aa7434a6c2a27773d08b6547b6df7dde32d"
+    },
+    {
+      "source": "server/nutrient-upper-limits.mjs",
+      "target": "server/domain/nutrient-upper-limits.mjs",
+      "sourceSha256": "2b0cf4b86494cf732f021257ffa448917c308b088149616b86c4ad13d3d70cf7",
+      "outputSha256": "2b0cf4b86494cf732f021257ffa448917c308b088149616b86c4ad13d3d70cf7"
+    },
+    {
+      "source": "server/nutrient-upper-limit-data.mjs",
+      "target": "server/domain/nutrient-upper-limit-data.mjs",
+      "sourceSha256": "7bb4b559f1643197fedd3b54f70ae5a44ba3e16f1ffcd6fc8afeeb7a39c07aee",
+      "outputSha256": "7bb4b559f1643197fedd3b54f70ae5a44ba3e16f1ffcd6fc8afeeb7a39c07aee"
+    },
+    {
+      "source": "server/nutrient-target-edit.mjs",
+      "target": "server/domain/nutrient-target-edit.mjs",
+      "sourceSha256": "0dbf4634beb37295576afff7380a536d6b00069be211d5a89eca1e6011ccf4ab",
+      "outputSha256": "0dbf4634beb37295576afff7380a536d6b00069be211d5a89eca1e6011ccf4ab"
+    },
+    {
+      "source": "server/nutrient-display.mjs",
+      "target": "server/domain/nutrient-display.mjs",
+      "sourceSha256": "7e5ac7568b55e76f0e1d3a4ea5fcdb19ec0d328d623a0ead5429c5f3e242b368",
+      "outputSha256": "7e5ac7568b55e76f0e1d3a4ea5fcdb19ec0d328d623a0ead5429c5f3e242b368"
+    },
+    {
+      "source": "server/source-nutrient-registry.mjs",
+      "target": "server/domain/source-nutrient-registry.mjs",
+      "sourceSha256": "87b75bda3b75ae4e19f356aba781169ce1955462cb57443556f519941bb434f0",
+      "outputSha256": "87b75bda3b75ae4e19f356aba781169ce1955462cb57443556f519941bb434f0"
+    },
+    {
+      "source": "server/carbohydrate-policy.mjs",
+      "target": "server/domain/carbohydrate-policy.mjs",
+      "sourceSha256": "59167c173ee18b9e3a09eee3c1da068536976fd0cf76519dd2c9d7ef7851972f",
+      "outputSha256": "59167c173ee18b9e3a09eee3c1da068536976fd0cf76519dd2c9d7ef7851972f"
+    },
+    {
+      "source": "server/energy-decimal.mjs",
+      "target": "server/domain/energy-decimal.mjs",
+      "sourceSha256": "b1af7ae145d01899e0e5e5af9f865be9cfe89fae3500bdcaa7d931edca8b791b",
+      "outputSha256": "b1af7ae145d01899e0e5e5af9f865be9cfe89fae3500bdcaa7d931edca8b791b"
+    },
+    {
+      "source": "server/nutrition.mjs",
+      "target": "server/domain/nutrition.mjs",
+      "sourceSha256": "08f0761f0f825d260c3262e50b5ce6708f5856acf13c1904737226dd66ca31d1",
+      "outputSha256": "e4e32face0b31b74fee4d6eb6302783aee99783d77a7159ea77e9a6217064868"
     },
     {
       "source": "server/expenditure-breakdown.mjs",
@@ -42,12 +174,6 @@
       "target": "server/domain/composite-source.mjs",
       "sourceSha256": "6823f80dc6c84ea74e5d1d6a57c3b61926ac084a7a26a8252a78665bcb8f9ed7",
       "outputSha256": "6823f80dc6c84ea74e5d1d6a57c3b61926ac084a7a26a8252a78665bcb8f9ed7"
-    },
-    {
-      "source": "server/resource-reference.mjs",
-      "target": "server/domain/resource-reference.mjs",
-      "sourceSha256": "0d8ed6d98592503774d9b82fe75019db1bf222e1354902316a34e78868134b6b",
-      "outputSha256": "e662bf00ec8cbd8f48ed5eadc724cf95db1b64ab11fa8b51c859522183d9b5da"
     },
     {
       "source": "server/food-quantity.mjs",
@@ -86,12 +212,6 @@
       "outputSha256": "c88dbf51d7371ac2786ba2b1003991795e4189e16dab7948ec03578480989e85"
     },
     {
-      "source": "server/resource-dependencies.mjs",
-      "target": "server/domain/resource-dependencies.mjs",
-      "sourceSha256": "389fde51f951512134a4b4d1f2b2960ae42749bae546a8cf724b7fc62f659993",
-      "outputSha256": "389fde51f951512134a4b4d1f2b2960ae42749bae546a8cf724b7fc62f659993"
-    },
-    {
       "source": "server/consumed-energy.mjs",
       "target": "server/domain/consumed-energy.mjs",
       "sourceSha256": "54b57a322c80a635857447a85aae1ac7344f05643d992044bbee91eec0036902",
@@ -126,12 +246,6 @@
       "target": "server/domain/source-data-quality.mjs",
       "sourceSha256": "34ca8aefffcdc0de859aa0c01543ae6b43d2cf6fc5e169e9327fe49572663575",
       "outputSha256": "34ca8aefffcdc0de859aa0c01543ae6b43d2cf6fc5e169e9327fe49572663575"
-    },
-    {
-      "source": "server/source-nutrient-registry.mjs",
-      "target": "server/domain/source-nutrient-registry.mjs",
-      "sourceSha256": "87b75bda3b75ae4e19f356aba781169ce1955462cb57443556f519941bb434f0",
-      "outputSha256": "87b75bda3b75ae4e19f356aba781169ce1955462cb57443556f519941bb434f0"
     },
     {
       "source": "server/source-score-display.mjs",
@@ -170,18 +284,6 @@
       "outputSha256": "f09c8f3467daf88ba1a94edfe02d079884fbd37c6b23f987704c44450418e634"
     },
     {
-      "source": "server/carbohydrate-policy.mjs",
-      "target": "server/domain/carbohydrate-policy.mjs",
-      "sourceSha256": "59167c173ee18b9e3a09eee3c1da068536976fd0cf76519dd2c9d7ef7851972f",
-      "outputSha256": "59167c173ee18b9e3a09eee3c1da068536976fd0cf76519dd2c9d7ef7851972f"
-    },
-    {
-      "source": "server/energy-decimal.mjs",
-      "target": "server/domain/energy-decimal.mjs",
-      "sourceSha256": "b1af7ae145d01899e0e5e5af9f865be9cfe89fae3500bdcaa7d931edca8b791b",
-      "outputSha256": "b1af7ae145d01899e0e5e5af9f865be9cfe89fae3500bdcaa7d931edca8b791b"
-    },
-    {
       "source": "server/progress-score.mjs",
       "target": "server/domain/progress-score.mjs",
       "sourceSha256": "d2e6a266b4dba46206d1150ebdbaaf735dee01cbfd8294f3cb6f19a4a82e6975",
@@ -198,12 +300,6 @@
       "target": "server/domain/keto-score.mjs",
       "sourceSha256": "179e2422c5c36d15f24c58e84e4584bf745d3a155ff297e289a950b88bff09e5",
       "outputSha256": "179e2422c5c36d15f24c58e84e4584bf745d3a155ff297e289a950b88bff09e5"
-    },
-    {
-      "source": "server/nutrition-score-policy.mjs",
-      "target": "server/domain/nutrition-score-policy.mjs",
-      "sourceSha256": "d7642f119ffa6e34b83ee1003e6fd5f22d44c14c20b31d566264cdcf2047cb5f",
-      "outputSha256": "d7642f119ffa6e34b83ee1003e6fd5f22d44c14c20b31d566264cdcf2047cb5f"
     },
     {
       "source": "server/diary-day-status.mjs",
@@ -260,36 +356,6 @@
       "outputSha256": "75d0457161f5068ca88ff1e960124b4043666e0af9d548aa82d8396168643380"
     },
     {
-      "source": "server/energy-policy.mjs",
-      "target": "server/domain/energy-policy.mjs",
-      "sourceSha256": "afd55f9ded3791f40118aa977a0157f06793a6d596c22ca78d38ee7518efc109",
-      "outputSha256": "afd55f9ded3791f40118aa977a0157f06793a6d596c22ca78d38ee7518efc109"
-    },
-    {
-      "source": "server/calendar.mjs",
-      "target": "server/domain/calendar.mjs",
-      "sourceSha256": "229b5891f511ae7dfec0e71f01a053820ec43191e07e80bd28f26181fe65633f",
-      "outputSha256": "229b5891f511ae7dfec0e71f01a053820ec43191e07e80bd28f26181fe65633f"
-    },
-    {
-      "source": "server/calendar-age.mjs",
-      "target": "server/domain/calendar-age.mjs",
-      "sourceSha256": "c579f05eae8b1ba0df82f042e2af19787e12f1a27b189f9b50e2322af8481595",
-      "outputSha256": "c579f05eae8b1ba0df82f042e2af19787e12f1a27b189f9b50e2322af8481595"
-    },
-    {
-      "source": "server/weight-goal.mjs",
-      "target": "server/domain/weight-goal.mjs",
-      "sourceSha256": "9d5f1af5f5d83d7ae29fe686aff3d40ffe18e57aac58c756505ac18289ee10c4",
-      "outputSha256": "9d5f1af5f5d83d7ae29fe686aff3d40ffe18e57aac58c756505ac18289ee10c4"
-    },
-    {
-      "source": "server/weight-guidance.mjs",
-      "target": "server/domain/weight-guidance.mjs",
-      "sourceSha256": "ec247f0a60ceca66a56ab1efc1b86080979a8cbd60f8214c215f26c2e0a415d7",
-      "outputSha256": "ec247f0a60ceca66a56ab1efc1b86080979a8cbd60f8214c215f26c2e0a415d7"
-    },
-    {
       "source": "server/macro-policy.mjs",
       "target": "server/domain/macro-policy.mjs",
       "sourceSha256": "47b560177f6bfad12eeb280d852f03a5055bbc628d053c20d5110c20369a784f",
@@ -332,42 +398,6 @@
       "outputSha256": "eb4ecafbaefc27e42334775f668b34bb763ed232c3cb48d964d69f1cf13123e1"
     },
     {
-      "source": "server/nutrient-upper-limits.mjs",
-      "target": "server/domain/nutrient-upper-limits.mjs",
-      "sourceSha256": "2b0cf4b86494cf732f021257ffa448917c308b088149616b86c4ad13d3d70cf7",
-      "outputSha256": "2b0cf4b86494cf732f021257ffa448917c308b088149616b86c4ad13d3d70cf7"
-    },
-    {
-      "source": "server/nutrient-references.mjs",
-      "target": "server/domain/nutrient-references.mjs",
-      "sourceSha256": "197b17f88536bffad153fa4dc3dd26474c234f1bd78f0fff2dce9f562367808d",
-      "outputSha256": "197b17f88536bffad153fa4dc3dd26474c234f1bd78f0fff2dce9f562367808d"
-    },
-    {
-      "source": "server/reference-guidance.mjs",
-      "target": "server/domain/reference-guidance.mjs",
-      "sourceSha256": "51e2df3235dd52192921e47eb0e8f26600d26c7ab78532f6fadfbe5651f23c7c",
-      "outputSha256": "51e2df3235dd52192921e47eb0e8f26600d26c7ab78532f6fadfbe5651f23c7c"
-    },
-    {
-      "source": "server/nutrient-reference-data.mjs",
-      "target": "server/domain/nutrient-reference-data.mjs",
-      "sourceSha256": "cac1361c20da8b6b8a3c47beec399aa7434a6c2a27773d08b6547b6df7dde32d",
-      "outputSha256": "cac1361c20da8b6b8a3c47beec399aa7434a6c2a27773d08b6547b6df7dde32d"
-    },
-    {
-      "source": "server/nutrient-upper-limit-data.mjs",
-      "target": "server/domain/nutrient-upper-limit-data.mjs",
-      "sourceSha256": "7bb4b559f1643197fedd3b54f70ae5a44ba3e16f1ffcd6fc8afeeb7a39c07aee",
-      "outputSha256": "7bb4b559f1643197fedd3b54f70ae5a44ba3e16f1ffcd6fc8afeeb7a39c07aee"
-    },
-    {
-      "source": "server/nutrient-display.mjs",
-      "target": "server/domain/nutrient-display.mjs",
-      "sourceSha256": "7e5ac7568b55e76f0e1d3a4ea5fcdb19ec0d328d623a0ead5429c5f3e242b368",
-      "outputSha256": "7e5ac7568b55e76f0e1d3a4ea5fcdb19ec0d328d623a0ead5429c5f3e242b368"
-    },
-    {
       "source": "server/diary-display.mjs",
       "target": "server/domain/diary-display.mjs",
       "sourceSha256": "44ec80cbcdce9185c438190fabd5b6ae2957a98e1c6b29586455a3a650ff8c42",
@@ -390,6 +420,678 @@
       "target": "server/domain/completeness-guidance.mjs",
       "sourceSha256": "683788e50be12b0c9ce3f395d29a5cbeb3060660b27a1d6478183264264c8692",
       "outputSha256": "683788e50be12b0c9ce3f395d29a5cbeb3060660b27a1d6478183264264c8692"
+    },
+    {
+      "source": "server/mobile-chart-settings.mjs",
+      "target": "server/domain/mobile-chart-settings.mjs",
+      "sourceSha256": "5b89e77b5142d81bb099d03c9c03c5277d2e85dc7d1f28d89c7a941591754ba9",
+      "outputSha256": "5b89e77b5142d81bb099d03c9c03c5277d2e85dc7d1f28d89c7a941591754ba9"
+    },
+    {
+      "source": "server/glucose-timeline.mjs",
+      "target": "server/domain/glucose-timeline.mjs",
+      "sourceSha256": "bc606d9681c71e08b4015d4470434f2dc9d00f22d8e389f508b544b6364e097d",
+      "outputSha256": "bc606d9681c71e08b4015d4470434f2dc9d00f22d8e389f508b544b6364e097d"
+    },
+    {
+      "source": "server/cgm-target-range.mjs",
+      "target": "server/domain/cgm-target-range.mjs",
+      "sourceSha256": "303b106e9a7062b47f70613d33f5a41ab340292b876b4f311d5c226f801603d8",
+      "outputSha256": "303b106e9a7062b47f70613d33f5a41ab340292b876b4f311d5c226f801603d8"
+    },
+    {
+      "source": "server/glucose-ketones.mjs",
+      "target": "server/domain/glucose-ketones.mjs",
+      "sourceSha256": "7477c0a12d60b87ee48776d1a484782ccbaa9a993b23aa1c78c4c324e032f059",
+      "outputSha256": "7477c0a12d60b87ee48776d1a484782ccbaa9a993b23aa1c78c4c324e032f059"
+    },
+    {
+      "source": "server/pairing-guidance.mjs",
+      "target": "server/domain/pairing-guidance.mjs",
+      "sourceSha256": "6857ec75bf8a8bf21a03427c3a61f471754a3d81a736de37cbc9aaaa9dc09579",
+      "outputSha256": "6857ec75bf8a8bf21a03427c3a61f471754a3d81a736de37cbc9aaaa9dc09579"
+    },
+    {
+      "source": "server/cycle-overlay-capture.mjs",
+      "target": "server/domain/cycle-overlay-capture.mjs",
+      "sourceSha256": "11cfec448e16031fc72d9fa736bdde3948554091e0f0f8d8f238956af4b446f8",
+      "outputSha256": "11cfec448e16031fc72d9fa736bdde3948554091e0f0f8d8f238956af4b446f8"
+    },
+    {
+      "source": "server/cycle-view.mjs",
+      "target": "server/domain/cycle-view.mjs",
+      "sourceSha256": "56086d2cd4929965659131ea20803a956353706a8b6f5f51fc0cdc6833cc668c",
+      "outputSha256": "56086d2cd4929965659131ea20803a956353706a8b6f5f51fc0cdc6833cc668c"
+    },
+    {
+      "source": "server/cycle-guidance.mjs",
+      "target": "server/domain/cycle-guidance.mjs",
+      "sourceSha256": "eb286f48f4a833f6e8f24ff057d6c7eba556f477934922c740805a260b1740fe",
+      "outputSha256": "eb286f48f4a833f6e8f24ff057d6c7eba556f477934922c740805a260b1740fe"
+    },
+    {
+      "source": "server/cycle-records.mjs",
+      "target": "server/domain/cycle-records.mjs",
+      "sourceSha256": "02f833977a66ca99a108612b12212a2292ae73243062135c2cae97a2d82f83df",
+      "outputSha256": "02f833977a66ca99a108612b12212a2292ae73243062135c2cae97a2d82f83df"
+    },
+    {
+      "source": "server/cycle-values.mjs",
+      "target": "server/domain/cycle-values.mjs",
+      "sourceSha256": "4c19b9b85a06839b9c6c9cf387a72e09521ab4863054ed4a64ebbdd668732ce6",
+      "outputSha256": "4c19b9b85a06839b9c6c9cf387a72e09521ab4863054ed4a64ebbdd668732ce6"
+    },
+    {
+      "source": "server/cycle-overlay.mjs",
+      "target": "server/domain/cycle-overlay.mjs",
+      "sourceSha256": "765c6df65b6171b553e13c1e04f6fb72cac538bf3941814e972e3051d18ec6c5",
+      "outputSha256": "765c6df65b6171b553e13c1e04f6fb72cac538bf3941814e972e3051d18ec6c5"
+    },
+    {
+      "source": "server/cycle-overlay-settings.mjs",
+      "target": "server/domain/cycle-overlay-settings.mjs",
+      "sourceSha256": "54b76950978160a7897c83c02ddddaab457f8663e0a9058d6dd82506535da7b5",
+      "outputSha256": "54b76950978160a7897c83c02ddddaab457f8663e0a9058d6dd82506535da7b5"
+    },
+    {
+      "source": "server/biometric-pairing.mjs",
+      "target": "server/domain/biometric-pairing.mjs",
+      "sourceSha256": "76f5a7b4d0d162c3a8464e4dfd23f32722874811e5ab0c61e964b7dff2fc0004",
+      "outputSha256": "76f5a7b4d0d162c3a8464e4dfd23f32722874811e5ab0c61e964b7dff2fc0004"
+    },
+    {
+      "source": "server/csv-export.mjs",
+      "target": "server/domain/csv-export.mjs",
+      "sourceSha256": "f100b6ea0dbcd677a3e1b6f6a602cea940522164b056b89c803363f3018efb47",
+      "outputSha256": "f100b6ea0dbcd677a3e1b6f6a602cea940522164b056b89c803363f3018efb47"
+    },
+    {
+      "source": "server/csv-format.mjs",
+      "target": "server/domain/csv-format.mjs",
+      "sourceSha256": "566746483aa06538fa62a8cbbbaca0ad35427a2c2d078be2247471e0c93020e3",
+      "outputSha256": "566746483aa06538fa62a8cbbbaca0ad35427a2c2d078be2247471e0c93020e3"
+    },
+    {
+      "source": "server/cgm-hour-window.mjs",
+      "target": "server/domain/cgm-hour-window.mjs",
+      "sourceSha256": "3b456c43ee89633bbe49b5e382e1cee02cab67d8a3ab64c4d29e7d9cff16eede",
+      "outputSha256": "3b456c43ee89633bbe49b5e382e1cee02cab67d8a3ab64c4d29e7d9cff16eede"
+    },
+    {
+      "source": "server/glucose-timeline-guidance.mjs",
+      "target": "server/domain/glucose-timeline-guidance.mjs",
+      "sourceSha256": "e4a02296811f94786744b31828814a38ae144a918f5fd7464a4240079566688f",
+      "outputSha256": "e4a02296811f94786744b31828814a38ae144a918f5fd7464a4240079566688f"
+    },
+    {
+      "source": "server/nutrition-report.mjs",
+      "target": "server/domain/nutrition-report.mjs",
+      "sourceSha256": "19adc3a25bfc1a6d5db66c6463f2b3da9f059ceab16d4b21c6157ee2a83153ff",
+      "outputSha256": "b645f1ca92997ee15a2d11f8081344955d22dd5f02c80e71e75b4017787a4673"
+    },
+    {
+      "source": "server/report-guidance.mjs",
+      "target": "server/domain/report-guidance.mjs",
+      "sourceSha256": "7f624d5656edcd90e9e0b5f540c7045bb954eeb5863ae63e14ac53b99c6301f5",
+      "outputSha256": "7f624d5656edcd90e9e0b5f540c7045bb954eeb5863ae63e14ac53b99c6301f5"
+    },
+    {
+      "source": "server/score-report-guidance.mjs",
+      "target": "server/domain/score-report-guidance.mjs",
+      "sourceSha256": "d5b9bc82d762a71dedc28bfb3b243120dde6f7a22ef1448ef8109db876ed4f03",
+      "outputSha256": "d5b9bc82d762a71dedc28bfb3b243120dde6f7a22ef1448ef8109db876ed4f03"
+    },
+    {
+      "source": "server/energy-guidance.mjs",
+      "target": "server/domain/energy-guidance.mjs",
+      "sourceSha256": "998d4947eacd4a476b4d29626e6f14d8ede6a44c2168b80820ba52c12cfd561e",
+      "outputSha256": "998d4947eacd4a476b4d29626e6f14d8ede6a44c2168b80820ba52c12cfd561e"
+    },
+    {
+      "source": "server/data-completeness-report.mjs",
+      "target": "server/domain/data-completeness-report.mjs",
+      "sourceSha256": "987d7f5e43aacd88d6de708139231a1a9c24d6e46598a874674e257a5b5ea76e",
+      "outputSha256": "987d7f5e43aacd88d6de708139231a1a9c24d6e46598a874674e257a5b5ea76e"
+    },
+    {
+      "source": "server/completeness-metric.mjs",
+      "target": "server/domain/completeness-metric.mjs",
+      "sourceSha256": "39b9866c839fa92543a63c5298a60f7fd994d2b6f9819d27d4e3ce40e8b702c9",
+      "outputSha256": "39b9866c839fa92543a63c5298a60f7fd994d2b6f9819d27d4e3ce40e8b702c9"
+    },
+    {
+      "source": "server/health-records.mjs",
+      "target": "server/domain/health-records.mjs",
+      "sourceSha256": "3173ba5a00d7d964dee1a6a9312e7ff4547ba93977c51d55a2dfe11ceed0d155",
+      "outputSha256": "3173ba5a00d7d964dee1a6a9312e7ff4547ba93977c51d55a2dfe11ceed0d155"
+    },
+    {
+      "source": "server/sleep-contract.mjs",
+      "target": "server/domain/sleep-contract.mjs",
+      "sourceSha256": "f8929f80a24c7d443379ba01993bf5d425293820c9cc80382c5b3f040f1da749",
+      "outputSha256": "f8929f80a24c7d443379ba01993bf5d425293820c9cc80382c5b3f040f1da749"
+    },
+    {
+      "source": "server/health-exercise.mjs",
+      "target": "server/domain/health-exercise.mjs",
+      "sourceSha256": "b735332362b9e379acd87af78b7606a56149882586e3c14129abfafb7991e37c",
+      "outputSha256": "b735332362b9e379acd87af78b7606a56149882586e3c14129abfafb7991e37c"
+    },
+    {
+      "source": "server/health-exercise-types.mjs",
+      "target": "server/domain/health-exercise-types.mjs",
+      "sourceSha256": "a467f8d650064f306f7390095306173154ae7ba8759345ff1a4f409409443df1",
+      "outputSha256": "a467f8d650064f306f7390095306173154ae7ba8759345ff1a4f409409443df1"
+    },
+    {
+      "source": "server/health-vitals.mjs",
+      "target": "server/domain/health-vitals.mjs",
+      "sourceSha256": "732c1ff2582ea7b24bab49f8e34f152b141cec46a3d8315f7c8540fcbff536d0",
+      "outputSha256": "732c1ff2582ea7b24bab49f8e34f152b141cec46a3d8315f7c8540fcbff536d0"
+    },
+    {
+      "source": "server/health-pressure.mjs",
+      "target": "server/domain/health-pressure.mjs",
+      "sourceSha256": "f7d783d4e42a5b190a1d347bc35867610f807129c5a3ae920a530ed359af76e4",
+      "outputSha256": "f7d783d4e42a5b190a1d347bc35867610f807129c5a3ae920a530ed359af76e4"
+    },
+    {
+      "source": "server/health-glucose.mjs",
+      "target": "server/domain/health-glucose.mjs",
+      "sourceSha256": "ac0438d1dc45795832f48e99cc625049ffbfc51da200d243b3d633cf78f22521",
+      "outputSha256": "ac0438d1dc45795832f48e99cc625049ffbfc51da200d243b3d633cf78f22521"
+    },
+    {
+      "source": "server/chart-metrics.mjs",
+      "target": "server/domain/chart-metrics.mjs",
+      "sourceSha256": "78b347911db42e051c36f0150420d82cec64982b9ff426f924c0a23697b5f684",
+      "outputSha256": "78b347911db42e051c36f0150420d82cec64982b9ff426f924c0a23697b5f684"
+    },
+    {
+      "source": "server/chart-display-units.mjs",
+      "target": "server/domain/chart-display-units.mjs",
+      "sourceSha256": "1499dad58b8b62f6ddda9c27543777078d23159b0f9b45ac24442347ddb04386",
+      "outputSha256": "1499dad58b8b62f6ddda9c27543777078d23159b0f9b45ac24442347ddb04386"
+    },
+    {
+      "source": "server/energy-units.mjs",
+      "target": "server/domain/energy-units.mjs",
+      "sourceSha256": "71b331eddbada89f6798505bb5da8bb152d7eaac4aa7e1fcd2fecd724156f8a4",
+      "outputSha256": "71b331eddbada89f6798505bb5da8bb152d7eaac4aa7e1fcd2fecd724156f8a4"
+    },
+    {
+      "source": "server/mobile-chart-metrics.mjs",
+      "target": "server/domain/mobile-chart-metrics.mjs",
+      "sourceSha256": "a86767fe988afb046ce0f70e19cde86f82d95344016f6032bfc1e27313ecd876",
+      "outputSha256": "a86767fe988afb046ce0f70e19cde86f82d95344016f6032bfc1e27313ecd876"
+    },
+    {
+      "source": "server/lipid-units.mjs",
+      "target": "server/domain/lipid-units.mjs",
+      "sourceSha256": "1cd99e18bef47877a20ed466501c77ed499f959ead073af142ce26df6710d759",
+      "outputSha256": "1cd99e18bef47877a20ed466501c77ed499f959ead073af142ce26df6710d759"
+    },
+    {
+      "source": "server/body-chart-sources.mjs",
+      "target": "server/domain/body-chart-sources.mjs",
+      "sourceSha256": "6b805f0cc815c21cbdacc5cc11e858b1a68819d1e2f43e4d0210b84f8b1e7248",
+      "outputSha256": "6b805f0cc815c21cbdacc5cc11e858b1a68819d1e2f43e4d0210b84f8b1e7248"
+    },
+    {
+      "source": "server/pause-life.mjs",
+      "target": "server/domain/pause-life.mjs",
+      "sourceSha256": "58852c0f40ffe21433c9151cc6ef2b44f1d9af86990d7a00914cf18152c80c07",
+      "outputSha256": "58852c0f40ffe21433c9151cc6ef2b44f1d9af86990d7a00914cf18152c80c07"
+    },
+    {
+      "source": "server/add-menu.mjs",
+      "target": "server/domain/add-menu.mjs",
+      "sourceSha256": "f027a5de7c1779817c6f467b3168607e11ee0b3877006fdae8989f6328f9ba5f",
+      "outputSha256": "f027a5de7c1779817c6f467b3168607e11ee0b3877006fdae8989f6328f9ba5f"
+    },
+    {
+      "source": "server/content-digest.mjs",
+      "target": "server/domain/content-digest.mjs",
+      "sourceSha256": "6c35504f3c63854c13a7b224dd05063fc77a1c1bf891a984c845bdb8b3404b79",
+      "outputSha256": "6c35504f3c63854c13a7b224dd05063fc77a1c1bf891a984c845bdb8b3404b79"
+    },
+    {
+      "source": "server/discover-settings.mjs",
+      "target": "server/domain/discover-settings.mjs",
+      "sourceSha256": "734aeb133c5aed40e6809f258c2129879ea341a6bfec640a0e8ea91090dbd33e",
+      "outputSha256": "734aeb133c5aed40e6809f258c2129879ea341a6bfec640a0e8ea91090dbd33e"
+    },
+    {
+      "source": "server/diary-expansion-contract.mjs",
+      "target": "server/domain/diary-expansion-contract.mjs",
+      "sourceSha256": "75e6915b1802ef0fa7e9fa2e3d7ef69bab10c5d27402e31e193a0227db11459f",
+      "outputSha256": "75e6915b1802ef0fa7e9fa2e3d7ef69bab10c5d27402e31e193a0227db11459f"
+    },
+    {
+      "source": "server/diary-clear-contract.mjs",
+      "target": "server/domain/diary-clear-contract.mjs",
+      "sourceSha256": "9c1ccca298e08425f1bc2245faf91146fef3ad544f511501b6a99ffaca98f93d",
+      "outputSha256": "9c1ccca298e08425f1bc2245faf91146fef3ad544f511501b6a99ffaca98f93d"
+    },
+    {
+      "source": "server/capabilities.mjs",
+      "target": "server/domain/capabilities.mjs",
+      "sourceSha256": "2b8ea93f4642c89689b577f3058f5dffd93a1387a753053bfc8bbd2f92ffb58d",
+      "outputSha256": "2b8ea93f4642c89689b577f3058f5dffd93a1387a753053bfc8bbd2f92ffb58d"
+    },
+    {
+      "source": "server/app-language.mjs",
+      "target": "server/domain/app-language.mjs",
+      "sourceSha256": "a0b055004107b074a54391d30c7084809655c0a780d3a5b50b6868b3b128dc53",
+      "outputSha256": "a0b055004107b074a54391d30c7084809655c0a780d3a5b50b6868b3b128dc53"
+    },
+    {
+      "source": "server/diary-calendar.mjs",
+      "target": "server/domain/diary-calendar.mjs",
+      "sourceSha256": "f647a6d89c031c8ff72532ee0ac8e354ad1de76d61115f2bedc2c09104682d9e",
+      "outputSha256": "f647a6d89c031c8ff72532ee0ac8e354ad1de76d61115f2bedc2c09104682d9e"
+    },
+    {
+      "source": "server/font-scale.mjs",
+      "target": "server/domain/font-scale.mjs",
+      "sourceSha256": "1a5a18738fb0e2a21967a229855a8bb12ca97112f3964ea8206557c7e3eaaf57",
+      "outputSha256": "1a5a18738fb0e2a21967a229855a8bb12ca97112f3964ea8206557c7e3eaaf57"
+    },
+    {
+      "source": "server/suggested-meal-record.mjs",
+      "target": "server/domain/suggested-meal-record.mjs",
+      "sourceSha256": "822acb1bbf93e7c7a2151332ff94fb9d88d7d4a4bb4a923ff72fdbb0f70f2954",
+      "outputSha256": "822acb1bbf93e7c7a2151332ff94fb9d88d7d4a4bb4a923ff72fdbb0f70f2954"
+    },
+    {
+      "source": "server/library-references.mjs",
+      "target": "server/domain/library-references.mjs",
+      "sourceSha256": "4558ed26992f6936044b686ebaafe49cf8fab37e380bf844f853e1731048a1d3",
+      "outputSha256": "4558ed26992f6936044b686ebaafe49cf8fab37e380bf844f853e1731048a1d3"
+    },
+    {
+      "source": "server/library-status.mjs",
+      "target": "server/domain/library-status.mjs",
+      "sourceSha256": "a0eda99611245924e4e0993705e936351052d5336b25c231e17198128e73fea7",
+      "outputSha256": "a0eda99611245924e4e0993705e936351052d5336b25c231e17198128e73fea7"
+    },
+    {
+      "source": "server/food-translations.mjs",
+      "target": "server/domain/food-translations.mjs",
+      "sourceSha256": "1686521da15945a9f6fc6ffd838e6f2876ea5db815a708d088a2057ae9cf4f15",
+      "outputSha256": "1686521da15945a9f6fc6ffd838e6f2876ea5db815a708d088a2057ae9cf4f15"
+    },
+    {
+      "source": "server/food-notes.mjs",
+      "target": "server/domain/food-notes.mjs",
+      "sourceSha256": "8cb2b5572a9320f1682e97cf4612de1bfcf35185551a529d4dab607aff56b362",
+      "outputSha256": "8cb2b5572a9320f1682e97cf4612de1bfcf35185551a529d4dab607aff56b362"
+    },
+    {
+      "source": "server/note-photo-fields.mjs",
+      "target": "server/domain/note-photo-fields.mjs",
+      "sourceSha256": "792e7cd2d5be66919a25546f72e69e73229054a202caaa7ebf7e0c1e1d90178a",
+      "outputSha256": "792e7cd2d5be66919a25546f72e69e73229054a202caaa7ebf7e0c1e1d90178a"
+    },
+    {
+      "source": "server/food-catalog-identity.mjs",
+      "target": "server/domain/food-catalog-identity.mjs",
+      "sourceSha256": "69da43c8f3a6a72b5efaa2bf4bcd56bed9710893ab9801186a0bbc8cc0544f75",
+      "outputSha256": "69da43c8f3a6a72b5efaa2bf4bcd56bed9710893ab9801186a0bbc8cc0544f75"
+    },
+    {
+      "source": "server/diary-record-fields.mjs",
+      "target": "server/domain/diary-record-fields.mjs",
+      "sourceSha256": "ac1563273d1fb910102ba3ba48fae49f8dbe16004838a617f7cc652b0e871c57",
+      "outputSha256": "ac1563273d1fb910102ba3ba48fae49f8dbe16004838a617f7cc652b0e871c57"
+    },
+    {
+      "source": "server/diary-record-errors.mjs",
+      "target": "server/domain/diary-record-errors.mjs",
+      "sourceSha256": "a5ec88dbfab22714b0dffdf827ef7675c2d28d6c73b6aa67424b0f3761f553ae",
+      "outputSha256": "a5ec88dbfab22714b0dffdf827ef7675c2d28d6c73b6aa67424b0f3761f553ae"
+    },
+    {
+      "source": "server/stool-scale.mjs",
+      "target": "server/domain/stool-scale.mjs",
+      "sourceSha256": "8e2c6066d36be484dae7fc1078ee9d11a1b2ee2eba0fd1d7e53bdf06a72d2a23",
+      "outputSha256": "8e2c6066d36be484dae7fc1078ee9d11a1b2ee2eba0fd1d7e53bdf06a72d2a23"
+    },
+    {
+      "source": "server/health-import-group.mjs",
+      "target": "server/domain/health-import-group.mjs",
+      "sourceSha256": "8d8579ab5a8668b269f3be745571045788b8ced6dd041ad30bede30b6f4ab817",
+      "outputSha256": "8d8579ab5a8668b269f3be745571045788b8ced6dd041ad30bede30b6f4ab817"
+    },
+    {
+      "source": "server/diary-order.mjs",
+      "target": "server/domain/diary-order.mjs",
+      "sourceSha256": "1b8bf0a408b239a6de5b0aa058ba121e68d542ab3854ed28bd9e18d0e8f8fc8c",
+      "outputSha256": "1b8bf0a408b239a6de5b0aa058ba121e68d542ab3854ed28bd9e18d0e8f8fc8c"
+    },
+    {
+      "source": "server/diary-group-rename.mjs",
+      "target": "server/domain/diary-group-rename.mjs",
+      "sourceSha256": "e40eb86977b69fb8d6fec0f3d833b2c91bcd891219677aa49894bb523a23053a",
+      "outputSha256": "e40eb86977b69fb8d6fec0f3d833b2c91bcd891219677aa49894bb523a23053a"
+    },
+    {
+      "source": "server/diary-quick-add.mjs",
+      "target": "server/domain/diary-quick-add.mjs",
+      "sourceSha256": "bec9d2972254eadde0871c55cb496d7dc855e0327cc056de48d3848fd063de95",
+      "outputSha256": "bec9d2972254eadde0871c55cb496d7dc855e0327cc056de48d3848fd063de95"
+    },
+    {
+      "source": "server/recipe-ingredient-source.mjs",
+      "target": "server/domain/recipe-ingredient-source.mjs",
+      "sourceSha256": "8c06db9a525437dce138f30b234c4b46f456adeede259df888a9a653fd444faf",
+      "outputSha256": "8c06db9a525437dce138f30b234c4b46f456adeede259df888a9a653fd444faf"
+    },
+    {
+      "source": "server/ingredient-warning.mjs",
+      "target": "server/domain/ingredient-warning.mjs",
+      "sourceSha256": "08fdcf7e027660e53fe2cdb6117dfc73e0b422c82599095876d9af0768ff7f0d",
+      "outputSha256": "08fdcf7e027660e53fe2cdb6117dfc73e0b422c82599095876d9af0768ff7f0d"
+    },
+    {
+      "source": "server/recipe-list.mjs",
+      "target": "server/domain/recipe-list.mjs",
+      "sourceSha256": "cc3563a49d3d05b0224085f40d5fb52757bec42dd9985aef3d755a455ac3af86",
+      "outputSha256": "796e8e5ab32e33674003ebe39619eaeb3d2aa7932c81e5583806487c5516eb03"
+    },
+    {
+      "source": "server/recipe-ingredients.mjs",
+      "target": "server/domain/recipe-ingredients.mjs",
+      "sourceSha256": "8cd29f9a14e651a2661797d56ba9661515a7240c203259936be88c687c88149e",
+      "outputSha256": "8cd29f9a14e651a2661797d56ba9661515a7240c203259936be88c687c88149e"
+    },
+    {
+      "source": "server/recipe-matching.mjs",
+      "target": "server/domain/recipe-matching.mjs",
+      "sourceSha256": "31295eb6a9f1b24c3b468d2633f1ae7381c29ca6ee08c865972bde61c0c197ea",
+      "outputSha256": "31295eb6a9f1b24c3b468d2633f1ae7381c29ca6ee08c865972bde61c0c197ea"
+    },
+    {
+      "source": "server/ingredient-preparation.mjs",
+      "target": "server/domain/ingredient-preparation.mjs",
+      "sourceSha256": "0445d824b25a1421587d6ef7fa162744a1a602730c19714d88e14d196cebdf06",
+      "outputSha256": "0445d824b25a1421587d6ef7fa162744a1a602730c19714d88e14d196cebdf06"
+    },
+    {
+      "source": "server/ingredient-annotations.mjs",
+      "target": "server/domain/ingredient-annotations.mjs",
+      "sourceSha256": "280c02dd52074a4247a82676d4487a207dbd2d2376cf965d847caa52cb9e6e47",
+      "outputSha256": "280c02dd52074a4247a82676d4487a207dbd2d2376cf965d847caa52cb9e6e47"
+    },
+    {
+      "source": "server/recipe-rdfa.mjs",
+      "target": "server/domain/recipe-rdfa.mjs",
+      "sourceSha256": "082a297c1461e1f04fb4a4f1cdab5a4d2848a3553c05135bce75d0cc64f5d126",
+      "outputSha256": "082a297c1461e1f04fb4a4f1cdab5a4d2848a3553c05135bce75d0cc64f5d126"
+    },
+    {
+      "source": "server/recipe-source-fields.mjs",
+      "target": "server/domain/recipe-source-fields.mjs",
+      "sourceSha256": "21ff9a2a1be90ac6fc0705d3dfeb8e51a5cc0ed845e91bc1981315f0f6cec64a",
+      "outputSha256": "21ff9a2a1be90ac6fc0705d3dfeb8e51a5cc0ed845e91bc1981315f0f6cec64a"
+    },
+    {
+      "source": "server/recipe-plain-text.mjs",
+      "target": "server/domain/recipe-plain-text.mjs",
+      "sourceSha256": "663341a9aa66979967649ed77b9bcc55cb82a0825ccc2f44e6999a63c3bd167e",
+      "outputSha256": "663341a9aa66979967649ed77b9bcc55cb82a0825ccc2f44e6999a63c3bd167e"
+    },
+    {
+      "source": "server/recipe-jsonld.mjs",
+      "target": "server/domain/recipe-jsonld.mjs",
+      "sourceSha256": "4b5fe6e042bc16268534a41328016313aefce80534f4e7110fe5c84016cf1fbd",
+      "outputSha256": "4b5fe6e042bc16268534a41328016313aefce80534f4e7110fe5c84016cf1fbd"
+    },
+    {
+      "source": "server/recipe-jsonld-expand.mjs",
+      "target": "server/domain/recipe-jsonld-expand.mjs",
+      "sourceSha256": "e1cca05119aa05e36c01da11ceb0ab050a6372a490d8177887718a7f669702b7",
+      "outputSha256": "e1cca05119aa05e36c01da11ceb0ab050a6372a490d8177887718a7f669702b7"
+    },
+    {
+      "source": "server/body-composition-migration.mjs",
+      "target": "server/domain/body-composition-migration.mjs",
+      "sourceSha256": "de55b757691ac33a03586aa960862971b5449d948f0ecb3d0e8393f82a8a4565",
+      "outputSha256": "de55b757691ac33a03586aa960862971b5449d948f0ecb3d0e8393f82a8a4565"
+    },
+    {
+      "source": "server/catalog-exercise.mjs",
+      "target": "server/domain/catalog-exercise.mjs",
+      "sourceSha256": "61444676aed1227514976b5140fba4c73ad512b05deaec08b7c95e5375658472",
+      "outputSha256": "61444676aed1227514976b5140fba4c73ad512b05deaec08b7c95e5375658472"
+    },
+    {
+      "source": "server/exercise-catalog.mjs",
+      "target": "server/domain/exercise-catalog.mjs",
+      "sourceSha256": "f604a5588cf7f9eff05bf6406e812b17c7c87b23c2bd47fae7fcdfaf840ead33",
+      "outputSha256": "f604a5588cf7f9eff05bf6406e812b17c7c87b23c2bd47fae7fcdfaf840ead33"
+    },
+    {
+      "source": "server/data/exercise-compendium-2024.json",
+      "target": "server/domain/data/exercise-compendium-2024.json",
+      "sourceSha256": "d9f4d01a3bc13ff5699d634f1576587c51aa8c68a95a4bcc26d6fb1ce392d0f4",
+      "outputSha256": "d9f4d01a3bc13ff5699d634f1576587c51aa8c68a95a4bcc26d6fb1ce392d0f4"
+    },
+    {
+      "source": "server/exercise-search.mjs",
+      "target": "server/domain/exercise-search.mjs",
+      "sourceSha256": "099bff0ae0a31fd25e5099f4931c8c5e9c1bca9843d41c034d6b0857ea3fcd62",
+      "outputSha256": "099bff0ae0a31fd25e5099f4931c8c5e9c1bca9843d41c034d6b0857ea3fcd62"
+    },
+    {
+      "source": "server/exercise-estimate.mjs",
+      "target": "server/domain/exercise-estimate.mjs",
+      "sourceSha256": "58ba430d6ae54a59304dff8ed6fa03c541def7ca49220fc05cc3e62405a0ae69",
+      "outputSha256": "58ba430d6ae54a59304dff8ed6fa03c541def7ca49220fc05cc3e62405a0ae69"
+    },
+    {
+      "source": "server/biometric-library.mjs",
+      "target": "server/domain/biometric-library.mjs",
+      "sourceSha256": "08d966c8c11cb0b972fbd409524508973569084803d9b34529e02cf78841b256",
+      "outputSha256": "08d966c8c11cb0b972fbd409524508973569084803d9b34529e02cf78841b256"
+    },
+    {
+      "source": "server/biometric-guidance.mjs",
+      "target": "server/domain/biometric-guidance.mjs",
+      "sourceSha256": "55dee28f5cabcaf9b4726afe8c22613006438125936484a82570bdc3b522acf7",
+      "outputSha256": "55dee28f5cabcaf9b4726afe8c22613006438125936484a82570bdc3b522acf7"
+    },
+    {
+      "source": "server/health-reconciliation-state.mjs",
+      "target": "server/domain/health-reconciliation-state.mjs",
+      "sourceSha256": "83589743d36bb33d355bbf7d012a92dc0efa92d2f0545ec282c7437b74c03e1f",
+      "outputSha256": "83589743d36bb33d355bbf7d012a92dc0efa92d2f0545ec282c7437b74c03e1f"
+    },
+    {
+      "source": "server/fasting-records.mjs",
+      "target": "server/domain/fasting-records.mjs",
+      "sourceSha256": "3e2fbc591cfdc7e014b261d13cc43d5f4a5af26e03755ec1218b07b66f2a372c",
+      "outputSha256": "3e2fbc591cfdc7e014b261d13cc43d5f4a5af26e03755ec1218b07b66f2a372c"
+    },
+    {
+      "source": "server/fasting-schedule-contract.mjs",
+      "target": "server/domain/fasting-schedule-contract.mjs",
+      "sourceSha256": "8969a471dba1e4f788058e87dc76ac0151c8db6568bb30d7a683099d236d5b1b",
+      "outputSha256": "8969a471dba1e4f788058e87dc76ac0151c8db6568bb30d7a683099d236d5b1b"
+    },
+    {
+      "source": "server/fasting-schedules.mjs",
+      "target": "server/domain/fasting-schedules.mjs",
+      "sourceSha256": "9ab17fea4251d4dffcea152463df605c3cf9cfc8fb57c1b55c1e5bb258a75748",
+      "outputSha256": "9ab17fea4251d4dffcea152463df605c3cf9cfc8fb57c1b55c1e5bb258a75748"
+    },
+    {
+      "source": "server/fasting-time.mjs",
+      "target": "server/domain/fasting-time.mjs",
+      "sourceSha256": "d79e1c3ff69600f6c502103e24531a7bc9015bca91f99257fad51d5fb0e31475",
+      "outputSha256": "d79e1c3ff69600f6c502103e24531a7bc9015bca91f99257fad51d5fb0e31475"
+    },
+    {
+      "source": "server/fasting-recurrence.mjs",
+      "target": "server/domain/fasting-recurrence.mjs",
+      "sourceSha256": "d2d44a044f00be47a722e5025baf278567a85d90bb585e1af7b306a7b225f9c3",
+      "outputSha256": "d2d44a044f00be47a722e5025baf278567a85d90bb585e1af7b306a7b225f9c3"
+    },
+    {
+      "source": "server/oxalate-source.mjs",
+      "target": "server/domain/oxalate-source.mjs",
+      "sourceSha256": "dd19062ec186a5adeb23b23f12596fd1bd38e7e65bfd8361ad4127ecdf140d77",
+      "outputSha256": "dd19062ec186a5adeb23b23f12596fd1bd38e7e65bfd8361ad4127ecdf140d77"
+    },
+    {
+      "source": "server/data/wake-oxalate-v1.json",
+      "target": "server/domain/data/wake-oxalate-v1.json",
+      "sourceSha256": "78660e31554a1a4456a78046b198212f31a7a6b59c4b208ff6621d7beb361620",
+      "outputSha256": "78660e31554a1a4456a78046b198212f31a7a6b59c4b208ff6621d7beb361620"
+    },
+    {
+      "source": "server/blood-pressure.mjs",
+      "target": "server/domain/blood-pressure.mjs",
+      "sourceSha256": "81e2c17cc8463c1253ad0119a7394c4248104cdb03437a9de81e150adccaf0d8",
+      "outputSha256": "81e2c17cc8463c1253ad0119a7394c4248104cdb03437a9de81e150adccaf0d8"
+    },
+    {
+      "source": "server/logging-streaks.mjs",
+      "target": "server/domain/logging-streaks.mjs",
+      "sourceSha256": "e40053bcacf1f9b1433f7dedf6187822bdadb2193165b1700349388720447de7",
+      "outputSha256": "e40053bcacf1f9b1433f7dedf6187822bdadb2193165b1700349388720447de7"
+    },
+    {
+      "source": "server/logging-streak-contract.mjs",
+      "target": "server/domain/logging-streak-contract.mjs",
+      "sourceSha256": "7f6f5a4d08beec0f8ab9fd184831fec88efcbd6a8382c9223e25ebc4fe360e8a",
+      "outputSha256": "7f6f5a4d08beec0f8ab9fd184831fec88efcbd6a8382c9223e25ebc4fe360e8a"
+    },
+    {
+      "source": "server/progress-snapshots.mjs",
+      "target": "server/domain/progress-snapshots.mjs",
+      "sourceSha256": "563ce589aa369d08abde0dbf48059e82f9d5b44f440273ce7052729bee0b2d12",
+      "outputSha256": "563ce589aa369d08abde0dbf48059e82f9d5b44f440273ce7052729bee0b2d12"
+    },
+    {
+      "source": "server/progress-measurements.mjs",
+      "target": "server/domain/progress-measurements.mjs",
+      "sourceSha256": "327bf707c572268ad0474064fbdd185d3b1126f1ed5d2d0d175d58d2c07b5251",
+      "outputSha256": "327bf707c572268ad0474064fbdd185d3b1126f1ed5d2d0d175d58d2c07b5251"
+    },
+    {
+      "source": "server/photo-images.mjs",
+      "target": "server/domain/photo-images.mjs",
+      "sourceSha256": "739f234dd0b1dc564f218bce4b02f34af82a5112dbafc22eb82b9412874d1412",
+      "outputSha256": "739f234dd0b1dc564f218bce4b02f34af82a5112dbafc22eb82b9412874d1412"
+    },
+    {
+      "source": "server/carbohydrate-migration.mjs",
+      "target": "server/domain/carbohydrate-migration.mjs",
+      "sourceSha256": "65ecf77c15ce3505b657fe6625f6740de9b0244bcb132020f74ed88a45917518",
+      "outputSha256": "65ecf77c15ce3505b657fe6625f6740de9b0244bcb132020f74ed88a45917518"
+    },
+    {
+      "source": "server/coach-preferences.mjs",
+      "target": "server/domain/coach-preferences.mjs",
+      "sourceSha256": "17a6689a0f2de3f858e18305b2ab830c72f93c0eb41ead3cd351ed32edfc0d3a",
+      "outputSha256": "17a6689a0f2de3f858e18305b2ab830c72f93c0eb41ead3cd351ed32edfc0d3a"
+    },
+    {
+      "source": "server/dashboard-settings.mjs",
+      "target": "server/domain/dashboard-settings.mjs",
+      "sourceSha256": "3022ce0cbd64fe22486a1e41698d68ccc6ec522fcdb0b932bf43e7fdf760ed0f",
+      "outputSha256": "3022ce0cbd64fe22486a1e41698d68ccc6ec522fcdb0b932bf43e7fdf760ed0f"
+    },
+    {
+      "source": "server/chart-migration.mjs",
+      "target": "server/domain/chart-migration.mjs",
+      "sourceSha256": "11ced2de949c37200724f2a88fe3f8e736ce3acb627d25ab875800add38fdc90",
+      "outputSha256": "11ced2de949c37200724f2a88fe3f8e736ce3acb627d25ab875800add38fdc90"
+    },
+    {
+      "source": "server/seed-foods.mjs",
+      "target": "server/domain/seed-foods.mjs",
+      "sourceSha256": "44407131a074a98ffe40e7e015e5749c6b558a4858ef2c4126ad3a4c37054db4",
+      "outputSha256": "44407131a074a98ffe40e7e015e5749c6b558a4858ef2c4126ad3a4c37054db4"
+    },
+    {
+      "source": "server/library-retirement.mjs",
+      "target": "server/domain/library-retirement.mjs",
+      "sourceSha256": "cca85cb446ac25555edf3479436dfce1bb61c6cfc2ad9772eca70ae150afef39",
+      "outputSha256": "cca85cb446ac25555edf3479436dfce1bb61c6cfc2ad9772eca70ae150afef39"
+    },
+    {
+      "source": "server/food-taxonomy.mjs",
+      "target": "server/domain/food-taxonomy.mjs",
+      "sourceSha256": "687d53876260593dc45ccec36454e4187fe38c4fdfaedd688ccec3470f6724bc",
+      "outputSha256": "687d53876260593dc45ccec36454e4187fe38c4fdfaedd688ccec3470f6724bc"
+    },
+    {
+      "source": "server/meal-suggestion-policy.mjs",
+      "target": "server/domain/meal-suggestion-policy.mjs",
+      "sourceSha256": "4e7563edb3363a8a259d3b2879486a537735b7cb12ac45ab3cc83c3287cb216a",
+      "outputSha256": "4e7563edb3363a8a259d3b2879486a537735b7cb12ac45ab3cc83c3287cb216a"
+    },
+    {
+      "source": "server/recipe-portions.mjs",
+      "target": "server/domain/recipe-portions.mjs",
+      "sourceSha256": "ec9d6eb30936526c09eb4d142a61695e30894b7a62d958907c0e612fb20a2528",
+      "outputSha256": "ec9d6eb30936526c09eb4d142a61695e30894b7a62d958907c0e612fb20a2528"
+    },
+    {
+      "source": "server/photo-records.mjs",
+      "target": "server/domain/photo-records.mjs",
+      "sourceSha256": "4f021f9c2e914d95262fa897001d25976ac0c980791ecf3b51095440ee5d4023",
+      "outputSha256": "4f021f9c2e914d95262fa897001d25976ac0c980791ecf3b51095440ee5d4023"
+    },
+    {
+      "source": "server/photo-portion-estimate.mjs",
+      "target": "server/domain/photo-portion-estimate.mjs",
+      "sourceSha256": "e7404bbb0e25973b425ac2f3dc232f0ca61c526699dee526a35594882d969812",
+      "outputSha256": "e7404bbb0e25973b425ac2f3dc232f0ca61c526699dee526a35594882d969812"
+    },
+    {
+      "source": "server/reviewed-food-records.mjs",
+      "target": "server/domain/reviewed-food-records.mjs",
+      "sourceSha256": "069a55b530af2f7768c924998f7bd73f15b8145e8b4e3f94acc3f57865e99108",
+      "outputSha256": "069a55b530af2f7768c924998f7bd73f15b8145e8b4e3f94acc3f57865e99108"
+    },
+    {
+      "source": "server/text-records.mjs",
+      "target": "server/domain/text-records.mjs",
+      "sourceSha256": "51316f38a216fc73a8f93c3f19022ffffaba396ab003f2a5539adc361f6f7fd1",
+      "outputSha256": "51316f38a216fc73a8f93c3f19022ffffaba396ab003f2a5539adc361f6f7fd1"
+    },
+    {
+      "source": "server/text-review-guidance.mjs",
+      "target": "server/domain/text-review-guidance.mjs",
+      "sourceSha256": "c83b06206af02bd2763586962674471c901d6986bd03e6b81b76803a7959491b",
+      "outputSha256": "c83b06206af02bd2763586962674471c901d6986bd03e6b81b76803a7959491b"
+    },
+    {
+      "source": "server/resource-quantity.mjs",
+      "target": "server/domain/resource-quantity.mjs",
+      "sourceSha256": "63a3eb4aa6d6e88552644ab5ea3bab0b1041e37674cf25b0a9f84b9885fe92b4",
+      "outputSha256": "63a3eb4aa6d6e88552644ab5ea3bab0b1041e37674cf25b0a9f84b9885fe92b4"
+    },
+    {
+      "source": "server/resource-expansion.mjs",
+      "target": "server/domain/resource-expansion.mjs",
+      "sourceSha256": "b4e695586cd1bbbfa3c7c983e2a6d93cfd738f2ba6cb58a14682128c13cd9162",
+      "outputSha256": "b4e695586cd1bbbfa3c7c983e2a6d93cfd738f2ba6cb58a14682128c13cd9162"
+    },
+    {
+      "source": "server/target-setup.mjs",
+      "target": "server/domain/target-setup.mjs",
+      "sourceSha256": "c4759385df23e3849974b5518228903dbbeff96c07a8450d954829fe1e895d6b",
+      "outputSha256": "c4759385df23e3849974b5518228903dbbeff96c07a8450d954829fe1e895d6b"
+    },
+    {
+      "source": "server/target-setup-guidance.mjs",
+      "target": "server/domain/target-setup-guidance.mjs",
+      "sourceSha256": "140a583c4097a5aadc188399d1c352aabdd15b19904d1a9c16858b5004e50ad3",
+      "outputSha256": "140a583c4097a5aadc188399d1c352aabdd15b19904d1a9c16858b5004e50ad3"
     }
   ]
 }

@@ -1,0 +1,10 @@
+{
+  "source": "cronometer-local/public/mobile-diary.js",
+  "sha256": "fde63060fc3332ae39fbc3d85f022e114b5ad3e99e76e8bd047f1d38170fcf0f",
+  "exports": [
+    "mobileDiaryHeader",
+    "mobileDiaryGroups",
+    "mobileDiaryRecord"
+  ],
+  "reason": "Reuse view renderers without importing unrelated app translations and chart code."
+}

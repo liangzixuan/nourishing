@@ -4,6 +4,10 @@ node_modules/
 !.env.example
 .local/
 data/
+!server/domain/data/
+server/domain/data/*
+!server/domain/data/exercise-compendium-2024.json
+!server/domain/data/wake-oxalate-v1.json
 output/
 dist/
 .astro/

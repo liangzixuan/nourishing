@@ -1,20 +1,23 @@
 import {Query} from 'node-appwrite';
-import {rowId,unpackWorkspace,searchTerms} from './data-codec.mjs';
-import {calculateSummary} from './domain/nutrition.mjs';
+import {rowId,unpackWorkspace,searchTerms,digest} from './data-codec.mjs';
+import {calculateSummary,entryFacts} from './domain/nutrition.mjs';
+import {workspaceRows} from './workspace-store.mjs';
 const databaseId='nourishing';
 const notFound=()=>{throw Object.assign(Error('No migrated data is available.'),{code:404,publicMessage:'No migrated data is available.'});};
 export function createDataRepository(db,ownerId){
  const get=(tableId,id)=>db.getRow({databaseId,tableId,rowId:id});
  async function head(){try{const value=await get('workspace_heads',ownerId);if(value.ownerId!==ownerId)notFound();return value;}catch(error){if(error.code===404)notFound();throw error;}}
  async function readState(){
-   const current=await head(),rows=[];let after;
-   do{const page=await db.listRows({databaseId,tableId:'workspace_records',queries:[Query.equal('ownerId',ownerId),Query.equal('generation',current.generation),Query.orderAsc('$id'),Query.limit(100),...(after?[Query.cursorAfter(after)]:[])],total:false});rows.push(...page.rows);after=page.rows.length===100?page.rows.at(-1).$id:null;}while(after);
-   return unpackWorkspace(current,rows);
+   for(let attempt=0;attempt<3;attempt++){
+    const current=await head(),rows=await workspaceRows(db,ownerId,current.generation),latest=await head();
+    if(current.digest!==latest.digest)continue;return unpackWorkspace(current,rows);
+   }
+   throw Object.assign(Error('The diary is being updated. Try again.'),{code:409,publicMessage:'The diary is being updated. Try again.'});
  }
  async function catalogHead(){try{return await get('catalog_heads','active');}catch(error){if(error.code===404)throw Object.assign(Error('Food catalog is being prepared.'),{code:503,publicMessage:'Food catalog is being prepared.'});throw error;}}
  return {
    readState,
-   async diary(date){const state=await readState();return {date,readOnly:true,groups:state.settings.groups,entries:state.entries.filter(r=>r.date===date),biometrics:state.biometrics.filter(r=>r.date===date),notes:state.notes.filter(r=>r.date===date),summary:calculateSummary(state,date)};},
+   async diary(date){const state=await readState();return {date,revision:digest(state),groups:state.settings.groups,completed:state.settings.completedDays?.includes(date)??false,entries:state.entries.filter(r=>r.date===date).map(row=>({...row,facts:entryFacts(state,row)})),biometrics:state.biometrics.filter(r=>r.date===date),notes:state.notes.filter(r=>r.date===date),summary:calculateSummary(state,date)};},
    async catalogStatus(){const h=await catalogHead(),metadata=JSON.parse(h.metadata);return {available:true,count:h.count,datasets:metadata.datasets};},
    async search({query='',offset=0,limit=25}){
      const h=await catalogHead(),terms=searchTerms(query);if(query.trim()&&!terms.length)return {items:[],total:0,offset,nextOffset:null};

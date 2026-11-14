@@ -39,3 +39,18 @@ This stage supersedes the earlier account-only and no-import status above.
 Reports and destination identity remain in ignored local files. The preview still shows the account interface; its new data APIs are read-only. The PC remains the live writable source, and its changes after the baseline are not synchronized. No production domain or Android address was changed.
 
 Next: connect the mobile interface, implement account-scoped writes and new-account initialization, then migrate offline/Android sessions and background jobs. Before cutover, reconcile the latest PC data and repeat comparison and PC-off device checks. See `MIGRATION.md` for the remaining scope.
+
+## Writable diary stage — November 14, 2026
+
+This stage supersedes the read-only preview status above.
+
+- Activated preview deployment `6af80d58d2a63e19042a` at `/diary`. It supports catalog search, food nutrition previews, food entry addition/editing/deletion, notes, and completing or reopening a day. New accounts start empty.
+- Reused the existing workspace domain rules and mobile diary renderers. The static dependency manifest now covers 182 files; the dependency list in the earlier storage-stage entry is historical.
+- Added server-owned commands with authenticated owner identity, revision checks, and Appwrite transactions. Record changes, the workspace digest, and retry receipts commit together. Clients cannot supply nutrition facts or another owner's identity.
+- Live disposable-account checks passed for initialization, duplicate retry prevention, stale revisions, invalid-edit rollback, simultaneous edits, and deletion. Hosted browser checks passed for sign-in, search/preview, add/reload/edit/delete, notes, day completion, outside-tap dismissal, and sign-out. Mobile screenshots were inspected and the date-picker icon was corrected.
+- Repeated hosted/provider isolation checks passed: anonymous users and a second account could not read or change owner records or read owner photos. Catalog samples and fixture nutrition comparisons passed. Verification accounts and their records were removed.
+- The owner's workspace digest still matched the imported baseline, and its three daily diary projections loaded. These checks did not write owner data.
+
+Local tests and the Astro build passed. Detailed reports, credentials, fixture screenshots, and owner identity remain ignored. The preview and PC are separate writable copies; neither automatically synchronizes changes to the other. The existing importer rejects conflicting cloud rows, so final cutover must reconcile both copies before importing again.
+
+Remaining: the other app screens and mutations, cloud AI/background jobs, account-aware Android/offline behavior, reminders, exports/deletion/restore, password-recovery completion, and final domain/device cutover. Large multi-year workspaces and transaction operation limits have not been load-tested. No production domain or Android address changed.
