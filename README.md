@@ -39,3 +39,6 @@ Barcode scanning reuses the source camera and decoder, with manual barcode and b
 Discover → Report → Print Report captures the selected sections before displaying a script-free preview. Print / Save PDF uses the browser printer or the Android account-bound print bridge. Changes to options discard the prior capture. The report renderer and localized styles retain source hashes in `docs/print-ui-source.json` and `docs/print-ui-assets.json`.
 
 `node scripts/verify-food-report-hosted.mjs` checks deployed barcode lookup/search, private saves, exact retries and mobile report rendering using disposable accounts. It needs the ignored temporary operator key and removes its test accounts and records.
+
+
+The diary supports selection, copy/paste, clear amounts, group/time edits, reusable meals and entry ordering. Tap an energy or macro value for contributing foods; Report details use the applied report filters. Notes support camera/gallery photos with replace/remove controls. Unsaved attachment previews are discarded on close. Local browser checks are in `scripts/verify-diary-tools-local.mjs` and `scripts/verify-note-photos-local.mjs`; `scripts/verify-diary-tools-hosted.mjs` checks the deployed flows with disposable accounts.

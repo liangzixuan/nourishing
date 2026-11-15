@@ -1422,6 +1422,30 @@
       "target": "server/domain/print-chart-options.mjs",
       "sourceSha256": "8b91025def448dd7bafb80037f5a96210277cee423fefb6dd13a81053dd1412c",
       "outputSha256": "9a1162cce31664101c6e78624bb56c98081f4d440b4778fc4aae49511c2f8a8c"
+    },
+    {
+      "source": "server/nutrient-detail-view.mjs",
+      "target": "server/domain/nutrient-detail-view.mjs",
+      "sourceSha256": "89b33ac3463ca3f06b3ae27d60062c55a7d3635f79d76e4228c8784ba5d7bfaa",
+      "outputSha256": "92ba5f37f3dee0d88a4ff3b844b1e98bca131468a8f7a39bf88240e4cb113578"
+    },
+    {
+      "source": "server/diary-display-view.mjs",
+      "target": "server/domain/diary-display-view.mjs",
+      "sourceSha256": "f7940268587a52fd3e09041447c67e594556501f63bf0343d3bc6daa4ccb3cbb",
+      "outputSha256": "f7940268587a52fd3e09041447c67e594556501f63bf0343d3bc6daa4ccb3cbb"
+    },
+    {
+      "source": "server/nutrient-target-view.mjs",
+      "target": "server/domain/nutrient-target-view.mjs",
+      "sourceSha256": "2d008a8900e9ad82be109c97ff0c5616a4a2fe172527379dd88963900c6787a2",
+      "outputSha256": "164291e96e75a09070248e3e0705d98e9b5dc0d46c9076143f04736f91aa4569"
+    },
+    {
+      "source": "server/report-nutrient-detail.mjs",
+      "target": "server/domain/report-nutrient-detail.mjs",
+      "sourceSha256": "ab07f6e089604e598e63eb5aaff5fbf9ae07b125bafb108f86077bdcd92f2bb8",
+      "outputSha256": "9c24e9108a44840dc93abb581dff33630c367eeae0766743c75f7a0af51c764b"
     }
   ]
 }

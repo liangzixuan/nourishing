@@ -64,6 +64,13 @@ try {
   await post('/api/print-report/preview',20_000,401,{signed:false});
   await post('/api/barcode/lookup',128*1024,413,{message:'Request too large.'});
   await post('/api/barcode/save',20_000,401,{signed:false});
+  await post('/api/note-photos/prepare',12*1024*1024,413,{message:'Request too large.'});
+  await post('/api/note-photos/save',5*1024*1024,413,{message:'Request too large.'});
+  await post('/api/note-photos/save',20_000,401,{signed:false});
+  await post('/api/diary/tools/review',4*1024*1024,413,{message:'Request too large.'});
+  await post('/api/diary/tools/save',20_000,401,{signed:false});
+  await post('/api/nutrient-detail',4*1024*1024,413,{message:'Request too large.'});
+  await post('/api/nutrition-report/nutrient',20_000,413,{message:'Request too large.'});
   assert.ok(authenticated >= 5);
   const report = {status: 'passed', actualBuiltServer: true, unchangedWorkerAssets: true, actualBuiltRecipeParser: true, remoteCalls: 0, routes: results};
   writeFileSync(new URL('../.local/built-boundaries-verification.json', import.meta.url), JSON.stringify(report, null, 2));console.log(JSON.stringify(report));

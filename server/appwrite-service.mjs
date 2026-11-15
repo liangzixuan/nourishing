@@ -1,3 +1,6 @@
+import {prepareNotePhoto,validateNotePhotoAction,NOTE_MEDIA_NAMESPACE} from './note-photos.mjs';
+import {nutrientDetail,reportNutrientDetail} from './nutrient-detail.mjs';
+import {diaryToolsReview,diaryEnergy} from './diary-tools.mjs';
 import {printReportOptions,previewPrintReport} from './print-report.mjs';
 import {lookupBarcode,searchBranded,previewBarcode,validateBarcodeLookup,validateBrandedSearch} from './barcode.mjs';
 import {takeBrandedBudget} from './provider-budget.mjs';
@@ -32,6 +35,8 @@ import {repeatView} from './repeat-view.mjs';
 import {recordOptions,recordView,exerciseSearch,exerciseEstimateView} from './record-views.mjs';
 import {targetPolicyView} from './target-policy-view.mjs';
 import {captureCalendar} from './domain/calendar.mjs';
+
+async function reviewedPhoto(value){try{return await validateStoredPhoto(value);}catch(error){if(error.status===400)throw Object.assign(error,{code:400,publicMessage:'Choose a valid reviewed photo.'});throw error;}}
 
 export function createAppwriteService(config, key, userAgent='') {
   const client=()=>new Client().setEndpoint(config.endpoint).setProject(config.project).setForwardedUserAgent(userAgent);
@@ -81,6 +86,9 @@ export function createAppwriteService(config, key, userAgent='') {
     return createHealthExport({readState:()=>repository.readState(),ownerId:owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET,timeZone:profile.timeZone})[kind];
   }
   return {
+    async nutrientDetail(secret,input){return readView(secret,state=>nutrientDetail(state,input));},
+    async reportNutrientDetail(secret,input){const {owner}=await data(secret),calendar=await calendarContext(secret,owner);return readView(secret,state=>reportNutrientDetail(state,input,{now:new Date(calendar.asOf),timeZone:calendar.timeZone}));},
+    async diaryToolsReview(secret,input){return readView(secret,state=>diaryToolsReview(state,input));},
     async printReportOptions(secret){const {owner}=await data(secret);return readView(secret,state=>({...printReportOptions(state),accountId:owner}));},
     async previewPrintReport(secret,input){const {owner}=await data(secret),calendar=await calendarContext(secret,owner);return readView(secret,state=>({...previewPrintReport(state,input,{now:new Date(calendar.asOf),timeZone:calendar.timeZone}),accountId:owner}));},
     async barcodeLookup(secret,input){const {owner}=await data(secret);validateBarcodeLookup(input);await takeBrandedBudget(new TablesDB(elevated()),{database:config.database,owner,operation:'product'});return readView(secret,state=>lookupBarcode(state,input,{owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET}));},
@@ -103,12 +111,24 @@ export function createAppwriteService(config, key, userAgent='') {
     async restoreBackup(secret,input){return (await backups(secret)).restore(input);},
     async profileSettings(secret,date){return readView(secret,state=>profileSettingsView(state,date));},
     async snapshots(secret){return readView(secret,snapshotsView);},
+    async prepareNotePhoto(secret,input){await data(secret);return prepareNotePhoto(input);},
+    async saveNotePhoto(secret,input){
+      const allowed=['requestId','revision','id','recordRevision','fields','photo'];
+      const invalid=()=>{throw Object.assign(Error('Invalid note fields.'),{code:400,publicMessage:'Invalid note fields.'});};
+      if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).length!==allowed.length||allowed.some(key=>!Object.hasOwn(input,key)))invalid();
+      const supplied=input.photo,photoKeys=supplied?.mode==='replace'?['mode','id','dataUrl']:['mode'];
+      if(!supplied||typeof supplied!=='object'||Array.isArray(supplied)||Object.keys(supplied).length!==photoKeys.length||photoKeys.some(key=>!Object.hasOwn(supplied,key)))invalid();
+      const payload={id:input.id,recordRevision:input.recordRevision,fields:input.fields,photo:{mode:supplied.mode,...(supplied.mode==='replace'?{id:supplied.id}:{})}},action={type:'note.photo.save',payload};validateNotePhotoAction(action);
+      const {owner,repository}=await data(secret),db=new TablesDB(elevated()),storage=new Storage(elevated());
+      const photo=supplied.mode==='replace'?await reviewedPhoto({id:supplied.id,dataUrl:supplied.dataUrl}):null;
+      return createWorkspaceStore(db,owner).command({requestId:input.requestId,revision:input.revision,...action},catalogReader(repository),photo?{photo,stageMedia:context=>stagePhotoMedia({db,storage,owner,photo,namespace:NOTE_MEDIA_NAMESPACE,...context})}:{});
+    },
     async prepareSnapshot(secret,input){return readView(secret,state=>prepareSnapshot(state,input));},
     async saveSnapshot(secret,input){
       const allowed=['requestId','revision','photo','date','time','title','note','vitals','captureMeasurements'];
       if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!allowed.includes(k)))throw Object.assign(Error('Invalid snapshot fields.'),{code:400});
       const {owner,repository}=await data(secret),db=new TablesDB(elevated()),storage=new Storage(elevated());
-      const photo=await validateStoredPhoto(input.photo),{requestId,revision,photo:ignored,...metadata}=input;
+      const photo=await reviewedPhoto(input.photo),{requestId,revision,photo:ignored,...metadata}=input;
       return createWorkspaceStore(db,owner).command({requestId,revision,type:'snapshot.add',payload:{photoId:photo.id,...metadata}},catalogReader(repository),{photo,stageMedia:context=>stagePhotoMedia({db,storage,owner,photo,namespace:SNAPSHOT_MEDIA_NAMESPACE,...context})});
     },
     async importRecipe(secret,input){return insights(secret,input,importRecipeUrl);},
@@ -149,8 +169,7 @@ export function createAppwriteService(config, key, userAgent='') {
     async savePhoto(secret,input){
       const allowed=['requestId','revision','photo','reviewToken','date','time','group','rows'];
       if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!allowed.includes(k)))throw Object.assign(Error('Invalid photo fields.'),{code:400,publicMessage:'Invalid photo fields.'});
-      const {owner,repository}=await data(secret),db=new TablesDB(elevated()),storage=new Storage(elevated());let photo;
-      try{photo=await validateStoredPhoto(input.photo);}catch(error){throw Object.assign(error,{code:400,publicMessage:'Choose a valid reviewed photo.'});}
+      const {owner,repository}=await data(secret),db=new TablesDB(elevated()),storage=new Storage(elevated()),photo=await reviewedPhoto(input.photo);
       const {requestId,revision,reviewToken,date,time,group,rows}=input;
       return createWorkspaceStore(db,owner).command({requestId,revision,type:'photo.log',payload:{photoId:photo.id,reviewToken,date,time,group,rows}},catalogReader(repository),{owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET,photo,stageMedia:context=>stagePhotoMedia({db,storage,owner,photo,...context})});
     },
@@ -172,11 +191,11 @@ export function createAppwriteService(config, key, userAgent='') {
     async library(secret){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();return libraryView(await repository.readState());},
     async libraryItem(secret,kind,id,entryId){const {repository}=await data(secret),state=await repository.readState();const entry=entryId?state.entries.find(row=>row.id===entryId):null;if(entryId&&!entry)throw Object.assign(Error('This diary entry no longer exists.'),{code:404});const resource=state[kind+'s'].find(row=>row.id===id)??(kind==='food'?(await repository.food(id)).food:null);const viewState=kind==='food'&&!state.foods.some(row=>row.id===id)?{...state,foods:[...state.foods,resource]}:state;return libraryItem(viewState,kind,resource,entry);},
     async previewLibrary(secret,input){const action=validateLibraryPreview(input),{repository}=await data(secret),state=await repository.readState();const prepared=captureActionFoods(state,action,await readActionFoods(action,catalogReader(repository)));return previewLibrary(state,{...input,draft:prepared.payload});},
-    async previewDiary(secret,payload){const {repository}=await data(secret),state=await repository.readState();validateAction({type:payload?.id?'entry.update':'entry.add',payload});const p={...payload};try{if(p.foodId&&!state.foods.some(row=>row.id===p.foodId))p.foodId=captureCatalogFood(state,(await repository.food(p.foodId)).food).id;return previewDiaryItem(state,p);}catch(error){if([400,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}},
+    async previewDiary(secret,payload){const {repository}=await data(secret),state=await repository.readState();validateAction({type:payload?.id?'entry.update':'entry.add',payload});const p={...payload};try{if(p.foodId&&!state.foods.some(row=>row.id===p.foodId))p.foodId=captureCatalogFood(state,(await repository.food(p.foodId)).food).id;const preview=previewDiaryItem(state,p);return {...preview,energy:diaryEnergy(state,preview.nutrition.totals.calories)};}catch(error){if([400,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}},
     async catalogStatus(secret){return (await data(secret)).repository.catalogStatus();},
     async searchCatalog(secret,input){return (await data(secret)).repository.search(input);},
     async readCatalogFood(secret,id){return (await data(secret)).repository.food(id);},
-    async readMedia(secret,namespace,id){const {repository,storage}=await data(secret);if(namespace==='progress_photos'&&!((await repository.readState()).progressSnapshots??[]).some(row=>row.imageId===id))throw Object.assign(Error('Photo not found.'),{code:404});const fileId=await repository.media(namespace,id);return storage.getFileView({bucketId:'private-media',fileId});},
+    async readMedia(secret,namespace,id){const {repository,storage}=await data(secret);const collection=namespace==='progress_photos'?'progressSnapshots':namespace===NOTE_MEDIA_NAMESPACE?'notes':null;if(collection&&!((await repository.readState())[collection]??[]).some(row=>row.imageId===id))throw Object.assign(Error('Photo not found.'),{code:404});const fileId=await repository.media(namespace,id);return storage.getFileView({bucketId:'private-media',fileId});},
     login,
     async register({email,password,name}) {await anonymous().create({userId:ID.unique(),email,password,name});return login({email,password});},
     async current(secret) {const account=await new Account(session(secret)).get();return {id:account.$id,email:account.email,name:account.name,emailVerified:account.emailVerification,profile:await ensureProfile(secret,account)};},

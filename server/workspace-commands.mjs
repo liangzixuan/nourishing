@@ -1,3 +1,5 @@
+import {notePhotoCommandFields,validateNotePhotoAction,applyNotePhotoCommand} from './note-photos.mjs';
+import {diaryToolCommandFields,applyDiaryToolsCommand} from './diary-tools.mjs';
 import {barcodeCommandFields,validateBarcodeAction,applyBarcodeLog} from './barcode.mjs';
 import {dashboardCommandFields,applyDashboardCommand} from './dashboard-view.mjs';
 import {entryAdjustmentFields,validateEntryAdjustmentAction,prepareEntryAdjustmentCommand} from './entry-adjustments.mjs';
@@ -16,7 +18,7 @@ import {recordCommandFields,applyRecordCommand} from './record-commands.mjs';
 import {targetPolicyCommandFields,prepareTargetPolicyCommand} from './target-policy-commands.mjs';
 import {invalid} from './request-errors.mjs';
 const fields={
- ...barcodeCommandFields,...dashboardCommandFields,...entryAdjustmentFields,...libraryToolCommandFields,...profileSettingsCommandFields,...snapshotCommandFields,...repeatCommandFields,...recordCommandFields,...targetPolicyCommandFields,...photoCommandFields,...healthCommandFields,...foodInsightCommandFields,...fastingCommandFields,
+ ...notePhotoCommandFields,...diaryToolCommandFields,...barcodeCommandFields,...dashboardCommandFields,...entryAdjustmentFields,...libraryToolCommandFields,...profileSettingsCommandFields,...snapshotCommandFields,...repeatCommandFields,...recordCommandFields,...targetPolicyCommandFields,...photoCommandFields,...healthCommandFields,...foodInsightCommandFields,...fastingCommandFields,
  'meal.log':['date','time','group','rows'],
  'chart.save':['version','id','name','primary','secondary','days','visible','cycleOverlay'],
  'chart.delete':['id'],
@@ -41,13 +43,14 @@ export function validateAction(input){
  if(!allowed||!p||typeof p!=='object'||Array.isArray(p)||Object.keys(p).some(k=>!allowed.includes(k)))invalid('Invalid diary fields.');
  if(Object.hasOwn(entryAdjustmentFields,input.type))validateEntryAdjustmentAction(input);
  if(Object.hasOwn(snapshotCommandFields,input.type))validateSnapshotAction(input);
+ if(input.type==='note.photo.save')validateNotePhotoAction(input);
  if(input.type==='barcode.log')validateBarcodeAction(input);
  if(input.type==='photo.log')validatePhotoAction(input);
  if(input.type==='meal.log')validateMealLog(p);
  if(Object.hasOwn(repeatCommandFields,input.type))validateRepeatAction(input);
  if(input.type==='preferences.patch'&&(!Object.keys(p).length||!['light','dark','system'].includes(p.theme)))invalid('Choose a theme.');
- if(p.id!==undefined&&(typeof p.id!=='string'||!p.id||p.id.length>1000))invalid('Choose a record.');
- if(input.type.endsWith('.delete')&&!p.id)invalid('Choose a record.');
+ if(input.type!=='note.photo.save'&&p.id!==undefined&&(typeof p.id!=='string'||!p.id||p.id.length>1000))invalid('Choose a record.');
+ if(input.type.endsWith('.delete')&&allowed.includes('id')&&!p.id)invalid('Choose a record.');
  if(['recipe.save','meal.save'].includes(input.type)){
   const items=p[input.type==='recipe.save'?'ingredients':'items'];
   if(items!==undefined)try{parseCompositeSources(items);}catch(error){throw Object.assign(error,{code:400,publicMessage:error.message});}
@@ -63,7 +66,7 @@ export function parseCommand(input){
 }
 export function applyWorkspaceCommand(state,input,context={}){
  validateAction(input);
- try{if(input.type==='barcode.log')return applyBarcodeLog(state,input.payload,context);const dashboard=applyDashboardCommand(state,input,context);if(dashboard.handled)return dashboard.result;if(Object.hasOwn(entryAdjustmentFields,input.type)){const prepared=prepareEntryAdjustmentCommand(state,input);return act(state,prepared.type,prepared.payload);}if(Object.hasOwn(libraryToolCommandFields,input.type)){const prepared=prepareLibraryToolCommand(state,input);return act(state,prepared.type,prepared.payload);}if(Object.hasOwn(profileSettingsCommandFields,input.type)){const prepared=prepareProfileSettingsCommand(state,input);return act(state,prepared.type,prepared.payload);}const snapshot=applySnapshotCommand(state,input,context);if(snapshot.handled)return snapshot.result;const fasting=applyFastingCommand(state,input,context);if(fasting.handled)return fasting.result;if(Object.hasOwn(foodInsightCommandFields,input.type)){const prepared=prepareFoodInsightCommand(state,input);return act(state,prepared.type,prepared.payload);}const health=applyHealthConnectCommand(state,input,context);if(health.handled)return health.result;if(input.type==='meal.log')return applyMealLog(state,input.payload);if(input.type==='photo.log')return applyPhotoLog(state,input.payload,context);if(Object.hasOwn(targetPolicyCommandFields,input.type)){const prepared=prepareTargetPolicyCommand(state,input,context);return act(state,prepared.type,prepared.payload);}const record=applyRecordCommand(state,input);if(record.handled)return record.result;return act(state,input.type==='preferences.patch'?'settings.save':input.type,libraryPayload(state,input));}catch(error){if([400,404,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
+ try{const notePhoto=applyNotePhotoCommand(state,input,context);if(notePhoto.handled)return notePhoto.result;const diaryTools=applyDiaryToolsCommand(state,input);if(diaryTools.handled)return diaryTools.result;if(input.type==='barcode.log')return applyBarcodeLog(state,input.payload,context);const dashboard=applyDashboardCommand(state,input,context);if(dashboard.handled)return dashboard.result;if(Object.hasOwn(entryAdjustmentFields,input.type)){const prepared=prepareEntryAdjustmentCommand(state,input);return act(state,prepared.type,prepared.payload);}if(Object.hasOwn(libraryToolCommandFields,input.type)){const prepared=prepareLibraryToolCommand(state,input);return act(state,prepared.type,prepared.payload);}if(Object.hasOwn(profileSettingsCommandFields,input.type)){const prepared=prepareProfileSettingsCommand(state,input);return act(state,prepared.type,prepared.payload);}const snapshot=applySnapshotCommand(state,input,context);if(snapshot.handled)return snapshot.result;const fasting=applyFastingCommand(state,input,context);if(fasting.handled)return fasting.result;if(Object.hasOwn(foodInsightCommandFields,input.type)){const prepared=prepareFoodInsightCommand(state,input);return act(state,prepared.type,prepared.payload);}const health=applyHealthConnectCommand(state,input,context);if(health.handled)return health.result;if(input.type==='meal.log')return applyMealLog(state,input.payload);if(input.type==='photo.log')return applyPhotoLog(state,input.payload,context);if(Object.hasOwn(targetPolicyCommandFields,input.type)){const prepared=prepareTargetPolicyCommand(state,input,context);return act(state,prepared.type,prepared.payload);}const record=applyRecordCommand(state,input);if(record.handled)return record.result;return act(state,input.type==='preferences.patch'?'settings.save':input.type,libraryPayload(state,input));}catch(error){if([400,404,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
 }
 function libraryPayload(state,{type,payload}){
  if(!['food.save','recipe.save','meal.save'].includes(type)||!payload.id)return payload;

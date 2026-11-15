@@ -1,5 +1,6 @@
 import {request,command} from './diary-api.js';
 import {escape as e} from './html.js';
+import {mountNoteEditor} from './note-photos.js';
 const names={exercise:'Exercise',biometric:'Biometric',note:'Note'};
 const collections={exercise:'entries',biometric:'biometrics',note:'notes'};
 const input=(label,name,value,attributes='')=>`<label class="field-row"><span>${e(label)}</span><input aria-label="${e(label)}" name="${name}" value="${e(value??'')}" ${attributes}></label>`;
@@ -13,6 +14,7 @@ export function mountRecordMenu({show,header,content,onPick}){
 
 export async function mountRecordEditor({kind,record,date,show,close,header,content,onChange}){
  if(!Object.hasOwn(names,kind))return;
+ if(kind==='note')return mountNoteEditor({record,date,show,close,header,content,onChange});
  show(header((record?'Edit ':'Add ')+names[kind])+'<p class="empty">Loading…</p>');
  const loading=content.querySelector('.empty');let options,detail;
  try{
@@ -37,7 +39,6 @@ export async function mountRecordEditor({kind,record,date,show,close,header,cont
  function correction(changes){return {collection:collections[kind],id:record.id,recordRevision:detail.recordRevision,changes};}
  function editor(activity=null){
   let specific='';
-  if(kind==='note')specific=`<textarea class="record-note" name="text" aria-label="Note" required maxlength="100000">${e(record?.text??'')}</textarea>`;
   if(kind==='exercise')specific=input('Exercise','name',record?.name??activity?.description??'','required maxlength="300"')+input('Minutes','duration',record?.duration??30,'type="number" min="0.01" max="1440" step="any" required')+(activity?'<label class="field-row record-group"><span>Use estimated calories</span><input type="checkbox" name="useEstimate" checked></label>':'')+input('Calories (kcal)','calories',record?.caloriesBurned??'',`type="number" min="0" max="50000" step="any" required ${activity?'disabled':''}`)+(activity?'<div class="record-estimate" aria-live="polite">Calculating…</div>':'');
   if(kind==='biometric')specific=record?input('Biometric','type',record.type,'required maxlength="100"')+input('Value','value',record.value,'type="number" step="any" required')+input('Unit','unit',record.unit,'required maxlength="30"'):`<div class="record-selection"><select name="metric" aria-label="Biometric">${options.biometrics.metrics.map(row=>selectOption(row.key,row.label,'catalog:weight')).join('')}<option value="__new__">New custom biometric…</option></select></div><div class="record-values"></div>`;
   const blocked=record&&!detail.editable;
@@ -60,7 +61,6 @@ export async function mountRecordEditor({kind,record,date,show,close,header,cont
   }
   wireSave(form,()=>{
    if(kind==='exercise'){const changes={...fields(form),name:form.elements.name.value,duration:Number(form.elements.duration.value),calories:Number(form.elements.calories.value)};return record?correction(changes):changes;}
-   if(kind==='note'){const changes={...fields(form),text:form.elements.text.value};return record?correction(changes):changes;}
    if(record)return correction({...fields(form),type:form.elements.type.value,value:Number(form.elements.value.value),unit:form.elements.unit.value});
    return {...fields(form),selection:metric?.selection??{kind:'new-custom',name:form.elements.customName.value},unit:form.elements.unit.value,values:Object.fromEntries((metric?.fields??[{key:'value'}]).map(field=>[field.key,Number(form.elements[field.key].value)]))};
   },record?'record.correct':kind==='biometric'?'biometric.log':kind+'.add');

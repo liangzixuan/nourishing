@@ -46,7 +46,7 @@ The current diary reader reconstructs the account's complete workspace for the e
 
 ## Workspace writes
 
-`POST /api/workspace/command` accepts `requestId`, `revision`, `type`, and a strictly checked `payload`. Supported commands are `entry.add`, `entry.update`, `entry.delete`, `note.add`, `note.delete`, `day.complete`, `food.save`, `food.delete`, `recipe.save`, `recipe.delete`, `meal.save`, `meal.delete`, `nutrientTarget.patch`, `nutrientTarget.setCustom`, and `preferences.patch`. The public interface currently exposes note addition, not note deletion. `POST /api/diary/preview` uses the same quantity and nutrition rules without saving.
+`POST /api/workspace/command` accepts `requestId`, `revision`, `type`, and a strictly checked `payload`. The named command registries in `server/workspace-commands.mjs` and its feature modules define the accepted actions and fields. Note editing supports photo attachment, replacement, removal and deletion. `POST /api/diary/preview` uses the same quantity and nutrition rules without saving.
 
 `GET /api/library` returns the owner's private item list and nutrient definitions. `GET /api/library/item?kind=food|recipe|meal&id=...` returns a saved item and its supported quantity choices; food lookup falls back to the shared catalog. An optional `entryId` uses that owner's diary occurrence for recipe quantity overrides. `POST /api/library/preview` validates and calculates an unsaved library draft without persisting it. No endpoint accepts a caller-selected owner.
 
@@ -71,3 +71,12 @@ The cloud diary can now receive edits. The PC also remains writable. Before swit
 `GET /api/nutrition-report` requires `from`, `to`, `dayFilter` (`all`, `nonempty` or `complete`), `includeToday` and `includeSupplements` (literal `true` or `false`). The original report capture owns averages, missing/partial data, targets, supplement filtering and provenance. Its server clock uses the account profile time zone. Completed zero-intake days remain distinct from unlogged days. The UI presents daily averages and per-nutrient coverage; unsupported advanced Discover cards are not presented as migrated.
 
 Both reads require the account session, reject owner overrides and return `no-store`. Target writes use the same atomic revision and receipt boundary as diary/library writes. Theme follows live device changes in System mode and persists per account; the initial state is dark. Report and settings state stays in memory and is disposed when leaving the screen.
+
+
+## Diary tools, nutrient contributors and note photos
+
+`POST /api/diary/tools/review` captures a selection or previews copy, clear-amount and reusable-meal actions. `POST /api/diary/tools/save` uses the shared revision and receipt boundary. Selection fingerprints retain source identity; stale selections and completed-day writes fail before committing. The clipboard remains in browser memory and is cleared on page exit.
+
+`POST /api/nutrient-detail` reads a day or selected entries. `POST /api/nutrition-report/nutrient` reads contributors under the applied report filters. Both return canonical source facts and the account energy preference. The UI converts energy for display; missing measurements remain distinct from measured zero.
+
+`POST /api/note-photos/prepare` normalizes an image without persisting it. `POST /api/note-photos/save` stages private media and commits the note, workspace revision and receipt together. An edit also requires the note revision. `GET /api/media?namespace=note_photos&id=...` requires an active note reference in that account. Replacement or removal denies the old app URL once no current note references it. Stored bytes remain private for retained recovery until the separate cleanup workflow is implemented.

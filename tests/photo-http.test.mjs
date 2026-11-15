@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {createWebHandler} from '../server/http.mjs';
 
 const config = {origin: 'https://candidate.example'}, cookie = '__Host-nourishing_session=fixture-session';
-const paths = ['/api/photos/analyze', '/api/photos/save'];
+const paths = ['/api/photos/analyze', '/api/photos/save', '/api/snapshots/prepare', '/api/snapshots/save', '/api/note-photos/prepare', '/api/note-photos/save'];
+const methods = ['analyzePhoto','savePhoto','prepareSnapshot','saveSnapshot','prepareNotePhoto','saveNotePhoto'];
 function request(path, {signed = true, origin = config.origin, body = '{}'} = {}) {
   return new Request(config.origin + path, {method: 'POST', headers: {origin, 'content-type': 'application/json', ...(signed ? {cookie} : {})}, body});
 }
@@ -18,23 +19,23 @@ test('photo routes authenticate before reading image bodies and reject cross-ori
       assert.equal((await handle(guarded)).status, status);
     }
   }
-  assert.equal(accounts, 2);assert.equal(operations, 0);
+  assert.equal(accounts, paths.length);assert.equal(operations, 0);
 });
 
 test('photo routes bound authorized bodies, reject query overrides, and keep results private', async () => {
   const calls = [], service = {current: async secret => {assert.equal(secret, 'fixture-session');return {$id: 'fixture'};}};
-  for (const method of ['analyzePhoto', 'savePhoto']) service[method] = async (secret, body, signal) => {calls.push({method, secret, body, signal});return {ok: true};};
+  for (const method of methods) service[method] = async (secret, body, signal) => {calls.push({method, secret, body, signal});return {ok: true};};
   const handle = createWebHandler({config, service});
   for (const path of paths) {
     assert.equal((await handle(request(path + '?owner=other'))).status, 400);
     assert.equal((await handle(request(path, {body: 'invalid'}))).status, 400);
-    const limit = path.endsWith('/analyze') ? 12 : 5, large = request(path);
+    const limit = (path.endsWith('/analyze') || path.endsWith('/prepare')) ? 12 : 5, large = request(path);
     const guarded = {url: large.url, method: large.method, headers: large.headers, signal: large.signal, body: (async function* () {yield Buffer.alloc(limit * 1024 * 1024 + 1);})()};
     assert.equal((await handle(guarded)).status, 413);
     const response = await handle(request(path, {body: JSON.stringify({image: 'fixture'})}));
     assert.equal(response.status, 200);assert.equal(response.headers.get('cache-control'), 'no-store');
   }
-  assert.equal(calls.length, 2);assert.deepEqual(calls.map(call => call.method), ['analyzePhoto', 'savePhoto']);
+  assert.equal(calls.length, paths.length);assert.deepEqual(calls.map(call => call.method), methods);
   for (const call of calls) {assert.equal(call.secret, 'fixture-session');assert.deepEqual(call.body, {image: 'fixture'});assert.ok(call.signal instanceof AbortSignal);}
 });
 
