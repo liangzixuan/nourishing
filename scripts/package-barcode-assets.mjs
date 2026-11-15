@@ -1,0 +1,7 @@
+import {readFile,mkdir,copyFile} from 'node:fs/promises';
+import {fileURLToPath} from 'node:url';
+import {dirname,join} from 'node:path';
+const files=[['zxing-wasm/dist/es/reader/index.js','vendor/zxing/3.1.6/reader/index.js'],['zxing-wasm/dist/es/share.js','vendor/zxing/3.1.6/share.js'],['zxing-wasm/dist/reader/zxing_reader.wasm','vendor/zxing/3.1.6/reader.wasm'],['i18next/dist/esm/i18next.js','vendor/i18next/26.7.1/i18next.js'],['i18next/LICENSE','vendor/i18next/26.7.1/LICENSE'],['zxing-wasm/LICENSE','vendor/zxing/3.1.6/LICENSE']];
+export async function barcodeAssets(){return Promise.all(files.map(async([source,path])=>({path,body:await readFile(new URL('../node_modules/'+source,import.meta.url)),type:path.endsWith('.wasm')?'application/wasm':'text/javascript'})));}
+export async function packageBarcodeAssets(destination){for(const asset of await barcodeAssets()){const path=join(destination,asset.path);await mkdir(dirname(path),{recursive:true});await copyFile(new URL('../node_modules/'+files.find(([,target])=>target===asset.path)[0],import.meta.url),path);}}
+export function barcodePackaging(){return {name:'nourishing-barcode-assets',hooks:{'astro:build:done':async({dir})=>packageBarcodeAssets(fileURLToPath(dir)),'astro:server:setup':({server})=>{let prepared;server.middlewares.use(async(req,res,next)=>{if(!req.url?.startsWith('/vendor/'))return next();const asset=(await (prepared??=barcodeAssets())).find(a=>'/'+a.path===req.url.split('?')[0]);if(!asset)return next();res.setHeader('Content-Type',asset.type);res.end(asset.body);});}}};}

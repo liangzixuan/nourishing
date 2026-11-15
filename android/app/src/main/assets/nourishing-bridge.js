@@ -16,13 +16,13 @@
       try{port.postMessage(JSON.stringify({...message,id}));}catch(error){cleanup();reject(error);}
     });
   }
-  async function transfer(blob, name, kind = 'download') {
+  async function transfer(blob, name, kind = 'download', accountId) {
     if (!port) throw Error('Android file handling is still starting. Please retry.');
     if (active) throw Error('Finish the current export first.');
     if (blob.size > 32 * 1024 * 1024) throw Error('Download exceeds the 32 MiB Android export limit.');
     active = true;
     try {
-      await request({op: 'start', kind, size: blob.size, name, mime: blob.type || 'application/octet-stream'});
+      await request({op: 'start', kind, size: blob.size, name, mime: blob.type || 'application/octet-stream', ...(kind === 'print' ? {accountId} : {})});
       for (let offset = 0; offset < blob.size; offset += 48 * 1024) {
         const bytes = new Uint8Array(await blob.slice(offset, offset + 48 * 1024).arrayBuffer());
         let binary = '';
@@ -55,17 +55,37 @@
       event.preventDefault(); void download(anchor).catch(report);
     }
   }, true);
-  function connectPrint(target) {
+  function connectPrint(target, frame) {
     try {
-      target.print = () => transfer(new Blob(['<!doctype html>\n' + target.document.documentElement.outerHTML], {type: 'text/html'}), 'Nourishing report', 'print').catch(report);
+      target.print = async () => {
+        try {
+          const accountId = frame?.dataset.printAccountId;
+          if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,35}$/.test(accountId || '')) throw Error('Preview the report for your signed-in account first.');
+          const original = target.document, copy = original.documentElement.cloneNode(true);
+          const links = [...original.querySelectorAll('link[rel="stylesheet"]')];
+          if (links.length !== 1) throw Error('The report styles are not ready. Preview again.');
+          for (const link of links) {
+            const url = new URL(link.href, location.href);
+            if (url.origin !== location.origin || url.search || url.hash || !/^\/report-source\/print-(en|fr|de|pt-BR)\.css$/.test(url.pathname) || !link.sheet) throw Error('The report stylesheet is unavailable.');
+            const style = original.createElement('style');
+            style.textContent = [...link.sheet.cssRules].map(rule => rule.cssText).join('\n');
+            copy.querySelector('link[rel="stylesheet"]').replaceWith(style);
+          }
+          copy.querySelectorAll('meta[http-equiv="Content-Security-Policy" i]').forEach(meta => meta.remove());
+          const policy = original.createElement('meta');policy.httpEquiv = 'Content-Security-Policy';
+          policy.content = "default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'";
+          copy.querySelector('head').prepend(policy);
+          await transfer(new Blob(['<!doctype html>\n' + copy.outerHTML], {type: 'text/html'}), 'Nourishing report', 'print', accountId);
+        } catch (error) { report(error); }
+      };
     } catch { /* Foreign frames have no native channel. */ }
   }
   function connectFrames() {
     for (const frame of document.querySelectorAll('iframe')) {
       if (frame.dataset.nourishingPrint) continue;
       frame.dataset.nourishingPrint = '1';
-      frame.addEventListener('load', () => connectPrint(frame.contentWindow));
-      connectPrint(frame.contentWindow);
+      frame.addEventListener('load', () => connectPrint(frame.contentWindow, frame));
+      connectPrint(frame.contentWindow, frame);
     }
   }
   window.addEventListener('message', event => {

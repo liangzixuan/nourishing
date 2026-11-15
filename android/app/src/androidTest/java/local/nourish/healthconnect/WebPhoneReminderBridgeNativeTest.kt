@@ -26,7 +26,7 @@ class WebPhoneReminderBridgeNativeTest {
         ActivityScenario.launch<Activity>(context.packageManager.getLaunchIntentForPackage(context.packageName)!!).use{scenario->
             scenario.onActivity{activity->
                 activity.window.decorView.findViewWithTag<WebView>("nourishing-webview").stopLoading();web=WebView(activity);web.settings.javaScriptEnabled=true
-                bridge=WebWorkspaceBridge(web,WebWorkspacePolicy(origin),{_,_,_->fail("download")},{fail("print")},{fail("health")},{_,_,_->fail("share")},speech={_,_->fail("speech")},cancelSpeech={},reminders={id,action,label,reply->request.set(Request(id,action,label,reply))},cancelReminders={cancelled.set(it)})
+                bridge=WebWorkspaceBridge(web,WebWorkspacePolicy(origin),{_,_,_->fail("download")},{_,_->fail("print")},{fail("health")},{_,_,_->fail("share")},speech={_,_->fail("speech")},cancelSpeech={},reminders={id,action,label,reply->request.set(Request(id,action,label,reply))},cancelReminders={cancelled.set(it)})
                 web.webViewClient=object:WebViewClient(){override fun onPageStarted(view:WebView,url:String,icon:android.graphics.Bitmap?){bridge.close()};override fun onPageFinished(view:WebView,url:String){bridge.connect()}}
                 activity.setContentView(web);web.loadDataWithBaseURL(origin.value+"/fixture","<html><body>Reminder fixture</body></html>","text/html","UTF-8",origin.value+"/fixture")
             }

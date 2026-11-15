@@ -58,7 +58,7 @@ try{
  const repeated=await store.reconcileHealth(confirmed,{reviewSecret,storage});assert.deepEqual(repeated.receipt,removed.receipt);assert.deepEqual(identity((await read()).head),identity(after.head));assert.deepEqual(healthReconciliationReceipt(after.state,lookup(removed.receipt)).receipt,removed.receipt);
  report.checks.push('explicit deletion, immutable recovery, atomic receipt and lost-response retry');
  phase='recovery photo and privacy';
- const inventory=await backups.listRecoveries();assert.equal(inventory.generations.find(g=>g.generation===prior.head.generation).status,'available');const recovered=await backups.inspectRecovery({generation:prior.head.generation,revision:after.head.digest});assert.equal(recovered.summary.photos,1);
+ const inventory=await backups.listRecoveries();assert.equal(inventory.generations.find(g=>g.generation===prior.head.generation).status,'available');assert.equal(inventory.generations.find(g=>g.generation===prior.head.generation).recoverySnapshotId,removed.receipt.recoverySnapshotId);const recovered=await backups.inspectRecovery({generation:prior.head.generation,revision:after.head.digest});assert.equal(recovered.summary.photos,1);
  await denied(()=>userDb.getRow(args('workspace_recoveries',marker.$id)));await denied(()=>otherDb.getRow(args('workspace_recoveries',marker.$id)));await denied(()=>otherDb.getRow(args('workspace_heads',owner)));await denied(async()=>otherDb.getRow(args('workspace_records',(await workspaceRows(db,owner,after.head.generation))[0].$id)));await denied(()=>new Storage(clients[1]).getFile({bucketId:'private-media',fileId:files[0]}));
  report.checks.push('retained photo verifies and another account cannot read diary, receipt marker or photo');
  phase='restore counter monotonicity';

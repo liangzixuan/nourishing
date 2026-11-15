@@ -8,7 +8,7 @@ export async function request(path,body,signal){
 }
 export async function command(revision,type,payload){
  const signature=JSON.stringify({revision,type,payload});if(pending?.signature!==signature)pending={signature,body:{revision,type,payload,requestId:crypto.randomUUID()}};
- const path=['library.portions','library.retirement'].includes(type)?'/api/library/command':type==='entry.ingredients.adjust'?'/api/diary/ingredients/save':'/api/workspace/command';
+ const path=type==='barcode.log'?'/api/barcode/save':['library.portions','library.retirement'].includes(type)?'/api/library/command':type==='entry.ingredients.adjust'?'/api/diary/ingredients/save':'/api/workspace/command';
  const result=await request(path,pending.body);pending=null;return result;
 }
 

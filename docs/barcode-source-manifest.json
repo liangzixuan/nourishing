@@ -1,0 +1,36 @@
+[
+  {
+    "source": "public/barcode-scanner.js",
+    "target": "public/barcode-source/barcode-scanner.js",
+    "sourceEncoding": "UTF-8",
+    "outputEncoding": "UTF-8",
+    "transforms": [
+      "Normalize CRLF line endings to LF"
+    ],
+    "sourceSha256": "adc2b5049e402583ac219287a2def2dd6772f9a2bb56aa072189346f108eb6ae",
+    "outputSha256": "adc2b5049e402583ac219287a2def2dd6772f9a2bb56aa072189346f108eb6ae"
+  },
+  {
+    "source": "public/message-formatter.js",
+    "target": "public/barcode-source/message-formatter.js",
+    "sourceEncoding": "UTF-8",
+    "outputEncoding": "UTF-8",
+    "transforms": [
+      "Normalize CRLF line endings to LF",
+      "Resolve the existing i18next import from the packaged /vendor path"
+    ],
+    "sourceSha256": "8974ad565988331c05486bb481b8133d9d5a1bb5793c2b0c0091a037789b5853",
+    "outputSha256": "2718229ecb93971da92b6a885284eec07c7e5222cc672624c8de3be74a424168"
+  },
+  {
+    "source": "public/locales/barcode.js",
+    "target": "public/barcode-source/messages.js",
+    "sourceEncoding": "UTF-8",
+    "outputEncoding": "UTF-8",
+    "transforms": [
+      "Normalize CRLF line endings to LF"
+    ],
+    "sourceSha256": "8907b389e41c4dbefbd27b0d5a3ee0497547364bc8a73813d303681f0a05b774",
+    "outputSha256": "8907b389e41c4dbefbd27b0d5a3ee0497547364bc8a73813d303681f0a05b774"
+  }
+]

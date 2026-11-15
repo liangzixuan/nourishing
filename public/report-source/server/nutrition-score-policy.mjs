@@ -1,0 +1,81 @@
+const calciumDescription='Public-source calcium absorption score. Each date and diary group uses 100 times max(0, 0.889 - 0.0964 * ln(max(1, calcium mg)) - oxalate mg / 1000 - 0.060 * phytate mg / 1000). Group percentages are weighted by calcium; with no calcium they are averaged equally. Turning diary groups off combines groups within each date. Hidden groups still contribute. Missing nutrients use zero only in calculation; measurements remain unknown. An empty context gives formula value 88.9%; the separate display rule shows zero when there are no food entries. Neither result establishes measured absorption or diet quality. Targets and maxima do not enter this formula. Local named groups and an unnamed non-food group map the source group identities; food entries without a group retain the local Snacks fallback. Authenticated/native equivalence and original backend normalization are unverified. This score does not change calcium targets or measure personal absorption.';
+export const sourceProgressScoreIds=Object.freeze(["electrolytes", "blood", "mens", "womens", "bone", "metabolism", "immune"]);
+export const sourceCategoryScoreIds=Object.freeze(['vitamins','minerals']);
+const categoryDescription='Public-source category calculation. Only the eligible source identities with a non-null workspace target are selected. A zero target retains its weight and contributes zero credit. Visibility does not change selection. Missing intake contributes zero while measured values and coverage stay unknown. Ordinary credit is capped intake/target, reduced to 90% above both target and maximum. The selected weights remain in the denominator and the score rounds to a whole number. Total folate is separate from DFE; no target or intake is borrowed between those forms. Vitamin D uses micrograms consistently for intake, target and maximum. Source default targets and authenticated/mobile equivalence remain unverified.';
+const progressDescription='Public-source calculation with equally weighted components and a fixed denominator. Each component uses capped intake divided by its target, reduced to 90% when above both target and maximum. Missing intake contributes zero while measured values and coverage stay unknown. The final score rounds to a whole number. Target inputs and display rounding use local rules; authenticated and mobile equivalence are unverified.';
+const overallDescription='Public-source Overall calculation: source-available nutrients with visible positive effective targets receive equal weights. Missing intake contributes zero credit while its measurement remains unknown. Total and Net carbohydrate are independent components. Credit is capped intake/target with no maximum penalty. No eligible components gives zero. Local target precedence, unrounded dynamic targets, water-volume handling, defaults and display rounding are retained; authenticated and native equivalence are unverified.';
+const targetDescription="Mean recorded intake divided by each positive editable target, capped at 100% per measured component. The carbohydrate component uses the active Total or Net definition and its target. Missing data is excluded and coverage is shown. This local calculation does not reproduce a proprietary nutrition score.";
+const oralDescription='Public-source oral calculation: vitamin C, water, calcium, phosphorus, vitamin D and sugar each have weight 1 in a fixed denominator of 6. Ordinary components use capped target progress, reduced to 90% above both target and maximum. Sugar credit decreases linearly from 100% at zero to 0% at its maximum, with no credit above it. A zero or unavailable maximum gives no sugar credit. The source formula substitutes zero for unmeasured intake; this can award sugar credit on an unlogged day. Measured values and coverage remain unknown. The final score rounds to a whole number. This is not a dental-health assessment.';
+const ketoDescription='Public-source keto calculation: fat has weight 10, Net carbohydrate 0, and protein, sodium, potassium, magnesium, water and fiber each have weight 1. All weights remain in the denominator of 16. Missing intake or a disabled target contributes zero credit, with measurement coverage shown separately. Protein receives zero credit above its maximum. Fat has no maximum penalty. Other components receive capped target progress, reduced to 90% above both target and maximum. The active Total or Net carbohydrate amount subtracts half a point per gram above its maximum, limited to the base score. The final result is rounded to a whole number. No ketosis or health status is inferred.';
+const calculationNotes={
+  "plant": "Plant uses eight fixed weights. Non-custom iron uses 1.8 times its ordinary target, including AI references. Non-custom protein uses the public-source age, sex and life-stage reference. Missing birthday uses calculation age zero (9.1 g), not an inferred personal age. Saved, weekday and fixed template targets bypass these references; dynamic protein ignores the saved fixed target. An explicit custom maximum also bypasses the reference. Reference maxima are at least the reference lower target. Age uses UTC calendar days divided by 365.24225; the original browser used local midnights. Each date starts with fresh bounds; source view-order state carry and backend defaults are unverified. These are score parameters, not dietary recommendations.",
+  "antioxidants": "Antioxidant score references are beta-carotene 15000 micrograms, lutein plus zeaxanthin 12000 micrograms and lycopene 30000 micrograms. A saved or weekday target, including null or zero, or an explicit custom maximum suppresses the whole reference target. Otherwise the reference has no maximum. The ten component weights remain in the denominator. These reference amounts are score parameters, not Dietary Reference Intakes or recommendations. Local field ownership supplies the custom-target flag; original server defaults remain unverified.",
+};
+// Paragraph identities are owned with the score definitions; consumers do not parse prose.
+export const scoreMethodParagraphs={
+ 'base.calcium':calciumDescription,'base.category':categoryDescription,'base.progress':progressDescription,
+ 'base.overall':overallDescription,'base.target':targetDescription,'base.oral':oralDescription,'base.keto':ketoDescription,
+ 'base.dataQuality':'Source-derived nutrient availability: averages ingredients within recipes and meals, then gives each diary food entry equal weight. Visible source-registry nutrients are included regardless of targets. Measured zero counts as available. This measures available data, not dietary adequacy or food accuracy. Local backend normalization and authenticated equivalence remain unverified.',
+ 'display.no-food':'Source-derived score cards display zero when no food entries remain. Notes, exercise and biometrics do not satisfy that count; unmeasured or zero-quantity food entries do. The formula result and measurement coverage are retained separately.'
+};
+const descriptionParts=new Map();
+export function scoreDescriptionPartIds(id,method){const entry=descriptionParts.get(id);return entry?.method===method?entry.parts:null;}
+function freezeDefinition(row){
+ const calculationNote=calculationNotes[row.id]??null;
+ const method=row.id==='dataQuality'?'public-web-food-data-quality-v1':row.id==='calciumAbsorption'?'public-web-calcium-absorption-v1':row.id==='plant'?'public-web-plant-v1':row.id==='antioxidants'?'public-web-antioxidant-v1':row.id==='overall'?'public-web-overall-v1':(sourceProgressScoreIds.includes(row.id)||sourceCategoryScoreIds.includes(row.id))?'public-web-progress-v1':row.id==='keto'?'public-web-keto-v1':row.id==='oral'?'public-web-oral-v1':'local-target-progress-v2';
+ const base=row.id==='dataQuality'?'dataQuality':row.id==='calciumAbsorption'?'calcium':['plant','antioxidants'].includes(row.id)?'progress':row.id==='overall'?'overall':sourceCategoryScoreIds.includes(row.id)?'category':sourceProgressScoreIds.includes(row.id)?'progress':row.id==='keto'?'keto':row.id==='oral'?'oral':'target';
+ const parts=['base.'+base];
+ if(calculationNote){const code='calculation.'+row.id;scoreMethodParagraphs[code]=calculationNote;parts.push(code);}
+ if(row.selectionNote){const code='selection.'+row.id;scoreMethodParagraphs[code]=row.selectionNote;parts.push(code);}
+ if(method.startsWith('public-web-'))parts.push('display.no-food');
+ descriptionParts.set(row.id,{method,parts:Object.freeze(parts)});
+ return Object.freeze({...row,method,description:parts.map(code=>scoreMethodParagraphs[code]).join(' '),calculationNote,selection:Array.isArray(row.selection)?Object.freeze(row.selection):row.selection});
+}
+/** Shared local score identities and presentation choices, never a clinical formula. */
+export const nutritionScoreDefinitions=Object.freeze([
+  {id:'overall',name:'Overall target progress',selection:null},
+  {id:'vitamins',name:'Vitamin target progress',selection:["thiamin","riboflavin","niacin","pantothenicAcid","vitaminB6","vitaminB12","alphaCarotene","betaTocopherol","betaCarotene","betaCryptoxanthin","choline","deltaTocopherol","totalFolates","gammaTocopherol","luteinZeaxanthin","lycopene","retinol","vitaminA","vitaminC","vitaminD","vitaminE","vitaminK"],targetSelection:'non-null',selectionNote:'The captured public registry has 22 eligible vitamin identities. Alternate label forms and sparse-data exclusions are not added to this group.'},
+  {id:'minerals',name:'Mineral target progress',selection:["calcium","copper","iron","magnesium","manganese","phosphorus","potassium","selenium","sodium","zinc"],targetSelection:'non-null',selectionNote:'The captured public registry has 10 eligible mineral identities. Alternate label forms and sparse-data exclusions are not added to this group.'},
+  {id:'protein',name:'Protein target progress',selection:['protein']},
+  {id:'fiber',name:'Fiber target progress',selection:['fiber']},
+  {id:'hydration',name:'Water target progress',selection:['water']},
+  {id:'omega3',name:'Omega-3 target progress',selection:['omega3']},
+  {id:'potassium',name:'Potassium target progress',selection:['potassium']},
+  {id:'womens',name:"Women's nutrient target progress",selection:["iron", "calcium", "magnesium", "vitaminD", "fiber", "vitaminB6"],selectionNote:"These components follow the public web calculation. Partial recorded totals can understate maximum penalties."},
+  {id:'mens',name:"Men's nutrient target progress",selection:["fiber", "vitaminA", "vitaminD", "calcium", "magnesium", "protein"],selectionNote:"These components follow the public web calculation. Partial recorded totals can understate maximum penalties."},
+  {id:'plant',name:'Plant-based nutrient target progress',selection:['protein','iron','lysine','vitaminD','vitaminB12','calcium','zinc','omega3']},
+  {id:'electrolytes',name:'Electrolyte target progress',selection:["sodium", "potassium", "calcium", "magnesium"],selectionNote:"These components follow the public web calculation. Partial recorded totals can understate maximum penalties."},
+  {id:'antioxidants',name:'Antioxidant target progress',selection:['vitaminC','vitaminE','betaCarotene','luteinZeaxanthin','lycopene','riboflavin','copper','zinc','manganese','selenium']},
+  {id:'immune',name:'Immune nutrient target progress',selection:["totalFolates", "vitaminB12", "vitaminA", "copper", "zinc", "vitaminD", "vitaminC", "omega3", "omega6"],selectionNote:"Source Folate (417/FOL) maps to Total folates, separately from DFE. A missing total-folate target is not filled from DFE. These components follow the public web calculation. Partial recorded totals can understate maximum penalties. Omega-3 and omega-6 are separate components; the captured constructor has no ratio term."},
+  {id:'blood',name:'Blood nutrient target progress',selection:["totalFolates", "vitaminB12", "iron", "calcium", "vitaminK"],selectionNote:"Source Folate (417/FOL) maps to Total folates, separately from DFE. A missing total-folate target is not filled from DFE. These components follow the public web calculation. Partial recorded totals can understate maximum penalties."},
+  {id:'bone',name:'Bone nutrient target progress',selection:["calcium", "phosphorus", "magnesium", "vitaminD", "vitaminK", "manganese", "potassium"],selectionNote:"These components follow the public web calculation. Partial recorded totals can understate maximum penalties. The constructor excludes fluoride despite conflicting descriptive text."},
+  {id:'metabolism',name:'Metabolism nutrient target progress',selection:["thiamin", "riboflavin", "niacin", "pantothenicAcid", "vitaminB6", "choline", "iron", "magnesium", "manganese"],selectionNote:"These components follow the public web calculation. Partial recorded totals can understate maximum penalties."},
+  {id:'perimenopause',name:'Perimenopause nutrient target progress',selection:['iron','protein','calcium','vitaminD','fiber','monounsaturatedFat','polyunsaturatedFat'],selectionNote:"This local group uses iron, protein, calcium, vitamin D, fiber and unsaturated fats from the public perimenopause guide. Monounsaturated and polyunsaturated fats count as separate, equally weighted components when measured and targeted. Original membership and weighting are unverified. This percentage measures recorded target progress, not symptoms or health status."},
+  {id:'oral',name:'Oral nutrient target and limit progress',selection:['vitaminC','water','vitaminD','calcium','phosphorus','sugar'],selectionNote:'The six components and arithmetic follow public web build 462A37A7CB87811B30713434A43219D0. Sugar uses a 100 g score reference only without a custom sugar target or maximum. This is a score reference, not a recommended limit. Saved and weekday targets count as custom; their history is not inferred. Workspace target inputs and authenticated/mobile parity remain unverified.'},
+  {id:'keto',name:'Keto nutrient target and limit progress',selection:['carbs','protein','fat','sodium','potassium','magnesium','water','fiber'],selectionNote:'The rules follow public web build 462A37A7CB87811B30713434A43219D0. Sodium uses 4000 mg only when no custom target or maximum applies; this score reference is not a recommendation. Dynamic macro score targets are rounded to whole grams with a rounded 110% maximum. Fixed and weekday targets use their target as the maximum unless you configure one. Your saved settings remain unchanged. Authenticated and mobile equivalence are unverified.'},
+  {id:'dataQuality',name:'Data Quality',selection:null},
+  {id:'calciumAbsorption',name:'Calcium absorption score',selection:['calcium','oxalate','phytate']},
+].map(freezeDefinition));
+Object.freeze(scoreMethodParagraphs);
+// Public web Myk/Lyk defaults. An absent or empty selection means these defaults; explicit saved order is retained.
+export const defaultNutritionScoreIds=Object.freeze(['overall','vitamins','minerals','electrolytes','immune','antioxidants','bone','metabolism']);
+const ids=new Set(nutritionScoreDefinitions.map(row=>row.id));
+const fail=message=>{throw Object.assign(new Error(message),{status:400});};
+export function parseScoreSelection(value){
+  if(value===undefined)return [];
+  if(!Array.isArray(value)||value.length>8)fail('Choose up to eight nutrition scores.');
+  const selected=Array.from(value);
+  if(selected.some(id=>!ids.has(id))||new Set(selected).size!==selected.length)fail('Choose each known nutrition score once.');
+  return selected;
+}
+export function resolveScoreDisplay(settings={}){
+  if(!settings||typeof settings!=='object'||Array.isArray(settings))fail('Score display settings must be an object.');
+  if(Object.hasOwn(settings,'showScores')&&typeof settings.showScores!=='boolean')fail('Choose whether to show scores in the Diary.');
+  const selected=parseScoreSelection(settings.scoreSelection);
+  return {show:settings.showScores??true,selected:selected.length?selected:[...defaultNutritionScoreIds]};
+}
+
+/** Uses the supplied identity, including metadata retained in an older capture. */
+export function nutritionScoreDescription(identity,gate=null){
+  return identity.description+(gate?' '+(gate.mode==='net'?'Net':'Total')+' carbohydrate adjustment: '+gate.status+'; '+gate.penalty+' points subtracted.':'');
+}

@@ -46,7 +46,7 @@ class NourishingActivity:ComponentActivity() {
         speech=WebSpeechInput(this)
         reminders=WebPhoneReminders(this)
         files=WebFileController(this,policy,::notice)
-        printer=WebReportPrinter(this,policy)
+        printer=WebReportPrinter(this,policy,{if(::web.isInitialized)web.url.orEmpty() else ""},::notice)
         val column=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setBackgroundColor(Color.rgb(16,18,34))}
         val body=FrameLayout(this)
         web=WebView(this).apply{tag="nourishing-webview"}
@@ -102,7 +102,7 @@ class NourishingActivity:ComponentActivity() {
                 }.onFailure{notice(getString(R.string.web_no_handler))}
                 return true
             }
-            override fun onPageStarted(view:WebView,url:String,icon:android.graphics.Bitmap?){CloudWebSessions.refresh();bridge.close();cameraRequest?.deny();cameraRequest=null;pageFailed=false;errorPanel.visibility=View.GONE}
+            override fun onPageStarted(view:WebView,url:String,icon:android.graphics.Bitmap?){CloudWebSessions.refresh();bridge.close();printer.dispose();cameraRequest?.deny();cameraRequest=null;pageFailed=false;errorPanel.visibility=View.GONE}
             override fun onPageFinished(view:WebView,url:String){if(!pageFailed&&policy.isWorkspace(url))bridge.connect()}
             override fun onReceivedError(view:WebView,request:WebResourceRequest,error:WebResourceError){if(request.isForMainFrame){pageFailed=true;errorPanel.visibility=View.VISIBLE}}
             override fun onReceivedHttpError(view:WebView,request:WebResourceRequest,response:WebResourceResponse){if(request.isForMainFrame&&response.statusCode>=400){pageFailed=true;errorPanel.visibility=View.VISIBLE}}

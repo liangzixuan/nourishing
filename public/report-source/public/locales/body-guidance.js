@@ -1,0 +1,9 @@
+import {bodyGuidance} from './../../server/body-guidance.mjs';
+const labels={weight:['poids','Gewicht','peso'],bodyFat:['masse grasse','Körperfett','gordura corporal'],height:['taille','Körpergröße','altura']};
+const templates={
+ invalidDate:['Certains enregistrements sélectionnés de {{measurement}} ont des dates invalides et ont été ignorés.','Einige ausgewählte Messungen für {{measurement}} haben ungültige Daten und wurden ignoriert.','Alguns registros selecionados de {{measurement}} têm datas inválidas e foram ignorados.'],
+ empty:['Aucune mesure sélectionnée de {{measurement}} n’est disponible jusqu’à la date consultée.','Bis zum angezeigten Datum ist keine ausgewählte Messung für {{measurement}} verfügbar.','Nenhuma medição selecionada de {{measurement}} está disponível até a data consultada.'],
+ invalid:['La dernière mesure sélectionnée de {{measurement}} est invalide ; aucune mesure antérieure n’a été utilisée à sa place.','Die neueste ausgewählte Messung für {{measurement}} ist ungültig; ein früherer Wert wurde nicht eingesetzt.','A medição selecionada mais recente de {{measurement}} é inválida; uma medição anterior não foi usada no lugar.']
+};
+const differentDates=['Les mesures de poids et de masse grasse ont été enregistrées à des dates différentes.','Gewicht und Körperfett wurden an unterschiedlichen Daten erfasst.','As medições de peso e gordura corporal foram registradas em datas diferentes.'];
+export const bodyGuidanceMessages=Object.freeze(Object.fromEntries(['en','fr','de','pt-BR'].map((language,index)=>[language,Object.freeze(Object.fromEntries(Object.entries(bodyGuidance).map(([code,text])=>{const [reason,kind]=code.split('.');return ['bodyGuidance.'+code,index===0?text:code==='differentDates'?differentDates[index-1]:templates[reason][index-1].replace('{{measurement}}',labels[kind][index-1])];})))])));

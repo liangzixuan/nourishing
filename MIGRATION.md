@@ -8,10 +8,14 @@ The earlier Nourishing project was reviewed for account lifecycle, secure sessio
 
 Before production cutover:
 
+- Restore text/voice logging and account-scoped offline queued edits. Barcode scanning and packaged-food search are implemented in the next candidate; hosted verification is recorded below.
+- Restore diary selection/copy/paste/group ordering, reusable-meal creation, note photos, CSV import, nutrition-label entry and favorites. Imported metadata is preserved, but that alone does not make these flows available.
+- Restore food/recipe printouts, report-only chart editing and nutrient-contributor drill-down. Captured nutrition reports and PDF/print preview are implemented in the next candidate; hosted verification is recorded below.
 - Port Coach, glucose/cycle cards, pinned charts, streak image sharing, library sharing and remaining diary tools. Dashboard news/settings, nutrition, energy/weight, streaks, sleep and fasting are implemented. Existing imported records and metadata remain preserved.
 - Activate and verify cloud background jobs, including scheduled fasting and automatic repeat items. The fasting worker is implemented and tested with disposable accounts but stays disabled.
-- Complete Android reconciliation and correction recovery, automatic native export, Wear and reminders. Foreground import/export, explicit background-import consent and cloud widgets are implemented; full native and device checks remain.
+- Complete Android correction recovery, automatic native export, Wear and reminders. Foreground import/export/reconciliation, explicit background-import consent, cloud widgets and report printing are implemented; full native and device checks remain.
 - Complete account deletion and orphan media cleanup. Backup download, reviewed restore and verified previous-version selection are implemented; recovery deployment verification is recorded below. CSV exports are implemented. Snapshot deletion removes its reference; private Storage retention is not permanent deletion.
+- Establish scheduled independent cloud backups. Retained previous versions and user-triggered downloads do not replace the PC's automatic backup flow.
 - Reconcile PC changes since the baseline and repeat record, photo, and nutrient comparisons.
 - Complete the emailed password-recovery check.
 - Verify the Android app with the PC server stopped.

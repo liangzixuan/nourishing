@@ -10,9 +10,9 @@ import org.json.JSONObject
 
 /** A fresh main-frame port is bound to the exact private origin on each page. */
 class WebWorkspaceBridge(private val web:WebView,private val policy:WebWorkspacePolicy,
-    private val download:(String,String,ByteArray)->Unit,private val print:(String)->Unit,private val healthConnect:()->Unit,private val shareImage:(String,String,ByteArray)->Unit,private val speech:(String,(Result<String?>)->Unit)->Unit,private val cancelSpeech:()->Unit,private val reminders:(String,String,String?,(Result<JSONObject>)->Unit)->Unit,private val cancelReminders:(String?)->Unit) {
+    private val download:(String,String,ByteArray)->Unit,private val print:(String,String)->Unit,private val healthConnect:()->Unit,private val shareImage:(String,String,ByteArray)->Unit,private val speech:(String,(Result<String?>)->Unit)->Unit,private val cancelSpeech:()->Unit,private val reminders:(String,String,String?,(Result<JSONObject>)->Unit)->Unit,private val cancelReminders:(String?)->Unit) {
     private var port:WebMessagePort?=null
-    private data class Incoming(val kind:String,val name:String,val mime:String,val size:Int,val bytes:ByteArrayOutputStream=ByteArrayOutputStream())
+    private data class Incoming(val kind:String,val name:String,val mime:String,val size:Int,val accountId:String?=null,val bytes:ByteArrayOutputStream=ByteArrayOutputStream())
     private var incoming:Incoming?=null
     fun close(){cancelSpeech();cancelReminders(null);port?.close();port=null;incoming=null}
     fun refreshFontScale(){
@@ -39,10 +39,11 @@ class WebWorkspaceBridge(private val web:WebView,private val policy:WebWorkspace
                                 val size=value.getLong("size");require(size in 0..WebExportLimits.MEMORY_BYTES.toLong()){"Download exceeds the 32 MiB Android export limit."}
                                 val kind=value.getString("kind");require(kind in setOf("download","print","share-image"))
                                 val mime=value.getString("mime");require(Regex("[a-zA-Z0-9.+-]+/[a-zA-Z0-9.+-]+(?:;[^\\r\\n]{0,100})?").matches(mime))
-                                incoming=Incoming(kind,webDownloadName(value.getString("name")),mime,size.toInt())
+                                val accountId=if(kind=="print"){require(mime=="text/html");CloudAccount(value.getString("accountId")).id}else null
+                                incoming=Incoming(kind,webDownloadName(value.getString("name")),mime,size.toInt(),accountId)
                             }
                             "chunk"->{val state=checkNotNull(incoming);val data=Base64.decode(value.getString("data"),Base64.NO_WRAP);require(data.size<=48*1024&&state.bytes.size().toLong()+data.size<=state.size);state.bytes.write(data)}
-                            "end"->{val state=checkNotNull(incoming);require(state.bytes.size()==state.size){"The export is incomplete."};incoming=null;val data=state.bytes.toByteArray();when(state.kind){"print"->print(data.toString(Charsets.UTF_8));"share-image"->shareImage(state.name,state.mime,data);else->download(state.name,state.mime,data)}}
+                            "end"->{val state=checkNotNull(incoming);require(state.bytes.size()==state.size){"The export is incomplete."};incoming=null;val data=state.bytes.toByteArray();when(state.kind){"print"->print(data.toString(Charsets.UTF_8),requireNotNull(state.accountId));"share-image"->shareImage(state.name,state.mime,data);else->download(state.name,state.mime,data)}}
                             "dictate"->{
                                 val requestId=id
                                 speech(value.getString("language")){result->

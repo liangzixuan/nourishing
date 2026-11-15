@@ -1,3 +1,4 @@
+import {openBarcode} from './barcode.js';
 import {widgetDestination} from './widget-link.js';
 import {openEntryAdjustment} from './entry-adjustments.js';
 import {openRecipeImport} from './recipe-import.js';
@@ -44,7 +45,7 @@ document.addEventListener('click',async event=>{
  if(target.hasAttribute('data-reload'))return load();
  if(target.hasAttribute('data-note'))return recordEditor('note');
  if(target.dataset.recordId){const kind=target.dataset.recordKind;return recordEditor(kind,diary[kind==='note'?'notes':'biometrics'].find(r=>r.id===target.dataset.recordId));}
- if(target.id==='add-food'){return mountRecordMenu({show,header,content,onPick:kind=>kind==='food'?search():kind==='photo'?photoLog():recordEditor(kind)});}
+ if(target.id==='add-food'){return mountRecordMenu({show,header,content,onPick:kind=>kind==='food'?search():kind==='photo'?photoLog():kind==='barcode'?barcode():recordEditor(kind)});}
  if(['prev-day','next-day'].includes(action)){const d=new Date(date+'T12:00:00');d.setDate(d.getDate()+(action==='prev-day'?-1:1));date=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;return load();}
  if(action==='complete-day'){target.disabled=true;try{await command(diary.revision,'day.complete',{date,completed:!diary.completed});await load();}catch(error){notice.textContent=error.message;}finally{target.disabled=false;}return;}
  if(['add-food','group-quick-add'].includes(action)){group=target.dataset.group??(diary?.groups.includes('Uncategorized')?'Uncategorized':diary?.groups[0]);return search();}
@@ -57,7 +58,7 @@ document.addEventListener('click',async event=>{
  if(target.id==='diary-tab'){leaveView();view='diary';library?.dispose();library=null;dateBar.hidden=false;document.querySelector('#diary-tab').setAttribute('aria-current','page');document.querySelector('#foods-tab').removeAttribute('aria-current');return load();}
 });
 function search(){
- if(!diary)return;show(`${header('Add Food')}<div class="diary-picker"></div>`);pickerCleanup=mountFoodPicker(content.querySelector('.diary-picker'),{onPick:(kind,id)=>edit(null,id,kind)});
+ if(!diary)return;show(`${header('Add Food')}<div class="diary-picker"></div>`);pickerCleanup=mountFoodPicker(content.querySelector('.diary-picker'),{onPick:(kind,id)=>edit(null,id,kind),onBarcode:()=>barcode(),onBranded:()=>barcode('search')});
 }
 async function edit(entry,id=entry?.foodId??entry?.recipeId??entry?.mealId,kind=entry?.recipeId?'recipe':entry?.mealId?'meal':'food',quantity){
  if(!id){show(`${header('Diary entry')}<p class="empty">Editing this record type is not available in the cloud preview yet.</p>`);return;}
@@ -84,3 +85,5 @@ load().then(()=>{
  if(destination==='food'){group=diary.groups.includes('Uncategorized')?'Uncategorized':diary.groups[0];search();}
  if(destination==='fasting'){leaveView();view='discover';dateBar.hidden=true;selectTab('discover-tab');nutrition=mountNutrition({page,mode:view,initialTab:'fasting',date:()=>date,show,close,header,content,onChange:load});}
 });
+
+function barcode(mode='camera'){if(!diary)return;openBarcode({mode,show,close,header,content,date:()=>date,groups:diary.groups,group,onChange:load,revision:()=>diary.revision});}

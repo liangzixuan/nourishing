@@ -1,3 +1,6 @@
+import {printReportOptions,previewPrintReport} from './print-report.mjs';
+import {lookupBarcode,searchBranded,previewBarcode,validateBarcodeLookup,validateBrandedSearch} from './barcode.mjs';
+import {takeBrandedBudget} from './provider-budget.mjs';
 import {entryAdjustmentView,previewEntryAdjustment} from './entry-adjustments.mjs';
 import {dashboardView} from './dashboard-view.mjs';
 import {cloudHomeWidgetView} from './home-widget-view.mjs';
@@ -78,6 +81,12 @@ export function createAppwriteService(config, key, userAgent='') {
     return createHealthExport({readState:()=>repository.readState(),ownerId:owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET,timeZone:profile.timeZone})[kind];
   }
   return {
+    async printReportOptions(secret){const {owner}=await data(secret);return readView(secret,state=>({...printReportOptions(state),accountId:owner}));},
+    async previewPrintReport(secret,input){const {owner}=await data(secret),calendar=await calendarContext(secret,owner);return readView(secret,state=>({...previewPrintReport(state,input,{now:new Date(calendar.asOf),timeZone:calendar.timeZone}),accountId:owner}));},
+    async barcodeLookup(secret,input){const {owner}=await data(secret);validateBarcodeLookup(input);await takeBrandedBudget(new TablesDB(elevated()),{database:config.database,owner,operation:'product'});return readView(secret,state=>lookupBarcode(state,input,{owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET}));},
+    async brandedSearch(secret,input){const {owner}=await data(secret);validateBrandedSearch(input);await takeBrandedBudget(new TablesDB(elevated()),{database:config.database,owner,operation:'search'});return searchBranded(input);},
+    async barcodePreview(secret,input){const {owner}=await data(secret);return readView(secret,state=>previewBarcode(state,input,{owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET}));},
+    async barcodeSave(secret,input){const {owner,repository}=await data(secret);if(input?.type!=='barcode.log')throw Object.assign(Error('Choose a barcode action.'),{code:400});return createWorkspaceStore(new TablesDB(elevated()),owner).command(input,catalogReader(repository),{owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET});},
     async healthExportOptions(secret,kind){return (await healthExports(secret,kind)).options();},
     async healthExportPreview(secret,kind,input){return (await healthExports(secret,kind)).preview(input);},
     async healthExportVerify(secret,kind,input){return (await healthExports(secret,kind)).verify(input);},

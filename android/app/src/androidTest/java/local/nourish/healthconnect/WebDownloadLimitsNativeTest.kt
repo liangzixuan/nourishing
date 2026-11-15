@@ -38,7 +38,7 @@ class WebDownloadLimitsNativeTest {
                 activity.window.decorView.findViewWithTag<WebView>("nourishing-webview").stopLoading()
                 web=WebView(activity);web.settings.javaScriptEnabled=true
                 web.webChromeClient=object:android.webkit.WebChromeClient(){override fun onJsAlert(view:WebView,url:String,message:String,result:android.webkit.JsResult):Boolean{error.set(message);result.confirm();rejected.countDown();return true}}
-                bridge=WebWorkspaceBridge(web,WebWorkspacePolicy(origin),{_,_,_->fail("Oversized memory export delivered")},{fail("Unexpected print")},{fail("Unexpected navigation")},{_,_,_->fail("Unexpected share")},speech={_,reply->reply(Result.failure(IllegalStateException("Unexpected speech")))},cancelSpeech={},reminders={_,_,_,reply->reply(Result.failure(IllegalStateException("Unexpected reminder request")))},cancelReminders={})
+                bridge=WebWorkspaceBridge(web,WebWorkspacePolicy(origin),{_,_,_->fail("Oversized memory export delivered")},{_,_->fail("Unexpected print")},{fail("Unexpected navigation")},{_,_,_->fail("Unexpected share")},speech={_,reply->reply(Result.failure(IllegalStateException("Unexpected speech")))},cancelSpeech={},reminders={_,_,_,reply->reply(Result.failure(IllegalStateException("Unexpected reminder request")))},cancelReminders={})
                 web.webViewClient=object:WebViewClient(){override fun onPageFinished(view:WebView,url:String){bridge.connect()}}
                 activity.setContentView(web);web.loadDataWithBaseURL(origin.value+"/fixture","<html><body>Limit fixture</body></html>","text/html","UTF-8",origin.value+"/fixture")
             }

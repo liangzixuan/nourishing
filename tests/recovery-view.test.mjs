@@ -68,3 +68,12 @@ test('recovery stays account-scoped, rejects stale selection and checks current 
  const foreign=createRecoveryView({db:f.db,storage:f.storage,ownerId:'other'});await assert.rejects(()=>foreign.list(),{code:404});
  const original=f.db.getRow;let calls=0;f.db.getRow=async args=>{const row=await original(args);if(args.tableId==='workspace_heads'&&++calls===2)row.digest='f'.repeat(64);return row;};await assert.rejects(()=>f.view.preview({generation:'old',revision:f.current.head.digest}),/changed/);
 });
+
+test('retained health snapshot numbers identify the exact version and reject malformed markers',async()=>{
+ const f=fixture(),state=initialState();delete state.capabilities;const old=f.add('health-version',state,{marker:true}),marker=f.tables.get('workspace_recoveries').get(rowId(owner,'health-version'));
+ marker.snapshotId=17;
+ const item=(await f.view.list()).generations.find(row=>row.generation==='health-version');assert.equal(item.recoverySnapshotId,17);assert.equal(item.status,'available');
+ assert.deepEqual((await f.view.preview({generation:'health-version',revision:f.current.head.digest})).manifest.workspace,unpackWorkspace(old.head,old.rows));
+ marker.snapshotId=-1;const broken=(await f.view.list()).generations[0];assert.equal(broken.status,'invalid');assert.equal(broken.recoverySnapshotId,null);
+ await assert.rejects(()=>f.view.preview({generation:'health-version',revision:f.current.head.digest}),/snapshot identity/);
+});

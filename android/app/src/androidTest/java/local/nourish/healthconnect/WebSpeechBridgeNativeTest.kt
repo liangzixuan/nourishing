@@ -32,7 +32,7 @@ class WebSpeechBridgeNativeTest {
             scenario.onActivity{activity->
                 activity.window.decorView.findViewWithTag<WebView>("nourishing-webview").stopLoading()
                 web=WebView(activity);web.settings.javaScriptEnabled=true
-                bridge=WebWorkspaceBridge(web,WebWorkspacePolicy(origin),{_,_,_->fail("Unexpected download")},{fail("Unexpected print")},{fail("Unexpected Health Connect")},{_,_,_->fail("Unexpected share")},speech={lang,reply->language.set(lang);receiver.set(reply)},cancelSpeech={cancelled.incrementAndGet()},reminders={_,_,_,reply->reply(Result.failure(IllegalStateException("Unexpected reminder request")))},cancelReminders={})
+                bridge=WebWorkspaceBridge(web,WebWorkspacePolicy(origin),{_,_,_->fail("Unexpected download")},{_,_->fail("Unexpected print")},{fail("Unexpected Health Connect")},{_,_,_->fail("Unexpected share")},speech={lang,reply->language.set(lang);receiver.set(reply)},cancelSpeech={cancelled.incrementAndGet()},reminders={_,_,_,reply->reply(Result.failure(IllegalStateException("Unexpected reminder request")))},cancelReminders={})
                 web.webViewClient=object:WebViewClient(){override fun onPageFinished(view:WebView,url:String){bridge.connect()}}
                 activity.setContentView(web);web.loadDataWithBaseURL(origin.value+"/fixture","<html><body>Speech fixture</body></html>","text/html","UTF-8",origin.value+"/fixture")
             }

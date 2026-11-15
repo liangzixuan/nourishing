@@ -1,0 +1,26 @@
+const rows=[
+ ['order','Diary entry order','Ordre des entrées du journal','Reihenfolge der Tagebucheinträge','Ordem dos registros do diário'],
+ ['added','Added order','Ordre d’ajout','Reihenfolge der Erfassung','Ordem de inclusão'],
+ ['time','Time within each group','Heure dans chaque groupe','Uhrzeit innerhalb jeder Gruppe','Horário dentro de cada grupo'],
+ ['orderHelp',"Times run from earliest to latest. Entries without a time appear last. A group can override this order with its Order button. Flat view uses this diary default. Drag an item's Move button to a group heading, or click Move to choose a group.",'Les heures vont de la plus ancienne à la plus récente. Les entrées sans heure sont placées en dernier. Le bouton Ordre d’un groupe permet de remplacer cet ordre. La vue sans groupes utilise ce réglage du journal. Faites glisser le bouton Déplacer d’un élément vers un titre de groupe, ou cliquez sur Déplacer pour choisir un groupe.','Einträge werden nach aufsteigender Uhrzeit sortiert. Einträge ohne Uhrzeit stehen am Ende. Mit der Schaltfläche Reihenfolge einer Gruppe können Sie diese Vorgabe ändern. Die Ansicht ohne Gruppen verwendet diese Tagebuchvorgabe. Ziehen Sie die Schaltfläche Verschieben eines Eintrags auf eine Gruppenüberschrift oder klicken Sie darauf, um eine Gruppe zu wählen.','Os horários vão do mais cedo ao mais tarde. Registros sem horário aparecem por último. O botão Ordem de um grupo permite alterar essa ordem. A visualização sem grupos usa esta configuração do diário. Arraste o botão Mover de um item para o título de um grupo ou clique em Mover para escolher um grupo.'],
+ ['orderUnknown','Reload the workspace to check whether the order was saved.','Rechargez l’espace pour vérifier si l’ordre a été enregistré.','Laden Sie den Arbeitsbereich neu, um zu prüfen, ob die Reihenfolge gespeichert wurde.','Recarregue o espaço para verificar se a ordem foi salva.'],
+ ['orderSaved','Diary entry order saved','Ordre des entrées du journal enregistré','Reihenfolge der Tagebucheinträge gespeichert','Ordem dos registros do diário salva'],
+ ['currentFast','Current fast','Jeûne en cours','Aktuelles Fasten','Jejum atual'],
+ ['currentTimer','Current timer, independent of the selected diary date.','Minuteur actuel, indépendant de la date sélectionnée dans le journal.','Aktuelle Zeitmessung, unabhängig vom gewählten Tagebuchdatum.','Cronômetro atual, independente da data selecionada no diário.'],
+ ['startedBy','Started by {{name}}.','Démarré par {{name}}.','Gestartet durch {{name}}.','Iniciado por {{name}}.'],
+ ['openEnded','Open-ended.','Sans durée définie.','Ohne festgelegte Dauer.','Sem duração definida.'],
+ ['hourGoal','{{hours}} hour goal.','Objectif de {{hours}} heures.','Ziel: {{hours}} Stunden.','Meta de {{hours}} horas.'],
+ ['openFasting','Open fasting','Ouvrir le suivi du jeûne','Fasten öffnen','Abrir jejum'],
+ ['fastRefresh','Current fasting status could not be refreshed. Reload to check it.','L’état du jeûne actuel n’a pas pu être actualisé. Rechargez la page pour le vérifier.','Der aktuelle Fastenstatus konnte nicht aktualisiert werden. Laden Sie die Seite zur Prüfung neu.','Não foi possível atualizar o status do jejum atual. Recarregue para verificar.'],
+ ['default','Default targets','Objectifs par défaut','Standardziele','Metas padrão'],
+ ['dailyDefault','Default targets for this day','Objectifs par défaut pour ce jour','Standardziele für diesen Tag','Metas padrão para este dia'],
+ ['dailyCustom','Custom targets for this day','Objectifs personnalisés pour ce jour','Eigene Ziele für diesen Tag','Metas personalizadas para este dia'],
+ ['editDay','Edit targets for this day','Modifier les objectifs de ce jour','Ziele für diesen Tag bearbeiten','Editar metas deste dia'],
+ ['fixed','Fixed macro targets are active.','Les objectifs fixes de macros sont actifs.','Feste Makroziele sind aktiv.','As metas fixas de macros estão ativas.'],
+ ['ratios','Dynamic macro ratios follow the effective calorie target.','Les ratios dynamiques de macros suivent l’objectif calorique applicable.','Dynamische Makroverhältnisse folgen dem geltenden Kalorienziel.','As proporções dinâmicas de macros seguem a meta calórica vigente.'],
+ ['keto','Keto targets use your chosen lean mass, carbohydrate limit and energy target.','Les objectifs cétogènes utilisent la masse maigre, la limite de glucides et l’objectif énergétique que vous avez choisis.','Ketogene Ziele verwenden Ihre gewählte Magermasse, Kohlenhydratgrenze und Ihr Energieziel.','As metas cetogênicas usam a massa magra, o limite de carboidratos e a meta de energia que você escolheu.'],
+ ['weekday','Explicit weekday gram overrides apply.','Les remplacements explicites en grammes par jour de semaine s’appliquent.','Ausdrückliche Grammvorgaben nach Wochentag gelten.','As substituições explícitas em gramas por dia da semana se aplicam.'],
+ ['burned','Energy burned','Énergie dépensée','Verbrauchte Energie','Energia gasta'],
+ ['notApplicable','Not applicable','Sans objet','Nicht zutreffend','Não se aplica']
+];
+export const diarySurroundingsMessages=Object.fromEntries(['en','fr','de','pt-BR'].map((language,index)=>[language,Object.fromEntries(rows.map(([key,...values])=>['diarySurroundings.'+key,values[index]]))]));

@@ -28,8 +28,8 @@ class WebWorkspaceBridgeNativeTest {
                 activity.window.decorView.findViewWithTag<WebView>("nourishing-webview").stopLoading()
                 web=WebView(activity);web.settings.javaScriptEnabled=true
                 web.webChromeClient=object:android.webkit.WebChromeClient(){override fun onConsoleMessage(message:android.webkit.ConsoleMessage):Boolean{android.util.Log.i("NourishingFixture",message.message());return true}}
-                bridge=WebWorkspaceBridge(web,WebWorkspacePolicy(origin),{name,mime,bytes->assertEquals("text/csv",mime);filename.set(name);received.set(bytes);delivered.countDown()},{fail("Unexpected print")},{fail("Unexpected Health Connect")},{_,_,_->fail("Unexpected share")},speech={_,reply->reply(Result.failure(IllegalStateException("Unexpected speech")))},cancelSpeech={},reminders={_,_,_,reply->reply(Result.failure(IllegalStateException("Unexpected reminder request")))},cancelReminders={})
-                web.webViewClient=object:WebViewClient(){override fun onPageFinished(view:WebView,url:String){android.util.Log.i("NourishingFixture","Page finished: "+url+" current="+view.url);bridge.connect()}}
+                bridge=WebWorkspaceBridge(web,WebWorkspacePolicy(origin),{name,mime,bytes->assertEquals("text/csv",mime);filename.set(name);received.set(bytes);delivered.countDown()},{_,_->fail("Unexpected print")},{fail("Unexpected Health Connect")},{_,_,_->fail("Unexpected share")},speech={_,reply->reply(Result.failure(IllegalStateException("Unexpected speech")))},cancelSpeech={},reminders={_,_,_,reply->reply(Result.failure(IllegalStateException("Unexpected reminder request")))},cancelReminders={})
+                web.webViewClient=object:WebViewClient(){override fun shouldInterceptRequest(view:WebView,request:android.webkit.WebResourceRequest):android.webkit.WebResourceResponse?=if(request.url.path=="/report-source/print-en.css")android.webkit.WebResourceResponse("text/css","UTF-8",java.io.ByteArrayInputStream("body{font-size:17px}".toByteArray()))else null;override fun onPageFinished(view:WebView,url:String){android.util.Log.i("NourishingFixture","Page finished: "+url+" current="+view.url);bridge.connect()}}
                 activity.setContentView(web)
                 web.loadDataWithBaseURL(origin.value+"/fixture","<html><body>Download fixture</body></html>","text/html","UTF-8",origin.value+"/fixture")
             }
@@ -51,16 +51,16 @@ class WebWorkspaceBridgeNativeTest {
                 activity.window.decorView.findViewWithTag<WebView>("nourishing-webview").stopLoading()
                 web=WebView(activity);web.settings.javaScriptEnabled=true
                 web.webChromeClient=object:android.webkit.WebChromeClient(){override fun onConsoleMessage(message:android.webkit.ConsoleMessage):Boolean{android.util.Log.i("NourishingFixture",message.message());return true}}
-                bridge=WebWorkspaceBridge(web,WebWorkspacePolicy(origin),{_,_,_->fail("Unexpected download")},{html.set(it);delivered.countDown()},{fail("Unexpected Health Connect")},{_,_,_->fail("Unexpected share")},speech={_,reply->reply(Result.failure(IllegalStateException("Unexpected speech")))},cancelSpeech={},reminders={_,_,_,reply->reply(Result.failure(IllegalStateException("Unexpected reminder request")))},cancelReminders={})
-                web.webViewClient=object:WebViewClient(){override fun onPageFinished(view:WebView,url:String){android.util.Log.i("NourishingFixture","Page finished: "+url+" current="+view.url);bridge.connect()}}
+                bridge=WebWorkspaceBridge(web,WebWorkspacePolicy(origin),{_,_,_->fail("Unexpected download")},{value,accountId->assertEquals("fixture-owner",accountId);html.set(value);delivered.countDown()},{fail("Unexpected Health Connect")},{_,_,_->fail("Unexpected share")},speech={_,reply->reply(Result.failure(IllegalStateException("Unexpected speech")))},cancelSpeech={},reminders={_,_,_,reply->reply(Result.failure(IllegalStateException("Unexpected reminder request")))},cancelReminders={})
+                web.webViewClient=object:WebViewClient(){override fun shouldInterceptRequest(view:WebView,request:android.webkit.WebResourceRequest):android.webkit.WebResourceResponse?=if(request.url.path=="/report-source/print-en.css")android.webkit.WebResourceResponse("text/css","UTF-8",java.io.ByteArrayInputStream("body{font-size:17px}".toByteArray()))else null;override fun onPageFinished(view:WebView,url:String){android.util.Log.i("NourishingFixture","Page finished: "+url+" current="+view.url);bridge.connect()}}
                 activity.setContentView(web)
                 web.loadDataWithBaseURL(origin.value+"/fixture","<html><body>DIARY_CONTROLS</body></html>","text/html","UTF-8",origin.value+"/fixture")
             }
             val deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(10)
             while(evaluate(web,"window.__nourishingReady===true")!="true"&&System.nanoTime()<deadline)Thread.sleep(100)
-            evaluate(web,"(()=>{const f=document.createElement('iframe');f.setAttribute('sandbox','allow-same-origin allow-modals');f.srcdoc='<html><body>REPORT_CONTENT é</body></html>';document.body.append(f);return true})()")
+            evaluate(web,"(()=>{const f=document.createElement('iframe');f.setAttribute('sandbox','allow-same-origin allow-modals');f.dataset.printAccountId='fixture-owner';f.srcdoc='<html><head><link rel=stylesheet href=/report-source/print-en.css></head><body>REPORT_CONTENT é</body></html>';document.body.append(f);return true})()")
             var ready=false
-            repeat(50){if(!ready){ready=evaluate(web,"!!document.querySelector('iframe')?.contentDocument?.body?.textContent.includes('REPORT_CONTENT')")=="true";if(!ready)Thread.sleep(100)}}
+            repeat(50){if(!ready){ready=evaluate(web,"!!document.querySelector('iframe')?.contentDocument?.body?.textContent.includes('REPORT_CONTENT') && !!document.querySelector('iframe').contentDocument.querySelector('link').sheet")=="true";if(!ready)Thread.sleep(100)}}
             assertTrue(ready)
             evaluate(web,"document.querySelector('iframe').contentWindow.print()")
             assertTrue("Report frame did not reach Android",delivered.await(10,TimeUnit.SECONDS))

@@ -33,7 +33,7 @@ class WebFontScaleNativeTest {
                 expected=(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP,18f,metrics)/TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,18f,metrics)).toDouble()
                 assertTrue(expected>1.0)
                 web=WebView(scaledContext).apply{settings.javaScriptEnabled=true;settings.textZoom=100}
-                bridge=WebWorkspaceBridge(web,WebWorkspacePolicy(origin),{_,_,_->fail("Unexpected download")},{fail("Unexpected print")},{fail("Unexpected Health Connect")},{_,_,_->fail("Unexpected share")},speech={_,reply->reply(Result.failure(IllegalStateException("Unexpected speech")))},cancelSpeech={},reminders={_,_,_,reply->reply(Result.failure(IllegalStateException("Unexpected reminder request")))},cancelReminders={})
+                bridge=WebWorkspaceBridge(web,WebWorkspacePolicy(origin),{_,_,_->fail("Unexpected download")},{_,_->fail("Unexpected print")},{fail("Unexpected Health Connect")},{_,_,_->fail("Unexpected share")},speech={_,reply->reply(Result.failure(IllegalStateException("Unexpected speech")))},cancelSpeech={},reminders={_,_,_,reply->reply(Result.failure(IllegalStateException("Unexpected reminder request")))},cancelReminders={})
                 web.webViewClient=object:WebViewClient(){override fun onPageFinished(view:WebView,url:String){bridge.connect()}}
                 activity.setContentView(web)
                 web.loadDataWithBaseURL(origin.value+"/fixture","<html><body><textarea>Retained draft</textarea></body></html>","text/html","UTF-8",origin.value+"/fixture")

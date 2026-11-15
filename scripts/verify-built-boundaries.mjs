@@ -60,6 +60,10 @@ try {
   await post('/api/health-connect/export/intake/verify', 20_000, 401, {signed: false});
   await post('/api/health-connect/reconcile/apply', 20_000_000, 413, {message: 'Request too large.'});
   await post('/api/health-connect/reconcile/preview?summary=1', 20_000, 401, {signed: false});
+  await post('/api/print-report/preview',4*1024*1024,413,{message:'Request too large.'});
+  await post('/api/print-report/preview',20_000,401,{signed:false});
+  await post('/api/barcode/lookup',128*1024,413,{message:'Request too large.'});
+  await post('/api/barcode/save',20_000,401,{signed:false});
   assert.ok(authenticated >= 5);
   const report = {status: 'passed', actualBuiltServer: true, unchangedWorkerAssets: true, actualBuiltRecipeParser: true, remoteCalls: 0, routes: results};
   writeFileSync(new URL('../.local/built-boundaries-verification.json', import.meta.url), JSON.stringify(report, null, 2));console.log(JSON.stringify(report));

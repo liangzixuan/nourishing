@@ -10,5 +10,7 @@ class ReconciliationGate {
     private val gates=ConcurrentHashMap<String,Mutex>()
     suspend fun <T> withWorkspace(origin:WorkspaceOrigin,identity:WorkspaceIdentity,work:suspend()->T):T =
         gates.getOrPut(origin.value+"\n"+identity.login){Mutex()}.withLock{work()}
+    suspend fun <T> withCloud(owner:CloudExportOwner,work:suspend()->T):T =
+        gates.getOrPut("cloud\n${owner.origin.value}\n${owner.accountId}\n${owner.namespace}"){Mutex()}.withLock{work()}
     companion object { val shared=ReconciliationGate() }
 }

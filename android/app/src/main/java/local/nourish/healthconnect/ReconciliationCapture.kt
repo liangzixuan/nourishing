@@ -20,12 +20,14 @@ fun reconciliationBatch(state:JSONObject,snapshot:HealthSnapshot,changes:List<Ty
         .put("gaps",JSONArray(gaps.map{JSONObject().put("type",it.first.label).put("reason",it.second)}))
 }
 
-suspend fun captureReconciliation(client:HealthConnectClient,range:ExportRange,selected:Set<ExportType>,store:ReconciliationStore,authority:PendingAuthority=PendingAuthority.Foreground) {
+suspend fun captureReconciliation(client:HealthConnectClient,range:ExportRange,selected:Set<ExportType>,store:ReconciliationStore,authority:PendingAuthority=PendingAuthority.Foreground,beforeStage:suspend()->Unit={}) {
     require(selected.isNotEmpty()){ "Select at least one type." }
     suspend fun consent(){require(readPermissions(selected).all(client.permissionController.getGrantedPermissions()::contains)){"Grant all selected read permissions before reconciliation."}}
     consent();val state=store.captureState();val cursors=store.cursors(state);val reader=ChangesReader(AndroidChangeFeed(client,range.zone))
     val captured=captureChangesAroundBaseline(reader,selected,cursors,beforeRead={consent()}){HealthConnectReader(client).read(range,selected).also{require(it.denied.isEmpty())}}
     consent()
     val observedAt=Instant.now();require(observedAt>=range.readUntil){"The device clock moved backwards. Read again."}
+    beforeStage()
+    consent()
     store.stage(state,reconciliationBatch(state,captured.baseline,captured.events,captured.gaps,observedAt),captured.candidates,selected,authority)
 }

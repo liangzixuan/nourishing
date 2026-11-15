@@ -29,7 +29,7 @@ export function mountBackup({root,show,close,header,content,onChange=async()=>{}
    for(const item of inventory.generations){
     const row=document.createElement('div');row.className='field-row';
     const label=item.retainedAt?new Date(item.retainedAt).toLocaleString():'Earlier version';
-    row.innerHTML=`<span>${e(label)}${item.status!=='available'?`<small> · ${e(item.status==='unverified'?'Unverified':item.status==='incomplete'?'Incomplete':'Unavailable')}</small>`:''}</span>`;
+    row.innerHTML=`<span>${e(label)}${item.recoverySnapshotId?`<small> · Health Connect #${e(item.recoverySnapshotId)}</small>`:''}${item.status!=='available'?`<small> · ${e(item.status==='unverified'?'Unverified':item.status==='incomplete'?'Incomplete':'Unavailable')}</small>`:''}</span>`;
     if(item.status==='available'){
      const button=document.createElement('button');button.type='button';button.textContent='Review';
      button.onclick=async()=>{

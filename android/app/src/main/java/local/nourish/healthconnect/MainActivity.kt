@@ -46,6 +46,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var clear: Button
     private lateinit var transferPanel: WorkspaceTransferPanel
     private lateinit var reconciliationPanel: ReconciliationPanel
+    private var cloudReconciliationPanel:CloudReconciliationPanel?=null
     private lateinit var healthExportPanel: HealthExportPanel
     private var cloudExportPanel: CloudHealthExportPanel?=null
     private lateinit var documentExports:DocumentExportOwner
@@ -176,16 +177,17 @@ class MainActivity : ComponentActivity() {
             onBusy = { setBusy(it) })
         column.addView(transferPanel)
         if(NourishingWorkspace.cloudOrigin==null)button(getString(R.string.wear_access)) { startActivity(Intent(this,WearSettingsActivity::class.java)) }
-        reconciliationPanel=ReconciliationPanel(this,lifecycleScope,
-            selection={selectedTypes() to ExportRange.create(from.text.toString().trim(),to.text.toString().trim(),ZoneId.systemDefault(),Instant.now())},healthClient={client},
-            saveFile={ file ->
-                require(!documentLease.requested){getString(R.string.finish_document_picker)}
-                // Clone while foreground still owns the workspace gate. The
-                // worker may acknowledge and clean its upload copy afterward.
-                try{withContext(Dispatchers.IO){documentLease.begin(file)};documentLauncher.launch(Intent(Intent.ACTION_CREATE_DOCUMENT).apply{addCategory(Intent.CATEGORY_OPENABLE);type="application/json";putExtra(Intent.EXTRA_TITLE,"nourish-reconciliation-${LocalDate.now()}.json");putExtra(Intent.EXTRA_LOCAL_ONLY,true)})}catch(error:Throwable){releaseReconciliationDocument();throw error}
-            },onBusy={setBusy(it)})
-        column.addView(reconciliationPanel)
-        if(NourishingWorkspace.cloudOrigin!=null)reconciliationPanel.visibility=View.GONE
+        if(NourishingWorkspace.cloudOrigin!=null){
+            cloudReconciliationPanel=CloudReconciliationPanel(this,lifecycleScope,
+                selection={selectedTypes() to ExportRange.create(from.text.toString().trim(),to.text.toString().trim(),ZoneId.systemDefault(),Instant.now())},healthClient={client},
+                saveFile={saveReconciliationFile(it)},onBusy={setBusy(it)})
+            column.addView(cloudReconciliationPanel)
+        }else{
+            reconciliationPanel=ReconciliationPanel(this,lifecycleScope,
+                selection={selectedTypes() to ExportRange.create(from.text.toString().trim(),to.text.toString().trim(),ZoneId.systemDefault(),Instant.now())},healthClient={client},
+                saveFile={saveReconciliationFile(it)},onBusy={setBusy(it)})
+            column.addView(reconciliationPanel)
+        }
         if(NourishingWorkspace.cloudOrigin!=null){
             cloudExportPanel=CloudHealthExportPanel(this,lifecycleScope,dates={from.text.toString().trim() to to.text.toString().trim()},health={client},grant={permissionsLauncher.launch(it)},onBusy={setBusy(it)})
             column.addView(cloudExportPanel)
@@ -226,7 +228,8 @@ class MainActivity : ComponentActivity() {
         readJob?.cancel()
         saveJob?.cancel()
         transferPanel.stopRequests()
-        reconciliationPanel.stopRequests()
+        if (::reconciliationPanel.isInitialized) reconciliationPanel.stopRequests()
+        cloudReconciliationPanel?.stopRequests()
         if (::healthExportPanel.isInitialized) healthExportPanel.stopRequests()
         cloudExportPanel?.stopRequests()
         super.onStop()
@@ -234,6 +237,7 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         if (::transferPanel.isInitialized) transferPanel.dispose()
         if (::reconciliationPanel.isInitialized) reconciliationPanel.dispose()
+        cloudReconciliationPanel?.dispose()
         if (::healthExportPanel.isInitialized) healthExportPanel.dispose()
         cloudExportPanel?.dispose()
         super.onDestroy()
@@ -263,8 +267,16 @@ class MainActivity : ComponentActivity() {
         clear.isEnabled = !value
         if (::transferPanel.isInitialized) transferPanel.setExternalBusy(value)
         if (::reconciliationPanel.isInitialized) reconciliationPanel.setExternalBusy(value)
+        cloudReconciliationPanel?.setExternalBusy(value)
         if (::healthExportPanel.isInitialized) healthExportPanel.setExternalBusy(value)
         cloudExportPanel?.setExternalBusy(value)
+    }
+    private suspend fun saveReconciliationFile(file:File){
+        require(!documentLease.requested){getString(R.string.finish_document_picker)}
+        try{
+            withContext(Dispatchers.IO){documentLease.begin(file)}
+            documentLauncher.launch(Intent(Intent.ACTION_CREATE_DOCUMENT).apply{addCategory(Intent.CATEGORY_OPENABLE);type="application/json";putExtra(Intent.EXTRA_TITLE,"nourish-reconciliation-${LocalDate.now()}.json");putExtra(Intent.EXTRA_LOCAL_ONLY,true)})
+        }catch(error:Throwable){releaseReconciliationDocument();throw error}
     }
     private fun releaseReconciliationDocument(){
         if(!documentLease.finish())result.text=getString(R.string.document_cleanup_retry)

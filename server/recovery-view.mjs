@@ -32,10 +32,12 @@ export function createRecoveryView({db,storage,ownerId}){
   if(!marker||marker.$id!==rowId(owner,generation)||marker.ownerId!==owner||marker.generation!==generation||!isDeepStrictEqual(marker.$permissions,[])||!timestamp(marker.retainedAt))damaged('Recovery metadata could not be verified.');
   let saved;try{saved=JSON.parse(marker.head);}catch{damaged('Recovery metadata could not be read.');}
   if(!saved||typeof saved!=='object'||saved.ownerId!==owner||saved.generation!==generation||typeof saved.layout!=='string'||!/^[a-f0-9]{64}$/.test(saved.digest??''))damaged('Recovery metadata could not be verified.');
-  return saved;
+  const recoverySnapshotId=marker.snapshotId??null;
+  if(recoverySnapshotId!==null&&(!Number.isSafeInteger(recoverySnapshotId)||recoverySnapshotId<1))damaged('Recovery snapshot identity is invalid.');
+  return {head:saved,recoverySnapshotId};
  }
  async function materialize(marker,{verifyFiles=false}={}){
-  const generation=marker.generation,saved=readMarker(marker,generation),records=await workspaceRows(db,owner,generation);
+  const generation=marker.generation,{head:saved,recoverySnapshotId}=readMarker(marker,generation),records=await workspaceRows(db,owner,generation);
   if(records.some(row=>!isDeepStrictEqual(row.$permissions,permissions(owner))))damaged('Recovery record ownership is invalid.');
   let state;try{state=unpackWorkspace(saved,records);}catch{damaged('Stored records do not match the retained version.','incomplete');}
   const media=await pages('workspace_media',[Query.equal('generation',generation)]),byKey=new Map(media.map(row=>[row.namespace+':'+row.sourceId,row])),selected=[];
@@ -50,7 +52,7 @@ export function createRecoveryView({db,storage,ownerId}){
   if(verifyFiles)for(const row of selected){
    try{await verifyWorkspaceMediaFile(storage,row,{owner});}catch(error){if(error.code===404)damaged('A recovery photo is missing.','incomplete');if(error.code===409)damaged(error.message);throw error;}
   }
-  return {manifest,summary,mediaRows:selected};
+  return {manifest,summary,mediaRows:selected,recoverySnapshotId};
  }
  async function list(){
   const current=await head(),generations=new Map();
@@ -61,8 +63,8 @@ export function createRecoveryView({db,storage,ownerId}){
   generations.delete(current.generation);const result=[];
   for(const entry of generations.values()){
    if(!entry.marker){result.push({...entry,retainedAt:null,reason:entry.status==='incomplete'?'Restore staging is incomplete.':'No verified recovery manifest.'});continue;}
-   const base={generation:entry.generation,retainedAt:timestamp(entry.marker.retainedAt)?entry.marker.retainedAt:null};
-   try{const value=await materialize(entry.marker);result.push({...base,status:'available',summary:value.summary});}
+   const base={generation:entry.generation,retainedAt:timestamp(entry.marker.retainedAt)?entry.marker.retainedAt:null,recoverySnapshotId:null};
+   try{const value=await materialize(entry.marker);result.push({...base,status:'available',summary:value.summary,recoverySnapshotId:value.recoverySnapshotId});}
    catch(error){if(!error.recoveryStatus)throw error;result.push({...base,status:error.recoveryStatus,reason:error.message});}
   }
   await stable(current);result.sort((a,b)=>(b.retainedAt??'').localeCompare(a.retainedAt??'')||a.generation.localeCompare(b.generation));

@@ -1386,6 +1386,42 @@
       "target": "server/domain/health-intake-group-projection.mjs",
       "sourceSha256": "3971857fef0200875ac6f66a908bb1c2a583a29e5422fc9e0280a9bd06364a7a",
       "outputSha256": "a6f45e7a5c8d59c2c891afe2ba3b99be1aa96b68e2f13db7e7667206832023d9"
+    },
+    {
+      "source": "server/open-food-facts.mjs",
+      "target": "server/domain/open-food-facts.mjs",
+      "sourceSha256": "35599dfc15e071ef1d8f7242acf92634c9e7973f8679dcf3b99fabd535b50c01",
+      "outputSha256": "6c40935cfde9e46e6d6e79da6eb3b10fab846a886a49a7f57a8c5912dd00c9c0"
+    },
+    {
+      "source": "server/print-report.mjs",
+      "target": "server/domain/print-report.mjs",
+      "sourceSha256": "d13f6f884a6bd960e826318d2b039ff9a5735f1f867ec679dfa5e364359ff41a",
+      "outputSha256": "adc7aa48fdb56340e6b1472e059630b89f4e5473e30a80b4ebaa3eb31e75ef59"
+    },
+    {
+      "source": "server/print-diary-column.mjs",
+      "target": "server/domain/print-diary-column.mjs",
+      "sourceSha256": "a30b1c29f5e313f235e237b119d7e33328660c36911ecb034a915409a98817af",
+      "outputSha256": "9ceaf9d437f2f14c2c5b0e2058440b866bf344d8e7701d3d1b843706e4b6e9f6"
+    },
+    {
+      "source": "server/print-profile.mjs",
+      "target": "server/domain/print-profile.mjs",
+      "sourceSha256": "00b1df95e1730ce4042696addde1a37e1c186d8ce9e128e7f281dc90c3dc4244",
+      "outputSha256": "00b1df95e1730ce4042696addde1a37e1c186d8ce9e128e7f281dc90c3dc4244"
+    },
+    {
+      "source": "server/profile-guidance.mjs",
+      "target": "server/domain/profile-guidance.mjs",
+      "sourceSha256": "7dc65fca6b187919a8ffb9f35f88e5ddd2b08a28236079fe77e5ca04a80e2b42",
+      "outputSha256": "7dc65fca6b187919a8ffb9f35f88e5ddd2b08a28236079fe77e5ca04a80e2b42"
+    },
+    {
+      "source": "server/print-chart-options.mjs",
+      "target": "server/domain/print-chart-options.mjs",
+      "sourceSha256": "8b91025def448dd7bafb80037f5a96210277cee423fefb6dd13a81053dd1412c",
+      "outputSha256": "9a1162cce31664101c6e78624bb56c98081f4d440b4778fc4aae49511c2f8a8c"
     }
   ]
 }

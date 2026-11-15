@@ -1,3 +1,4 @@
+import {BARCODE_BODY_BYTES} from './barcode.mjs';
 import {HEALTH_EXPORT_MAX_BYTES,healthWarningText} from './health-connect.mjs';
 import {HEALTH_EXPORT_RESPONSE_BYTES} from './health-export.mjs';
 import {Readable} from 'node:stream';
@@ -11,7 +12,7 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
   return async req=>{
     const headers=new Headers();
     headers.set('Cache-Control','no-store');headers.set('X-Content-Type-Options','nosniff');headers.set('Referrer-Policy','no-referrer');
-    headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+    headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     const json=(status,value)=>{headers.set('Content-Type','application/json; charset=utf-8');return new Response(JSON.stringify(value),{status,headers});};
     try {
       const url=new URL(req.url,config.origin),path=url.pathname;
@@ -46,7 +47,14 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       if(backupRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid backup request.');}
       const libraryCommand=req.method==='POST'&&path==='/api/library/command',ingredientRequest=req.method==='POST'&&['/api/diary/ingredients/preview','/api/diary/ingredients/save'].includes(path);
       if(libraryCommand||ingredientRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid editor request.');}
-      const body=req.method==='GET'?null:await readBody(req,reconciliationRequest?HEALTH_EXPORT_MAX_BYTES:(libraryCommand||ingredientRequest)?4*1024*1024:backupRequest?(path==='/api/backup/inspect'?20_000_000:path.endsWith('/media')?5*1024*1024:16384):healthRequest?HEALTH_EXPORT_MAX_BYTES:photoRequest?((path.endsWith('/analyze')||path.endsWith('/prepare'))?12:5)*1024*1024:recipeRequest&&path!=='/api/recipe-import'?16*1024*1024:16384);
+      const barcodeRequest=req.method==='POST'&&['/api/barcode/lookup','/api/barcode/preview','/api/barcode/save','/api/branded/search'].includes(path);
+      if(barcodeRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid barcode request.');}
+      const printRequest=req.method==='POST'&&path==='/api/print-report/preview';
+      if(printRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid report query.');}
+      const body=req.method==='GET'?null:await readBody(req,barcodeRequest?BARCODE_BODY_BYTES:reconciliationRequest?HEALTH_EXPORT_MAX_BYTES:(libraryCommand||ingredientRequest||printRequest)?4*1024*1024:backupRequest?(path==='/api/backup/inspect'?20_000_000:path.endsWith('/media')?5*1024*1024:16384):healthRequest?HEALTH_EXPORT_MAX_BYTES:photoRequest?((path.endsWith('/analyze')||path.endsWith('/prepare'))?12:5)*1024*1024:recipeRequest&&path!=='/api/recipe-import'?16*1024*1024:16384);
+      if(printRequest)return json(200,await api.previewPrintReport(secret,body));
+      if(req.method==='GET'&&path==='/api/print-report/options'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid report query.');return json(200,await api.printReportOptions(secret));}
+      if(barcodeRequest)return json(200,await api[{'/api/barcode/lookup':'barcodeLookup','/api/barcode/preview':'barcodePreview','/api/barcode/save':'barcodeSave','/api/branded/search':'brandedSearch'}[path]](secret,body));
       if(exportRoute){
         if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid Health Connect query.');const kind=exportRoute[1],operation=exportRoute[2];
         if(req.method==='GET'&&operation==='options')return json(200,await api.healthExportOptions(secret,kind));

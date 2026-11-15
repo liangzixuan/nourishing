@@ -135,3 +135,16 @@ Validation completed:
 - Additive recovery schema provisioning passed twice. Prior schema snapshots remain local. Publication audit covered 740 files and 231 domain provenance entries; known credentials, owner identity and private artifacts were absent.
 
 Production `nourishing.app`, the installed Android connection and background services remain unchanged. Phone reconciliation integration and correction recovery are still pending; the native export candidate needs a physical-device check. PC/cloud edits remain separate until final reconciliation and cutover.
+
+
+## Barcode, captured reports and Android reconciliation — November 15, 2026
+
+The next preview adds the original camera/manual barcode scanner and Open Food Facts product search. Provider facts are signed for the account and expire; server commands save the custom food, diary entry, streak and retry receipt together. Known values, absent nutrients and source provenance remain distinct. The review uses the account’s kcal/kJ preference. The shared provider budget persists across runtime restarts. Decoder assets and licenses are packaged from pinned dependencies during the build.
+
+Discover → Report includes captured nutrition reports and Print / Save PDF. The source renderer and localized CSS retain provenance. The cloud copy emits external styles at the rendering boundary, preserving strict CSP and original SVG chart colors. The report screen separates options from the captured preview. Closing, changing options or changing accounts clears the capture. Food/recipe printouts and report-only chart editing remain pending.
+
+Android foreground reconciliation reuses the source cursor/outbox owner inside an origin/account/namespace envelope. It checks permissions after capture, requires removal consent and resolves exact receipts after a lost response or logout. The existing print bridge carries the captured account ID and loaded report CSS into a private offline print WebView. Account checks run before rendering and opening Android’s print dialog. Neither feature has been installed or tested on a physical phone.
+
+Local validation: 212 server/browser tests passed, along with the production build and 20 built-server request checks. The real scanner WASM decoded a generated EAN13 under production CSP; camera cleanup, manual entry, branded search, save-only, diary save and lost-reply retries passed. The report browser test covered loaded CSS, English/French, kJ, immutable captures, saved charts, escaping and account changes. Android source and instrumentation code compile; 64 focused unit tests and the browser print handoff pass. Recovery history now exposes the snapshot number from Health Connect removal receipts.
+
+Hosted verification and final publication audit for this candidate are pending. The production domain, installed APK, owner data and enabled background services have not changed.

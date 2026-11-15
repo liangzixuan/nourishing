@@ -42,14 +42,7 @@ class ReconciliationTransfer(private val client:WorkspaceClient):ReconciliationT
         requireWorkspace(client.identity(origin)==identity, WorkspaceError.RECON_ACCOUNT_CHANGED)
         requireWorkspace(file.readText(Charsets.UTF_8)==pending.batch.toString(), WorkspaceError.RECON_STAGED_CHANGED)
         val json=client.exchange(origin,"/api/health-connect/reconcile/preview?summary=1",file)
-        strictKeys(json,setOf("batchId","batchDigest","reviewToken","counts","range","warnings","replayed","receipt"))
-        val digest=json.getString("batchDigest");requireWorkspace(json.getString("batchId")==pending.batch.getString("batchId")&&hashPattern.matches(digest)&&(pending.digest==null||pending.digest==digest),WorkspaceError.RECON_BATCH_MISMATCH)
-        val token=json.getString("reviewToken");requireWorkspace(hashPattern.matches(token), WorkspaceError.RECON_REVIEW_TOKEN)
-        val expected=pending.batch.getJSONObject("snapshot").getJSONObject("range");val actual=json.getJSONObject("range");strictKeys(actual,setOf("from","to","zone"));requireWorkspace(listOf("from","to","zone").all{actual.getString(it)==expected.getString(it)}, WorkspaceError.RECON_RANGE_CHANGED)
-        val warnings=json.getJSONArray("warnings");requireWorkspace(warnings.length()<=MAX_EXPORT_RECORDS,WorkspaceError.RECON_WARNINGS);val replayed=json.get("replayed");requireWorkspace(replayed is Boolean,WorkspaceError.RECON_REPLAY_SUMMARY)
-        val receipt=if(json.isNull("receipt"))null else json.getJSONObject("receipt").also{validateReconciliationReceipt(it,pending.batch,digest)}
-        requireWorkspace(replayed==(receipt!=null), WorkspaceError.RECON_REPLAY_SUMMARY)
-        return ReconciliationReview(token,digest,reconciliationCounts(json.getJSONObject("counts")),(0 until warnings.length()).map{warnings.getString(it).also{s->requireWorkspace(s.length<=2000,WorkspaceError.RECON_WARNINGS)}},replayed as Boolean,receipt)
+        return parseReconciliationReview(json,pending)
     }
     override suspend fun apply(origin:WorkspaceOrigin,identity:WorkspaceIdentity,pending:ReconciliationPending,review:ReconciliationReview,allowRemovals:Boolean):JSONObject {
         requireWorkspace(review.digest==pending.digest&&(!review.counts.removals||allowRemovals), WorkspaceError.RECON_REMOVAL_APPROVAL)
@@ -64,4 +57,16 @@ class ReconciliationTransfer(private val client:WorkspaceClient):ReconciliationT
         } catch(error:CancellationException){throw error}
           catch(_:Exception){throw WorkspaceTransferFailure(WorkspaceError.RECON_INVALID_RESULT,outcomeUnknown=true)}
     }
+}
+
+/** Shared receiver projection parser for PC and cloud transports. */
+fun parseReconciliationReview(json:JSONObject,pending:ReconciliationPending):ReconciliationReview {
+    strictKeys(json,setOf("batchId","batchDigest","reviewToken","counts","range","warnings","replayed","receipt"))
+    val digest=json.getString("batchDigest");requireWorkspace(json.getString("batchId")==pending.batch.getString("batchId")&&hashPattern.matches(digest)&&(pending.digest==null||pending.digest==digest),WorkspaceError.RECON_BATCH_MISMATCH)
+    val token=json.getString("reviewToken");requireWorkspace(hashPattern.matches(token), WorkspaceError.RECON_REVIEW_TOKEN)
+    val expected=pending.batch.getJSONObject("snapshot").getJSONObject("range");val actual=json.getJSONObject("range");strictKeys(actual,setOf("from","to","zone"));requireWorkspace(listOf("from","to","zone").all{actual.getString(it)==expected.getString(it)}, WorkspaceError.RECON_RANGE_CHANGED)
+    val warnings=json.getJSONArray("warnings");requireWorkspace(warnings.length()<=MAX_EXPORT_RECORDS,WorkspaceError.RECON_WARNINGS);val replayed=json.get("replayed");requireWorkspace(replayed is Boolean,WorkspaceError.RECON_REPLAY_SUMMARY)
+    val receipt=if(json.isNull("receipt"))null else json.getJSONObject("receipt").also{validateReconciliationReceipt(it,pending.batch,digest)}
+    requireWorkspace(replayed==(receipt!=null), WorkspaceError.RECON_REPLAY_SUMMARY)
+    return ReconciliationReview(token,digest,reconciliationCounts(json.getJSONObject("counts")),(0 until warnings.length()).map{warnings.getString(it).also{s->requireWorkspace(s.length<=2000,WorkspaceError.RECON_WARNINGS)}},replayed as Boolean,receipt)
 }

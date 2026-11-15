@@ -38,6 +38,7 @@ android {
 }
 
 tasks.withType<Test>().configureEach {
+    systemProperty("nourish.testFixtureDirectory", layout.buildDirectory.dir("outputs/test-fixtures").get().asFile.absolutePath)
     // Explicit focused gate while the legacy Node fixtures are ported to cloud handlers.
     if (providers.gradleProperty("cloudSessionOnly").orNull == "true") {
         filter {
@@ -46,6 +47,9 @@ tasks.withType<Test>().configureEach {
             includeTestsMatching("local.nourish.healthconnect.CloudNativeBackgroundTest")
             includeTestsMatching("local.nourish.healthconnect.CloudHomeWidgetTest")
             includeTestsMatching("local.nourish.healthconnect.CloudHealthExportTest")
+            includeTestsMatching("local.nourish.healthconnect.CloudReconciliationTest")
+            includeTestsMatching("local.nourish.healthconnect.CloudReportPrintTest")
+            includeTestsMatching("local.nourish.healthconnect.ReconciliationTest")
             includeTestsMatching("local.nourish.healthconnect.HomeWidgetTest")
         }
     } else {
