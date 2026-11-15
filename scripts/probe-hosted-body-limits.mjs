@@ -3,8 +3,9 @@ import {writeFileSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {request as playwrightRequest} from 'playwright-core';
 import {ID,Query} from 'node-appwrite';
-import {operator,allRows,databaseId} from './operator.mjs';
-const {users,db}=operator(),owner=ID.unique(),origin='https://nourishing-cloud.appwrite.network',results=[],cleanupFailures=[];let created=false,context;
+import {fixtureOperator} from './fixture-operator.mjs';
+import {allRows,databaseId} from './operator.mjs';
+const {users,db}=fixtureOperator(),owner=ID.unique(),origin='https://nourishing-cloud.appwrite.network',results=[],cleanupFailures=[];let created=false,context;
 // The follow-up isolates one upload after runtime logs proved SSR returns 413 in <300 ms.
 const confirmUpload=process.argv.includes('--confirm-upload'),timeoutMs=confirmUpload?60000:20000;
 const safeError=error=>({name:['TimeoutError','AbortError'].includes(error?.name)?error.name:'RequestError',code:Number.isInteger(error?.code)?error.code:null});

@@ -1,0 +1,74 @@
+import {randomUUID} from 'node:crypto';
+import {Query} from 'node-appwrite';
+const fail=(message='Account deletion is pending.',code=409)=>{throw Object.assign(Error(message),{code,publicMessage:message});};
+const optional=async work=>{try{return await work();}catch(error){if(error.code===404)return null;throw error;}};
+
+/** Server-only ownership of requests which can still finish account work. Never expire an operation. */
+export function createAccountLifecycle({db,database='nourishing',now=()=>Date.now()}){
+ const args=(tableId,rowId)=>({databaseId:database,tableId,rowId}),at=()=>new Date(now()).toISOString();
+ function ownerId(owner){if(typeof owner!=='string'||!owner||owner.length>36)fail('Account identity is unavailable.',503);return owner;}
+ async function initialize(owner){
+  ownerId(owner);const input={...args('account_lifecycle',owner),data:{ownerId:owner,state:'active',jobId:'',version:0},permissions:[]};
+  try{await db.createRow(input);}catch(error){
+   const ambiguous=!Number.isInteger(error.code)||error.code>=500||error.code===408;
+   if(error.code!==409&&!ambiguous)throw error;
+   const row=await optional(()=>db.getRow(args('account_lifecycle',owner)));if(!row)throw error;
+   if(row.ownerId!==owner||row.state!=='active'||row.jobId!==''||!Number.isSafeInteger(row.version))fail();
+  }
+ }
+ async function mutate(owner,work,recover=async()=>null){
+  for(let attempt=0;attempt<4;attempt++){
+  ownerId(owner);const row=await optional(()=>db.getRow(args('account_lifecycle',owner)));if(!row||row.ownerId!==owner||!Number.isSafeInteger(row.version))fail();
+  const tx=await db.createTransaction({ttl:60});
+  try{
+   await db.updateRow({...args('account_lifecycle',owner),data:{version:row.version+1},transactionId:tx.$id});
+   const current=await db.getRow(args('account_lifecycle',owner));if(current.version!==row.version||current.$updatedAt!==row.$updatedAt)fail();
+   const result=await work(row,tx.$id);await db.updateTransaction({transactionId:tx.$id,commit:true});return result;
+  }catch(error){
+   let rolledBack=false;try{await db.updateTransaction({transactionId:tx.$id,rollback:true});rolledBack=true;}catch{}
+   const recovered=await recover();if(recovered)return recovered;
+   if(error.code===409&&rolledBack&&attempt<3)continue;
+   throw error;
+  }
+  }
+ }
+ async function enter(owner,label){
+  if(typeof label!=='string'||!label||label.length>80)fail('Operation identity is unavailable.',503);
+  const id=randomUUID(),operation={id,owner,uncertain:false,markUncertain(){this.uncertain=true;}};
+  return mutate(owner,async(row,transactionId)=>{
+   if(row.state!=='active')fail();
+   await db.createRow({...args('account_operations',id),data:{ownerId:owner,label,state:'active',createdAt:at(),reason:''},permissions:[],transactionId});
+   return operation;
+  },async()=>{const saved=await optional(()=>db.getRow(args('account_operations',id)));if(!saved)return null;if(saved.ownerId!==owner||saved.label!==label)fail('Operation ownership differs.',503);return operation;});
+ }
+ async function owned(operation){const row=await optional(()=>db.getRow(args('account_operations',operation.id)));if(row&&row.ownerId!==operation.owner)fail('Operation ownership differs.',503);return row;}
+ async function settle(operation){
+  if(!await owned(operation))return;
+  // A settled marker is proof the callback ended. If row deletion fails, the worker can finish it.
+  await db.updateRow({...args('account_operations',operation.id),data:{state:'settled',reason:''}});
+  await db.deleteRow(args('account_operations',operation.id)).catch(error=>{if(error.code!==404)return;});
+ }
+ async function hold(operation,reason='mutation_outcome_unknown'){
+  if(!await owned(operation))fail('Operation ownership is missing.',503);
+  await db.updateRow({...args('account_operations',operation.id),data:{state:'uncertain',reason}});
+ }
+ async function run(owner,label,work){
+  const operation=await enter(owner,label);let result;
+  try{result=await work(operation);}catch(error){if(operation.uncertain)await hold(operation).catch(()=>{});else await settle(operation);throw error;}
+  await settle(operation);return result;
+ }
+ async function claim(owner,jobId){
+  if(typeof jobId!=='string'||!jobId||jobId.length>36)fail('Deletion identity is unavailable.',503);
+  return mutate(owner,async(row,transactionId)=>{if(row.state!=='active'&&(row.state!=='deleting'||row.jobId!==jobId))fail();await db.updateRow({...args('account_lifecycle',owner),data:{state:'deleting',jobId},transactionId});return true;},async()=>{const saved=await optional(()=>db.getRow(args('account_lifecycle',owner)));return saved?.ownerId===owner&&saved.state==='deleting'&&saved.jobId===jobId?true:null;});
+ }
+ async function pending(owner){
+  const page=await db.listRows({databaseId:database,tableId:'account_operations',queries:[Query.equal('ownerId',ownerId(owner)),Query.limit(100)],total:false});let active=0,uncertain=0;
+  for(const row of page.rows){if(row.ownerId!==owner)fail('Operation ownership differs.',503);if(row.state==='settled'){await db.deleteRow(args('account_operations',row.$id)).catch(error=>{if(error.code!==404)throw error;});}else{active++;if(row.state==='uncertain')uncertain++;}}
+  return {active,uncertain,more:page.rows.length===100};
+ }
+ async function remove(owner,jobId){
+  const row=await optional(()=>db.getRow(args('account_lifecycle',owner)));if(!row)return;if(row.ownerId!==owner||row.state!=='deleting'||row.jobId!==jobId)fail('Deletion ownership differs.',503);
+  const waiting=await pending(owner);if(waiting.active||waiting.more)fail();await db.deleteRow(args('account_lifecycle',owner));
+ }
+ return {initialize,enter,settle,hold,run,claim,pending,remove};
+}

@@ -1,3 +1,4 @@
+import {deletionCookie,readDeletionTicket} from './deletion-cookie.mjs';
 import {BARCODE_BODY_BYTES} from './barcode.mjs';
 import {HEALTH_EXPORT_MAX_BYTES,healthWarningText} from './health-connect.mjs';
 import {HEALTH_EXPORT_RESPONSE_BYTES} from './health-export.mjs';
@@ -27,6 +28,16 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
         if(req.headers.get('content-type')?.split(';')[0]!=='application/json')fail(415,'Use JSON.');
       }
       const api=service??serviceForRequest(req),secret=readSession(req.headers.get('cookie')??'');
+      const deletionRoute=req.method==='POST'&&['/api/account/deletion/prepare','/api/account/deletion/confirm','/api/account/deletion/status'].includes(path);
+      if(deletionRoute){
+        if(url.search)fail(400,'Invalid account request.');
+        if(!path.endsWith('/status')){if(!secret)fail(401,'Please sign in.');await api.current(secret);}
+        const input=await readBody(req),ticket=readDeletionTicket(req.headers.get('cookie')??'');
+        if(path.endsWith('/prepare')){fields(input,['password']);const prepared=await api.prepareAccountDeletion(secret,{password:string(input.password,8,256)});headers.set('Set-Cookie',deletionCookie(prepared.ticket));return json(200,prepared.status);}
+        if(!ticket)fail(404,'Deletion receipt not found.');
+        if(path.endsWith('/confirm')){fields(input,['confirmation']);if(input.confirmation!=='delete')fail(400,'Confirm account deletion.');const result=await api.confirmAccountDeletion(secret,ticket);headers.set('Set-Cookie',clearSession());return json(result.status==='deleted'?200:202,result);}
+        fields(input,[]);return json(200,await api.accountDeletionStatus(ticket));
+      }
       const exportRoute=/^\/api\/health-connect\/export\/(biometric|intake)\/(options|preview|verify)$/.exec(path);
       const reconciliationRequest=req.method==='POST'&&['/api/health-connect/reconcile/preview','/api/health-connect/reconcile/apply'].includes(path);
       const exportRequest=req.method==='POST'&&exportRoute&&exportRoute[2]!=='options';

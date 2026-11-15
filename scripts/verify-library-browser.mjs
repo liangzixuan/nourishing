@@ -3,8 +3,9 @@ import {writeFileSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {chromium} from 'playwright-core';
 import {ID,Query} from 'node-appwrite';
-import {operator,allRows,databaseId} from './operator.mjs';
-const origin='https://nourishing-cloud.appwrite.network',{users,db}=operator(),owner=ID.unique(),email=`library-${owner}@example.com`,password=randomUUID()+'Aa1!';
+import {fixtureOperator} from './fixture-operator.mjs';
+import {allRows,databaseId} from './operator.mjs';
+const origin='https://nourishing-cloud.appwrite.network',{users,db}=fixtureOperator(),owner=ID.unique(),email=`library-${owner}@example.com`,password=randomUUID()+'Aa1!';
 let browser,page,primaryError;const created=[],errors=[],report={at:new Date().toISOString()};
 writeFileSync('.local/library-browser-fixture.json',JSON.stringify({owner}));
 async function clean(id){for(const tableId of ['command_receipts','workspace_records','workspace_media'])for(const row of await allRows(db,tableId,[Query.equal('ownerId',id)]))await db.deleteRow({databaseId,tableId,rowId:row.$id});for(const tableId of ['workspace_heads','profiles'])try{await db.deleteRow({databaseId,tableId,rowId:id});}catch(e){if(e.code!==404)throw e;}await users.delete({userId:id});}

@@ -4,7 +4,7 @@ Cloud migration of the existing Nourishing nutrition app. The preview has privat
 
 ## Run
 
-Use Node.js 22.23.4 or later. Run `npm ci` and `npm run build`, provide the environment variables listed in `.env.example`, then `npm start`. Astro's official Node adapter provides the Appwrite-supported SSR entrypoint. Production requires HTTPS. Appwrite Sites supplies an ephemeral request key with `sessions.write`, `rows.read`, `rows.write`, `files.read`, and `files.write`; private data requests use the user's session.
+Use Node.js 22.23.4 or later. Run `npm ci` and `npm run build`, provide the environment variables listed in `.env.example`, then `npm start`. Astro's official Node adapter provides the Appwrite-supported SSR entrypoint. Production requires HTTPS. Appwrite Sites supplies an ephemeral request key with `sessions.write`, `rows.read`, `rows.write`, `files.read`, `files.write`, `users.read`, and `users.write`; private data requests use the user's session.
 
 Run `npm test` for HTTP/session checks. `node scripts/verify-appwrite.mjs` performs an explicit live check with disposable test users and removes only the test resources it creates. It needs a short-lived operator key in `.local/integration-key.json`; never commit that file.
 
@@ -42,3 +42,5 @@ Discover → Report → Print Report captures the selected sections before displ
 
 
 The diary supports selection, copy/paste, clear amounts, group/time edits, reusable meals and entry ordering. Tap an energy or macro value for contributing foods; Report details use the applied report filters. Notes support camera/gallery photos with replace/remove controls. Unsaved attachment previews are discarded on close. Local browser checks are in `scripts/verify-diary-tools-local.mjs` and `scripts/verify-note-photos-local.mjs`; `scripts/verify-diary-tools-hosted.mjs` checks the deployed flows with disposable accounts.
+
+Account supports fresh-password deletion with a resumable private status receipt. The cloud backup runner writes verified portable copies to the configured T7 volume independently of the PC app server. Deployment, retention and recovery limits are in [docs/account-lifecycle.md](docs/account-lifecycle.md).

@@ -14,8 +14,8 @@ Before production cutover:
 - Port Coach, glucose/cycle cards, pinned charts, streak image sharing, library sharing and remaining diary tools. Dashboard news/settings, nutrition, energy/weight, streaks, sleep and fasting are implemented. Existing imported records and metadata remain preserved.
 - Activate and verify cloud background jobs, including scheduled fasting and automatic repeat items. The fasting worker is implemented and tested with disposable accounts but stays disabled.
 - Complete Android correction recovery, automatic native export, Wear and reminders. Foreground import/export/reconciliation, explicit background-import consent, cloud widgets and report printing are implemented; full native and device checks remain.
-- Complete account deletion and orphan media cleanup. Backup download, reviewed restore and verified previous-version selection are implemented; recovery deployment verification is recorded below. CSV exports are implemented. Snapshot deletion removes its reference; private Storage retention is not permanent deletion.
-- Establish scheduled independent cloud backups. Retained previous versions and user-triggered downloads do not replace the PC's automatic backup flow.
+- Account deletion now removes owned rows and media across generations, including orphan media, through a durable private job. Separate expiry of retained recovery data for active accounts remains pending. Snapshot deletion removes its reference; private recovery retention remains in effect.
+- Install the prepared independent T7 backup task after a durable read-only Appwrite key is supplied. A real archive and isolated restore have passed; the automatic Windows task is not installed yet.
 - Reconcile PC changes since the baseline and repeat record, photo, and nutrient comparisons.
 - Complete the emailed password-recovery check.
 - Verify the Android app with the PC server stopped.
@@ -59,3 +59,10 @@ Local validation includes 212 server/browser tests, the production build, 20 bui
 ## Diary selection, contributors and note photos — November 15, 2026
 
 Preview `6af9696692007f0a68be` passed hosted checks for diary copy/retry, reusable meals, ordering, clear amounts, nutrient contributors and note-photo save/replace/remove. Mobile diary controls, current-photo access, energy-unit display and account isolation passed. All temporary resources were removed and the real owner workspace was unchanged. Local validation passed 236 tests, the production build and 27 built-server request checks. The original domain owns selection, quantities, ordering and nutrient calculations. Remaining cutover work is listed above; this release does not change the production domain or installed Android app.
+
+
+## Account lifecycle and T7 recovery — November 15, 2026
+
+Preview `6af9e66a8dd8246c822b` passed hosted registration, profile updates, login/logout, deletion and isolation checks. The private account cleanup Function is enabled on a 60-minute interval with no public execute permissions; targeted worker deletion and the empty-queue path passed. Its first automatic timer run is not yet observed. The separate fasting worker remains disabled.
+
+A real T7 cloud archive restored 76 rows and three photos into an isolated recovery fixture. The fixture was removed and the owner workspace stayed unchanged. Daily backup installation awaits a durable read-only key. Local validation passed 285 tests, the production build and 48 built-server checks. See `PROGRESS.md` and `docs/account-lifecycle.md` for evidence and limits. The production domain and installed Android origin have not changed.

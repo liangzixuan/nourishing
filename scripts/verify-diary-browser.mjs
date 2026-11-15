@@ -3,8 +3,9 @@ import {writeFileSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {chromium} from 'playwright-core';
 import {ID,Query} from 'node-appwrite';
-import {operator,allRows,databaseId} from './operator.mjs';
-const origin='https://nourishing-cloud.appwrite.network', {users,db}=operator(),owner=ID.unique(),email=`browser-${owner}@example.com`,password=randomUUID()+'Aa1!';
+import {fixtureOperator} from './fixture-operator.mjs';
+import {allRows,databaseId} from './operator.mjs';
+const origin='https://nourishing-cloud.appwrite.network', {users,db}=fixtureOperator(),owner=ID.unique(),email=`browser-${owner}@example.com`,password=randomUUID()+'Aa1!';
 writeFileSync('.local/diary-browser-fixture.json',JSON.stringify({owner}));
 let browser,page,created=false;const errors=[],report={at:new Date().toISOString()};
 try{

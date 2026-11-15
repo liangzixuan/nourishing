@@ -62,7 +62,7 @@ The browser stores no diary data or session tokens in local storage. It clears i
 
 ## Cutover boundary
 
-The cloud diary can now receive edits. The PC also remains writable. Before switching users to the cloud, implement the remaining features and account lifecycle, reconcile both copies, and repeat record, media, and daily-nutrition comparisons. The importer rejects changed rows instead of overwriting cloud edits. Do not treat the baseline as a final cutover or delete the local recovery copy.
+The cloud diary can now receive edits. The PC also remains writable. Before switching users to the cloud, implement the remaining features, reconcile both copies, and repeat record, media, and daily-nutrition comparisons. The importer rejects changed rows instead of overwriting cloud edits. Do not treat the baseline as a final cutover or delete the local recovery copy.
 
 ## Targets and nutrition reports
 
@@ -79,4 +79,4 @@ Both reads require the account session, reject owner overrides and return `no-st
 
 `POST /api/nutrient-detail` reads a day or selected entries. `POST /api/nutrition-report/nutrient` reads contributors under the applied report filters. Both return canonical source facts and the account energy preference. The UI converts energy for display; missing measurements remain distinct from measured zero.
 
-`POST /api/note-photos/prepare` normalizes an image without persisting it. `POST /api/note-photos/save` stages private media and commits the note, workspace revision and receipt together. An edit also requires the note revision. `GET /api/media?namespace=note_photos&id=...` requires an active note reference in that account. Replacement or removal denies the old app URL once no current note references it. Stored bytes remain private for retained recovery until the separate cleanup workflow is implemented.
+`POST /api/note-photos/prepare` normalizes an image without persisting it. `POST /api/note-photos/save` stages private media and commits the note, workspace revision and receipt together. An edit also requires the note revision. `GET /api/media?namespace=note_photos&id=...` requires an active note reference in that account. Replacement or removal denies the old app URL once no current note references it. Stored bytes remain private for retained recovery. Account deletion now removes all owned generations and their media; ordinary expiry of recovery data for an active account remains separate work.

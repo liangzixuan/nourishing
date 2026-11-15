@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import {writeFileSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {ID, Query} from 'node-appwrite';
-import {operator, allRows, databaseId} from './operator.mjs';
+import {fixtureOperator} from './fixture-operator.mjs';
+import {allRows,databaseId} from './operator.mjs';
 import {createWorkspaceStore} from '../server/workspace-store.mjs';
 import {createDataRepository} from '../server/data-repository.mjs';
 import {digest} from '../server/data-codec.mjs';
 
-const {users, db} = operator(), owner = ID.unique(), store = createWorkspaceStore(db, owner), repository = createDataRepository(db, owner), failures = [];
+const {users, db} = fixtureOperator(), owner = ID.unique(), store = createWorkspaceStore(db, owner), repository = createDataRepository(db, owner), failures = [];
 const ledgerPath = new URL('../.local/scheduler-cloud-fixture.json', import.meta.url), reportPath = new URL('../.local/scheduler-cloud-verification.json', import.meta.url);
 const report = {at: new Date().toISOString(), checks: [], projectWideSchedulerRun: false};let created = false;
 const context = hour => ({asOf: `2026-11-14T${hour}:00Z`, timeZone: 'UTC', today: '2026-11-14'});

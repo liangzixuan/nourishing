@@ -4,8 +4,9 @@ import {readFileSync,writeFileSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {chromium} from 'playwright-core';
 import {ID,Query} from 'node-appwrite';
-import {operator,allRows,databaseId} from './operator.mjs';
-const origin='https://nourishing-cloud.appwrite.network',{users,db}=operator(),ids=[ID.unique(),ID.unique()],failures=[],report={at:new Date().toISOString(),checks:[]};let browser,page,primaryError;
+import {fixtureOperator} from './fixture-operator.mjs';
+import {allRows,databaseId} from './operator.mjs';
+const origin='https://nourishing-cloud.appwrite.network',{users,db}=fixtureOperator(),ids=[ID.unique(),ID.unique()],failures=[],report={at:new Date().toISOString(),checks:[]};let browser,page,primaryError;
 const owner=JSON.parse(readFileSync('.local/migration-destination.json','utf8').replace(/^\uFEFF/,'')).accountId,args=(tableId,id)=>({databaseId,tableId,rowId:id});
 const remember=()=>writeFileSync('.local/dashboard-hosted-fixture.json',JSON.stringify({accounts:ids,cleanupFailures:failures}));remember();
 try{

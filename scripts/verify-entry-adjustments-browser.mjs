@@ -4,10 +4,11 @@ import {writeFileSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {chromium} from 'playwright-core';
 import {ID,Query} from 'node-appwrite';
-import {operator,allRows,databaseId} from './operator.mjs';
+import {fixtureOperator} from './fixture-operator.mjs';
+import {allRows,databaseId} from './operator.mjs';
 import {createDataRepository} from '../server/data-repository.mjs';
 import {entryFacts} from '../server/domain/nutrition.mjs';
-const origin='https://nourishing-cloud.appwrite.network',{users,db}=operator(),created=[],cleanupFailures=[],report={at:new Date().toISOString(),origin,checks:[]};let browser,page;
+const origin='https://nourishing-cloud.appwrite.network',{users,db}=fixtureOperator(),created=[],cleanupFailures=[],report={at:new Date().toISOString(),origin,checks:[]};let browser,page;
 const ledger='.local/entry-adjustments-browser-fixture.json',output='.local/entry-adjustments-browser-verification.json';
 const remember=()=>writeFileSync(ledger,JSON.stringify({created,cleanupFailures,removed:report.fixtureRemoved??false}));remember();
 try{

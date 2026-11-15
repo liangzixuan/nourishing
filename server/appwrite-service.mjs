@@ -1,3 +1,7 @@
+import {createAccountLifecycle} from './account-lifecycle.mjs';
+import {createAccountDeletion} from './account-deletion.mjs';
+import {AccountOperationClient,withinAccountOperation} from './account-operation-context.mjs';
+import {confirmAccountPassword} from './account-password.mjs';
 import {prepareNotePhoto,validateNotePhotoAction,NOTE_MEDIA_NAMESPACE} from './note-photos.mjs';
 import {nutrientDetail,reportNutrientDetail} from './nutrient-detail.mjs';
 import {diaryToolsReview,diaryEnergy} from './diary-tools.mjs';
@@ -22,7 +26,7 @@ import {validateStoredPhoto} from './domain/photo-images.mjs';
 import {stagePhotoMedia} from './photo-storage.mjs';
 import {loadCatalogIndex} from './catalog-index.mjs';
 import {foodInsightOptions,foodOracle,foodSuggestions,previewFoodSuggestion,resolveFoodInsightIngredient} from './food-insights.mjs';
-import {Client,Account,TablesDB,Storage,ID,Permission,Role,Query} from 'node-appwrite';
+import {Account,Users,TablesDB,Storage,ID,Permission,Role,Query} from 'node-appwrite';
 import {createHash} from 'node:crypto';
 import {createDataRepository} from './data-repository.mjs';
 import {createWorkspaceStore} from './workspace-store.mjs';
@@ -39,7 +43,7 @@ import {captureCalendar} from './domain/calendar.mjs';
 async function reviewedPhoto(value){try{return await validateStoredPhoto(value);}catch(error){if(error.status===400)throw Object.assign(error,{code:400,publicMessage:'Choose a valid reviewed photo.'});throw error;}}
 
 export function createAppwriteService(config, key, userAgent='') {
-  const client=()=>new Client().setEndpoint(config.endpoint).setProject(config.project).setForwardedUserAgent(userAgent);
+  const client=()=>new AccountOperationClient().setEndpoint(config.endpoint).setProject(config.project).setForwardedUserAgent(userAgent);
   const anonymous=()=>new Account(client());
   const elevated=()=>{if(!key)throw Object.assign(Error('Cloud credentials unavailable.'),{code:503});return client().setKey(key);};
   const session=secret=>{if(!secret)throw Object.assign(Error('Sign in.'),{code:401});return client().setSession(secret);};
@@ -53,7 +57,7 @@ export function createAppwriteService(config, key, userAgent='') {
     const db=new TablesDB(session(secret));const args=profileArgs(account.$id);
     try{return profileData(await db.getRow(args));}catch(error){if(error.code!==404)throw error;}
     // Only the server can create profile IDs. Browser clients cannot reserve another user's ID.
-    try {await new TablesDB(elevated()).createRow({...args,data:{timeZone:'UTC',units:'metric'},permissions:[Permission.read(Role.user(account.$id)),Permission.update(Role.user(account.$id)),Permission.delete(Role.user(account.$id))]});}
+    try {await new TablesDB(elevated()).createRow({...args,data:{timeZone:'UTC',units:'metric'},permissions:[Permission.read(Role.user(account.$id))]});}
     catch(error){if(error.code!==409)throw error;}
     return profileData(await db.getRow(args));
   }
@@ -85,7 +89,12 @@ export function createAppwriteService(config, key, userAgent='') {
     const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();const profile=await ensureProfile(secret,{$id:owner});
     return createHealthExport({readState:()=>repository.readState(),ownerId:owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET,timeZone:profile.timeZone})[kind];
   }
-  return {
+  const lifecycle=()=>createAccountLifecycle({db:new TablesDB(elevated()),database:config.database});
+  const deletion=()=>createAccountDeletion({db:new TablesDB(elevated()),storage:new Storage(elevated()),users:new Users(elevated()),lifecycle:lifecycle(),database:config.database});
+  const service={
+    async prepareAccountDeletion(secret,{password}){const account=await new Account(session(secret)).get();await confirmAccountPassword({account,password,budget,auth:new Account(elevated()),users:new Users(elevated())});return deletion().prepare(account.$id);},
+    async confirmAccountDeletion(secret,ticket){const account=await new Account(session(secret)).get();return deletion().begin(ticket,account.$id);},
+    async accountDeletionStatus(ticket){return deletion().status(ticket,{advance:true});},
     async nutrientDetail(secret,input){return readView(secret,state=>nutrientDetail(state,input));},
     async reportNutrientDetail(secret,input){const {owner}=await data(secret),calendar=await calendarContext(secret,owner);return readView(secret,state=>reportNutrientDetail(state,input,{now:new Date(calendar.asOf),timeZone:calendar.timeZone}));},
     async diaryToolsReview(secret,input){return readView(secret,state=>diaryToolsReview(state,input));},
@@ -102,7 +111,7 @@ export function createAppwriteService(config, key, userAgent='') {
     async healthReconciliationReceipt(secret,input){return readView(secret,state=>healthReconciliationReceipt(state,input));},
     async applyHealthReconciliation(secret,input){const {owner}=await data(secret),server=elevated(),store=createWorkspaceStore(new TablesDB(server),owner);await store.create();return store.reconcileHealth(input,{reviewSecret:process.env.PHOTO_REVIEW_SECRET,storage:new Storage(server)});},
     async dashboard(secret,date){const {owner}=await data(secret),context=await calendarContext(secret,owner);return readView(secret,state=>dashboardView(state,{date},context));},
-    async homeWidgets(secret,unit){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();const [state,calendar]=await Promise.all([repository.readState(),calendarContext(secret,owner)]);return cloudHomeWidgetView(state,{accountId:owner,origin:config.origin,unit,now:new Date(calendar.asOf),timeZone:calendar.timeZone});},
+    async homeWidgets(secret,unit){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();const state=await repository.readState(),calendar=await calendarContext(secret,owner);return cloudHomeWidgetView(state,{accountId:owner,origin:config.origin,unit,now:new Date(calendar.asOf),timeZone:calendar.timeZone});},
     async exportBackup(secret){return (await backups(secret)).export();},
     async listRecoveries(secret){return (await backups(secret)).listRecoveries();},
     async inspectRecovery(secret,input){return (await backups(secret)).inspectRecovery(input);},
@@ -197,13 +206,18 @@ export function createAppwriteService(config, key, userAgent='') {
     async readCatalogFood(secret,id){return (await data(secret)).repository.food(id);},
     async readMedia(secret,namespace,id){const {repository,storage}=await data(secret);const collection=namespace==='progress_photos'?'progressSnapshots':namespace===NOTE_MEDIA_NAMESPACE?'notes':null;if(collection&&!((await repository.readState())[collection]??[]).some(row=>row.imageId===id))throw Object.assign(Error('Photo not found.'),{code:404});const fileId=await repository.media(namespace,id);return storage.getFileView({bucketId:'private-media',fileId});},
     login,
-    async register({email,password,name}) {await anonymous().create({userId:ID.unique(),email,password,name});return login({email,password});},
+    async register({email,password,name}) {const account=await anonymous().create({userId:ID.unique(),email,password,name});await lifecycle().initialize(account.$id);return login({email,password});},
     async current(secret) {const account=await new Account(session(secret)).get();return {id:account.$id,email:account.email,name:account.name,emailVerified:account.emailVerification,profile:await ensureProfile(secret,account)};},
-    async updateProfile(secret,data) {const account=await new Account(session(secret)).get();await ensureProfile(secret,account);return profileData(await new TablesDB(session(secret)).updateRow({...profileArgs(account.$id),data}));},
+    async updateProfile(secret,data) {const account=await new Account(session(secret)).get();await ensureProfile(secret,account);return profileData(await new TablesDB(elevated()).updateRow({...profileArgs(account.$id),data}));},
     async logout(secret) {if(secret)await new Account(session(secret)).deleteSession({sessionId:'current'});},
     async requestRecovery({email}) {try{await anonymous().createRecovery({email,url:`${config.origin}/reset-password`});}catch(error){if(!['user_not_found','user_invalid_credentials'].includes(error.type))throw error;}},
     async resetPassword(data) {await anonymous().updateRecovery(data);},
     async requestVerification(secret) {await new Account(session(secret)).createVerification({url:`${config.origin}/verify-email`});},
     async verifyEmail(data) {await anonymous().updateVerification(data);}
   };
+  const independent=new Set(['login','register','logout','requestRecovery','resetPassword','verifyEmail','prepareAccountDeletion','confirmAccountDeletion','accountDeletionStatus']);
+  return Object.fromEntries(Object.entries(service).map(([name,method])=>[name,independent.has(name)?method:async(secret,...input)=>{
+    const account=await new Account(session(secret)).get();
+    return lifecycle().run(account.$id,name,operation=>withinAccountOperation(operation,()=>method(secret,...input)));
+  }]));
 }

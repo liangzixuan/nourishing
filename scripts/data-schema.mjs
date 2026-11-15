@@ -5,6 +5,9 @@ const integer=key=>({key,type:'integer',required:true});
 const index=(key,attributes)=>({key,type:'key',attributes});
 const common=[varchar('generation',36),varchar('digest',64)];
 export const tables=[
+ {id:'account_lifecycle',name:'Private account lifecycle',columns:[varchar('ownerId',36),varchar('state',16),varchar('jobId',36),integer('version')],indexes:[]},
+ {id:'account_operations',name:'Private active account operations',columns:[varchar('ownerId',36),varchar('label',80),varchar('state',16),varchar('createdAt',24),varchar('reason',80)],indexes:[index('owner_state',['ownerId','state'])]},
+ {id:'account_deletions',name:'Private account deletion progress',columns:[varchar('ownerId',36),varchar('tokenHash',64),varchar('userCreatedAt',40),varchar('state',16),varchar('phase',32),varchar('cursor',36),integer('version'),varchar('expiresAt',24),varchar('updatedAt',24),varchar('error',80),text('counts')],indexes:[index('state_updated',['state','updatedAt']),index('state_expiry',['state','expiresAt']),index('owner',['ownerId'])]},
  {id:'workspace_recoveries',name:'Verified retained workspace versions',columns:[varchar('ownerId',36),varchar('generation',36),text('head'),varchar('retainedAt',24),{key:'snapshotId',type:'integer',required:false,min:1,max:Number.MAX_SAFE_INTEGER}],indexes:[index('owner_generation',['ownerId','generation']),{key:'owner_snapshot',type:'unique',attributes:['ownerId','snapshotId']}]},
  {id:'backup_reviews',name:'Private backup restore reviews',columns:[varchar('ownerId',36),text('review','mediumtext'),text('manifest','longtext'),varchar('generation',36),varchar('expiresAt',24)],indexes:[index('owner_expiry',['ownerId','expiresAt'])]},
  {id:'health_reviews',name:'Private Health Connect reviews',columns:[varchar('ownerId',36),text('review'),varchar('expiresAt',24)],indexes:[index('owner_expiry',['ownerId','expiresAt'])]},

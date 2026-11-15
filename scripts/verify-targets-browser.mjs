@@ -3,9 +3,10 @@ import {readFileSync,writeFileSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {chromium} from 'playwright-core';
 import {ID,Query} from 'node-appwrite';
-import {operator,allRows,databaseId} from './operator.mjs';
+import {fixtureOperator} from './fixture-operator.mjs';
+import {allRows,databaseId} from './operator.mjs';
 import {targetsBrowserFlow} from './targets-browser-flow.mjs';
-const origin='https://nourishing-cloud.appwrite.network',{users,db}=operator(),created=[],report={at:new Date().toISOString()};let browser,primaryError;
+const origin='https://nourishing-cloud.appwrite.network',{users,db}=fixtureOperator(),created=[],report={at:new Date().toISOString()};let browser,primaryError;
 async function clean(id){for(const tableId of ['command_receipts','workspace_records','workspace_media'])for(const row of await allRows(db,tableId,[Query.equal('ownerId',id)]))await db.deleteRow({databaseId,tableId,rowId:row.$id});for(const tableId of ['workspace_heads','profiles'])try{await db.deleteRow({databaseId,tableId,rowId:id});}catch(error){if(error.code!==404)throw error;}await users.delete({userId:id});}
 try{
  const owner=JSON.parse(readFileSync('.local/migration-destination.json')).accountId,baseline=JSON.parse(readFileSync('.local/workspace-import.json')).workspaceDigest;

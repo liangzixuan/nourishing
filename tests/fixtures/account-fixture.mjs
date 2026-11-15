@@ -1,0 +1,18 @@
+import {randomUUID} from 'node:crypto';
+export function accountFixture(){
+ const tables=new Map(),transactions=new Map(),files=new Map(),accounts=new Map();let clock=0;
+ const table=name=>{if(!tables.has(name))tables.set(name,new Map());return tables.get(name);};
+ const missing=()=>{throw {code:404};},conflict=()=>{throw {code:409};};
+ const put=(name,id,data)=>table(name).set(id,{...structuredClone(data),$id:id,$updatedAt:String(++clock)});
+ const list=(values,queries=[])=>{let rows=[...values].sort((a,b)=>a.$id.localeCompare(b.$id)),limit=100;for(const raw of queries){const q=JSON.parse(raw);if(q.method==='equal')rows=rows.filter(row=>q.values.includes(row[q.attribute]));if(q.method==='cursorAfter'){if(!rows.some(row=>row.$id===q.values[0]))throw {code:400};rows=rows.filter(row=>row.$id>q.values[0]);}if(q.method==='limit')limit=q.values[0];}return structuredClone(rows.slice(0,limit));};
+ const f={table,put,files,accounts,beforeCommit:null,failDeleteFile:false,failDeleteRow:false,lostUserDelete:false,lostCommit:false,now:()=>1700000000000};
+ const write=async(kind,input)=>{
+  if(kind==='delete'&&f.failDeleteRow){f.failDeleteRow=false;throw {code:503};}
+  if(!input.transactionId){const rows=table(input.tableId),before=rows.get(input.rowId);if(kind==='create'&&before)conflict();if(kind!=='create'&&!before)missing();if(kind==='delete')rows.delete(input.rowId);else put(input.tableId,input.rowId,{...before,...input.data,...(input.permissions?{$permissions:input.permissions}:{})});return structuredClone(rows.get(input.rowId)??{});}
+  const tx=transactions.get(input.transactionId),key=input.tableId+':'+input.rowId;if(!tx.versions.has(key))tx.versions.set(key,{tableId:input.tableId,id:input.rowId,version:table(input.tableId).get(input.rowId)?.$updatedAt});tx.ops.push([kind,structuredClone(input)]);return {};
+ };
+ f.db={async getRow({tableId,rowId}){return structuredClone(table(tableId).get(rowId)??missing());},async listRows({tableId,queries}){return {rows:list(table(tableId).values(),queries)};},async createRow(input){return write('create',input);},async updateRow(input){return write('update',input);},async deleteRow(input){return write('delete',input);},async createTransaction(){const $id=randomUUID();transactions.set($id,{versions:new Map(),ops:[]});return {$id};},async updateTransaction({transactionId,commit}){const tx=transactions.get(transactionId);if(!commit){if(!tx)throw {code:409};transactions.delete(transactionId);return;}if(f.beforeCommit)await f.beforeCommit();for(const v of tx.versions.values())if(table(v.tableId).get(v.id)?.$updatedAt!==v.version)conflict();for(const [kind,input]of tx.ops)await write(kind,{...input,transactionId:undefined});transactions.delete(transactionId);if(f.lostCommit){f.lostCommit=false;throw {code:503};}}};
+ f.storage={async getFile({fileId}){return structuredClone(files.get(fileId)??missing());},async listFiles({queries}){return {files:list(files.values(),queries)};},async deleteFile({fileId}){if(f.failDeleteFile){f.failDeleteFile=false;throw {code:503};}if(!files.has(fileId))missing();files.delete(fileId);return {};}};
+ f.users={async get({userId}){return structuredClone(accounts.get(userId)??missing());},async updateStatus({userId,status}){const account=accounts.get(userId)??missing();account.status=status;return account;},async deleteSessions({userId}){const account=accounts.get(userId)??missing();account.sessions=[];return {};},async delete({userId}){if(!accounts.has(userId))missing();accounts.delete(userId);if(f.lostUserDelete){f.lostUserDelete=false;throw {code:503};}return {};}};
+ return f;
+}

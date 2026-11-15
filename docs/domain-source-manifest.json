@@ -1446,6 +1446,12 @@
       "target": "server/domain/report-nutrient-detail.mjs",
       "sourceSha256": "ab07f6e089604e598e63eb5aaff5fbf9ae07b125bafb108f86077bdcd92f2bb8",
       "outputSha256": "9c24e9108a44840dc93abb581dff33630c367eeae0766743c75f7a0af51c764b"
+    },
+    {
+      "source": "server/backup-mirror.mjs",
+      "target": "server/domain/backup-mirror.mjs",
+      "sourceSha256": "ab10226eddedc562c5ee450deb6af60c48b44d618ff2a75d92143a83d541b361",
+      "outputSha256": "ab10226eddedc562c5ee450deb6af60c48b44d618ff2a75d92143a83d541b361"
     }
   ]
 }

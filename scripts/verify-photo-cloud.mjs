@@ -4,7 +4,8 @@ import {writeFileSync} from 'node:fs';
 import {createHash, randomBytes, randomUUID} from 'node:crypto';
 import {Client, ID, Query, Storage, TablesDB} from 'node-appwrite';
 import sharp from 'sharp';
-import {operator, allRows, databaseId} from './operator.mjs';
+import {fixtureOperator} from './fixture-operator.mjs';
+import {allRows,databaseId} from './operator.mjs';
 import {createWorkspaceStore} from '../server/workspace-store.mjs';
 import {createDataRepository} from '../server/data-repository.mjs';
 import {digest, rowId} from '../server/data-codec.mjs';
@@ -13,7 +14,7 @@ import {entryFacts} from '../server/domain/nutrition.mjs';
 import {signPhotoReview} from '../server/cloud-photo.mjs';
 import {stagePhotoMedia} from '../server/photo-storage.mjs';
 
-const {users, db, storage, config} = operator(), owner = ID.unique(), other = ID.unique();
+const {users, db, storage, config} = fixtureOperator(), owner = ID.unique(), other = ID.unique();
 const ids = [owner, other], report = {at: new Date().toISOString(), checks: [], providerCalls: 0}, cleanupFailures = [];
 const args = (tableId, id) => ({databaseId, tableId, rowId: id});
 const png = await sharp({create: {width: 24, height: 20, channels: 3, background: '#92a883'}}).png().toBuffer();

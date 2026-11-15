@@ -4,7 +4,8 @@ import {readFileSync,writeFileSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {Client,ID,Query,TablesDB,Storage} from 'node-appwrite';
 import sharp from 'sharp';
-import {operator,allRows,databaseId} from './operator.mjs';
+import {fixtureOperator} from './fixture-operator.mjs';
+import {allRows,databaseId} from './operator.mjs';
 import {createWorkspaceStore} from '../server/workspace-store.mjs';
 import {workspaceRows} from '../server/workspace-generations.mjs';
 import {createBackupStore} from '../server/backup-store.mjs';
@@ -15,7 +16,7 @@ import {normalizePhoto,validateStoredPhoto} from '../server/domain/photo-images.
 import {createHealthExport} from '../server/health-export.mjs';
 import {previewHealthReconciliation,healthReconciliationReceipt} from '../server/health-reconciliation.mjs';
 
-const {db,storage,users,config}=operator(),ids=[ID.unique(),ID.unique()],owner=ids[0],created=[],files=[],cleanupFailures=[];
+const {db,storage,users,config}=fixtureOperator(),ids=[ID.unique(),ID.unique()],owner=ids[0],created=[],files=[],cleanupFailures=[];
 const args=(tableId,id)=>({databaseId,tableId,rowId:id}),reviewSecret=randomUUID()+randomUUID(),context={ownerId:owner,reviewSecret};
 const report={at:new Date().toISOString(),checks:[]};let phase='create fixtures';
 const ledger=()=>writeFileSync('.local/health-cloud-fixture.json',JSON.stringify({accounts:ids,created,files,cleanupFailures}));ledger();

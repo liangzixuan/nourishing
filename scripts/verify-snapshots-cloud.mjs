@@ -4,11 +4,12 @@ import {readFileSync,writeFileSync} from 'node:fs';
 import {randomUUID,createHash} from 'node:crypto';
 import {Client,ID,Query,Storage,TablesDB} from 'node-appwrite';
 import sharp from 'sharp';
-import {operator,allRows,databaseId} from './operator.mjs';
+import {fixtureOperator} from './fixture-operator.mjs';
+import {allRows,databaseId} from './operator.mjs';
 import {createAppwriteService} from '../server/appwrite-service.mjs';
 import {rowId} from '../server/data-codec.mjs';
 
-const {users,db,storage,config}=operator(),ids=[ID.unique(),ID.unique()],owner=ids[0];
+const {users,db,storage,config}=fixtureOperator(),ids=[ID.unique(),ID.unique()],owner=ids[0];
 const key=JSON.parse(readFileSync(new URL('../.local/data-key.json',import.meta.url),'utf8').replace(/^\uFEFF/,''));
 const api=createAppwriteService({endpoint:config.endpoint,project:config.projectId,database:databaseId,profileTable:'profiles'},key.secret);
 const args=(tableId,id)=>({databaseId,tableId,rowId:id}),report={at:new Date().toISOString(),checks:[]},cleanupFailures=[],fileIds=[];

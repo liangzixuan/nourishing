@@ -4,8 +4,9 @@ import {readFileSync,writeFileSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {chromium} from 'playwright-core';
 import {ID,Query} from 'node-appwrite';
-import {operator,allRows,databaseId} from './operator.mjs';
-const origin='https://nourishing-cloud.appwrite.network',{users,db}=operator(),ids=[ID.unique(),ID.unique()],failures=[],report={at:new Date().toISOString(),checks:[]};let browser,primaryError,page;
+import {fixtureOperator} from './fixture-operator.mjs';
+import {allRows,databaseId} from './operator.mjs';
+const origin='https://nourishing-cloud.appwrite.network',{users,db}=fixtureOperator(),ids=[ID.unique(),ID.unique()],failures=[],report={at:new Date().toISOString(),checks:[]};let browser,primaryError,page;
 const owner=JSON.parse(readFileSync(new URL('../.local/migration-destination.json',import.meta.url),'utf8').replace(/^\uFEFF/,'')).accountId,args=(tableId,id)=>({databaseId,tableId,rowId:id}),fixturePath=new URL('../.local/profile-browser-fixture.json',import.meta.url),reportPath=new URL('../.local/profile-browser-verification.json',import.meta.url),remember=()=>writeFileSync(fixturePath,JSON.stringify({accounts:ids,cleanupFailures:failures}));remember();
 try{
  const ownerBefore=await db.getRow(args('workspace_heads',owner)),accounts=[];

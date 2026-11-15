@@ -8,6 +8,21 @@ const dataUrl=blob=>new Promise((resolve,reject)=>{const reader=new FileReader()
 const keys=['entries','biometrics','notes','foods','recipes','meals','progressSnapshots'];
 const labels={entries:'Diary foods and exercise',biometrics:'Biometrics',notes:'Notes',foods:'Foods',recipes:'Recipes',meals:'Meals',progressSnapshots:'Snapshots'};
 
+/** One verified export path for both account deletion and workspace backup. */
+export async function downloadBackup({signal,onProgress=()=>{},isCurrent=()=>true,requestJson=request}={}){
+   const exported=await requestJson('/api/backup/export',undefined,signal),manifest=exported.manifest,images=[];
+   const {digest:expected,...body}=manifest;if(await hash(new TextEncoder().encode(JSON.stringify(canonical(body))))!==expected)throw Error('Backup verification failed. Try again.');
+   for(const [index,row]of manifest.media.entries()){
+    onProgress(`Downloading photos ${index+1}/${manifest.media.length}…`);
+    const response=await fetch('/api/media?'+new URLSearchParams({namespace:row.namespace,id:row.id}),{credentials:'same-origin',signal});if(!response.ok)throw Error('A backup photo could not be downloaded. Try again.');
+    const bytes=await response.arrayBuffer();if(bytes.byteLength!==row.bytes||await hash(bytes)!==row.id)throw Error('A backup photo failed verification. Try again.');
+    images.push({...row,dataUrl:await dataUrl(new Blob([bytes],{type:'image/jpeg'}))});
+   }
+   const latest=await requestJson('/api/backup/export',undefined,signal);if(latest.revision!==exported.revision)throw Error('Your workspace changed. Download the backup again.');
+   if(!isCurrent())return false;const blob=new Blob([JSON.stringify({...manifest,media:images})],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='nourishing-backup-'+manifest.createdAt.slice(0,10)+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);onProgress('Backup downloaded.');
+ return true;
+}
+
 /** The browser assembles one portable file. Photos travel in separate bounded requests. */
 export function mountBackup({root,show,close,header,content,onChange=async()=>{}}){
  let disposed=false,busy=false,restore=null;const abort=new AbortController();
@@ -49,16 +64,7 @@ export function mountBackup({root,show,close,header,content,onChange=async()=>{}
  async function download(){
   if(busy)return;setBusy(true);message('Preparing backup…');
   try{
-   const exported=await request('/api/backup/export',undefined,abort.signal),manifest=exported.manifest,images=[];
-   const {digest:expected,...body}=manifest;if(await hash(new TextEncoder().encode(JSON.stringify(canonical(body))))!==expected)throw Error('Backup verification failed. Try again.');
-   for(const [index,row]of manifest.media.entries()){
-    message(`Downloading photos ${index+1}/${manifest.media.length}…`);
-    const response=await fetch('/api/media?'+new URLSearchParams({namespace:row.namespace,id:row.id}),{credentials:'same-origin',signal:abort.signal});if(!response.ok)throw Error('A backup photo could not be downloaded. Try again.');
-    const bytes=await response.arrayBuffer();if(bytes.byteLength!==row.bytes||await hash(bytes)!==row.id)throw Error('A backup photo failed verification. Try again.');
-    images.push({...row,dataUrl:await dataUrl(new Blob([bytes],{type:'image/jpeg'}))});
-   }
-   const latest=await request('/api/backup/export',undefined,abort.signal);if(latest.revision!==exported.revision)throw Error('Your workspace changed. Download the backup again.');
-   if(!alive())return;const blob=new Blob([JSON.stringify({...manifest,media:images})],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='nourishing-backup-'+manifest.createdAt.slice(0,10)+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);message('Backup downloaded.');
+   await downloadBackup({signal:abort.signal,onProgress:message,isCurrent:alive});
   }catch(error){if(error.name!=='AbortError')message(error.message);}finally{if(alive())setBusy(false);}
  }
  fileInput.onchange=async()=>{

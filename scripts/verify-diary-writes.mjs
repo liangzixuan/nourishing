@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import {writeFileSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {ID,Query} from 'node-appwrite';
-import {operator,allRows,databaseId} from './operator.mjs';
+import {fixtureOperator} from './fixture-operator.mjs';
+import {allRows,databaseId} from './operator.mjs';
 import {createWorkspaceStore} from '../server/workspace-store.mjs';
 import {createDataRepository} from '../server/data-repository.mjs';
 import {digest} from '../server/data-codec.mjs';
-const {users,db}=operator(),owner=ID.unique(),store=createWorkspaceStore(db,owner),repo=createDataRepository(db,owner),report={at:new Date().toISOString(),checks:[]};let created=false;
+const {users,db}=fixtureOperator(),owner=ID.unique(),store=createWorkspaceStore(db,owner),repo=createDataRepository(db,owner),report={at:new Date().toISOString(),checks:[]};let created=false;
 writeFileSync('.local/diary-write-fixture.json',JSON.stringify({owner}));
 try{
  await users.create({userId:owner,email:`diary-${owner}@example.com`,password:randomUUID()+'Aa1!',name:'Diary write fixture'});created=true;
