@@ -1,0 +1,97 @@
+{
+  "records": [
+    {
+      "date": "2026-10-31",
+      "unit": "°C",
+      "start": "2026-10-31T01:20:30.123456789-04:00",
+      "id": "body-temperature:temperature:opaque",
+      "time": "00:20",
+      "source": {
+        "app": "fixture.synthetic.vitals",
+        "recordId": "temperature:opaque",
+        "lastModifiedAt": "2026-10-31T06:00:00Z",
+        "temperatureContext": {"measurementLocation": 3}
+      },
+      "type": "Body temperature",
+      "value": 36.75
+    },
+    {
+      "date": "2026-10-31",
+      "unit": "kg",
+      "start": "2026-10-31T01:20:30.123456789-04:00",
+      "id": "body-water-mass:water-mass:opaque",
+      "time": "00:20",
+      "source": {
+        "app": "fixture.synthetic.vitals",
+        "recordId": "water-mass:opaque",
+        "lastModifiedAt": "2026-10-31T06:00:00Z"
+      },
+      "type": "Body water mass",
+      "value": 40.25
+    },
+    {
+      "date": "2026-10-31",
+      "unit": "bpm",
+      "start": "2026-10-31T01:20:30.123456789-04:00",
+      "id": "resting-heart-rate:resting:opaque",
+      "time": "00:20",
+      "source": {
+        "app": "fixture.synthetic.vitals",
+        "recordId": "resting:opaque",
+        "lastModifiedAt": "2026-10-31T06:00:00Z"
+      },
+      "type": "Resting heart rate",
+      "value": 57
+    },
+    {
+      "date": "2026-10-31",
+      "unit": "ms",
+      "start": "2026-10-31T01:20:30.123456789-04:00",
+      "id": "hrv-rmssd:rmssd:opaque",
+      "time": "00:20",
+      "source": {
+        "app": "fixture.synthetic.vitals",
+        "recordId": "rmssd:opaque",
+        "lastModifiedAt": "2026-10-31T06:00:00Z"
+      },
+      "type": "HRV (RMSSD)",
+      "value": 32.125
+    },
+    {
+      "date": "2026-10-31",
+      "unit": "%",
+      "start": "2026-10-31T01:20:30.123456789-04:00",
+      "id": "oxygen-saturation:oxygen:opaque",
+      "time": "00:20",
+      "source": {
+        "app": "fixture.synthetic.vitals",
+        "recordId": "oxygen:opaque",
+        "lastModifiedAt": "2026-10-31T06:00:00Z"
+      },
+      "type": "Oxygen saturation",
+      "value": 98.25
+    },
+    {
+      "date": "2026-10-31",
+      "unit": "brpm",
+      "start": "2026-10-31T01:20:30.123456789-04:00",
+      "id": "respiratory-rate:respiration:opaque",
+      "time": "00:20",
+      "source": {
+        "app": "fixture.synthetic.vitals",
+        "recordId": "respiration:opaque",
+        "lastModifiedAt": "2026-10-31T06:00:00Z"
+      },
+      "type": "Respiratory rate",
+      "value": 14.5
+    }
+  ],
+  "format": "nourish-health-connect",
+  "exportedAt": "2026-10-31T12:00:00Z",
+  "range": {
+    "zone": "America/Chicago",
+    "from": "2026-10-30",
+    "to": "2026-10-31"
+  },
+  "version": 1
+}

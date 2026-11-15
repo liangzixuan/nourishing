@@ -14,10 +14,13 @@
   },
   "dependencies": {
     "@astrojs/node": "11.1.13",
+    "@google/genai": "3.3.0",
     "@js-temporal/polyfill": "0.5.1",
     "astro": "7.4.12",
     "big.js": "7.0.1",
     "cheerio": "1.2.0",
+    "ipaddr.js": "2.5.0",
+    "jsonld": "9.0.0",
     "node-appwrite": "31.2.0",
     "numeric-quantity": "3.2.1",
     "papaparse": "5.7.0",
@@ -26,6 +29,7 @@
     "sharp": "0.35.5"
   },
   "devDependencies": {
-    "playwright-core": "1.58.2"
+    "playwright-core": "1.58.2",
+    "undici": "6.29.1"
   }
 }

@@ -7,5 +7,15 @@ export async function request(path,body,signal){
 }
 export async function command(revision,type,payload){
  const signature=JSON.stringify({revision,type,payload});if(pending?.signature!==signature)pending={signature,body:{revision,type,payload,requestId:crypto.randomUUID()}};
- const result=await request('/api/workspace/command',pending.body);pending=null;return result;
+ const path=['library.portions','library.retirement'].includes(type)?'/api/library/command':type==='entry.ingredients.adjust'?'/api/diary/ingredients/save':'/api/workspace/command';
+ const result=await request(path,pending.body);pending=null;return result;
+}
+
+export function photoSaver(revision){
+ let pendingPhoto=null;
+ return async input=>{
+  const signature=JSON.stringify(input);
+  if(pendingPhoto?.signature!==signature)pendingPhoto={signature,body:{...input,revision:revision(),requestId:crypto.randomUUID()}};
+  const result=await request('/api/photos/save',pendingPhoto.body);pendingPhoto=null;return result;
+ };
 }

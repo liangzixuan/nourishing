@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "asOf": "2026-11-04T12:00:01.000Z",
+  "paused": false,
+  "events": [
+    {
+      "id": "7ace223ba78d7e75f692ceed90284f0cc1de84a117001402338253c8269b4862",
+      "kind": "food",
+      "dueAt": "2026-11-04T12:00:00.000Z",
+      "expiresAt": "2026-11-04T12:15:00.000Z"
+    }
+  ],
+  "access": {
+    "mode": "private",
+    "origin": "https://fixture.example.ts.net:8443",
+    "login": "owner@example.test"
+  }
+}

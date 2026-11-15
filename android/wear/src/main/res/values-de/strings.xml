@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nourishing</string>
+    <string name="watch_connect_hint">Mit dem Smartphone verbinden.</string>
+    <string name="watch_connect">Smartphone verbinden / wechseln</string>
+    <string name="watch_refresh">Aktualisieren</string>
+    <string name="watch_unit_switch">kcal / kJ wechseln</string>
+    <string name="watch_unit">Energieeinheit: %1$s</string>
+    <string name="watch_notification_settings">Benachrichtigungseinstellungen</string>
+    <string name="watch_disconnect">Trennen</string>
+    <string name="watch_disconnected">Getrennt. Bei Bedarf erneut verbinden.</string>
+    <string name="watch_details">Details</string>
+    <string name="watch_hide_details">Details ausblenden</string>
+    <string name="watch_help">Hinweise benötigen ein verbundenes Smartphone mit laufendem Nourishing-Uhrendienst. Zeitpläne erstellen und Erinnerungen im privaten Arbeitsbereich fortsetzen. Bewertungen und Ziele folgen den PC-Einstellungen.</string>
+    <string name="watch_food_off">Essenshinweise: aus</string>
+    <string name="watch_food_on">Essenshinweise: an</string>
+    <string name="watch_food_blocked">Essenshinweise: blockiert</string>
+    <string name="watch_fasting_off">Fastenhinweise: aus</string>
+    <string name="watch_fasting_on">Fastenhinweise: an</string>
+    <string name="watch_fasting_blocked">Fastenhinweise: blockiert</string>
+    <string name="watch_blocked">Benachrichtigungen sind blockiert. In den Benachrichtigungseinstellungen zulassen.</string>
+    <string name="watch_connection_unavailable">Uhrenverbindung nicht verfügbar. Google Play-Dienste prüfen.</string>
+    <string name="watch_access_revoked">Uhrenzugriff wurde auf dem Smartphone deaktiviert.</string>
+    <string name="watch_looking">Gekoppeltes Smartphone wird gesucht…</string>
+    <string name="watch_enable_on_phone">Nourishing auf dem gekoppelten Smartphone öffnen und Uhrenzugriff aktivieren.</string>
+    <string name="watch_choose_phone">Smartphone auswählen</string>
+    <string name="watch_phone_not_found">Smartphone nicht gefunden. Uhrenverbindung prüfen.</string>
+    <string name="watch_play_unavailable">Google Play-Dienste sind auf diesem Gerät nicht verfügbar.</string>
+    <string name="watch_refreshing">Aktualisierung…</string>
+    <string name="watch_bad_update">Aktualisierung nicht lesbar. Beide Nourishing-Apps aktualisieren und erneut laden.</string>
+    <string name="watch_workspace_unavailable">Smartphone oder privater Arbeitsbereich nicht verfügbar. Nourishing und Tailscale auf dem Smartphone öffnen, dann aktualisieren.</string>
+    <string name="watch_updated">Aktualisiert: %1$s</string>
+    <string name="watch_partial">Unvollständige Daten</string>
+    <string name="watch_unmeasured">Nicht gemessen</string>
+    <string name="watch_calories">Kalorien</string>
+    <string name="watch_energy">Energie</string>
+    <string name="watch_scores">Ernährungsbewertungen</string>
+    <string name="watch_targets">Ausgewählte Ziele</string>
+    <string name="watch_sources">Quellen</string>
+    <string name="watch_food_channel">Erinnerungen an Essenseinträge</string>
+    <string name="watch_fasting_channel">Fastenerinnerungen</string>
+    <string name="watch_reminder">Ihre Erinnerung ist bereit. Nourishing bei Gelegenheit öffnen.</string>
+</resources>

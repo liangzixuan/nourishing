@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Nourishing</string>
+  <string name="web_health_title">Nourishing · Health Connect</string>
+  <string name="web_health_connect">Health Connect</string>
+  <string name="web_menu">Menu de l’application</string>
+  <string name="web_reload">Actualiser</string>
+  <string name="web_browser">Ouvrir dans Chrome</string>
+  <string name="web_print">Imprimer / enregistrer le PDF</string>
+  <string name="web_unavailable">PC inaccessible. Vérifiez que le PC est allumé et que Tailscale est connecté, puis réessayez.</string>
+  <string name="web_retry">Réessayer</string>
+  <string name="web_no_handler">Aucune application ne peut ouvrir cet élément.</string>
+  <string name="web_save_cancelled">Exportation annulée.</string>
+  <string name="web_export_lost">Cette exportation n’est plus disponible. Générez-la à nouveau.</string>
+  <string name="web_cleanup_pending">Une copie de l’exportation n’a pas pu être supprimée. Le nettoyage sera réessayé au prochain lancement.</string>
+  <string name="web_finish_export">Terminez ou annulez d’abord l’exportation en cours.</string>
+  <string name="web_download_failed">Échec du téléchargement. Réessayez.</string>
+  <string name="web_save_failed_removed">Échec de l’enregistrement. Le fichier incomplet a été supprimé.</string>
+  <string name="web_save_failed_remaining">Échec de l’enregistrement. Supprimez le fichier incomplet avant de réessayer.</string>
+  <string name="web_saved">Exportation enregistrée.</string>
+  <string name="web_android_language">Langue Android</string>
+</resources>

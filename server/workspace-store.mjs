@@ -1,3 +1,4 @@
+import {tickCloudFasting} from './fasting.mjs';
 import {Query,ID,Permission,Role} from 'node-appwrite';
 import {digest,packWorkspace,rowId,unpackWorkspace} from './data-codec.mjs';
 import {initialState} from './domain/workspace.mjs';
@@ -22,7 +23,16 @@ export function createWorkspaceStore(db,owner){
    await db.updateTransaction({transactionId:tx.$id,commit:true});
   }catch(error){await db.updateTransaction({transactionId:tx.$id,rollback:true}).catch(()=>{});if(error.code===409&&await optional(db,'workspace_heads',owner))return;throw error;}
  }
- async function command(raw,readCatalog){
+ async function persist(state,before,h,transactionId){
+   const packed=packWorkspace(state,owner,h.generation),old=new Map(before.map(row=>[row.$id,row]));
+   for(const row of packed.rows){const prior=old.get(row.$id);old.delete(row.$id);if(prior&&prior.digest===row.digest&&prior.position===row.position&&prior.day===row.day)continue;
+    await db[prior?'updateRow':'createRow']({...args('workspace_records',row.$id),data:dataOf(row),...(prior?{}:{permissions:row.$permissions}),transactionId:transactionId});
+   }
+   for(const id of old.keys())await db.deleteRow({...args('workspace_records',id),transactionId:transactionId});
+   await db.updateRow({...args('workspace_heads',owner),data:packed.head,transactionId:transactionId});
+   return packed.head.digest;
+ }
+ async function command(raw,readCatalog,context={}){
   const input=parseCommand(raw),receiptId=rowId(owner,input.requestId),fingerprint=digest(input),receipt=await optional(db,'command_receipts',receiptId);
   if(receipt){if(receipt.ownerId!==owner||receipt.fingerprint!==fingerprint)conflict();return JSON.parse(receipt.result);}
   const h=await db.getRow(args('workspace_heads',owner));if(h.ownerId!==owner||h.digest!==input.revision)conflict();
@@ -35,15 +45,12 @@ export function createWorkspaceStore(db,owner){
    const guard=await db.getRow(args('workspace_heads',owner));if(guard.digest!==h.digest||guard.$updatedAt!==h.$updatedAt)conflict();
    const before=await workspaceRows(db,owner,h.generation);let state;
    try{state=unpackWorkspace(h,before);}catch(error){const latest=await db.getRow(args('workspace_heads',owner));if(latest.digest!==h.digest)conflict();throw error;}
+   context.beforeApply?.();
    const action=captureActionFoods(state,{type:input.type,payload:input.payload},catalogFoods);
-   const saved=applyWorkspaceCommand(state,action);
-   const packed=packWorkspace(state,owner,h.generation),old=new Map(before.map(row=>[row.$id,row]));
-   for(const row of packed.rows){const prior=old.get(row.$id);old.delete(row.$id);if(prior&&prior.digest===row.digest&&prior.position===row.position&&prior.day===row.day)continue;
-    await db[prior?'updateRow':'createRow']({...args('workspace_records',row.$id),data:dataOf(row),...(prior?{}:{permissions:row.$permissions}),transactionId:tx.$id});
-   }
-   for(const id of old.keys())await db.deleteRow({...args('workspace_records',id),transactionId:tx.$id});
-   await db.updateRow({...args('workspace_heads',owner),data:packed.head,transactionId:tx.$id});
-   const result={ok:true,revision:packed.head.digest,...(saved?.id?{item:{kind:saved.kind,id:saved.id}}:{})};
+   const saved=applyWorkspaceCommand(state,action,context);
+   if(context.stageMedia)await context.stageMedia({transactionId:tx.$id,generation:h.generation});
+   const revision=await persist(state,before,h,tx.$id);
+   const result={ok:true,revision,...(saved?.counts?{counts:saved.counts}:{}),...(saved?.entryIds?{entryIds:saved.entryIds}:{}),...(saved?.photoId?{photoId:saved.photoId}:{}),...(saved?.id?{item:{kind:saved.kind,id:saved.id}}:{})};
    await db.createRow({...args('command_receipts',receiptId),data:{ownerId:owner,fingerprint,result:JSON.stringify(result)},permissions:permissions(owner),transactionId:tx.$id});
    await db.updateTransaction({transactionId:tx.$id,commit:true});return result;
   }catch(error){
@@ -52,5 +59,17 @@ export function createWorkspaceStore(db,owner){
    if(error.code===409)conflict();throw error;
   }
  }
- return {create,command};
+ async function tickFasting(context){
+  const h=await db.getRow(args('workspace_heads',owner));if(h.ownerId!==owner)conflict();
+  const before=await workspaceRows(db,owner,h.generation);let state;
+  try{state=unpackWorkspace(h,before);}catch(error){const latest=await db.getRow(args('workspace_heads',owner));if(latest.digest!==h.digest)conflict();throw error;}
+  tickCloudFasting(state,context);if(digest(state)===h.digest)return {changed:false};
+  const tx=await db.createTransaction({ttl:60});
+  try{
+   await db.updateRow({...args('workspace_heads',owner),data:{digest:h.digest},transactionId:tx.$id});
+   const guard=await db.getRow(args('workspace_heads',owner));if(guard.digest!==h.digest||guard.$updatedAt!==h.$updatedAt)conflict();
+   const revision=await persist(state,before,h,tx.$id);await db.updateTransaction({transactionId:tx.$id,commit:true});return {changed:true,revision};
+  }catch(error){await db.updateTransaction({transactionId:tx.$id,rollback:true}).catch(()=>{});if(error.code===409)conflict();throw error;}
+ }
+ return {create,command,tickFasting};
 }

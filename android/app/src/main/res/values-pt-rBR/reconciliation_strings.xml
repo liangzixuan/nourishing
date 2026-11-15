@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="recon_title">Reconciliação de fontes em primeiro plano</string>
+    <string name="recon_intro">Revise exclusões explícitas na fonte, registros alterados completos e totais diários indisponíveis. As datas selecionadas limitam a captura e as consultas diárias; registros nativos principais alterados completos podem incluir medições fora dessas datas. Este fluxo é separado da importação de capturas e da sincronização por hora. Lacunas antigas de exclusão permanecem desconhecidas; linhas ausentes da captura nunca excluem registros. Salvar um arquivo não confirma nenhum token.</string>
+    <string name="recon_initial">Verifique o mesmo espaço de trabalho privado para retomar seu lote pendente salvo, se houver.</string>
+    <string name="recon_consent">Revisei e permito as remoções listadas: exclusões nativas, linhas dependentes obsoletas e agregados indisponíveis.</string>
+    <string name="recon_baseline_consent">Após um conflito confirmado no destino, entendo que um novo fluxo tem continuidade de exclusão desconhecida. Descartar o lote pendente antigo apenas para esta redefinição explícita.</string>
+    <string name="recon_check">Verificar espaço de trabalho de reconciliação</string>
+    <string name="recon_read">Ler dados selecionados para reconciliação</string>
+    <string name="recon_preview">Ver prévia pendente / verificar comprovante</string>
+    <string name="recon_confirm">Confirmar reconciliação revisada</string>
+    <string name="recon_save">Salvar arquivo de reconciliação pendente</string>
+    <string name="recon_reset">Criar nova base após conflito de cursor confirmado</string>
+    <string name="recon_destination">%1$s\nConta: %2$s\n%3$s</string>
+    <string name="recon_has_pending">Há um lote salvo pendente. Confira a prévia ou o comprovante antes de outra leitura.</string>
+    <string name="recon_no_pending">Nenhum lote pendente. Leia os tipos e o período selecionados para preparar a reconciliação.</string>
+    <string name="recon_staged">Reconciliação preparada e salva. Confira a prévia, incluindo alterações na fonte e lacunas no histórico de exclusões. Fechar o aplicativo não a descarta.</string>
+    <string name="recon_acknowledged">Comprovante exato do destino confirmado. %1$s Os cursores preparados foram salvos.</string>
+    <string name="recon_save_help">Escolha o armazenamento no dispositivo. Salvar não confirma a entrega nem avança tokens. Volte à prévia pendente ou à verificação do comprovante após importar no PC.</string>
+    <string name="recon_conflict_required">Primeiro verifique o comprovante pendente e obtenha um conflito confirmado; depois aceite explicitamente a continuidade desconhecida.</string>
+    <string name="recon_reset_ready">Um novo fluxo de reconciliação está pronto. A continuidade das exclusões anteriores é desconhecida. Leia os dados selecionados para preparar uma nova base para revisão; esta redefinição não removeu nenhuma linha existente do espaço de trabalho.</string>
+    <string name="recon_check_first">Verifique primeiro o espaço de trabalho de reconciliação.</string>
+    <string name="recon_changed">O destino mudou. Verifique-o novamente.</string>
+    <string name="recon_preview_again">Confira novamente a prévia do lote pendente.</string>
+    <string name="recon_permission_revoked">A permissão de leitura foi revogada. Nenhuma outra reconciliação foi enviada. Os dados e tokens pendentes permanecem inalterados.</string>
+    <string name="recon_already_applied">O destino já aplicou exatamente este lote. O comprovante foi confirmado; nenhuma gravação foi repetida.</string>
+    <string name="recon_replay_receipt">Lote já aplicado confirmado pelo comprovante exato de repetição.</string>
+    <string name="recon_review">%1$s\nConta: %2$s\nDe %3$s a %4$s (%5$s)\n%6$s\n\n%7$s\n\nRevise cada contagem de remoção. As remoções ficam desmarcadas até sua aprovação explícita.</string>
+    <string name="recon_cancelled">Reconciliação interrompida. Uma aplicação já enviada pode ter sido concluída. Verifique o lote salvo e o comprovante antes de tentar novamente.</string>
+    <string name="recon_failure">%1$s\nVerifique o lote salvo e o comprovante antes de tentar novamente. Um conflito de cursor exige uma nova base revisada; ele nunca é redefinido automaticamente.</string>
+</resources>

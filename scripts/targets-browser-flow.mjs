@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {writeFileSync} from 'node:fs';
 export async function targetsBrowserFlow(page,origin){
  const button=name=>page.getByRole('button',{name,exact:true}),field=name=>page.getByLabel(name,{exact:true}),target=()=>page.locator('[data-nutrient="protein"]');
  const errors=[];page.on('pageerror',error=>errors.push(error.message));page.setDefaultTimeout(30000);
@@ -17,9 +18,13 @@ export async function targetsBrowserFlow(page,origin){
  await button('Discover').click();await button('View full report').click();assert.equal(await page.locator('[data-report-nutrient="protein"]').count(),0);
  await field('Days').selectOption('complete');await button('Update report').click();await page.getByText(/^0 of \d+ days$/).waitFor();
  await button('Dashboard').click();await page.screenshot({path:'.local/cloud-dashboard.png'});
+ const dashboardLayout=await page.evaluate(()=>{const rect=element=>{const box=element.getBoundingClientRect(),style=getComputedStyle(element);return {selector:element.id||element.className,rect:box.toJSON(),position:style.position,zIndex:style.zIndex,transform:style.transform};},settings=document.querySelector('#settings-tab'),box=settings.getBoundingClientRect();return {innerWidth,innerHeight,scrollX,scrollY,scrollWidth:document.documentElement.scrollWidth,visualViewport:{width:visualViewport.width,height:visualViewport.height,scale:visualViewport.scale,offsetTop:visualViewport.offsetTop},elements:[document.querySelector('.app-shell'),document.querySelector('.app-nav'),settings,...document.querySelectorAll('.nutrition-card')].map(rect),hit:document.elementsFromPoint(box.x+box.width/2,box.y+box.height/2).map(element=>element.id||element.className||element.tagName)};});
+ writeFileSync('.local/targets-dashboard-layout.json',JSON.stringify(dashboardLayout,null,2));
+ assert.ok(dashboardLayout.scrollWidth<=dashboardLayout.visualViewport.width,'Dashboard must not expand the mobile viewport');
+ assert.ok(dashboardLayout.elements.find(row=>row.selector==='app-nav').rect.bottom<=dashboardLayout.visualViewport.height,'Bottom navigation must stay inside the visible viewport');
  await button('Settings').click();await field('Theme').selectOption('dark');await page.waitForFunction(()=>!document.querySelector('[aria-label=Theme]').disabled);await page.screenshot({path:'.local/cloud-targets.png'});
  let release,started;const gate=new Promise(resolve=>release=resolve),pending=new Promise(resolve=>started=resolve);const delayed=async route=>{started();await gate;await route.continue();};await page.route('**/api/nutrition-report?*',delayed);
  await button('Discover').click();await pending;await button('Diary').click();await page.locator('.calorie-summary').waitFor();const response=page.waitForResponse(r=>r.url().includes('/api/nutrition-report?'));release();await response;await page.unroute('**/api/nutrition-report?*',delayed);assert.equal(await page.locator('.nutrition-page').count(),0);
- assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(errors,[]);
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth));assert.deepEqual(errors,[]);
  return ['system theme follows live device changes and survives reload','target and maximum save and reopen','target reflected in source nutrition report','unknown nutrients remain unavailable','nutrient visibility reflected in report','completed-day filter','View full report navigation','tab switch ignores stale report response','no horizontal overflow or browser errors'];
 }

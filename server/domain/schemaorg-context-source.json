@@ -1,0 +1,26 @@
+{
+  "at": "2026-11-01T04:05:43.840Z",
+  "url": "https://schema.org/docs/jsonldcontext.jsonld",
+  "finalUrl": "https://schema.org/docs/jsonldcontext.jsonld",
+  "bytes": 210636,
+  "sha256": "65d0c5d17def9b171b7697bb0929eed17aa32f19af539e15302b6c20479b8930",
+  "selected": {
+    "@vocab": "http://schema.org/",
+    "recipeIngredient": {
+      "@id": "schema:recipeIngredient"
+    },
+    "recipeInstructions": {
+      "@id": "schema:recipeInstructions"
+    },
+    "itemListElement": {
+      "@id": "schema:itemListElement"
+    },
+    "unitCode": {
+      "@id": "schema:unitCode"
+    },
+    "name": {
+      "@id": "schema:name"
+    },
+    "schema": "http://schema.org/"
+  }
+}

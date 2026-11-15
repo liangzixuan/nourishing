@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nourishing</string>
+    <string name="watch_connect_hint">Connectez votre téléphone.</string>
+    <string name="watch_connect">Connecter / changer de téléphone</string>
+    <string name="watch_refresh">Actualiser</string>
+    <string name="watch_unit_switch">Changer kcal / kJ</string>
+    <string name="watch_unit">Unité d’énergie : %1$s</string>
+    <string name="watch_notification_settings">Paramètres des notifications</string>
+    <string name="watch_disconnect">Déconnecter</string>
+    <string name="watch_disconnected">Déconnecté. Reconnectez-vous quand vous voulez.</string>
+    <string name="watch_details">Détails</string>
+    <string name="watch_hide_details">Masquer les détails</string>
+    <string name="watch_help">Les alertes nécessitent un téléphone connecté avec le relais montre Nourishing actif. Créez les horaires et reprenez les rappels dans votre espace privé. Les scores et objectifs suivent les paramètres du PC.</string>
+    <string name="watch_food_off">Alertes repas : désactivées</string>
+    <string name="watch_food_on">Alertes repas : activées</string>
+    <string name="watch_food_blocked">Alertes repas : bloquées</string>
+    <string name="watch_fasting_off">Alertes jeûne : désactivées</string>
+    <string name="watch_fasting_on">Alertes jeûne : activées</string>
+    <string name="watch_fasting_blocked">Alertes jeûne : bloquées</string>
+    <string name="watch_blocked">Les notifications sont bloquées. Autorisez-les dans les paramètres des notifications.</string>
+    <string name="watch_connection_unavailable">Connexion montre indisponible. Vérifiez les services Google Play.</string>
+    <string name="watch_access_revoked">L’accès montre a été désactivé sur votre téléphone.</string>
+    <string name="watch_looking">Recherche d’un téléphone associé…</string>
+    <string name="watch_enable_on_phone">Ouvrez Nourishing sur le téléphone associé et activez l’accès montre.</string>
+    <string name="watch_choose_phone">Choisissez votre téléphone</string>
+    <string name="watch_phone_not_found">Téléphone introuvable. Vérifiez la connexion de la montre.</string>
+    <string name="watch_play_unavailable">Les services Google Play sont indisponibles sur cet appareil.</string>
+    <string name="watch_refreshing">Actualisation…</string>
+    <string name="watch_bad_update">Mise à jour illisible. Mettez à jour les deux applications Nourishing et actualisez.</string>
+    <string name="watch_workspace_unavailable">Téléphone ou espace privé indisponible. Ouvrez Nourishing et Tailscale sur le téléphone, puis actualisez.</string>
+    <string name="watch_updated">Mis à jour %1$s</string>
+    <string name="watch_partial">Données partielles</string>
+    <string name="watch_unmeasured">Non mesuré</string>
+    <string name="watch_calories">Calories</string>
+    <string name="watch_energy">Énergie</string>
+    <string name="watch_scores">Scores nutritionnels</string>
+    <string name="watch_targets">Objectifs sélectionnés</string>
+    <string name="watch_sources">Sources</string>
+    <string name="watch_food_channel">Rappels de repas</string>
+    <string name="watch_fasting_channel">Rappels de jeûne</string>
+    <string name="watch_reminder">Votre rappel est prêt. Ouvrez Nourishing quand vous voulez.</string>
+</resources>

@@ -1,0 +1,327 @@
+[
+  {
+    "version": 1,
+    "selection": {
+      "kind": "weight",
+      "from": "2026-10-30",
+      "to": "2026-10-31",
+      "metric": {
+        "type": "weight",
+        "unit": "kg"
+      },
+      "timeZone": "America/Chicago"
+    },
+    "records": [
+      {
+        "id": "synthetic-weight",
+        "date": "2026-10-31",
+        "time": "08:00",
+        "value": 70.25,
+        "unit": "kg",
+        "nativeValue": 70.25,
+        "clientRecordId": "nourish-export:weight:6a771f9646004a72522502ed4779191d1139d7a4e378af0cded77e1a6dd264eb"
+      }
+    ],
+    "skipped": [
+      {
+        "id": "untimed-weight",
+        "date": "2026-10-31",
+        "reason": "No recorded time."
+      }
+    ],
+    "reviewToken": "5613e3a2098700f414b814cdc3eccbce968f5725bb3c7b4919a855b398f2315b"
+  },
+  {
+    "version": 1,
+    "selection": {
+      "kind": "body-water",
+      "from": "2026-10-30",
+      "to": "2026-10-31",
+      "metric": {
+        "type": "body-water",
+        "unit": "lb"
+      },
+      "timeZone": "America/Chicago"
+    },
+    "records": [
+      {
+        "id": "synthetic-body-water",
+        "date": "2026-10-31",
+        "time": "08:00",
+        "value": 88,
+        "unit": "lb",
+        "nativeValue": 39.91612856,
+        "clientRecordId": "nourish-export:body-water:2c106aa0e8e0dcd99de77a8f526dd3b165de13cbd706a5daf4184c0afa531652"
+      }
+    ],
+    "skipped": [],
+    "reviewToken": "018da86398fde7fb62af409b4d3c355fcf0179df8627d5f4e22a112488c04c8e"
+  },
+  {
+    "version": 1,
+    "selection": {
+      "kind": "body-fat",
+      "from": "2026-10-30",
+      "to": "2026-10-31",
+      "metric": {
+        "type": "body-fat",
+        "unit": "%"
+      },
+      "timeZone": "America/Chicago"
+    },
+    "records": [
+      {
+        "id": "synthetic-body-fat",
+        "date": "2026-10-31",
+        "time": "08:00",
+        "value": 20,
+        "unit": "%",
+        "nativeValue": 20,
+        "clientRecordId": "nourish-export:body-fat:b8f852b993645c0f71811178b76b6f1756f393e42ab096dd4cde27750ace0424"
+      }
+    ],
+    "skipped": [],
+    "reviewToken": "5f283853dfe4c407ee68936c6460112180f83e6d700a6eb6d72b792124c59451"
+  },
+  {
+    "version": 1,
+    "selection": {
+      "kind": "height",
+      "from": "2026-10-30",
+      "to": "2026-10-31",
+      "metric": {
+        "type": "height",
+        "unit": "in"
+      },
+      "timeZone": "America/Chicago"
+    },
+    "records": [
+      {
+        "id": "synthetic-height",
+        "date": "2026-10-31",
+        "time": "08:00",
+        "value": 70,
+        "unit": "in",
+        "nativeValue": 177.8,
+        "clientRecordId": "nourish-export:height:4cf189a99c28a0ad9402bf9f96059486ffdbfdad346e7f82aff6f174100fff3a"
+      }
+    ],
+    "skipped": [],
+    "reviewToken": "ffc9e43b7406f47ad915164405e8e89ddb5d8a83e659e7b7ffabefd7d126aed6"
+  },
+  {
+    "version": 1,
+    "selection": {
+      "kind": "glucose",
+      "from": "2026-10-30",
+      "to": "2026-10-31",
+      "metric": {
+        "type": "glucose",
+        "unit": "mg/dL"
+      },
+      "timeZone": "America/Chicago"
+    },
+    "records": [
+      {
+        "id": "synthetic-glucose",
+        "date": "2026-10-31",
+        "time": "08:00",
+        "value": 90,
+        "unit": "mg/dL",
+        "nativeValue": 90,
+        "clientRecordId": "nourish-export:glucose:0f3f3b37f7c9ceb255c237f98c824030168d8822401873e1071f259f6bacb90b"
+      }
+    ],
+    "skipped": [],
+    "reviewToken": "a38978a44f656ded1bd17fdfaa47e4e42e4ed4f06666ef5dd60a23e7ac6b35ec"
+  },
+  {
+    "version": 1,
+    "selection": {
+      "kind": "pressure",
+      "from": "2026-10-30",
+      "to": "2026-10-31",
+      "metric": {
+        "type": "pressure",
+        "unit": "mmHg"
+      },
+      "timeZone": "America/Chicago",
+      "secondaryMetric": {
+        "type": "diastolic",
+        "unit": "mmHg"
+      }
+    },
+    "records": [
+      {
+        "id": "synthetic-pressure",
+        "date": "2026-10-31",
+        "time": "08:00",
+        "value": 120,
+        "unit": "mmHg",
+        "nativeValue": 120,
+        "secondaryId": "synthetic-diastolic",
+        "secondaryValue": 80,
+        "nativeSecondary": 80,
+        "clientRecordId": "nourish-export:pressure:288ac71380e71c45ff5c3ce2ed3de68f6f16de99191aa01e05533bd8d2b93abd"
+      }
+    ],
+    "skipped": [],
+    "reviewToken": "81fe08f957cce011b89713db0db4cb24a14ff57f896578083f2de62dadd31372"
+  },
+  {
+    "version": 1,
+    "selection": {
+      "kind": "temperature",
+      "from": "2026-10-30",
+      "to": "2026-10-31",
+      "metric": {
+        "type": "temperature",
+        "unit": "°F"
+      },
+      "timeZone": "America/Chicago"
+    },
+    "records": [
+      {
+        "id": "synthetic-temperature",
+        "date": "2026-10-31",
+        "time": "08:00",
+        "value": 98.6,
+        "unit": "°F",
+        "nativeValue": 37,
+        "clientRecordId": "nourish-export:temperature:110048fa971204a82246a34fa1ffc5a084ba03e727e8eaf351cc7d99e6bedf3b"
+      }
+    ],
+    "skipped": [],
+    "reviewToken": "9df054ff13f626c9a85b72c68b506abcc0687bfbcd2608b85cd01c34e38a80cd"
+  },
+  {
+    "version": 1,
+    "selection": {
+      "kind": "heart-rate",
+      "from": "2026-10-30",
+      "to": "2026-10-31",
+      "metric": {
+        "type": "heart-rate",
+        "unit": "bpm"
+      },
+      "timeZone": "America/Chicago"
+    },
+    "records": [
+      {
+        "id": "synthetic-heart-rate",
+        "date": "2026-10-31",
+        "time": "08:00",
+        "value": 72,
+        "unit": "bpm",
+        "nativeValue": 72,
+        "clientRecordId": "nourish-export:heart-rate:90153bd6fc0d6fd569dbdbd037f81c09a340eeae01a5f4a26b8dd95cac075cfe"
+      }
+    ],
+    "skipped": [],
+    "reviewToken": "f17ae8a7c9beeba61c1dd441e1303c49ce825041b66314d6cfa29d806b010dd3"
+  },
+  {
+    "version": 1,
+    "selection": {
+      "kind": "resting-heart-rate",
+      "from": "2026-10-30",
+      "to": "2026-10-31",
+      "metric": {
+        "type": "resting-heart-rate",
+        "unit": "bpm"
+      },
+      "timeZone": "America/Chicago"
+    },
+    "records": [
+      {
+        "id": "synthetic-resting-heart-rate",
+        "date": "2026-10-31",
+        "time": "08:00",
+        "value": 57,
+        "unit": "bpm",
+        "nativeValue": 57,
+        "clientRecordId": "nourish-export:resting-heart-rate:7f0f5de1901ebf2e885a779e2d5c563e9a361961c461cda3d57efe473f7226f4"
+      }
+    ],
+    "skipped": [],
+    "reviewToken": "cc64936172723a6c00baf2ea70c9dfade72dbe8234a9456c028c26c7cfb2308c"
+  },
+  {
+    "version": 1,
+    "selection": {
+      "kind": "hrv",
+      "from": "2026-10-30",
+      "to": "2026-10-31",
+      "metric": {
+        "type": "hrv",
+        "unit": "ms"
+      },
+      "timeZone": "America/Chicago"
+    },
+    "records": [
+      {
+        "id": "synthetic-hrv",
+        "date": "2026-10-31",
+        "time": "08:00",
+        "value": 32.125,
+        "unit": "ms",
+        "nativeValue": 32.125,
+        "clientRecordId": "nourish-export:hrv:4faca46be5449ce15ef4d5d8a37141e7e2d12df9c0c2d2cd25ae6c0ed9f2a2e8"
+      }
+    ],
+    "skipped": [],
+    "reviewToken": "7eb01d7553d6a43b497d55058293c563f9098303eb66da85a23d4a48af9d8a99"
+  },
+  {
+    "version": 1,
+    "selection": {
+      "kind": "oxygen",
+      "from": "2026-10-30",
+      "to": "2026-10-31",
+      "metric": {
+        "type": "oxygen",
+        "unit": "%"
+      },
+      "timeZone": "America/Chicago"
+    },
+    "records": [
+      {
+        "id": "synthetic-oxygen",
+        "date": "2026-10-31",
+        "time": "08:00",
+        "value": 98.25,
+        "unit": "%",
+        "nativeValue": 98.25,
+        "clientRecordId": "nourish-export:oxygen:e108a1028709e34545c8921bd9c91072d9f96e7903b1a0dc2e751772c4a2d18b"
+      }
+    ],
+    "skipped": [],
+    "reviewToken": "f757d85cb9a0b5dbb3415d7c151799e015bd8f861a0c90a1fbba97e09791cac0"
+  },
+  {
+    "version": 1,
+    "selection": {
+      "kind": "respiration",
+      "from": "2026-10-30",
+      "to": "2026-10-31",
+      "metric": {
+        "type": "respiration",
+        "unit": "brpm"
+      },
+      "timeZone": "America/Chicago"
+    },
+    "records": [
+      {
+        "id": "synthetic-respiration",
+        "date": "2026-10-31",
+        "time": "08:00",
+        "value": 14.5,
+        "unit": "brpm",
+        "nativeValue": 14.5,
+        "clientRecordId": "nourish-export:respiration:6f57d22f6e8c760d82ae54a43e10dd3eed0dddc6621aa7bab6f6d0c529545137"
+      }
+    ],
+    "skipped": [],
+    "reviewToken": "868daff95bd1d734048303ed877f4443c48a95de81398440b696afab2b0122e9"
+  }
+]

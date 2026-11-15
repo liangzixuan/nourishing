@@ -1,0 +1,52 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {initialState,act} from '../server/domain/workspace.mjs';
+import {applyRecordCommand} from '../server/record-commands.mjs';
+import {recordOptions,recordView,exerciseSearch,exerciseEstimateView} from '../server/record-views.mjs';
+const date='2026-11-14',fields={date,time:'12:00',group:'Lunch'};
+const apply=(state,type,payload)=>applyRecordCommand(state,{type,payload});
+test('manual exercise and catalog exercise use source validation and retain calculation basis',()=>{
+ const state=initialState();state.profile.weight=80;
+ apply(state,'exercise.add',{...fields,name:'Custom walk',duration:30,calories:150});assert.equal(state.entries[0].caloriesBurned,150);
+ const activity=exerciseSearch({q:'walking'}).items.find(row=>!row.conflict),estimate=exerciseEstimateView(state,{date,code:activity.code,minutes:30});
+ assert.equal(estimate.netKcal,Math.max(activity.met-1,0)*3.5*80/200*30);
+ apply(state,'exercise.catalog.add',{...fields,code:activity.code,duration:30,weightKg:80,useEstimate:true});
+ const record=state.entries[1],basis=structuredClone(record.exerciseBasis);assert.equal(record.caloriesBurned,estimate.netKcal);
+ const view=recordView(state,{collection:'entries',id:record.id});
+ apply(state,'record.correct',{collection:'entries',id:record.id,recordRevision:view.recordRevision,changes:{...fields,name:record.name,duration:45,calories:200}});
+ assert.equal(state.entries[1].duration,45);assert.deepEqual(state.entries[1].exerciseBasis,basis);
+ assert.throws(()=>apply(state,'exercise.add',{...fields,name:'Forged source',duration:30,calories:100,exerciseBasis:basis}),{status:400});
+ state.profile.weight=81;assert.throws(()=>apply(state,'exercise.catalog.add',{...fields,code:activity.code,duration:30,weightKg:80,useEstimate:true}),{status:409});
+});
+test('biometric catalog, paired pressure, and custom identity use original log owner',()=>{
+ const state=initialState();
+ apply(state,'biometric.log',{...fields,selection:{kind:'catalog',id:'weight'},unit:'kg',values:{value:72.5}});
+ assert.equal(state.biometrics[0].type,'weight');assert.equal(state.biometrics[0].value,72.5);
+ apply(state,'biometric.log',{...fields,selection:{kind:'catalog',id:'blood-pressure'},unit:'mmHg',values:{systolic:120,diastolic:80}});
+ assert.deepEqual(state.biometrics.slice(1).map(row=>[row.type,row.value]),[['systolic blood pressure',120],['diastolic blood pressure',80]]);
+ apply(state,'biometric.log',{...fields,selection:{kind:'new-custom',name:'Custom reading'},unit:'points',values:{value:4}});
+ assert.deepEqual(state.settings.customBiometrics,[{name:'Custom reading',unit:'points'}]);
+ assert.ok(recordOptions(state,date).biometrics.metrics.some(row=>row.selection.type==='Custom reading'));
+ const saved=state.biometrics.at(-1),view=recordView(state,{collection:'biometrics',id:saved.id});
+ apply(state,'record.correct',{collection:'biometrics',id:saved.id,recordRevision:view.recordRevision,changes:{...fields,type:saved.type,unit:saved.unit,value:8}});assert.equal(state.biometrics.at(-1).value,8);
+ apply(state,'biometric.delete',{id:saved.id});assert.equal(state.biometrics.length,3);assert.equal(state.settings.customBiometrics.length,1);
+});
+test('corrections reject source-linked records, stale revisions, duplicated identities and completed days',()=>{
+ const state=initialState();apply(state,'biometric.log',{...fields,selection:{kind:'catalog',id:'weight'},unit:'kg',values:{value:70}});
+ const record=state.biometrics[0],input={collection:'biometrics',id:record.id},changes={...fields,type:record.type,unit:'kg',value:71};
+ const old=recordView(state,input);record.value=72;
+ assert.throws(()=>apply(state,'record.correct',{...input,recordRevision:old.recordRevision,changes}),{status:409});
+ record.source={kind:'health-connect'};const sourced=recordView(state,input);assert.equal(sourced.editable,false);assert.match(sourced.reason,/source app/);
+ assert.throws(()=>apply(state,'record.correct',{...input,recordRevision:sourced.recordRevision,changes}),{status:409});delete record.source;
+ state.biometrics.push({...record});assert.throws(()=>recordView(state,input),{status:409});state.biometrics.pop();
+ act(state,'day.complete',{date,completed:true});assert.equal(recordView(state,input).deletable,false);
+ assert.throws(()=>apply(state,'biometric.delete',{id:record.id}),{status:409});
+ assert.throws(()=>apply(state,'biometric.log',{...fields,selection:{kind:'catalog',id:'weight'},unit:'kg',values:{value:70}}),{status:409});
+});
+test('note correction preserves unedited attachments and validates every recording boundary',()=>{
+ const state=initialState();act(state,'note.add',{...fields,text:'Before'});const note=state.notes[0];note.imageId='a'.repeat(64);const view=recordView(state,{collection:'notes',id:note.id});
+ apply(state,'record.correct',{collection:'notes',id:note.id,recordRevision:view.recordRevision,changes:{...fields,text:'After'}});assert.equal(state.notes[0].text,'After');assert.equal(state.notes[0].imageId,'a'.repeat(64));
+ for(const payload of [{...fields,name:'Walk',duration:0,calories:1},{...fields,name:'Walk',duration:10,calories:-1},{...fields,date:'2026-02-30',name:'Walk',duration:10,calories:1}])assert.throws(()=>apply(state,'exercise.add',payload),{status:400});
+ assert.throws(()=>apply(state,'biometric.log',{...fields,selection:{kind:'catalog',id:'stool'},unit:'Bristol type',values:{value:9}}),{status:400});
+ assert.throws(()=>recordOptions(state,'bad'),{status:400});assert.throws(()=>exerciseSearch({q:'walk',offset:-1}),{status:400});
+});

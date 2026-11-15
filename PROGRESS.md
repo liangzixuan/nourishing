@@ -77,3 +77,31 @@ The original domain owns target resolution, edit restrictions, averages, missing
 Validation: all 36 unit/HTTP tests passed, including target preservation, scheduled-target rejection, complete-zero versus unknown days, and a time-zone date boundary. The Astro build passed. Local and hosted phone-width browser checks passed for theme persistence and live system-theme changes, target/maximum saves, report calculations, visibility, completed-day filtering, invalid-range recovery and delayed responses after tab navigation. Hosted checks confirmed independent second-account targets and empty reports, rejected owner overrides and stale revisions, and no browser errors or horizontal overflow. Test accounts and records were removed. The confirmed owner's workspace digest still matches the migration baseline. Hosted screenshots were inspected. The existing diary browser regression also passed: sign-in, catalog search, add/reload/edit/delete, day completion, notes, outside dismissal and sign-out.
 
 This is the first cloud Discover/settings increment. Advanced target setup and schedules, the other Discover widgets/charts/snapshots, and remaining feature migrations are still pending. The PC, Android address and production domain are unchanged. Continue with exercise/biometric editing and advanced target settings before AI/background jobs and Android account integration.
+
+
+## Continuous cloud migration — November 14, 2026
+
+Preview deployment `6af9460c1efe27ee53d4` adds exercise/biometric/note editors, advanced macro and energy policies, repeat-item review, Charts, Snapshots, fasting controls, recipe import, local food suggestions, the Nutrient Oracle, Gemini photo logging, Health Connect transfer and CSV export. This supersedes the pending-feature lists in earlier entries; `MIGRATION.md` tracks remaining scope.
+
+The original domain calculations and validators remain the source of truth. Imported recipe quantities, source URL and review evidence survive cloud saving. Snapshot and photo records use private media and atomic workspace writes. Health Connect requires a preview bound to the account and workspace revision before import. The Android candidate now uses the WebView account session for foreground transfer; it is not an installed update, and unmigrated native background services remain disabled.
+
+Validation includes local domain/HTTP tests, mobile browser fixtures, and actual built SSR checks. The latter exposed a 16 KiB adapter limit that blocked photo/Health Connect bodies and a separately packaged recipe worker dependency. Both were corrected and checked against the built server. Public recipe transport checks cover DNS pinning, redirects, private addresses and bounded decompression; live recipe saves used fixture HTML, not an external recipe site.
+
+Live disposable Appwrite tests passed for photo writes, snapshots, recipe source/nutrition retention, scheduler transactions, idempotent retry, stale revisions and cross-account denial. Hosted checks passed for measured meal/exercise/note writes, advanced target reads, complete-catalog nutrient ranking, suggestions, CSV, Health Connect preview/import/replay, mobile Charts/Snapshots navigation and real Gemini scanning. The uploaded meal produced three matched rows; closing the dialog discarded its unsaved state. Test accounts, records and images were removed. The confirmed owner's workspace digest remained equal to the imported baseline.
+
+The full catalog JSON initially peaked at 623 MiB locally. A compact representation preserves all 34,885 foods and nutrient values, with shared dictionaries and flat nutrient pairs. The measured local combined load/ranking peak was 449 MiB. Hosted first/warm Oracle requests took about 10.0/3.8 seconds. Gemini alone took 3.5 seconds; hosted upload, recognition and source matching took 9.6 seconds. Hosted CPU and peak memory were not measured.
+
+The private `nourishing-scheduler` Function was deployed with no user execute permissions, no schedule, and disabled. Its actual cloud invocation returned the disabled no-op response. No account-wide job ran. Snapshot deletion removes its active reference and app access; orphan Storage cleanup is still pending. Deleted private blobs are not claimed to be permanently erased.
+
+Source provenance checks now validate both working files and staged Git blobs for 209 copied domain files. JavaScript line endings are canonical; JSON evidence assets retain their bytes. The publication audit found no known API keys, owner identifiers, private artifacts or mismatched source hashes in 618 staged files.
+
+Backup/restore and direct profile settings are the next integration batch. The PC server, production domain and installed Android URL remain unchanged. Final cutover still needs current-data reconciliation, the remaining native/background work, recovery checks and PC-off device validation.
+
+
+## Recovery and profile validation — November 15, 2026
+
+Active preview: `6af9497ab5698c4c4cdb`. Backup and profile hosted browser checks passed, with all disposable resources removed and migrated-owner data unchanged. Backup validation preserves an omitted optional snapshots field in the actual imported workspace. Read-only export of that workspace passed with 76 array records and three referenced photos; its generation, digest and update time stayed unchanged.
+
+The navigation regression passed on the deployed code. A full-width Fasting button had exceeded its container because of outer margins, expanding the mobile layout viewport; the width now includes those margins, and verification compares layout and visual viewport dimensions.
+
+The next local candidate includes named library portions, retirement/restoration and diary ingredient adjustments. All 140 local tests pass. These features still need hosted validation. A shared error helper was moved out of the command registry so read projections do not depend on command registration. UTF-8 source/document validation catches Windows encoding drift. The production domain, PC data and installed Android app are unchanged.

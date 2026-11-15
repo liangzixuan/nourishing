@@ -1,0 +1,7 @@
+<resources>
+    <string name="manual_title">Benutzerhandbuch</string>
+    <string name="manual_back">Zurück</string>
+    <string name="manual_external">Im Browser öffnen</string>
+    <string name="manual_unavailable">Handbuch konnte nicht geladen werden.</string>
+    <string name="manual_retry">Erneut versuchen</string>
+</resources>

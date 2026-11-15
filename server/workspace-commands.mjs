@@ -1,7 +1,24 @@
+import {entryAdjustmentFields,validateEntryAdjustmentAction,prepareEntryAdjustmentCommand} from './entry-adjustments.mjs';
+import {libraryToolCommandFields,prepareLibraryToolCommand} from './library-tools.mjs';
+import {profileSettingsCommandFields,prepareProfileSettingsCommand} from './profile-settings.mjs';
+import {snapshotCommandFields,validateSnapshotAction,applySnapshotCommand} from './snapshots.mjs';
+import {fastingCommandFields,applyFastingCommand} from './fasting.mjs';
+import {foodInsightCommandFields,prepareFoodInsightCommand} from './food-insights.mjs';
+import {healthCommandFields,applyHealthConnectCommand} from './health-connect.mjs';
+import {validateMealLog,applyMealLog} from './meal-commands.mjs';
+import {photoCommandFields,validatePhotoAction,applyPhotoLog} from './photo-commands.mjs';
 import {act,captureCatalogFood,previewLibraryDraft} from './domain/workspace.mjs';
 import {parseCompositeSources} from './domain/composite-source.mjs';
-export const invalid=message=>{throw Object.assign(Error(message),{code:400,publicMessage:message});};
+import {repeatCommandFields,validateRepeatAction} from './repeat-commands.mjs';
+import {recordCommandFields,applyRecordCommand} from './record-commands.mjs';
+import {targetPolicyCommandFields,prepareTargetPolicyCommand} from './target-policy-commands.mjs';
+import {invalid} from './request-errors.mjs';
 const fields={
+ ...entryAdjustmentFields,...libraryToolCommandFields,...profileSettingsCommandFields,...snapshotCommandFields,...repeatCommandFields,...recordCommandFields,...targetPolicyCommandFields,...photoCommandFields,...healthCommandFields,...foodInsightCommandFields,...fastingCommandFields,
+ 'meal.log':['date','time','group','rows'],
+ 'chart.save':['version','id','name','primary','secondary','days','visible','cycleOverlay'],
+ 'chart.delete':['id'],
+ 'chart.visibility':['id','visible'],
  'nutrientTarget.patch':['date','id','changes'],
  'nutrientTarget.setCustom':['date','id','custom'],
  'preferences.patch':['theme'],
@@ -12,7 +29,7 @@ const fields={
  'note.add':['date','time','group','text'],
  'note.delete':['id'],
  'food.save':['id','name','serving','grams','milliliters','barcode','nutrients','notes'],
- 'recipe.save':['id','name','servings','ingredients','instructions','cookedWeightGrams','batchVolumeMl'],
+ 'recipe.save':['id','name','servings','ingredients','instructions','source','importReview','cookedWeightGrams','batchVolumeMl'],
  'meal.save':['id','name','items'],
  'food.delete':['id'],'recipe.delete':['id'],'meal.delete':['id']
 };
@@ -20,6 +37,11 @@ export function validateAction(input){
  if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!['type','payload'].includes(k)))invalid('Invalid diary action.');
  const allowed=Object.hasOwn(fields,input.type)?fields[input.type]:null,p=input.payload;
  if(!allowed||!p||typeof p!=='object'||Array.isArray(p)||Object.keys(p).some(k=>!allowed.includes(k)))invalid('Invalid diary fields.');
+ if(Object.hasOwn(entryAdjustmentFields,input.type))validateEntryAdjustmentAction(input);
+ if(Object.hasOwn(snapshotCommandFields,input.type))validateSnapshotAction(input);
+ if(input.type==='photo.log')validatePhotoAction(input);
+ if(input.type==='meal.log')validateMealLog(p);
+ if(Object.hasOwn(repeatCommandFields,input.type))validateRepeatAction(input);
  if(input.type==='preferences.patch'&&(!Object.keys(p).length||!['light','dark','system'].includes(p.theme)))invalid('Choose a theme.');
  if(p.id!==undefined&&(typeof p.id!=='string'||!p.id||p.id.length>1000))invalid('Choose a record.');
  if(input.type.endsWith('.delete')&&!p.id)invalid('Choose a record.');
@@ -36,9 +58,9 @@ export function parseCommand(input){
  if(typeof input.requestId!=='string'||typeof input.revision!=='string'||!/^[a-zA-Z0-9-]{16,64}$/.test(input.requestId)||!/^[a-f0-9]{64}$/.test(input.revision))invalid('Refresh the diary and try again.');
  validateAction({type:input.type,payload:input.payload});return input;
 }
-export function applyWorkspaceCommand(state,input){
+export function applyWorkspaceCommand(state,input,context={}){
  validateAction(input);
- try{return act(state,input.type==='preferences.patch'?'settings.save':input.type,libraryPayload(state,input));}catch(error){if([400,404,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
+ try{if(Object.hasOwn(entryAdjustmentFields,input.type)){const prepared=prepareEntryAdjustmentCommand(state,input);return act(state,prepared.type,prepared.payload);}if(Object.hasOwn(libraryToolCommandFields,input.type)){const prepared=prepareLibraryToolCommand(state,input);return act(state,prepared.type,prepared.payload);}if(Object.hasOwn(profileSettingsCommandFields,input.type)){const prepared=prepareProfileSettingsCommand(state,input);return act(state,prepared.type,prepared.payload);}const snapshot=applySnapshotCommand(state,input,context);if(snapshot.handled)return snapshot.result;const fasting=applyFastingCommand(state,input,context);if(fasting.handled)return fasting.result;if(Object.hasOwn(foodInsightCommandFields,input.type)){const prepared=prepareFoodInsightCommand(state,input);return act(state,prepared.type,prepared.payload);}const health=applyHealthConnectCommand(state,input,context);if(health.handled)return health.result;if(input.type==='meal.log')return applyMealLog(state,input.payload);if(input.type==='photo.log')return applyPhotoLog(state,input.payload,context);if(Object.hasOwn(targetPolicyCommandFields,input.type)){const prepared=prepareTargetPolicyCommand(state,input,context);return act(state,prepared.type,prepared.payload);}const record=applyRecordCommand(state,input);if(record.handled)return record.result;return act(state,input.type==='preferences.patch'?'settings.save':input.type,libraryPayload(state,input));}catch(error){if([400,404,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
 }
 function libraryPayload(state,{type,payload}){
  if(!['food.save','recipe.save','meal.save'].includes(type)||!payload.id)return payload;
@@ -46,10 +68,10 @@ function libraryPayload(state,{type,payload}){
  if(!item)invalid('This library item no longer exists.');
  return {...item,...payload};
 }
-export function catalogReferences({type,payload}){
- const rows=type==='entry.add'?[payload]:type==='recipe.save'?(payload.ingredients??[]):type==='meal.save'?(payload.items??[]):[];
- return [...new Set(rows.map(row=>row.foodId).filter(id=>typeof id==='string'))];
+function actionFoodRows({type,payload}){
+ return ['entry.add','repeat.save'].includes(type)?[payload]:['photo.log','meal.log'].includes(type)?(payload.rows??[]):type==='recipe.save'?(payload.ingredients??[]):['meal.save','entry.ingredients.adjust'].includes(type)?(payload.items??[]):[];
 }
+export function catalogReferences(action){return [...new Set(actionFoodRows(action).map(row=>row.foodId).filter(id=>typeof id==='string'))];}
 export async function readActionFoods(input,readCatalog){
  const ids=catalogReferences(input),foods=new Map();
  for(let i=0;i<ids.length;i+=4){for(const [id,food] of await Promise.all(ids.slice(i,i+4).map(async id=>[id,await readCatalog(id)])))foods.set(id,food);}
@@ -58,8 +80,7 @@ export async function readActionFoods(input,readCatalog){
 export function captureActionFoods(state,input,foods){
  const action=structuredClone(input),replacements=new Map();
  for(const id of catalogReferences(action)){const food=foods.get(id);if(food)replacements.set(id,captureCatalogFood(state,food).id);}
- const rows=action.type==='entry.add'?[action.payload]:action.type==='recipe.save'?(action.payload.ingredients??[]):action.type==='meal.save'?(action.payload.items??[]):[];
- for(const row of rows)if(replacements.has(row.foodId))row.foodId=replacements.get(row.foodId);
+ for(const row of actionFoodRows(action))if(replacements.has(row.foodId))row.foodId=replacements.get(row.foodId);
  return action;
 }
 export function validateLibraryPreview(input){

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:padding="8dp" android:background="@drawable/widget_background">
+    <ListView android:id="@+id/widget_list" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:divider="@null" android:dividerHeight="0dp" android:scrollbars="vertical" android:fadeScrollbars="false" />
+    <TextView android:id="@+id/widget_stamp" android:layout_width="match_parent" android:layout_height="24dp"
+        android:maxLines="1" android:gravity="center_vertical" android:textColor="#395649" android:includeFontPadding="false"
+        android:autoSizeTextType="uniform" android:autoSizeMinTextSize="10sp" android:autoSizeMaxTextSize="11sp" android:autoSizeStepGranularity="1sp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:orientation="horizontal">
+        <ImageButton android:id="@+id/widget_open" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:background="?android:attr/selectableItemBackgroundBorderless" android:src="@android:drawable/ic_menu_view" android:tint="#184A38" android:contentDescription="@string/widget_open" />
+        <ImageButton android:id="@+id/widget_food" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:background="?android:attr/selectableItemBackgroundBorderless" android:src="@android:drawable/ic_input_add" android:tint="#184A38" android:contentDescription="@string/widget_food" />
+        <ImageButton android:id="@+id/widget_refresh" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:background="?android:attr/selectableItemBackgroundBorderless" android:src="@android:drawable/ic_popup_sync" android:tint="#184A38" android:contentDescription="@string/widget_refresh" />
+        <ImageButton android:id="@+id/widget_configure" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:background="?android:attr/selectableItemBackgroundBorderless" android:src="@android:drawable/ic_menu_preferences" android:tint="#184A38" android:contentDescription="@string/widget_setup" />
+    </LinearLayout>
+</LinearLayout>

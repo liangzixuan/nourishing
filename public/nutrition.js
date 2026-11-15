@@ -1,3 +1,10 @@
+import {mountBackup} from './backup.js';
+import {openProfileSettings} from './profile-settings.js';
+import {mountSnapshots} from './snapshots.js';
+import {openImports} from './imports.js';
+import {mountFasting} from './fasting.js';
+import {openTargetPolicies} from './target-policies.js';
+import {mountCharts,openExport} from './charts.js';
 import {escape as e} from './html.js';
 import {request,command} from './diary-api.js';
 import {applyTheme} from './appearance.js';
@@ -9,7 +16,7 @@ const owners={scheduler:'Macro schedule',weekday:'Weekday schedule',macros:'Macr
 const offset=(date,days)=>{const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10);};
 const option=(value,label,current)=>`<option value="${e(value)}" ${value===current?'selected':''}>${e(label)}</option>`;
 export function mountNutrition({page,mode,date,show,close,header,content,onChange}){
- let disposed=false,serial=0,data,tab='dashboard',query='',reportOptions={from:offset(date(),-6),to:date(),dayFilter:'nonempty',includeToday:true,includeSupplements:true};
+ let backup=null,snapshots=null,charts=null,fasting=null,disposed=false,serial=0,data,tab='dashboard',query='',reportOptions={from:offset(date(),-6),to:date(),dayFilter:'nonempty',includeToday:true,includeSupplements:true};
  const root=document.createElement('section');root.className='nutrition-page';page.replaceChildren(root);
  const alive=()=>!disposed&&root.isConnected;
  async function load(){const id=++serial;root.setAttribute('aria-busy','true');root.innerHTML='<p class="empty">Loading…</p>';
@@ -19,7 +26,12 @@ export function mountNutrition({page,mode,date,show,close,header,content,onChang
  }
  function targets(){
   applyTheme(data.theme);
-  root.innerHTML=`<h1>Targets & Settings</h1><label class="field-row"><span>Theme</span><select aria-label="Theme">${[['dark','Dark'],['light','Light'],['system','System (device setting)']].map(([v,l])=>option(v,l,data.theme)).join('')}</select></label><p class="sheet-message" role="status"></p><div class="target-heading"><h2>Nutrient targets</h2><span>${e(date())}</span></div><input type="search" class="target-search" aria-label="Search nutrients" placeholder="Search nutrients" value="${e(query)}"><div class="target-list"></div>`;
+  root.innerHTML=`<h1>Targets & Settings</h1><button type="button" data-profile-settings>Profile &amp; Body</button><button type="button" class="more-results" data-target-policies>Macro & Energy Targets</button><button type="button" class="more-results" data-export>Export data</button><button type="button" data-backup>Backup &amp; Restore</button><button type="button" data-imports>Import &amp; devices</button><label class="field-row"><span>Theme</span><select aria-label="Theme">${[['dark','Dark'],['light','Light'],['system','System (device setting)']].map(([v,l])=>option(v,l,data.theme)).join('')}</select></label><p class="sheet-message" role="status"></p><div class="target-heading"><h2>Nutrient targets</h2><span>${e(date())}</span></div><input type="search" class="target-search" aria-label="Search nutrients" placeholder="Search nutrients" value="${e(query)}"><div class="target-list"></div>`;
+  root.querySelector('[data-target-policies]').onclick=()=>openTargetPolicies({date,show,close,header,content,onChange:async()=>{await onChange();if(alive())await load();}});
+  root.querySelector('[data-profile-settings]').onclick=()=>openProfileSettings({date,show,close,header,content,onChange:async()=>{await onChange();if(alive())await load();}});
+  root.querySelector('[data-imports]').onclick=()=>openImports({show,close,header,content,onChange});
+  root.querySelector('[data-backup]').onclick=()=>{root.innerHTML='<button type=button data-back-settings>Back to Settings</button><h1>Backup &amp; Restore</h1><div class=backup-host></div>';backup=mountBackup({root:root.querySelector('.backup-host'),show,close,header,content,onChange});root.querySelector('[data-back-settings]').onclick=()=>{backup?.dispose();backup=null;load();};};
+  root.querySelector('[data-export]').onclick=()=>openExport({date,show,header,content});
   const list=root.querySelector('.target-list');
   const filter=()=>{const rows=ordered(data.nutrients).filter(r=>r.name.toLowerCase().includes(query.toLowerCase()));const render=r=>`<button type="button" class="target-row" data-nutrient="${e(r.id)}"><span><strong>${e(r.name)}</strong>${r.editor?`<small>${e(owners[r.editor])}</small>`:''}</span><span>${num(r.dailyTarget)} ${e(r.unit)}${r.visible?'':' · Hidden'} ›</span></button>`;list.innerHTML=query?rows.map(render).join(''):rows.filter(r=>commonIds.includes(r.id)).map(render).join('')+'<details class=additional-nutrients><summary>More nutrients</summary>'+rows.filter(r=>!commonIds.includes(r.id)).map(render).join('')+'</details>';list.querySelectorAll('[data-nutrient]').forEach(b=>b.onclick=()=>editTarget(data.nutrients.find(r=>r.id===b.dataset.nutrient)));};filter();
   root.querySelector('input').oninput=event=>{query=event.target.value;filter();};
@@ -35,15 +47,19 @@ export function mountNutrition({page,mode,date,show,close,header,content,onChang
  }
  const metric=(label,value,unit)=>`<div><span>${e(label)}</span><strong>${num(value)} <small>${e(unit)}</small></strong></div>`;
  function nutrientRow(row){return `<div class="report-nutrient" data-report-nutrient="${e(row.id)}"><div><strong>${e(row.name)}</strong><span>${num(row.mean)} ${e(row.unit)}</span></div>${Number.isFinite(row.percentOfMeanTarget)?`<progress max="100" value="${Math.min(100,Math.max(0,row.percentOfMeanTarget))}" aria-label="${e(row.name)} target progress"></progress>`:''}<small>${row.mean===null?'No data':`${row.knownDays}/${row.eligibleDays} days`}${row.partialDays?` · ${row.partialDays} partial`:''}${Number.isFinite(row.meanTarget)?` · Target ${num(row.meanTarget)} ${e(row.unit)}`:''}</small></div>`;}
- function discover(){const report=data.report,calories=report.nutrients.find(r=>r.id==='calories');
-  root.innerHTML=`<nav class="discover-tabs" aria-label="Discover"><button type="button" data-tab="dashboard" ${tab==='dashboard'?'aria-current="page"':''}>Dashboard</button><button type="button" data-tab="report" ${tab==='report'?'aria-current="page"':''}>Report</button></nav><div class="report-content"></div>`;
+ function discover(){snapshots?.dispose();snapshots=null;charts?.dispose();charts=null;fasting?.dispose();fasting=null;const report=data.report,calories=report.nutrients.find(r=>r.id==='calories');
+  root.innerHTML=`<nav class="discover-tabs" aria-label="Discover"><button type="button" data-tab="dashboard" ${tab==='dashboard'?'aria-current="page"':''}>Dashboard</button><button type="button" data-tab="charts" ${tab==='charts'?'aria-current="page"':''}>Charts</button><button type="button" data-tab="report" ${tab==='report'?'aria-current="page"':''}>Report</button><button type="button" data-tab="snapshots" ${tab==='snapshots'?'aria-current="page"':''}>Snapshots</button></nav><div class="report-content"></div>`;
   root.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;discover();});const panel=root.querySelector('.report-content');
+  if(tab==='snapshots'){snapshots=mountSnapshots({root:panel,show,close,header,content,date,onChange});return;}
+  if(tab==='fasting'){fasting=mountFasting({page:panel,show,close,header,content,onChange});return;}
+  if(tab==='charts'){charts=mountCharts({page:panel,date,show,close,header,content,onChange});return;}
   if(tab==='dashboard'){
    panel.innerHTML=`<section class="nutrition-card"><h2>Nutrition Summary</h2><p class="report-period">${e(report.options.from)} – ${e(report.options.to)} · Daily average</p><div class="dashboard-calories">${num(calories.mean,0)} <small>kcal</small></div><div class="report-macros">${['protein','carbs','fat'].map(id=>{const row=report.nutrients.find(r=>r.id===id);return metric(id==='carbs'?'Carbs':row.name,row.mean,row.unit);}).join('')}</div><p class="report-period">${report.counts.eligibleDays} ${report.options.dayFilter==='complete'?'completed':report.options.dayFilter==='nonempty'?'logged':'selected'} days</p><button type="button" class="more-results" data-full-report>View full report</button></section><section class="nutrition-card"><h2>Diary</h2><div class="report-macros">${metric('Logged days',report.days.filter(d=>d.logged).length,'')}${metric('Completed days',report.days.filter(d=>d.complete).length,'')}</div></section>`;
+   const fastingButton=document.createElement('button');fastingButton.type='button';fastingButton.className='more-results nutrition-card';fastingButton.textContent='Fasting';fastingButton.onclick=()=>{tab='fasting';discover();};panel.append(fastingButton);
    panel.querySelector('[data-full-report]').onclick=()=>{tab='report';discover();};return;
   }
   panel.innerHTML=`<form class="report-filters"><div class="report-dates"><label>From<input aria-label="From" name="from" type="date" required value="${reportOptions.from}"></label><label>To<input aria-label="To" name="to" type="date" required value="${reportOptions.to}"></label></div><label class="field-row"><span>Days</span><select name="dayFilter" aria-label="Days">${[['nonempty','Logged days'],['complete','Completed days'],['all','All days']].map(([v,l])=>option(v,l,reportOptions.dayFilter)).join('')}</select></label><label class="field-row"><span>Include today</span><input type="checkbox" name="includeToday" ${reportOptions.includeToday?'checked':''}></label><label class="field-row"><span>Include supplements</span><input type="checkbox" name="includeSupplements" ${reportOptions.includeSupplements?'checked':''}></label><button class="primary">Update report</button></form><section class="nutrition-card"><h2>Daily averages</h2><p class="report-period">${report.counts.eligibleDays} of ${report.counts.requestedDays} days</p><div class="report-macros">${metric('Calories',calories.mean,'kcal')}${metric('Target',calories.meanTarget,'kcal')}</div></section><section class="nutrition-card"><h2>Nutrients</h2>${ordered(report.nutrients).filter(r=>r.visible&&(commonIds.includes(r.id)||r.mean!==null)).map(nutrientRow).join('')}<details class=additional-nutrients><summary>More nutrients</summary>${ordered(report.nutrients).filter(r=>r.visible&&!commonIds.includes(r.id)&&r.mean===null).map(nutrientRow).join('')}</details></section>`;
   panel.querySelector('form').onsubmit=event=>{event.preventDefault();const form=event.target;reportOptions={from:form.elements.from.value,to:form.elements.to.value,dayFilter:form.elements.dayFilter.value,includeToday:form.elements.includeToday.checked,includeSupplements:form.elements.includeSupplements.checked};load();};
  }
- load();return {reload:load,dispose(){disposed=true;serial++;}};
+ load();return {reload:load,dispose(){disposed=true;serial++;backup?.dispose();snapshots?.dispose();charts?.dispose();fasting?.dispose();}};
 }

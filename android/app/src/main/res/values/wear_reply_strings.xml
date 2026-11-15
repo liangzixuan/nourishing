@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wear_reply_disabled">Enable watch access in Nourishing on your phone.</string>
+    <string name="wear_reply_changed">Watch access changed. Connect again.</string>
+    <string name="wear_reply_busy">Refresh in progress. Try again shortly.</string>
+    <string name="wear_reply_unavailable">Check Nourishing and Tailscale on your phone, then refresh.</string>
+</resources>

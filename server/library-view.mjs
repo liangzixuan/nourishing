@@ -4,7 +4,7 @@ import {availableQuantityUnits} from './domain/quantity-units.mjs';
 import {recipeForEntry} from './domain/recipe-entry.mjs';
 import {mealForEntry} from './domain/meal-entry.mjs';
 import {digest} from './data-codec.mjs';
-import {invalid} from './workspace-commands.mjs';
+import {invalid} from './request-errors.mjs';
 export const libraryKinds=['food','recipe','meal'];
 export function libraryView(state){
  return {revision:digest(state),nutrients:catalog.map(({id,name,unit,group})=>({id,name,unit,group})),items:libraryKinds.flatMap(kind=>state[kind+'s'].filter(row=>!row.readOnly).map(({id,name,retired})=>({id,name,kind,retired:!!retired})))};

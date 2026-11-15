@@ -1,15 +1,16 @@
+import {HEALTH_EXPORT_MAX_BYTES} from './health-connect.mjs';
 import {Readable} from 'node:stream';
 import {readSession,sessionCookie,clearSession} from './session-cookie.mjs';
 const fail=(code,message)=>{throw Object.assign(Error(message),{code,publicMessage:message});};
 function fields(value,names){if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(k=>!names.includes(k)))fail(400,'Check the form and try again.');return value;}
 function string(value,min,max){if(typeof value!=='string'||value.length<min||value.length>max)fail(400,'Check the form and try again.');return value;}
 function credentials(body,register){fields(body,register?['email','password','name']:['email','password']);const email=string(body.email,3,320).trim();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))fail(400,'Enter a valid email.');return {email,password:string(body.password,8,256),...(register?{name:string(body.name,1,128).trim()}: {})};}
-async function readBody(req){let size=0,chunks=[];for await(const chunk of req.body??[]){size+=chunk.length;if(size>16384)fail(413,'Request too large.');chunks.push(Buffer.from(chunk));}try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{fail(400,'Invalid request.');}}
+async function readBody(req,limit=16384){let size=0,chunks=[];for await(const chunk of req.body??[]){size+=chunk.length;if(size>limit)fail(413,'Request too large.');chunks.push(Buffer.from(chunk));}try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{fail(400,'Invalid request.');}}
 export function createWebHandler({config,service,serviceForRequest,assets=new Map()}) {
   return async req=>{
     const headers=new Headers();
     headers.set('Cache-Control','no-store');headers.set('X-Content-Type-Options','nosniff');headers.set('Referrer-Policy','no-referrer');
-    headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+    headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     const json=(status,value)=>{headers.set('Content-Type','application/json; charset=utf-8');return new Response(JSON.stringify(value),{status,headers});};
     try {
       const url=new URL(req.url,config.origin),path=url.pathname;
@@ -23,19 +24,80 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
         if(req.headers.get('origin')!==config.origin)fail(403,'Request origin not allowed.');
         if(req.headers.get('content-type')?.split(';')[0]!=='application/json')fail(415,'Use JSON.');
       }
-      const api=service??serviceForRequest(req),secret=readSession(req.headers.get('cookie')??''),body=req.method==='GET'?null:await readBody(req);
-      if(req.method==='GET'&&['/api/targets','/api/nutrition-report'].includes(path)){
+      const api=service??serviceForRequest(req),secret=readSession(req.headers.get('cookie')??'');
+      const healthRequest=req.method==='POST'&&['/api/health-connect/preview','/api/health-connect/import'].includes(path);
+      if(healthRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search!=='?summary=1')fail(400,'Choose the summary response.');}
+      const photoRequest=req.method==='POST'&&['/api/photos/analyze','/api/photos/save','/api/snapshots/prepare','/api/snapshots/save'].includes(path);
+      // Authenticate before reading multi-megabyte image bodies. Limits include base64 expansion.
+      if(photoRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid photo request.');}
+      const recipeRequest=req.method==='POST'&&['/api/recipe-import','/api/recipe-import/preview','/api/recipe-import/save'].includes(path);
+      // Recipe source evidence can approach the domain's 16 MiB review limit.
+      if(recipeRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid recipe request.');}
+      const backupRequest=req.method==='POST'&&['/api/backup/inspect','/api/backup/media','/api/backup/restore'].includes(path);
+      if(backupRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid backup request.');}
+      const libraryCommand=req.method==='POST'&&path==='/api/library/command',ingredientRequest=req.method==='POST'&&['/api/diary/ingredients/preview','/api/diary/ingredients/save'].includes(path);
+      if(libraryCommand||ingredientRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid editor request.');}
+      const body=req.method==='GET'?null:await readBody(req,(libraryCommand||ingredientRequest)?4*1024*1024:backupRequest?(path.endsWith('/inspect')?20_000_000:path.endsWith('/media')?5*1024*1024:16384):healthRequest?HEALTH_EXPORT_MAX_BYTES:photoRequest?((path.endsWith('/analyze')||path.endsWith('/prepare'))?12:5)*1024*1024:recipeRequest&&path!=='/api/recipe-import'?16*1024*1024:16384);
+      if(libraryCommand){if(!['library.portions','library.retirement'].includes(body?.type))fail(400,'Choose a library action.');return json(200,await api.workspaceCommand(secret,body));}
+      if(ingredientRequest){if(path.endsWith('/preview'))return json(200,await api.previewEntryAdjustment(secret,body));if(body?.type!=='entry.ingredients.adjust')fail(400,'Choose an ingredient action.');return json(200,await api.workspaceCommand(secret,body));}
+      if(req.method==='GET'&&path==='/api/diary/ingredients'){if(!secret)fail(401,'Please sign in.');const keys=['kind','date','id'];if([...url.searchParams.keys()].some(k=>!keys.includes(k)||url.searchParams.getAll(k).length!==1)||keys.some(k=>!url.searchParams.has(k)))fail(400,'Choose a diary item.');return json(200,await api.entryAdjustment(secret,Object.fromEntries(url.searchParams)));}
+      if(backupRequest){const method=path.endsWith('/inspect')?'inspectBackup':path.endsWith('/media')?'uploadBackupMedia':'restoreBackup';return json(200,await api[method](secret,body));}
+      if(req.method==='GET'&&path==='/api/backup/export'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid backup query.');return json(200,await api.exportBackup(secret));}
+      if(healthRequest)return json(200,await api[path.endsWith('/preview')?'previewHealth':'importHealth'](secret,body,req.headers.get('x-nourish-review-token')));
+      if(photoRequest){const method={'/api/photos/analyze':'analyzePhoto','/api/photos/save':'savePhoto','/api/snapshots/prepare':'prepareSnapshot','/api/snapshots/save':'saveSnapshot'}[path];return json(200,await api[method](secret,body,req.signal));}
+      if(req.method==='GET'&&path==='/api/snapshots'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');return json(200,await api.snapshots(secret));}
+      if(recipeRequest){const method=path.endsWith('/preview')?'previewRecipeImport':path.endsWith('/save')?'saveRecipeImport':'importRecipe';return json(200,await api[method](secret,body));}
+      if(req.method==='GET'&&path==='/api/fasting'){
         if(!secret)fail(401,'Please sign in.');
-        const allowed=path==='/api/targets'?['date']:['from','to','dayFilter','includeToday','includeSupplements'];
+        if([...url.searchParams.keys()].some(k=>!['offset','limit','revision'].includes(k)||url.searchParams.getAll(k).length!==1))fail(400,'Invalid fasting query.');
+        const p=Object.fromEntries(url.searchParams);for(const key of ['offset','limit'])if(p[key]!==undefined){if(!/^(?:0|[1-9]\d*)$/.test(p[key]))fail(400,'Invalid history page.');p[key]=Number(p[key]);}
+        return json(200,await api.fasting(secret,p));
+      }
+      if(path.startsWith('/api/food-insights/')){
+        if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid food insight query.');
+        if(req.method==='GET'&&path==='/api/food-insights/options')return json(200,await api.foodInsightOptions(secret));
+        const methods={'/api/food-insights/resolve':'resolveFoodInsightIngredient','/api/food-insights/oracle':'foodOracle','/api/food-insights/suggestions':'foodSuggestions','/api/food-insights/preview':'previewFoodSuggestion'};
+        if(req.method==='POST'&&Object.hasOwn(methods,path))return json(200,await api[methods[path]](secret,body));
+        fail(404,'Not found.');
+      }
+      const recordQueries={'/api/repeats':['date'],'/api/records/options':['date'],'/api/records/item':['collection','id'],'/api/records/exercises':['q','offset'],'/api/records/exercise-estimate':['date','code','minutes']};
+      if(req.method==='GET'&&Object.hasOwn(recordQueries,path)){
+        if(!secret)fail(401,'Please sign in.');const allowed=recordQueries[path];
+        if([...url.searchParams.keys()].some(k=>!allowed.includes(k)||url.searchParams.getAll(k).length!==1)||(path!=='/api/records/exercises'&&allowed.some(k=>!url.searchParams.has(k))))fail(400,'Invalid query.');
+        const p=Object.fromEntries(url.searchParams);
+        if(path==='/api/repeats')return json(200,await api.repeats(secret,p.date));
+        if(path==='/api/records/options')return json(200,await api.recordOptions(secret,p.date));
+        if(path==='/api/records/item')return json(200,await api.recordItem(secret,p));
+        if(path==='/api/records/exercise-estimate'&&!/^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(p.minutes))fail(400,'Enter exercise minutes.');
+        if(p.offset!==undefined&&!/^(?:0|[1-9]\d*)$/.test(p.offset))fail(400,'Invalid exercise search.');
+        if(path==='/api/records/exercise-estimate')return json(200,await api.exerciseEstimate(secret,{...p,minutes:Number(p.minutes)}));
+        const offset=Number(p.offset??0);if(!Number.isSafeInteger(offset)||offset<0||(p.q?.length??0)>200)fail(400,'Invalid exercise search.');return json(200,await api.exercises(secret,{q:p.q??'',offset}));
+      }
+      if(req.method==='POST'&&path==='/api/reports/export'){if(!secret)fail(401,'Please sign in.');return json(200,await api.exportReport(secret,body));}
+      if(req.method==='GET'&&path==='/api/charts'){
+        if(!secret)fail(401,'Please sign in.');
+        if([...url.searchParams.keys()].some(k=>!['from','to'].includes(k)||url.searchParams.getAll(k).length!==1)||!url.searchParams.has('from')||!url.searchParams.has('to'))fail(400,'Choose chart dates.');
+        return json(200,await api.charts(secret,Object.fromEntries(url.searchParams)));
+      }
+      if(req.method==='GET'&&['/api/targets','/api/target-policies','/api/profile-settings','/api/nutrition-report'].includes(path)){
+        if(!secret)fail(401,'Please sign in.');
+        const allowed=path!=='/api/nutrition-report'?['date']:['from','to','dayFilter','includeToday','includeSupplements'];
         if([...url.searchParams.keys()].some(k=>!allowed.includes(k)||url.searchParams.getAll(k).length!==1)||allowed.some(k=>!url.searchParams.has(k)))fail(400,'Invalid query.');
         const input=Object.fromEntries(url.searchParams);
+        if(path==='/api/profile-settings')return json(200,await api.profileSettings(secret,input.date));
         if(path==='/api/targets')return json(200,await api.targets(secret,input.date));
+        if(path==='/api/target-policies')return json(200,await api.targetPolicies(secret,input.date));
         for(const key of ['includeToday','includeSupplements']){if(!['true','false'].includes(input[key]))fail(400,'Invalid report filter.');input[key]=input[key]==='true';}
         return json(200,await api.nutritionReport(secret,input));
       }
       if(req.method==='POST'&&path==='/api/workspace/command'){if(!secret)fail(401,'Please sign in.');return json(200,await api.workspaceCommand(secret,body));}
       if(req.method==='POST'&&path==='/api/library/preview'){if(!secret)fail(401,'Please sign in.');return json(200,await api.previewLibrary(secret,body));}
       if(req.method==='GET'&&path==='/api/library'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');return json(200,await api.library(secret));}
+      if(req.method==='GET'&&path==='/api/library/tools'){
+        if(!secret)fail(401,'Please sign in.');
+        if([...url.searchParams.keys()].some(k=>!['kind','id'].includes(k)||url.searchParams.getAll(k).length!==1)||!url.searchParams.has('kind')||!url.searchParams.has('id'))fail(400,'Choose a library item.');
+        return json(200,await api.libraryTools(secret,Object.fromEntries(url.searchParams)));
+      }
       if(req.method==='GET'&&path==='/api/library/item'){
         if(!secret)fail(401,'Please sign in.');
         if([...url.searchParams.keys()].some(k=>!['kind','id','entryId'].includes(k)||url.searchParams.getAll(k).length!==1))fail(400,'Invalid query.');
@@ -73,7 +135,7 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       if(path==='/api/auth/verify') {fields(body,['userId','secret']);await api.verifyEmail({userId:string(body.userId,1,36),secret:string(body.secret,1,4096)});return json(200,{ok:true});}
       fail(404,'Not found.');
     }catch(error){
-      const status=[400,401,403,404,405,409,413,415,429,503].includes(error.code)?error.code:503;
+      const status=[400,401,403,404,405,409,413,415,429,499,502,503,504].includes(error.code)?error.code:503;
       const messages={400:'Check your details or request a new link.',401:'Please sign in. Check your email and password.',403:'This action is not available.',404:'Not found.',409:'An account with these details already exists. Try signing in.',429:'Too many attempts. Try again later.',503:'Unable to connect. Please try again.'};
       return json(status,{error:error.publicMessage??messages[status]??'Request failed.'});
     }

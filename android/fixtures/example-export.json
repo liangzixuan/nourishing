@@ -1,0 +1,137 @@
+{
+  "format": "nourish-health-connect",
+  "version": 1,
+  "exportedAt": "2026-10-28T16:00:00Z",
+  "range": {
+    "from": "2026-10-27",
+    "to": "2026-10-28",
+    "zone": "America/Chicago"
+  },
+  "records": [
+    {
+      "id": "weight:synthetic-weight-001",
+      "type": "Weight",
+      "date": "2026-10-27",
+      "time": "08:00",
+      "value": 70.5,
+      "unit": "kg",
+      "source": {
+        "app": "example.synthetic",
+        "recordId": "synthetic-weight-001",
+        "lastModifiedAt": "2026-10-27T13:05:00Z"
+      },
+      "start": "2026-10-27T08:00:00-05:00"
+    },
+    {
+      "id": "heart-rate:synthetic-heart-001:2026-10-27T13:01:02Z",
+      "type": "Heart rate",
+      "date": "2026-10-27",
+      "time": "08:01",
+      "value": 68,
+      "unit": "bpm",
+      "source": {
+        "app": "example.synthetic",
+        "recordId": "synthetic-heart-001",
+        "lastModifiedAt": "2026-10-27T13:05:00Z"
+      },
+      "start": "2026-10-27T13:01:02Z"
+    },
+    {
+      "id": "heart-rate:synthetic-heart-001:2026-10-27T13:01:03Z",
+      "type": "Heart rate",
+      "date": "2026-10-27",
+      "time": "08:01",
+      "value": 70,
+      "unit": "bpm",
+      "source": {
+        "app": "example.synthetic",
+        "recordId": "synthetic-heart-001",
+        "lastModifiedAt": "2026-10-27T13:05:00Z"
+      },
+      "start": "2026-10-27T13:01:03Z"
+    },
+    {
+      "id": "water:synthetic-water-001",
+      "type": "Water",
+      "date": "2026-10-27",
+      "time": "09:00",
+      "value": 250,
+      "unit": "mL",
+      "source": {
+        "app": "example.synthetic",
+        "recordId": "synthetic-water-001",
+        "lastModifiedAt": "2026-10-27T14:05:00Z"
+      },
+      "start": "2026-10-27T09:00:00-05:00",
+      "end": "2026-10-27T09:01:00-05:00"
+    },
+    {
+      "id": "active-energy-daily:2026-10-27:America/Chicago",
+      "type": "Active energy",
+      "date": "2026-10-27",
+      "time": "00:00",
+      "value": 100,
+      "unit": "kcal",
+      "source": {
+        "app": "Health Connect aggregate",
+        "recordId": "active-energy-daily:2026-10-27:America/Chicago",
+        "aggregation": {
+          "kind": "daily-total",
+          "metric": "active-calories",
+          "date": "2026-10-27"
+        }
+      },
+      "start": "2026-10-27T00:00:00-05:00",
+      "end": "2026-10-28T00:00:00-05:00"
+    },
+    {
+      "id": "exercise-duration:synthetic-exercise-001",
+      "type": "Exercise duration",
+      "date": "2026-10-27",
+      "time": "12:00",
+      "value": 30,
+      "unit": "min",
+      "source": {
+        "app": "example.synthetic",
+        "recordId": "synthetic-exercise-001",
+        "lastModifiedAt": "2026-10-27T17:35:00Z"
+      },
+      "start": "2026-10-27T12:00:00-05:00",
+      "end": "2026-10-27T12:30:00-05:00"
+    },
+    {
+      "id": "sleep:synthetic-sleep-001",
+      "type": "Sleep",
+      "date": "2026-10-27",
+      "time": "23:30",
+      "value": 7.5,
+      "unit": "h",
+      "source": {
+        "app": "example.synthetic",
+        "recordId": "synthetic-sleep-001",
+        "lastModifiedAt": "2026-10-28T12:05:00Z"
+      },
+      "start": "2026-10-27T23:30:00-05:00",
+      "end": "2026-10-28T07:00:00-05:00"
+    },
+    {
+      "id": "steps:2026-10-27:America/Chicago",
+      "type": "Steps",
+      "date": "2026-10-27",
+      "time": "00:00",
+      "value": 6000,
+      "unit": "count",
+      "source": {
+        "app": "Health Connect aggregate",
+        "recordId": "steps:2026-10-27:America/Chicago",
+        "aggregation": {
+          "kind": "daily-total",
+          "metric": "steps",
+          "date": "2026-10-27"
+        }
+      },
+      "start": "2026-10-27T00:00:00-05:00",
+      "end": "2026-10-28T00:00:00-05:00"
+    }
+  ]
+}

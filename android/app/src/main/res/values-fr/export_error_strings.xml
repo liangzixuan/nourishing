@@ -1,0 +1,10 @@
+<resources>
+    <string name="export_error_time_zone">Choisissez un fuseau horaire nommé sur cet appareil, comme America/Chicago ou UTC.</string>
+    <string name="export_error_date_format">Utilisez AAAA-MM-JJ pour les deux dates.</string>
+    <string name="export_error_calendar_date">Choisissez des dates valides.</string>
+    <string name="export_error_range_length">Sélectionnez de 1 à 30 jours.</string>
+    <string name="export_error_recent_window">Sélectionnez des dates parmi les 30 derniers jours, aujourd’hui inclus.</string>
+    <string name="export_error_byte_limit">L’export dépasse %1$s octets. Sélectionnez moins de dates ou de types de données, puis relancez la lecture. Aucun export partiel n’a été enregistré.</string>
+    <string name="export_error_save_removed">Échec de l’enregistrement. Le fichier incomplet a été supprimé.</string>
+    <string name="export_error_save_remains">Échec de l’enregistrement. Supprimez le fichier incomplet avant de réessayer.</string>
+</resources>

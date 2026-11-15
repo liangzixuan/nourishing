@@ -1,0 +1,7 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+# Preserve reproducible source manifest hashes across Windows and Linux.
+server/domain/**/*.mjs text eol=lf
+server/domain/*.mjs text eol=lf
+server/domain/**/*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+server/domain/*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

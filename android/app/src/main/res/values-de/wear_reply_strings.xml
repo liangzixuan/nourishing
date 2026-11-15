@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wear_reply_disabled">Aktivieren Sie den Uhrenzugriff in Nourishing auf Ihrem Smartphone.</string>
+    <string name="wear_reply_changed">Der Uhrenzugriff hat sich geändert. Erneut verbinden.</string>
+    <string name="wear_reply_busy">Aktualisierung läuft. Versuchen Sie es gleich noch einmal.</string>
+    <string name="wear_reply_unavailable">Prüfen Sie Nourishing und Tailscale auf Ihrem Smartphone und aktualisieren Sie erneut.</string>
+</resources>

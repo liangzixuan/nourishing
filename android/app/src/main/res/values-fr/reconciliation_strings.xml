@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="recon_title">Réconciliation des sources au premier plan</string>
+    <string name="recon_intro">Vérifiez les suppressions explicites à la source, les données modifiées complètes et les totaux quotidiens indisponibles. Les dates choisies limitent l’instantané et les requêtes quotidiennes ; les données parentes natives modifiées complètes peuvent inclure des mesures hors de ces dates. Ce flux est distinct de l’import d’instantanés et de la synchronisation horaire. Les anciennes lacunes de suppression restent inconnues ; une absence dans l’instantané ne supprime jamais de données. Enregistrer un fichier ne confirme aucun jeton.</string>
+    <string name="recon_initial">Vérifiez le même espace de travail privé pour reprendre son lot en attente enregistré, s’il existe.</string>
+    <string name="recon_consent">J’ai vérifié et j’autorise les suppressions indiquées : données natives supprimées, lignes enfants obsolètes et agrégats indisponibles.</string>
+    <string name="recon_baseline_consent">Après un conflit confirmé avec le destinataire, je comprends qu’un nouveau flux ne garantit pas la continuité des suppressions. Supprimer l’ancien lot en attente uniquement pour cette réinitialisation explicite.</string>
+    <string name="recon_check">Vérifier l’espace de travail de réconciliation</string>
+    <string name="recon_read">Lire les données sélectionnées pour la réconciliation</string>
+    <string name="recon_preview">Prévisualiser le lot / vérifier l’accusé de réception</string>
+    <string name="recon_confirm">Confirmer la réconciliation vérifiée</string>
+    <string name="recon_save">Enregistrer le fichier de réconciliation en attente</string>
+    <string name="recon_reset">Créer une nouvelle base après un conflit de curseur confirmé</string>
+    <string name="recon_destination">%1$s\nCompte : %2$s\n%3$s</string>
+    <string name="recon_has_pending">Un lot enregistré est en attente. Prévisualisez-le ou vérifiez son accusé de réception avant une nouvelle lecture.</string>
+    <string name="recon_no_pending">Aucun lot en attente. Lisez les types et la période choisis pour préparer la réconciliation.</string>
+    <string name="recon_staged">Réconciliation enregistrée en attente. Vérifiez l’aperçu, y compris les changements à la source et les lacunes de l’historique des suppressions. Fermer l’application ne la supprime pas.</string>
+    <string name="recon_acknowledged">Accusé de réception exact du destinataire confirmé. %1$s Les nouveaux curseurs sont maintenant enregistrés.</string>
+    <string name="recon_save_help">Choisissez un stockage sur l’appareil. Enregistrer ne confirme pas la livraison et ne fait pas avancer les jetons. Revenez à la prévisualisation ou à la vérification de l’accusé de réception après l’import sur le PC.</string>
+    <string name="recon_conflict_required">Vérifiez d’abord l’accusé de réception en attente et obtenez un conflit confirmé, puis acceptez explicitement la continuité inconnue.</string>
+    <string name="recon_reset_ready">Un nouveau flux de réconciliation est prêt. La continuité des suppressions antérieures est inconnue. Lisez les données sélectionnées pour préparer une nouvelle base à vérifier ; cette réinitialisation n’a supprimé aucune ligne existante de l’espace de travail.</string>
+    <string name="recon_check_first">Vérifiez d’abord l’espace de travail de réconciliation.</string>
+    <string name="recon_changed">La destination a changé. Vérifiez-la à nouveau.</string>
+    <string name="recon_preview_again">Prévisualisez à nouveau le lot en attente.</string>
+    <string name="recon_permission_revoked">L’autorisation de lecture a été révoquée. Aucune autre réconciliation envoyée. Les données et jetons en attente restent inchangés.</string>
+    <string name="recon_already_applied">Le destinataire a déjà appliqué exactement ce lot. Son accusé de réception est confirmé ; aucune écriture n’a été répétée.</string>
+    <string name="recon_replay_receipt">Lot déjà appliqué confirmé par l’accusé de réception exact de répétition.</string>
+    <string name="recon_review">%1$s\nCompte : %2$s\nDu %3$s au %4$s (%5$s)\n%6$s\n\n%7$s\n\nVérifiez chaque nombre de suppressions. Les suppressions restent décochées jusqu’à votre autorisation explicite.</string>
+    <string name="recon_cancelled">Réconciliation arrêtée. Une application déjà envoyée a pu aboutir. Vérifiez le lot enregistré et son accusé de réception avant de réessayer.</string>
+    <string name="recon_failure">%1$s\nVérifiez le lot enregistré et son accusé de réception avant de réessayer. Un conflit de curseur nécessite une nouvelle base vérifiée ; il n’est jamais réinitialisé automatiquement.</string>
+</resources>
