@@ -15,3 +15,6 @@ dist/
 *.apk
 *.aab
 public/pwa-icons/
+
+# Generated public offline asset graph
+/public/offline-assets.js

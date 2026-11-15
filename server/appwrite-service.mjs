@@ -1,3 +1,5 @@
+import {createReminderScheduleStore} from './reminder-schedules-store.mjs';
+import {createReminderDispatcher} from './reminder-schedules-dispatch.mjs';
 import {createWebPushStore} from './web-push-store.mjs';
 import {parseTextFoodLog} from './text-log.mjs';
 import {createFastingDispatcher} from './scheduler-dispatch.mjs';
@@ -84,7 +86,8 @@ export function createAppwriteService(config, key, userAgent='') {
     try{return await project(state,catalog,input);}catch(error){if([400,404,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
   }
   async function csvImports(secret){const {owner}=await data(secret);return createCsvImportStore({db:new TablesDB(elevated()),ownerId:owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET});}
-  async function pushStore(secret){const {owner}=await data(secret);return createWebPushStore({db:new TablesDB(elevated()),ownerId:owner,origin:config.origin,vapid:{publicKey:process.env.WEB_PUSH_PUBLIC_KEY,privateKey:process.env.WEB_PUSH_PRIVATE_KEY}});}
+  async function pushStore(secret){const {owner}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();return createWebPushStore({db:new TablesDB(elevated()),ownerId:owner,origin:config.origin,vapid:{publicKey:process.env.WEB_PUSH_PUBLIC_KEY,privateKey:process.env.WEB_PUSH_PRIVATE_KEY}});}
+  async function reminderStore(secret){const {owner}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();return createReminderScheduleStore({db:new TablesDB(elevated()),ownerId:owner,origin:config.origin,vapid:{publicKey:process.env.WEB_PUSH_PUBLIC_KEY,privateKey:process.env.WEB_PUSH_PRIVATE_KEY}});}
   async function backups(secret){const {owner}=await data(secret),server=elevated();return createBackupStore({db:new TablesDB(server),storage:new Storage(server),ownerId:owner});}
   const lifecycle=()=>createAccountLifecycle({db:new TablesDB(elevated()),database:config.database});
   const deletion=()=>createAccountDeletion({db:new TablesDB(elevated()),storage:new Storage(elevated()),users:new Users(elevated()),lifecycle:lifecycle(),database:config.database});
@@ -102,7 +105,12 @@ export function createAppwriteService(config, key, userAgent='') {
     async barcodePreview(secret,input){const {owner}=await data(secret);return readView(secret,state=>previewBarcode(state,input,{owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET}));},
     async barcodeSave(secret,input){const {owner,repository}=await data(secret);if(input?.type!=='barcode.log')throw Object.assign(Error('Choose a barcode action.'),{code:400});return createWorkspaceStore(new TablesDB(elevated()),owner).command(input,catalogReader(repository),{owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET});},
     async dashboard(secret,date){const {owner}=await data(secret),context=await calendarContext(secret,owner);return readView(secret,state=>dashboardView(state,{date},context));},
-    async reminders(secret){return (await pushStore(secret)).status();},
+    async offlineSnapshot(secret){const {owner}=await data(secret),store=createWorkspaceStore(new TablesDB(elevated()),owner);await store.create();return store.offlineSnapshot();},
+    async offlineCommand(secret,input){const {owner}=await data(secret),calendar=await calendarContext(secret,owner);return createWorkspaceStore(new TablesDB(elevated()),owner).offlineCommand(input,calendar);},
+    async reminders(secret){return {...await (await pushStore(secret)).status(),...await (await reminderStore(secret)).status()};},
+    async saveReminder(secret,input){return (await reminderStore(secret)).save(input);},
+    async deleteReminder(secret,input){return (await reminderStore(secret)).remove(input);},
+    async reminderSettings(secret,input){return (await reminderStore(secret)).settings(input);},
     async subscribePush(secret,input){return (await pushStore(secret)).subscribe(input);},
     async unsubscribePush(secret,input){return (await pushStore(secret)).unsubscribe(input);},
     async testPush(secret,input){return (await pushStore(secret)).test(input);},
@@ -205,6 +213,12 @@ export function createAppwriteService(config, key, userAgent='') {
       const queueClient=new Client().setEndpoint(config.endpoint).setProject(config.project).setKey(key);
       try{await createFastingDispatcher({db:new TablesDB(queueClient),functions:new Functions(queueClient)}).dispatch(account.$id);}
       catch{console.warn('Fasting delivery remains queued for repair.');}
+    }
+    const reminderChanged=['workspaceCommand','offlineCommand','restoreBackup','importCsv','barcodeSave','savePhoto','saveNotePhoto','saveSnapshot','saveRecipeImport','saveReminder','deleteReminder','reminderSettings','subscribePush','unsubscribePush','testPush'].includes(name);
+    if(process.env.REMINDERS_ENABLED==='true'&&reminderChanged){
+      const queueClient=new Client().setEndpoint(config.endpoint).setProject(config.project).setKey(key);
+      try{await createReminderDispatcher({db:new TablesDB(queueClient),functions:new Functions(queueClient)}).dispatch(account.$id);}
+      catch{console.warn('Reminder delivery remains queued for repair.');}
     }
     return result;
   }]));

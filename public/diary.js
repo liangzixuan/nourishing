@@ -1,3 +1,4 @@
+import {rememberOfflineAccount} from './offline-session.js';
 import {mountTextLog} from './text-log.js';
 import {notePhotoThumbnail} from './note-photos.js';
 import {createDiaryTools} from './diary-tools.js';
@@ -23,6 +24,7 @@ const icons={check:svg('<path d="m5 12 4 4L19 6"/>'),back:svg('<path d="m15 5-7 
 const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
 const num=(v,d=1)=>Number.isFinite(v)?v.toLocaleString(undefined,{maximumFractionDigits:d}):'—';
 let view='diary',library=null,nutrition=null,pickerCleanup;
+let accountReady=false;
 let date=today(),diary=null,loadId=0,searchId=0,group='Uncategorized';
 function show(html){pickerCleanup?.();pickerCleanup=null;searchId++;content.innerHTML=html;if(!sheet.open)sheet.showModal();sheet.scrollTop=0;}
 function close(){pickerCleanup?.();pickerCleanup=null;searchId++;sheet.close();content.replaceChildren();}
@@ -30,7 +32,7 @@ const header=title=>`<header class="sheet-header"><button type="button" class="i
 const diaryTools=createDiaryTools({diary:()=>diary,date:()=>date,show,close,header,content,render,onChange:load});
 sheet.addEventListener('click',event=>{if(event.target===sheet){const r=sheet.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)close();}if(event.target.closest('[data-close]'))close();});
 sheet.addEventListener('cancel',event=>{event.preventDefault();close();});
-async function load(){const id=++loadId;notice.textContent='';page.setAttribute('aria-busy','true');try{const result=await request('/api/diary?date='+date);if(id!==loadId)return;diary=result;applyTheme(result.theme);if(view==='diary')render();}catch(error){if(id===loadId){notice.textContent=error.message;if(view==='diary')page.innerHTML='<p class="empty"><button type="button" data-reload>Try again</button></p>';}}finally{if(id===loadId)page.setAttribute('aria-busy','false');}}
+async function load(){const id=++loadId;notice.textContent='';page.setAttribute('aria-busy','true');try{if(!accountReady){await rememberOfflineAccount(await request('/api/account'));accountReady=true;}const result=await request('/api/diary?date='+date);if(id!==loadId)return;diary=result;applyTheme(result.theme);if(view==='diary')render();}catch(error){if(id===loadId){notice.textContent=error.message;if(view==='diary')page.innerHTML='<p class="empty"><button type="button" data-reload>Try again</button><a href="/offline.html">Open offline diary</a></p>';}}finally{if(id===loadId)page.setAttribute('aria-busy','false');}}
 function selectTab(id){document.querySelectorAll('.app-nav [aria-current]').forEach(b=>b.removeAttribute('aria-current'));document.getElementById(id).setAttribute('aria-current','page');}
 function leaveView(){diaryTools.reset();library?.dispose();library=null;nutrition?.dispose();nutrition=null;}
 function render(){

@@ -4,6 +4,7 @@ import {createAccountLifecycle} from './account-lifecycle.mjs';
 import {captureCalendar} from './domain/calendar.mjs';
 import {runCloudScheduler} from './cloud-scheduler.mjs';
 import {createFastingDispatcher,parseSchedulerRequest} from './scheduler-dispatch.mjs';
+import {createReminderDispatcher} from './reminder-schedules-dispatch.mjs';
 import {createWorkspaceStore} from './workspace-store.mjs';
 
 /** Private one-shot wakeups plus hourly repair. Public execute permissions stay empty. */
@@ -22,6 +23,7 @@ export default async function schedulerEntry({req,res,log=()=>{},error=()=>{}}){
     let profile;try{profile=await db.getRow({databaseId:'nourishing',tableId:'profiles',rowId:owner});}catch(e){if(e.code!==404)throw e;}
     return createWorkspaceStore(db,owner).tickFasting(captureCalendar(now,profile?.timeZone??'UTC'));
    })));
+   if(process.env.REMINDERS_ENABLED==='true')try{await createReminderDispatcher({db:queueDb,functions}).dispatch(request.owner);}catch{error('Reminder delivery remains queued for repair.');}
   }else{
    result=await runCloudScheduler({db:queueDb,enabled:true,dispatch:dispatcher.dispatch,defer:dispatcher.defer});
    // Do not create a busy continuation loop when an unresolved provider failure remains.

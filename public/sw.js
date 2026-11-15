@@ -1,7 +1,7 @@
-// This cache contains only the public offline screen. Account/API responses,
-// photos, downloaded backups and authenticated pages are never cached here.
-const CACHE='nourishing-public-offline-v1';
-const FILES=['/offline.html','/offline.css','/favicon.svg'];
+// Only the packaged public shell is cached. Private diary copies live in
+// account-partitioned IndexedDB after the user's explicit device-storage choice.
+importScripts('/offline-assets.js');
+const {cache:CACHE,files:FILES}=self.NOURISHING_OFFLINE;
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES))));
 self.addEventListener('activate',event=>event.waitUntil((async()=>{
  for(const name of await caches.keys())if(name.startsWith('nourishing-public-offline-')&&name!==CACHE)await caches.delete(name);
@@ -15,9 +15,9 @@ self.addEventListener('fetch',event=>{
    const cache=await caches.open(CACHE);return await cache.match('/offline.html')||Response.error();
   }));return;
  }
- if(!url.search&&FILES.includes(url.pathname))event.respondWith(fetch(request).catch(async()=>{
-  const cache=await caches.open(CACHE);return await cache.match(url.pathname)||Response.error();
- }));
+ if(!url.search&&FILES.includes(url.pathname))event.respondWith((async()=>{
+  const cache=await caches.open(CACHE);return await cache.match(url.pathname)||fetch(request);
+ })());
 });
 
 self.addEventListener('push',event=>{
@@ -36,4 +36,13 @@ self.addEventListener('notificationclick',event=>{
   if(existing){await existing.focus();return;}
   await self.clients.openWindow('/diary');
  })());
+});
+
+self.addEventListener('message',event=>{
+ if(event.data?.type!=='PREPARE_OFFLINE'||!event.ports?.[0])return;
+ event.waitUntil((async()=>{try{
+  const cache=await caches.open(CACHE);
+  if(!(await Promise.all(FILES.map(file=>cache.match(file)))).every(Boolean))await cache.addAll(FILES);
+  event.ports[0].postMessage({ok:true});
+ }catch{event.ports[0].postMessage({ok:false,error:'Could not save the offline app. Try again online.'});}})());
 });

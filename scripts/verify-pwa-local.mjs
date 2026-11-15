@@ -6,7 +6,7 @@ import {resolve,sep,extname} from 'node:path';
 import {chromium} from 'playwright-core';
 import sharp from 'sharp';
 
-const root=resolve('dist/client'),types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.webmanifest':'application/manifest+json'};
+const root=resolve('dist/client'),types={'.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.webmanifest':'application/manifest+json'};
 const manifest=JSON.parse(await readFile(resolve(root,'manifest.webmanifest'),'utf8'));
 assert.equal(manifest.name,'Nourishing');assert.equal(manifest.display,'standalone');assert.equal(manifest.start_url,'/diary');assert.equal(manifest.scope,'/');
 for(const icon of manifest.icons){const metadata=await sharp(await readFile(resolve(root,'.'+icon.src))).metadata();assert.equal(`${metadata.width}x${metadata.height}`,icon.sizes);}
@@ -30,11 +30,12 @@ try{
  assert.equal(await page.locator('link[rel=manifest]').getAttribute('href'),'/manifest.webmanifest');
  const privateData=await page.evaluate(()=>fetch('/api/private').then(response=>response.json()));assert.equal(privateData.private,'fixture');
  const cacheUrls=await page.evaluate(async()=>{const result=[];for(const name of await caches.keys())for(const request of await(await caches.open(name)).keys())result.push(new URL(request.url).pathname);return result.sort();});
- assert.deepEqual(cacheUrls,['/favicon.svg','/offline.css','/offline.html']);
+ const assetManifest=await page.evaluate(()=>fetch('/offline-assets.js').then(r=>r.text()).then(text=>JSON.parse(text.slice(text.indexOf('=')+1).replace(/;\s*$/,''))));
+ assert.deepEqual(cacheUrls,assetManifest.files.slice().sort());assert.ok(cacheUrls.every(path=>!path.startsWith('/api/')&&!['/diary','/account','/login'].includes(path)));
  await context.setOffline(true);
  assert.equal(await page.evaluate(()=>fetch('/api/private').then(()=>false,()=>true)),true,'private API must not fall back to stale data');
- await page.goto(origin+'/diary');await page.getByRole('heading',{name:"You're offline"}).waitFor();
- assert.equal(await page.getByRole('link',{name:'Try again'}).getAttribute('href'),'/diary');
+ await page.goto(origin+'/diary');await page.getByRole('heading',{name:'Offline diary'}).waitFor();
+ assert.equal(await page.getByRole('link',{name:'Open online diary'}).getAttribute('href'),'/diary');
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  await context.setOffline(false);await page.goto(origin+'/login');await page.getByRole('heading',{name:'Sign in',exact:true}).waitFor();
  console.log(JSON.stringify({ok:true,checks:['install manifest','generated icon dimensions','service worker registration','public-only cache','private API offline rejection','offline navigation','mobile width','online recovery']}));

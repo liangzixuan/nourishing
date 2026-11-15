@@ -50,9 +50,10 @@ try{
  const manifest=await get('/manifest.webmanifest');assert.equal(manifest.display,'standalone');
  for(const icon of manifest.icons)assert.equal((await context.request.get(origin+icon.src)).status(),200);
  const cached=await page.evaluate(async()=>{const result=[];for(const name of await caches.keys())for(const request of await(await caches.open(name)).keys())result.push(new URL(request.url).pathname);return result.sort();});
- assert.deepEqual(cached,['/favicon.svg','/offline.css','/offline.html']);
- await context.setOffline(true);await page.goto(origin+'/diary');await page.getByRole('heading',{name:"You're offline"}).waitFor();
- await context.setOffline(false);await page.getByRole('link',{name:'Try again'}).click();await page.locator('.calorie-summary').waitFor();
+ const assetManifest=await page.evaluate(()=>fetch('/offline-assets.js').then(r=>r.text()).then(text=>JSON.parse(text.slice(text.indexOf('=')+1).replace(/;\s*$/,''))));
+ assert.deepEqual(cached,assetManifest.files.slice().sort());assert.ok(cached.every(path=>!path.startsWith('/api/')&&!['/diary','/account','/login'].includes(path)));
+ await context.setOffline(true);await page.goto(origin+'/diary');await page.getByRole('heading',{name:'Offline diary'}).waitFor();
+ await context.setOffline(false);await page.getByRole('link',{name:'Open online diary'}).click();await page.locator('.calorie-summary').waitFor();
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(errors,[]);
  report.checks.push('hosted service worker','install manifest and icons','public-only offline cache','offline/online recovery','mobile layout');
  for(const path of ['/api/home-widgets','/api/health-connect/export/intake/options'])assert.equal((await context.request.get(origin+path)).status(),404);

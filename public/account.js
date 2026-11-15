@@ -1,3 +1,4 @@
+import {rememberOfflineAccount,lockCurrentOffline,leaveOfflineAccount} from './offline-session.js';
 import {disconnectCurrentPush} from './reminders.js';
 import {installButton,refreshInstallButton} from './pwa.js';
 import {createAccountDeletion} from './account-deletion.js';
@@ -10,7 +11,7 @@ async function api(path,body,method='POST',signal){
   const response=await fetch(path,{method,signal,credentials:'same-origin',cache:'no-store',headers:body?{'Content-Type':'application/json'}:{},...(body?{body:JSON.stringify(body)}:{})});
   const result=await response.json().catch(()=>{throw Error('Unable to connect. Please try again.');});if(!response.ok)throw Object.assign(Error(result.error??'Please try again.'),{status:response.status});return result;
 }
-let deletion=createAccountDeletion({root,request:api,onSignIn:()=>accountForm('login')});
+let deletion=createAccountDeletion({root,request:api,onSignIn:()=>accountForm('login'),beforeDelete:()=>leaveOfflineAccount(root)});
 const notice=()=>'<p id="notice" class="notice" role="status"></p>';
 function message(text,error=false){const el=document.querySelector('#notice');if(el){el.textContent=text;el.classList.toggle('error',error);}}
 async function busy(form,work){const buttons=[...form.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);message('');try{await work();}catch(error){message(error.message,true);}finally{buttons.forEach(b=>b.disabled=false);}}
@@ -24,7 +25,7 @@ function accountForm(mode){
     const body=Object.fromEntries(new FormData(form));
     if(reset){if(!token.userId||!token.secret)throw Error('Open the reset link from your email.');await api('/api/auth/reset',{...token,password:body.password});token.secret=null;form.reset();message('Password updated. You can sign in.');return;}
     if(forgot){await api('/api/auth/recovery',body);message('If an account exists, a reset link is on its way.');return;}
-    await api(`/api/auth/${register?'register':'login'}`,body);form.reset();location.replace((register?'/account':'/diary'));
+    await api(`/api/auth/${register?'register':'login'}`,body);await rememberOfflineAccount(await api('/api/account',null,'GET'));form.reset();location.replace((register?'/account':'/diary'));
   });};
 }
 function verification(){
@@ -32,7 +33,8 @@ function verification(){
   const form=root.querySelector('form');form.onsubmit=e=>{e.preventDefault();busy(form,async()=>{if(!token.userId||!token.secret)throw Error('Open the verification link from your email.');await api('/api/auth/verify',token);token.secret=null;form.hidden=true;message('Email verified.');});};
 }
 async function profile(){
-  let user;try{user=await api('/api/account',null,'GET');}catch(error){if(error.status===401){if(!await deletion.recover())accountForm('login');return;}root.innerHTML=`<h1>Account</h1>${notice()}<button id="retry">Try again</button>`;message(error.message,true);root.querySelector('#retry').onclick=profile;return;}
+  let user;try{user=await api('/api/account',null,'GET');}catch(error){if(error.status===401){await lockCurrentOffline();if(!await deletion.recover())accountForm('login');return;}root.innerHTML=`<h1>Account</h1>${notice()}<button id="retry">Try again</button>`;message(error.message,true);root.querySelector('#retry').onclick=profile;return;}
+  await rememberOfflineAccount(user);
   const zone=user.profile.timeZone==='UTC'?Intl.DateTimeFormat().resolvedOptions().timeZone:user.profile.timeZone;
   root.innerHTML=`<h1>Account</h1>${installButton()}<section class="card"><p><strong>${escape(user.name)}</strong></p><p class="muted">${escape(user.email)}</p><p>${user.emailVerified?'Email verified':'Email not verified'}</p>${user.emailVerified?'':'<button class="secondary" id="verify">Send verification email</button>'}</section><form><label>Time zone<input name="timeZone" value="${escape(zone)}" required maxlength="100"></label><label>Units<select name="units"><option value="metric">Metric</option><option value="imperial">Imperial</option></select></label><button>Save settings</button></form>${notice()}<button class="secondary signout" id="signout">Sign out</button><button type="button" class="delete-account" id="delete-account">Delete account</button>`;
   refreshInstallButton();
@@ -41,11 +43,11 @@ async function profile(){
   form.onsubmit=e=>{e.preventDefault();busy(form,async()=>{await api('/api/profile',Object.fromEntries(new FormData(form)),'PUT');message('Saved.');});};
   const verify=root.querySelector('#verify');if(verify)verify.onclick=()=>busy(verify.parentElement,async()=>{await api('/api/auth/verification',{});message('Verification email sent.');});
   root.querySelector('#delete-account').onclick=deletion.open;
-  root.querySelector('#signout').onclick=()=>busy(root,async()=>{await disconnectCurrentPush();await api('/api/auth/logout',{});user=null;root.replaceChildren();location.replace('/login');});
+  root.querySelector('#signout').onclick=()=>busy(root,async()=>{if(!await leaveOfflineAccount(root))return;await disconnectCurrentPush();await api('/api/auth/logout',{});user=null;root.replaceChildren();location.replace('/login');});
 }
 const mode=location.pathname.slice(1);
 // Appwrite serves this static root before Astro's catch-all route.
 if(['register','login','forgot-password','reset-password'].includes(mode))accountForm(mode);else if(mode==='verify-email')verification();else profile();
 
 window.addEventListener('pagehide',()=>deletion.dispose());
-window.addEventListener('pageshow',event=>{if(event.persisted&&(mode==='account'||mode==='')){deletion=createAccountDeletion({root,request:api,onSignIn:()=>accountForm('login')});profile();}});
+window.addEventListener('pageshow',event=>{if(event.persisted&&(mode==='account'||mode==='')){deletion=createAccountDeletion({root,request:api,onSignIn:()=>accountForm('login'),beforeDelete:()=>leaveOfflineAccount(root)});profile();}});

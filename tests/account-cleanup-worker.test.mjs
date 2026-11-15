@@ -12,7 +12,7 @@ const job=(id,state,expiresAt=expired)=>({$id:id,ownerId:state==='complete'?'':'
 test('targeted worker accesses only its exact job and never prunes other receipts',async()=>{
  const id='37e91cde-4eaf-4f56-94a0-25bb975fb942',f=accountFixture();f.put('account_deletions',id,job(id,'pending'));f.put('account_deletions','other',job('other','pending'));f.put('account_deletions','expired',job('expired','prepared'));
  const get=f.db.getRow;f.db.getRow=async input=>{assert.equal(input.rowId,id);return get(input);};f.db.listRows=async()=>{throw Error('Targeted work must not list jobs');};const calls=[];
- const result=await runAccountCleanup({db:f.db,enabled:true,jobId:id,clock:()=>now,deletion:{async step(value){calls.push(value);return {status:'deleted',phase:'done',counts:{files:0,rows:0}};}}});assert.deepEqual(calls,[id]);assert.equal(result.deleted,1);assert.equal(result.pruned,0);assert.ok(f.table('account_deletions').has('expired'));assert.ok(f.table('account_deletions').has('other'));
+ const result=await runAccountCleanup({db:f.db,enabled:true,jobId:id,clock:()=>now,deletion:{async step(value){calls.push(value);return {status:'deleted',phase:'done',counts:{files:0,rows:0}};}}});assert.deepEqual(calls,[id]);assert.equal(result.deleted,1);assert.equal(result.pruned,0);assert.equal(result.reviewsPruned,0);assert.ok(f.table('account_deletions').has('expired'));assert.ok(f.table('account_deletions').has('other'));
  await assert.rejects(runAccountCleanup({db:f.db,deletion:{step(){}},enabled:true,jobId:'bad'}));
 });
 
@@ -29,6 +29,12 @@ test('worker prunes only expired prepared/complete receipts and bounds unchanged
  const f=accountFixture();for(const row of [job('ready','prepared'),job('done','complete'),job('fresh','prepared',future),job('pending','pending'),job('unknown','pending')])f.put('account_deletions',row.$id,row);
  const seen=[],result=await runAccountCleanup({db:f.db,enabled:true,clock:()=>now,deletion:{async step(id){seen.push(id);return {status:id==='unknown'?'needs_attention':'pending',phase:'drain',counts:{files:0,rows:0}};}}});
  assert.deepEqual(new Set(seen),new Set(['pending','unknown']));assert.equal(seen.length,2);assert.equal(result.pruned,2);assert.equal(result.needsAttention,1);assert.equal(f.table('account_deletions').has('fresh'),true);assert.equal(f.table('account_deletions').has('pending'),true);
+});
+
+test('untargeted worker removes expired backup reviews within the existing cleanup run',async()=>{
+ const f=accountFixture();f.put('backup_reviews','expired',{ownerId:'owner',generation:'generation',expiresAt:expired,$permissions:[]});f.put('backup_reviews','valid',{ownerId:'owner',generation:'generation',expiresAt:future,$permissions:[]});
+ const result=await runAccountCleanup({db:f.db,enabled:true,clock:()=>now,deletion:{step(){throw Error('No deletion jobs');}}});
+ assert.equal(result.reviewsPruned,1);assert.equal(result.failed,0);assert.equal(f.table('backup_reviews').has('expired'),false);assert.equal(f.table('backup_reviews').has('valid'),true);
 });
 test('private worker progresses without a browser and isolates failures within job/step limits',async()=>{
  const f=accountFixture();for(const id of ['a','b','c'])f.put('account_deletions',id,job(id,'pending'));

@@ -4,6 +4,8 @@ import {backupReferences,backupManifest} from './backup.mjs';
 import {previewHealthReconciliation,prepareHealthReconciliation} from './health-reconciliation.mjs';
 import {tickCloudFasting} from './fasting.mjs';
 import {stageFastingDispatch} from './scheduler-dispatch.mjs';
+import {stageReminderDispatch} from './reminder-schedules-dispatch.mjs';
+import {offlineSnapshot as projectOfflineSnapshot,parseOfflineCommand,assertOfflineIdentity,applyOfflineCommand} from './offline.mjs';
 import {beginCloudLogging,finishCloudLogging,loggingCalendar} from './cloud-logging.mjs';
 import {ID,Permission,Role} from 'node-appwrite';
 import {digest,packWorkspace,rowId,unpackWorkspace} from './data-codec.mjs';
@@ -35,7 +37,9 @@ export function createWorkspaceStore(db,owner){
  }
  async function stageDispatch(state,generation,transactionId,context={}){
   const now=context.asOf?new Date(context.asOf):context.now instanceof Date?context.now:new Date(context.now??Date.now());
-  return stageFastingDispatch({db,owner,state,generation,transactionId,now,timeZone:context.timeZone??'UTC'});
+  const fasting=await stageFastingDispatch({db,owner,state,generation,transactionId,now,timeZone:context.timeZone??'UTC'});
+  await stageReminderDispatch({db,owner,state,generation,transactionId,now});
+  return fasting;
  }
  async function persist(state,before,h,transactionId,context={}){
    const packed=packWorkspace(state,owner,h.generation),old=new Map(before.map(row=>[row.$id,row]));
@@ -75,6 +79,35 @@ export function createWorkspaceStore(db,owner){
    await db.updateTransaction({transactionId:tx.$id,rollback:true}).catch(()=>{});
    const saved=await optional(db,'command_receipts',receiptId);if(saved&&saved.ownerId===owner&&saved.fingerprint===fingerprint)return JSON.parse(saved.result);
    if(error.code===409)conflict();throw error;
+  }
+ }
+ async function offlineSnapshot(){
+  const head=await db.getRow(args('workspace_heads',owner));if(head.ownerId!==owner)conflict();
+  const rows=await workspaceRows(db,owner,head.generation),latest=await db.getRow(args('workspace_heads',owner));
+  if(latest.ownerId!==owner||latest.generation!==head.generation||latest.digest!==head.digest||latest.$updatedAt!==head.$updatedAt)conflict();
+  return projectOfflineSnapshot(unpackWorkspace(head,rows),{ownerId:owner,generation:head.generation});
+ }
+ async function offlineCommand(raw,context={}){
+  const input=parseOfflineCommand(raw),head=await db.getRow(args('workspace_heads',owner));
+  if(head.ownerId!==owner)conflict();assertOfflineIdentity(input,{ownerId:owner,generation:head.generation});
+  const receiptId=rowId(owner,input.operationId),fingerprint=digest(input),receipt=await optional(db,'command_receipts',receiptId);
+  if(receipt){if(receipt.ownerId!==owner||receipt.fingerprint!==fingerprint)conflict();return {...JSON.parse(receipt.result),replayed:true};}
+  const tx=await db.createTransaction({ttl:60});
+  try{
+   await db.updateRow({...args('workspace_heads',owner),data:{digest:head.digest},transactionId:tx.$id});
+   const guard=await db.getRow(args('workspace_heads',owner));if(guard.ownerId!==owner||guard.generation!==head.generation||guard.digest!==head.digest||guard.$updatedAt!==head.$updatedAt)conflict();
+   const before=await workspaceRows(db,owner,head.generation),state=unpackWorkspace(head,before);
+   const loggingBefore=beginCloudLogging(state,input.type),calendar=loggingBefore?await loggingCalendar(db,owner,context):null;
+   const result=applyOfflineCommand(state,input,{ownerId:owner,generation:head.generation});
+   finishCloudLogging(state,loggingBefore,input.type,calendar);
+   result.revision=await persist(state,before,head,tx.$id,context);
+   await db.createRow({...args('command_receipts',receiptId),data:{ownerId:owner,fingerprint,result:JSON.stringify(result)},permissions:permissions(owner),transactionId:tx.$id});
+   await db.updateTransaction({transactionId:tx.$id,commit:true});return result;
+  }catch(error){
+   await db.updateTransaction({transactionId:tx.$id,rollback:true}).catch(()=>{});
+   const latest=await db.getRow(args('workspace_heads',owner));assertOfflineIdentity(input,{ownerId:owner,generation:latest.generation});
+   const saved=await optional(db,'command_receipts',receiptId);if(saved&&saved.ownerId===owner&&saved.fingerprint===fingerprint)return {...JSON.parse(saved.result),replayed:true};
+   throw error;
   }
  }
  async function tickFasting(context){
@@ -156,5 +189,5 @@ export function createWorkspaceStore(db,owner){
    if(error.code===409)conflict();throw error;
   }
  }
- return {create,command,tickFasting,syncFastingDispatch,importHealthExportMetadata,reconcileHealth};
+ return {create,command,offlineSnapshot,offlineCommand,tickFasting,syncFastingDispatch,importHealthExportMetadata,reconcileHealth};
 }

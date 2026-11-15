@@ -1,5 +1,7 @@
 import {rowId,digest} from './data-codec.mjs';
 import {parsePushSubscription,parseVapid,createWebPushTransport,pushFields,pushFail,PUSH_DEVICE_LIMIT} from './web-push.mjs';
+import {readReminderWorkspace} from './reminder-schedules-workspace.mjs';
+import {stageReminderDispatch} from './reminder-schedules-dispatch.mjs';
 
 const args=(tableId,id)=>({databaseId:'nourishing',tableId,rowId:id});
 const optional=async work=>{try{return await work();}catch(error){if(error.code===404)return null;throw error;}};
@@ -31,11 +33,17 @@ export function createWebPushStore({db,ownerId:owner,origin,vapid,now=()=>Date.n
   const account=await load();return {configured:true,paused:true,publicKey:config.publicKey,devices:(account?.state.devices??[]).map(device=>({id:device.id,label:device.label,createdAt:device.createdAt,currentOrigin:device.origin===origin})),limit:PUSH_DEVICE_LIMIT};
  }
  async function update(account,change){
+  const workspace=await readReminderWorkspace(db,owner);
   const tx=await db.createTransaction({ttl:60});
   try{
    const result=await change(account.state,tx.$id);
+   if(workspace.head){
+    await db.updateRow({...args('workspace_heads',owner),data:{digest:workspace.head.digest},transactionId:tx.$id});
+    const head=await db.getRow(args('workspace_heads',owner));if(head.digest!==workspace.head.digest||head.generation!==workspace.head.generation||head.$updatedAt!==workspace.head.$updatedAt)conflict();
+   }
    await db.updateRow({...accountArgs,data:{version:account.row.version+1,payload:JSON.stringify(account.state)},transactionId:tx.$id});
    const guard=await db.getRow(accountArgs);if(guard.ownerId!==owner||guard.version!==account.row.version||guard.$updatedAt!==account.row.$updatedAt)conflict();
+   if(workspace.head)await stageReminderDispatch({db,owner,state:workspace.state,generation:workspace.head.generation,transactionId:tx.$id,now:new Date(stamp()),preferences:account.state});
    await db.updateTransaction({transactionId:tx.$id,commit:true});return result;
   }catch(error){await db.updateTransaction({transactionId:tx.$id,rollback:true}).catch(()=>{});throw error;}
  }

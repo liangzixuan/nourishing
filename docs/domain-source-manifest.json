@@ -1488,6 +1488,18 @@
       "target": "server/domain/suggested-meal-adjustment.mjs",
       "sourceSha256": "9fa79a7f1ee63985bd69323c4b4683d5358415697f54195a5967c17e9b1d2baf",
       "outputSha256": "9fa79a7f1ee63985bd69323c4b4683d5358415697f54195a5967c17e9b1d2baf"
+    },
+    {
+      "source": "server/offline-food-version.mjs",
+      "target": "server/domain/offline-food-version.mjs",
+      "sourceSha256": "90985efabd157498ce5f5cb9b28a33b21c92aaf12f17910f184c7fd344d2560d",
+      "outputSha256": "96ed584c473132492e70c4b7554b79adcf841ac0d6c19267314246d5873d5c5d"
+    },
+    {
+      "source": "server/biometric-logging.mjs",
+      "target": "server/domain/biometric-logging.mjs",
+      "sourceSha256": "16cc34bb3319428b0cfaa9fd5d016c648c3299f4666dfb0c8e69afd025832a93",
+      "outputSha256": "af0f13b4c91936a6f15d9f67c537fbd081b3497bb311d0289d9d6e6270c44934"
     }
   ]
 }

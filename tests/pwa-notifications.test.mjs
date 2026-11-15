@@ -6,7 +6,7 @@ import {runInNewContext} from 'node:vm';
 function worker(windows=[]){
  const handlers=new Map(),notices=[],opened=[],focused=[],origin='https://nourishing.example';
  const self={location:{origin},registration:{showNotification:async(title,options)=>notices.push({title,...options})},clients:{matchAll:async()=>windows.map(url=>({url,focus:async()=>focused.push(url)})),openWindow:async url=>opened.push(url)},addEventListener:(name,callback)=>handlers.set(name,callback)};
- runInNewContext(readFileSync(new URL('../public/sw.js',import.meta.url),'utf8'),{self,URL});
+ runInNewContext(readFileSync(new URL('../public/sw.js',import.meta.url),'utf8'),{self,URL,importScripts:path=>{assert.equal(path,'/offline-assets.js');self.NOURISHING_OFFLINE={cache:'fixture-public-cache',files:['/offline.html']};}});
  const emit=async(name,event={})=>{let pending;handlers.get(name)({...event,waitUntil:promise=>pending=promise});await pending;};
  return {emit,notices,opened,focused,origin};
 }

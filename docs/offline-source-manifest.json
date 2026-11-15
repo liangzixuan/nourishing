@@ -1,0 +1,328 @@
+{
+  "version": 1,
+  "source": "../cronometer-local",
+  "files": [
+    {
+      "source": "public/offline-quantity.js",
+      "target": "public/offline-source/public/offline-quantity.js",
+      "sourceSha256": "865ced2adc7641280f2fbaf5394d7d464d187537c0714d6da750d8ec3db700ce",
+      "outputSha256": "51cccc08c86224f4ca81c0f61939dc3db23702b72dbe9e3c7e8b3d0c802b9418",
+      "transforms": [
+        "Normalize line endings to LF",
+        "Resolve static imports to owned offline sources or verified existing report sources"
+      ]
+    },
+    {
+      "source": "public/offline-meal.js",
+      "target": "public/offline-source/public/offline-meal.js",
+      "sourceSha256": "a839192c730ffb92151e4817d11823f100db43d6046e7208041495a3ed5271cb",
+      "outputSha256": "e23113701bddf38e28ac6e0a0a18d6a3f7b44d8019b479ef90c03ffb65160b26",
+      "transforms": [
+        "Normalize line endings to LF",
+        "Resolve static imports to owned offline sources or verified existing report sources"
+      ]
+    },
+    {
+      "source": "server/diary-record-fields.mjs",
+      "target": "public/offline-source/server/diary-record-fields.mjs",
+      "sourceSha256": "ac1563273d1fb910102ba3ba48fae49f8dbe16004838a617f7cc652b0e871c57",
+      "outputSha256": "7385225df79051b9fcc8363a33b8129733e653dada6be45de8145641b8c5ad06",
+      "transforms": [
+        "Normalize line endings to LF",
+        "Resolve static imports to owned offline sources or verified existing report sources"
+      ]
+    },
+    {
+      "source": "server/diary-record-errors.mjs",
+      "target": "public/offline-source/server/diary-record-errors.mjs",
+      "sourceSha256": "a5ec88dbfab22714b0dffdf827ef7675c2d28d6c73b6aa67424b0f3761f553ae",
+      "outputSha256": "a5ec88dbfab22714b0dffdf827ef7675c2d28d6c73b6aa67424b0f3761f553ae",
+      "transforms": [
+        "Normalize line endings to LF",
+        "Resolve static imports to owned offline sources or verified existing report sources"
+      ]
+    },
+    {
+      "source": "server/stool-scale.mjs",
+      "target": "public/offline-source/server/stool-scale.mjs",
+      "sourceSha256": "8e2c6066d36be484dae7fc1078ee9d11a1b2ee2eba0fd1d7e53bdf06a72d2a23",
+      "outputSha256": "8e2c6066d36be484dae7fc1078ee9d11a1b2ee2eba0fd1d7e53bdf06a72d2a23",
+      "transforms": [
+        "Normalize line endings to LF",
+        "Resolve static imports to owned offline sources or verified existing report sources"
+      ]
+    },
+    {
+      "source": "server/resource-quantity.mjs",
+      "target": "public/offline-source/server/resource-quantity.mjs",
+      "sourceSha256": "63a3eb4aa6d6e88552644ab5ea3bab0b1041e37674cf25b0a9f84b9885fe92b4",
+      "outputSha256": "ed8d4b54ed63d80acf1e406131916972e1290e1a8e25cd122e5764813fc16d2f",
+      "transforms": [
+        "Normalize line endings to LF",
+        "Resolve static imports to owned offline sources or verified existing report sources"
+      ]
+    },
+    {
+      "source": "server/recipe-portions.mjs",
+      "target": "public/offline-source/server/recipe-portions.mjs",
+      "sourceSha256": "ec9d6eb30936526c09eb4d142a61695e30894b7a62d958907c0e612fb20a2528",
+      "outputSha256": "17dee37fb363dddb213603120a2f7cd8c9e2b6bd88957a40a42fc4a3a1400e16",
+      "transforms": [
+        "Normalize line endings to LF",
+        "Resolve static imports to owned offline sources or verified existing report sources"
+      ]
+    },
+    {
+      "source": "public/offline-record.js",
+      "target": "public/offline-source/public/offline-record.js",
+      "sourceSha256": "798536eba9ab68cd831a215ae8f0004e6ab07856de97bf5035b58801e7bd6a56",
+      "outputSha256": "1f2262d78a99ca4910680ea3057c733e42b8c2129eb44d9ef02bf9675204c845",
+      "transforms": [
+        "Normalize line endings to LF",
+        "Resolve static imports to owned offline sources or verified existing report sources"
+      ]
+    },
+    {
+      "source": "public/offline-exercise.js",
+      "target": "public/offline-source/public/offline-exercise.js",
+      "sourceSha256": "44fec8b853350152d160021733ca1d0de5a5ec58f496f0d08361c6ffa7f923da",
+      "outputSha256": "a400212dbf1267e2f3e15dbdc592badb215b4e48b0b6a644c36d0244cdb2084d",
+      "transforms": [
+        "Normalize line endings to LF",
+        "Resolve static imports to owned offline sources or verified existing report sources"
+      ]
+    },
+    {
+      "source": "public/diary-record-errors.js",
+      "target": "public/offline-source/public/diary-record-errors.js",
+      "sourceSha256": "017f16ac41c1f5885e5bdd8efa2dc5cf4a44a8441e7bc7dce33f23e7cc67b053",
+      "outputSha256": "193276e56c372e393c6eecacadc8eb71a85270552fba0acfb3a667b1237eec84",
+      "transforms": [
+        "Normalize line endings to LF",
+        "Resolve static imports to owned offline sources or verified existing report sources"
+      ]
+    },
+    {
+      "source": "public/offline-biometric-log.js",
+      "target": "public/offline-source/public/offline-biometric-log.js",
+      "sourceSha256": "21808d4093c847510e13420c8dadbbfc0d8d4d8f3d8fd2c8471f5fda92acc0ec",
+      "outputSha256": "d24cd9af56e32311636fcd11495c6ac7b81463c7bf17a5a762da932e92b188db",
+      "transforms": [
+        "Normalize line endings to LF",
+        "Resolve static imports to owned offline sources or verified existing report sources"
+      ]
+    },
+    {
+      "source": "server/biometric-library.mjs",
+      "target": "public/offline-source/server/biometric-library.mjs",
+      "sourceSha256": "08d966c8c11cb0b972fbd409524508973569084803d9b34529e02cf78841b256",
+      "outputSha256": "a8850b3958333074f74148acabd282655628ada5384fd88ff5c6e4ac5265280c",
+      "transforms": [
+        "Normalize line endings to LF",
+        "Resolve static imports to owned offline sources or verified existing report sources"
+      ]
+    },
+    {
+      "source": "server/biometric-guidance.mjs",
+      "target": "public/offline-source/server/biometric-guidance.mjs",
+      "sourceSha256": "55dee28f5cabcaf9b4726afe8c22613006438125936484a82570bdc3b522acf7",
+      "outputSha256": "f7dcfa9a341daa8dfa2e3a3ce5ceee03ed302a34e6369cf6c4c9d91d027b7145",
+      "transforms": [
+        "Normalize line endings to LF",
+        "Resolve static imports to owned offline sources or verified existing report sources"
+      ]
+    },
+    {
+      "source": "server/biometric-log-fields.mjs",
+      "target": "public/offline-source/server/biometric-log-fields.mjs",
+      "sourceSha256": "169cbc95cbd8a7242b4d5a6bf7134a7b647f3ce623fbe42f55ba2bef2a6f3227",
+      "outputSha256": "3a4fcbf2b0e58fe2d7fd5380f97d4f5f1fdbe897efd52ed3b06e2baed7f70c23",
+      "transforms": [
+        "Normalize line endings to LF",
+        "Resolve static imports to owned offline sources or verified existing report sources"
+      ]
+    }
+  ],
+  "reused": [
+    {
+      "source": "public/capture-errors.js",
+      "target": "public/report-source/public/capture-errors.js",
+      "sourceSha256": "af85d0d8d11d80d84b639407385b7cf79d43df2ee2a8de8cebfe28b7807befef",
+      "outputSha256": "af85d0d8d11d80d84b639407385b7cf79d43df2ee2a8de8cebfe28b7807befef",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "public/message-format.js",
+      "target": "public/report-source/public/message-format.js",
+      "sourceSha256": "f5f4ebe4c014f4bb10cde0100a61ea54effe1dfada6066cb18e89d298ca3e273",
+      "outputSha256": "f5f4ebe4c014f4bb10cde0100a61ea54effe1dfada6066cb18e89d298ca3e273",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "server/recipe-entry.mjs",
+      "target": "public/report-source/server/recipe-entry.mjs",
+      "sourceSha256": "b44053defc62e23b1079e908555790dfc50286a251dbc1b7432378a0ebf2ffad",
+      "outputSha256": "b44053defc62e23b1079e908555790dfc50286a251dbc1b7432378a0ebf2ffad",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "server/composite-source.mjs",
+      "target": "public/report-source/server/composite-source.mjs",
+      "sourceSha256": "6823f80dc6c84ea74e5d1d6a57c3b61926ac084a7a26a8252a78665bcb8f9ed7",
+      "outputSha256": "217b9df925abba9cc504cd6a9a13ee20f4414469516c9105e9b217bc100fa0e8",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "server/food-quantity.mjs",
+      "target": "public/report-source/server/food-quantity.mjs",
+      "sourceSha256": "9b6b6b79e2439d866843741fae3ca541944c18802d1c94e0dc35c97406679ac2",
+      "outputSha256": "9118455e7362c0deddaa503f6e215c60b98cabbe0de18888f534985e23b6ef37",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "server/calendar.mjs",
+      "target": "public/report-source/server/calendar.mjs",
+      "sourceSha256": "229b5891f511ae7dfec0e71f01a053820ec43191e07e80bd28f26181fe65633f",
+      "outputSha256": "229b5891f511ae7dfec0e71f01a053820ec43191e07e80bd28f26181fe65633f",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "server/diary-day-status.mjs",
+      "target": "public/report-source/server/diary-day-status.mjs",
+      "sourceSha256": "cc83bc4ff61c882bb646d7f0b6237430e307d060771787a645b287b12b483549",
+      "outputSha256": "cc83bc4ff61c882bb646d7f0b6237430e307d060771787a645b287b12b483549",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "server/resource-reference.mjs",
+      "target": "public/report-source/server/resource-reference.mjs",
+      "sourceSha256": "0d8ed6d98592503774d9b82fe75019db1bf222e1354902316a34e78868134b6b",
+      "outputSha256": "03757ff46fc92164d668cd94f3d67decdd3ba13a3542d248bc4b4f51d7f624f5",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "server/recipe-portion-schema.mjs",
+      "target": "public/report-source/server/recipe-portion-schema.mjs",
+      "sourceSha256": "f7f80c167db93f39a90b139699af06f54aa8329f5f0643dd92fb2d2582bc9cd3",
+      "outputSha256": "baa9e2d76c5c04acf1f47c312a0248ec1331eb9929b1124c60f8533d8c7d54da",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "server/recipe-weight.mjs",
+      "target": "public/report-source/server/recipe-weight.mjs",
+      "sourceSha256": "c88dbf51d7371ac2786ba2b1003991795e4189e16dab7948ec03578480989e85",
+      "outputSha256": "b110dced60636d6c7bf3ac72f85fae0ad7e04ade96502c40f8e5682eec4a4a34",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "server/resource-dependencies.mjs",
+      "target": "public/report-source/server/resource-dependencies.mjs",
+      "sourceSha256": "389fde51f951512134a4b4d1f2b2960ae42749bae546a8cf724b7fc62f659993",
+      "outputSha256": "a024eb1b56ec06981c9acfb9c228b572e817e7c0183724c7c0b0ac84109759fc",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "server/meal-entry.mjs",
+      "target": "public/report-source/server/meal-entry.mjs",
+      "sourceSha256": "befac9ae6243569ad126c3edbec90a138498bca53956f8d8078132b51e29280d",
+      "outputSha256": "befac9ae6243569ad126c3edbec90a138498bca53956f8d8078132b51e29280d",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "server/recipe-measurement.mjs",
+      "target": "public/report-source/server/recipe-measurement.mjs",
+      "sourceSha256": "7924088abb355b9c6c2816e6d4f1227456f3cab249022c58e6ae7bf28451491e",
+      "outputSha256": "fe9e149e8aefd082f54c5205a2e4f12b4d139742812465245e7106b14b3d9844",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "server/recipe-quantity.mjs",
+      "target": "public/report-source/server/recipe-quantity.mjs",
+      "sourceSha256": "e472d6092edca798dfdf4293dc2a0636dcc32d57f43454b75ee7bc191d0aa3b0",
+      "outputSha256": "d472f54f92a7365ac45e7bf632942055c7f3e02238050f147a7fdc978148c10b",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "server/energy-units.mjs",
+      "target": "public/report-source/server/energy-units.mjs",
+      "sourceSha256": "71b331eddbada89f6798505bb5da8bb152d7eaac4aa7e1fcd2fecd724156f8a4",
+      "outputSha256": "8960db757d79ea996d6a53c967a6e082ec597d9e00f398db6bcd8b6e56e9f188",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "server/weight-units.mjs",
+      "target": "public/report-source/server/weight-units.mjs",
+      "sourceSha256": "e6a761168ef696927a51c5a114e94f5a79418bdff0727b0880a2e2367830351f",
+      "outputSha256": "e6a761168ef696927a51c5a114e94f5a79418bdff0727b0880a2e2367830351f",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "server/biometric-metrics.mjs",
+      "target": "public/report-source/server/biometric-metrics.mjs",
+      "sourceSha256": "eb4ecafbaefc27e42334775f668b34bb763ed232c3cb48d964d69f1cf13123e1",
+      "outputSha256": "eb4ecafbaefc27e42334775f668b34bb763ed232c3cb48d964d69f1cf13123e1",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "server/nutrition.mjs",
+      "target": "public/report-source/server/nutrition.mjs",
+      "sourceSha256": "08f0761f0f825d260c3262e50b5ce6708f5856acf13c1904737226dd66ca31d1",
+      "outputSha256": "fc8dfd4faf4734bd2a1bdbfa9afafffa577c6aa0efabf512e8999013fb75a576",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    }
+  ]
+}

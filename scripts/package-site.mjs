@@ -6,6 +6,6 @@ const destination=resolve('.local/deploy-site-'+Date.now());
 mkdirSync(destination,{recursive:true});
 for(const name of ['public','server','src','package.json','package-lock.json','astro.config.mjs'])cpSync(name,destination+'/'+name,{recursive:true});
 mkdirSync(destination+'/scripts');
-for(const name of ['package-recipe-worker.mjs','package-barcode-assets.mjs','package-pwa-icons.mjs'])cpSync('scripts/'+name,destination+'/scripts/'+name);
+for(const name of ['package-recipe-worker.mjs','package-barcode-assets.mjs','package-pwa-icons.mjs','package-offline-assets.mjs'])cpSync('scripts/'+name,destination+'/scripts/'+name);
 writeFileSync('.local/site-stage.json',JSON.stringify({destination},null,2));
 console.log(destination);

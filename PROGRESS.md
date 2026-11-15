@@ -179,3 +179,25 @@ Only owner lifecycle metadata and profile permissions changed. Owner health data
 The supplied durable key was encrypted for the current Windows user and used to save a fresh verified cloud archive with three photos. The scheduled task is installed at limited privilege, daily at 09:00 Central and at logon with a 30-second delay. Missed starts run when available; overlapping runs are ignored. A real Task Scheduler invocation completed with exit code 0, current-archive verification and no warnings. The next run is November 16 at 09:00 Central. Retention is 14 verified daily copies. This supersedes the earlier pending-credential status.
 
 The task requires the PC, signed-in Windows account and approved T7; it does not require the local app server. The credential, task configuration and verification report remain ignored local files. The supplied plaintext Downloads file was left unchanged. No app deployment or health-data mutation was required.
+
+## PWA preview release — November 15, 2026
+
+Commit `13a7e4f` is pushed to `codex/appwrite-migration`. Preview deployment `6afa3a48afec3e43fad4` is active. The user selected PWA delivery and removed Health Connect; native APK, Wear and native health integration are no longer release requirements. Previously imported records remain intact.
+
+This release adds installation metadata and generated icons, a public offline screen, CSV import, favorites, source-derived nutrition-label entry, text/voice review with retained provenance, and explicit browser notification controls. Signing keys are persistent, stored as an Appwrite secret and in a Windows-account-encrypted local file. No Firebase project is required. Scheduled notification delivery remains paused; an actual device notification has not been verified.
+
+Validation passed 336 local tests, production build, built-server boundary checks, mobile Chrome installation/cache/offline checks and hosted CSV/label/favorites/account-isolation checks. Hosted fixtures were removed and the owner workspace was unchanged. No production-domain switch has occurred.
+
+Private fasting deployment `6afa37f29551f8a3afb1` passed an actual delayed-execution test: one fast at the canonical start, no duplicate on replay, and no remaining fixture. Function metadata remains disabled with interval zero and no public execute permissions. Its configured false flag requires a new deployment to replace the tested runtime’s captured true value; no real-owner dispatch is staged.
+
+Remaining work follows MIGRATION.md: scheduled browser reminders, account-scoped offline edits, remaining source UI/features, data reconciliation, password-recovery/device checks and production cutover. Previous versions retain the source app’s indefinite retention policy; separate T7 archive rotation remains 14 days.
+
+
+## PWA reminders and offline edits — 2026-11-15
+
+- Scheduled Web Push preferences and editor are implemented. Diary writes, restores, CSV imports and device changes stage reminder intents atomically. Delivery uses private delayed executions and durable receipts; uncertain sends are not repeated automatically. New preferences remain paused until the user resumes them.
+- The installable app has an optional account-specific offline diary. Saved-food additions and quantity edits, notes, water, exercise and measurement edits use a durable local queue. Replay checks the account and workspace generation, keeps original operation IDs and review revisions, and reports conflicts. Sign-out offers sync or explicit discard. Service-worker caching contains only public assets.
+- Local integrated verification passed 374 tests, production build, built-server boundary checks and real Chrome installation/offline checks. Remaining offline UI differences are listed in `docs/offline-parity.md`. These changes are not yet in the hosted site release.
+- Private schema additions are available: reminder dispatch, recent push history index and expired restore-review index. Cleanup deployment `6afa3d61f15fb8dccf67` passed disposable account deletion and expired-review live checks. Real owner records stayed unchanged; fixtures were removed.
+- Approved-baseline, current-PC and cloud reminder comparisons each found zero schedules. No schedule migration was needed, and no PC notification keys or subscriptions were copied.
+- Private reminder deployment `6afa3e3dddf46933b225` is ready with interval zero. Live delayed-execution verification is still in progress; visible device delivery is unverified. Production domain cutover remains pending.

@@ -13,9 +13,13 @@ An unresolved operation or an ownership mismatch leaves the job pending or needi
 3. Give the preview's dynamic API key `users.read` and `users.write`, in addition to its existing session, row and file scopes. Deploy the account code, then run `node scripts/migrate-account-access.mjs profiles` to remove direct client profile writes. The migration saves prior permissions and refuses unexpected ownership.
 4. Build the private Function package with `node scripts/package-account-cleanup.mjs`. Use `server/account-cleanup-entry.mjs`, the pinned lockfile, and row/file/user read/write scopes. Keep execute permissions empty. `ACCOUNT_CLEANUP_ENABLED=true` enables its logic; its schedule is configured separately.
 
-The worker processes bounded batches and retains interrupted jobs. Expiry cleanup applies only to abandoned preparations and completed status receipts. It never expires a pending deletion or unresolved operation.
+The worker processes bounded batches and retains interrupted jobs. Expiry cleanup removes abandoned deletion preparations, completed status receipts, and private backup-review records after their existing 30-minute review window. Each untargeted run checks at most 25 backup-review records within the shared 45-second worker budget. Changed records and records with uncertain ownership remain in place. Counts report skipped records and failures for inspection. An invocation for one deletion job skips all global expiry cleanup.
+
+Backup-review expiry removes only the review record. Previous versions, staged generations, photos and command receipts have no age-based expiry. Pending deletions and unresolved operations also remain until resolved. The backup review query requires the `backup_reviews.expiry` index on `expiresAt` before deploying this worker version.
 
 The private cloud worker is enabled on a 60-minute interval, supported by the current free plan. Browser status requests can advance a confirmed job immediately; background completion proceeds in bounded batches if the browser closes. A large or stalled job can require multiple hourly runs. No public role can execute this Function. Its deployed entry passed both a targeted disposable-account deletion and an empty-queue invocation. The timer's first automatic run has not yet been observed. Appwrite interval settings are described in the [execution guide](https://appwrite.io/docs/products/functions/execute).
+
+The November 15 update passed deployed fixture checks for notification records, fasting dispatch and reminder dispatch removal. A separate invocation removed an expired backup review while preserving a valid review and its workspace. Both checks verified that the real owner's workspace revision stayed unchanged; all fixture records were removed afterward.
 
 ## T7 backup
 
@@ -33,10 +37,14 @@ Backups preserve Health Connect lineage. Restore into an existing account requir
 - `node scripts/verify-built-boundaries.mjs`: built SSR request limits and authentication checks.
 - `node scripts/verify-account-deletion-hosted.mjs`: real hosted deletion and isolation using disposable accounts.
 - `node scripts/verify-account-cleanup-cloud.mjs`: invoke only the exact disposable deletion job through the deployed private Function, without browser polling.
+- `node scripts/verify-backup-review-expiry-cloud.mjs`: verify expired review removal and valid review preservation with a disposable workspace. It refuses pending deletion jobs before invoking the normal private worker and checks that the real owner's workspace revision stays unchanged.
+- `node scripts/migrate-reminders.mjs --manifest <approved-manifest> --current <pc-workspace.sqlite>`: compare reminder schedule counts and settings with the verified baseline and cloud account. This command has no apply mode and does not load PC notification keys, subscriptions or delivery history.
 - `node scripts/verify-account-registration-hosted.mjs`: hosted registration, login, logout, profile changes and direct-client write denial, followed by fixture cleanup.
 - `node scripts/verify-drive-backup-restore.mjs`: read the verified T7 copy, restore into a private fixture, compare records and photo bytes, then remove the fixture. The owner's workspace stays unchanged.
 
 Fixture scripts keep ownership evidence in `.local`. They initialize lifecycle state explicitly and verify fixture identity before cleanup. Do not publish those ledgers, backups or credentials.
+
+The November 15 reminder comparison found zero schedules in the approved migration snapshot, the current PC database and the cloud account. No reminder preference migration was needed. This check covers schedules only; it does not establish migration of other auxiliary preferences.
 
 ## Installed backup schedule — November 15, 2026
 

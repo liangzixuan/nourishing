@@ -1,7 +1,7 @@
 import {downloadBackup} from './backup.js';
 
 /** The receipt is an HttpOnly cookie. No account identity or credentials are retained here. */
-export function createAccountDeletion({root,request,onSignIn}){
+export function createAccountDeletion({root,request,onSignIn,beforeDelete=async()=>true}){
  const lifecycle=new AbortController(),call=(path,body)=>request(path,body,'POST',lifecycle.signal);
  let disposed=false,dialog=null,operation=null,timer=null,inFlight=false,active=false;
  const alive=()=>!disposed&&root.isConnected;
@@ -31,7 +31,7 @@ export function createAccountDeletion({root,request,onSignIn}){
   finally{inFlight=false;}
  }
  async function confirm(){
-  if(!alive()||inFlight)return;clearTimer();inFlight=true;active=true;
+  if(!alive()||inFlight)return;if(!await beforeDelete()||!alive())return;clearTimer();inFlight=true;active=true;
   // Acceptance may succeed even when the response is lost. Keep private account data off this screen.
   screen('Deleting account','Checking deletion…');
   try{present(await call('/api/account/deletion/confirm',{confirmation:'delete'}));}

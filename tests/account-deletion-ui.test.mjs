@@ -14,7 +14,7 @@ test('account deletion mobile flow respects cancellation, verified backup, retry
  const body={format:'fixture-backup',createdAt:'2026-11-15T12:00:00Z',media:[{namespace:'note_photos',id:photoId,bytes:media.length}]};const manifest={...body,digest:sha(JSON.stringify(canonical(body)))};
  const ticket={id:'fixture-deletion',secret:'a'.repeat(64)},fail=(code,message)=>{throw {code,publicMessage:message};};
  const service={
-  current:async()=>user?{name:user,email:user.toLowerCase()+'@example.com',emailVerified:true,profile:{timeZone:'UTC',units:'metric'}}:fail(401,'Sign in.'),
+  current:async()=>user?{id:user.toLowerCase(),name:user,email:user.toLowerCase()+'@example.com',emailVerified:true,profile:{timeZone:'UTC',units:'metric'}}:fail(401,'Sign in.'),
   prepareAccountDeletion:async(secret,input)=>{prepare++;assert.deepEqual(Object.keys(input),['password']);if(input.password!=='fixture-password')fail(401,'Incorrect password.');if(holdPrepare)await holdPrepare;status='ready';return {ticket,status:{status}};},
   confirmAccountDeletion:async(secret,saved)=>{confirm++;assert.deepEqual(saved,ticket);if(failBeforeAcceptance){failBeforeAcceptance=false;fail(503,'Connection interrupted.');}status='pending';user=null;if(lostConfirm){lostConfirm=false;fail(503,'Connection interrupted.');}return {status};},
   accountDeletionStatus:async saved=>{polls++;assert.deepEqual(saved,ticket);if(statusFailure){statusFailure=false;fail(503,'Connection interrupted.');}return status?{status}:fail(404,'No deletion request.');},

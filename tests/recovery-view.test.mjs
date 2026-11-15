@@ -15,7 +15,7 @@ import {planFastingDispatch} from '../server/scheduler-dispatch.mjs';
 const owner='fixture-owner',asOf='2026-11-15T06:00:00.000Z',permissions=[Permission.read(Role.user(owner))];
 const missing=()=>Object.assign(Error('Missing'),{code:404});
 function fixture(){
- const tables=new Map(['workspace_heads','workspace_records','workspace_media','workspace_recoveries','backup_reviews','command_receipts','fasting_dispatch'].map(table=>[table,new Map()])),transactions=new Map(),reads=[];let tick=0;
+ const tables=new Map(['workspace_heads','workspace_records','workspace_media','workspace_recoveries','backup_reviews','command_receipts','fasting_dispatch','reminder_dispatch','push_accounts'].map(table=>[table,new Map()])),transactions=new Map(),reads=[];let tick=0;
  const get=table=>tables.get(table),copy=value=>structuredClone(value);
  const db={
   async getRow({tableId,rowId}){const value=get(tableId).get(rowId);if(!value)throw missing();return copy(value);},
@@ -76,11 +76,11 @@ test('restore removes the previous schedule intent atomically with its workspace
  const f=fixture(),state=initialState(),now=new Date(asOf);
  applyFastingCommand(state,{type:'fasting.schedule.save',payload:{id:randomUUID(),revision:0,label:'Current schedule',startDate:'2026-11-15',time:'07:00',recurrence:'once',interval:1,days:[],untilDate:null,goalHours:16,enabled:true}},{now,timeZone:'UTC'});
  const active=f.add('current',state,{active:true});f.add('prior',initialState(),{marker:true});
- const plan=planFastingDispatch(state,{generation:'current',now,timeZone:'UTC'}),intent={$id:owner,$permissions:[],ownerId:owner,...plan,repairAt:asOf,executionId:''};f.tables.get('fasting_dispatch').set(owner,intent);
+ const plan=planFastingDispatch(state,{generation:'current',now,timeZone:'UTC'}),intent={$id:owner,$permissions:[],ownerId:owner,...plan,repairAt:asOf,executionId:''};f.tables.get('fasting_dispatch').set(owner,intent);f.tables.get('reminder_dispatch').set(owner,structuredClone(intent));
  const store=createBackupStore({db:f.db,storage:f.storage,ownerId:owner,now:()=>Date.parse(asOf)}),inspection=await store.inspectRecovery({generation:'prior',revision:active.head.digest}),request={requestId:randomUUID(),reviewToken:inspection.reviewToken,confirmation:'replace'};
  const commit=f.db.updateTransaction;let fail=true;f.db.updateTransaction=async input=>{if(input.commit&&fail){fail=false;throw Error('Fixture commit failed');}return commit(input);};
- await assert.rejects(()=>store.restore(request),/Fixture commit failed/);assert.equal(f.tables.get('workspace_heads').get(owner).generation,'current');assert.deepEqual(f.tables.get('fasting_dispatch').get(owner),intent);
- await store.restore(request);assert.notEqual(f.tables.get('workspace_heads').get(owner).generation,'current');assert.equal(f.tables.get('fasting_dispatch').has(owner),false);
+ await assert.rejects(()=>store.restore(request),/Fixture commit failed/);assert.equal(f.tables.get('workspace_heads').get(owner).generation,'current');assert.deepEqual(f.tables.get('fasting_dispatch').get(owner),intent);assert.deepEqual(f.tables.get('reminder_dispatch').get(owner),intent);
+ await store.restore(request);assert.notEqual(f.tables.get('workspace_heads').get(owner).generation,'current');assert.equal(f.tables.get('fasting_dispatch').has(owner),false);assert.equal(f.tables.get('reminder_dispatch').has(owner),false);
 });
 
 test('retained health snapshot numbers identify the exact version and reject malformed markers',async()=>{

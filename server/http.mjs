@@ -37,8 +37,11 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
         if(path.endsWith('/confirm')){fields(input,['confirmation']);if(input.confirmation!=='delete')fail(400,'Confirm account deletion.');const result=await api.confirmAccountDeletion(secret,ticket);headers.set('Set-Cookie',clearSession());return json(result.status==='deleted'?200:202,result);}
         fields(input,[]);return json(200,await api.accountDeletionStatus(ticket));
       }
+      if(req.method==='GET'&&path==='/api/offline'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid offline request.');return json(200,await api.offlineSnapshot(secret));}
+      const offlineRequest=req.method==='POST'&&path==='/api/offline/commands';
+      if(offlineRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid offline request.');}
       if(req.method==='GET'&&path==='/api/reminders'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid notification request.');return json(200,await api.reminders(secret));}
-      const pushRequest=req.method==='POST'&&['/api/reminders/subscribe','/api/reminders/unsubscribe','/api/reminders/test'].includes(path);
+      const pushRequest=req.method==='POST'&&['/api/reminders/subscribe','/api/reminders/unsubscribe','/api/reminders/test','/api/reminders/schedule','/api/reminders/schedule/delete','/api/reminders/settings'].includes(path);
       if(pushRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid notification request.');}
       const textRequest=req.method==='POST'&&path==='/api/text-log/parse';
       if(textRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid text log request.');}
@@ -60,9 +63,10 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       if(printRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid report query.');}
       const diaryToolsRequest=req.method==='POST'&&['/api/diary/tools/review','/api/diary/tools/save'].includes(path),nutrientRequest=req.method==='POST'&&['/api/nutrient-detail','/api/nutrition-report/nutrient'].includes(path);
       if(diaryToolsRequest||nutrientRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid diary query.');}
-      const body=req.method==='GET'?null:await readBody(req,textRequest?60_100:csvRequest?CSV_BODY_BYTES:barcodeRequest?BARCODE_BODY_BYTES:(libraryCommand||ingredientRequest||printRequest||diaryToolsRequest||path==='/api/nutrient-detail')?4*1024*1024:backupRequest?(path==='/api/backup/inspect'?20_000_000:path.endsWith('/media')?5*1024*1024:16384):photoRequest?((path.endsWith('/analyze')||path.endsWith('/prepare'))?12:5)*1024*1024:recipeRequest&&path!=='/api/recipe-import'?16*1024*1024:16384);
+      const body=req.method==='GET'?null:await readBody(req,offlineRequest?601_000:textRequest?60_100:csvRequest?CSV_BODY_BYTES:barcodeRequest?BARCODE_BODY_BYTES:(libraryCommand||ingredientRequest||printRequest||diaryToolsRequest||path==='/api/nutrient-detail')?4*1024*1024:backupRequest?(path==='/api/backup/inspect'?20_000_000:path.endsWith('/media')?5*1024*1024:16384):photoRequest?((path.endsWith('/analyze')||path.endsWith('/prepare'))?12:5)*1024*1024:recipeRequest&&path!=='/api/recipe-import'?16*1024*1024:16384);
+      if(offlineRequest)return json(200,await api.offlineCommand(secret,body));
       if(textRequest)return json(200,await api.parseTextLog(secret,body));
-      if(pushRequest)return json(200,await api[{'/api/reminders/subscribe':'subscribePush','/api/reminders/unsubscribe':'unsubscribePush','/api/reminders/test':'testPush'}[path]](secret,body));
+      if(pushRequest)return json(200,await api[{'/api/reminders/subscribe':'subscribePush','/api/reminders/unsubscribe':'unsubscribePush','/api/reminders/test':'testPush','/api/reminders/schedule':'saveReminder','/api/reminders/schedule/delete':'deleteReminder','/api/reminders/settings':'reminderSettings'}[path]](secret,body));
       if(csvRequest)return json(200,await api[path.endsWith('/preview')?'previewCsvImport':'importCsv'](secret,body));
       if(req.method==='GET'&&['/api/library/favorites','/api/library/label'].includes(path)){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid library request.');return json(200,await api[path.endsWith('/favorites')?'favorites':'nutritionLabel'](secret));}
       if(req.method==='POST'&&path==='/api/library/label/preview'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid label request.');return json(200,await api.previewNutritionLabel(secret,body));}

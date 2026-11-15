@@ -6,6 +6,7 @@ import {workspaceMediaRows,describeWorkspaceMedia,copyWorkspaceMediaRow} from '.
 import {backupReferences} from './backup.mjs';
 import {validateCsvInput,prepareCsvImport,csvReview,verifyCsvReview} from './csv-import.mjs';
 import {stageFastingDispatch} from './scheduler-dispatch.mjs';
+import {stageReminderDispatch} from './reminder-schedules-dispatch.mjs';
 
 const args=(tableId,id)=>({databaseId:'nourishing',tableId,rowId:id});
 const fail=(message,code=409)=>{throw Object.assign(Error(message),{code,publicMessage:message});};
@@ -58,6 +59,7 @@ export function createCsvImportStore({db,ownerId:owner,reviewSecret,now=()=>Date
    const result={ok:true,revision:packed.head.digest,count:prepared.count};
    await db.updateRow({...args('workspace_heads',owner),data:packed.head,transactionId:tx.$id});
    await stageFastingDispatch({db,owner,state:prepared.state,generation,transactionId:tx.$id,now:new Date(clock()),timeZone:'UTC'});
+   await stageReminderDispatch({db,owner,state:prepared.state,generation,transactionId:tx.$id,now:new Date(clock())});
    await db.createRow({...args('command_receipts',receiptId),data:{ownerId:owner,fingerprint,result:JSON.stringify(result)},permissions:permissions(owner),transactionId:tx.$id});
    await db.updateTransaction({transactionId:tx.$id,commit:true});return result;
   }catch(error){await db.updateTransaction({transactionId:tx.$id,rollback:true}).catch(()=>{});const saved=await receipt();if(saved)return saved;throw error;}
