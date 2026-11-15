@@ -172,3 +172,10 @@ A portable cloud backup was saved to the approved D: T7 drive and read back succ
 Validation passed: 285 tests, production build, 48 built-server boundary checks, hosted deletion and account isolation, hosted signup/profile/logout/login, direct-client profile-write denial, and hosted Dashboard regression checks. All disposable resources were removed. The initial deletion verifier's cleanup assertion was corrected for completed ownerless receipts; exact receipt cleanup passed on retry. The registration verifier was corrected to expect the existing Strict session cookie; its complete rerun passed.
 
 Only owner lifecycle metadata and profile permissions changed. Owner health data and catalog data were preserved. Production `nourishing.app`, the installed Android origin and APK remain unchanged. Final PC/cloud reconciliation and native-device checks are still required before cutover. Operational details are in `docs/account-lifecycle.md`.
+
+
+## Automatic T7 backup activated — November 15, 2026
+
+The supplied durable key was encrypted for the current Windows user and used to save a fresh verified cloud archive with three photos. The scheduled task is installed at limited privilege, daily at 09:00 Central and at logon with a 30-second delay. Missed starts run when available; overlapping runs are ignored. A real Task Scheduler invocation completed with exit code 0, current-archive verification and no warnings. The next run is November 16 at 09:00 Central. Retention is 14 verified daily copies. This supersedes the earlier pending-credential status.
+
+The task requires the PC, signed-in Windows account and approved T7; it does not require the local app server. The credential, task configuration and verification report remain ignored local files. The supplied plaintext Downloads file was left unchanged. No app deployment or health-data mutation was required.

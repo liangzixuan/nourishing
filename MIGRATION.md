@@ -15,7 +15,7 @@ Before production cutover:
 - Activate and verify cloud background jobs, including scheduled fasting and automatic repeat items. The fasting worker is implemented and tested with disposable accounts but stays disabled.
 - Complete Android correction recovery, automatic native export, Wear and reminders. Foreground import/export/reconciliation, explicit background-import consent, cloud widgets and report printing are implemented; full native and device checks remain.
 - Account deletion now removes owned rows and media across generations, including orphan media, through a durable private job. Separate expiry of retained recovery data for active accounts remains pending. Snapshot deletion removes its reference; private recovery retention remains in effect.
-- Install the prepared independent T7 backup task after a durable read-only Appwrite key is supplied. A real archive and isolated restore have passed; the automatic Windows task is not installed yet.
+- Independent T7 backups are installed and verified: daily at 09:00 Central and after Windows sign-in, with 14 daily copies. The PC, signed-in Windows account and approved T7 must be available. A real archive and isolated restore have passed.
 - Reconcile PC changes since the baseline and repeat record, photo, and nutrient comparisons.
 - Complete the emailed password-recovery check.
 - Verify the Android app with the PC server stopped.

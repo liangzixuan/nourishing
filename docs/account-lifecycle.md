@@ -23,7 +23,7 @@ The private cloud worker is enabled on a 60-minute interval, supported by the cu
 
 The ignored `.local/cloud-backup.json` contains the endpoint, project, confirmed owner, time zone and volume identity. The credential stays on NTFS as a current-user DPAPI value produced by `ConvertFrom-SecureString`. It is never stored on the T7 or passed as a command-line argument. Its Appwrite scopes are `rows.read` and `files.read`; Appwrite scopes apply project-wide, while the backup code restricts the export to the configured owner.
 
-`scripts/run-cloud-backup.ps1` passes the decrypted key only to its hidden Node child and records a sanitized result beside the configuration. `scripts/install-cloud-backup-task.ps1` shows the task plan by default. With `-Install`, it registers a daily 09:00 local-time trigger and a logon trigger for the current Windows user. Missed starts run when available. The task requires that user to be signed in and the PC and approved drive to be available. The app's PC server is not required.
+`scripts/run-cloud-backup.ps1` passes the decrypted key only to its hidden Node child and records a sanitized result beside the configuration. `scripts/install-cloud-backup-task.ps1`, run with Windows PowerShell 5.1, shows the task plan by default. With `-Install`, it registers a daily 09:00 local-time trigger and a logon trigger for the current Windows user. Missed starts run when available. The task requires that user to be signed in and the PC and approved drive to be available. The app's PC server is not required.
 
 Backups preserve Health Connect lineage. Restore into an existing account requires matching lineage and invalidates old review tokens. The recovery verification uses an isolated empty workspace before a native export identity is assigned; it does not establish cross-account import support.
 
@@ -37,3 +37,7 @@ Backups preserve Health Connect lineage. Restore into an existing account requir
 - `node scripts/verify-drive-backup-restore.mjs`: read the verified T7 copy, restore into a private fixture, compare records and photo bytes, then remove the fixture. The owner's workspace stays unchanged.
 
 Fixture scripts keep ownership evidence in `.local`. They initialize lifecycle state explicitly and verify fixture identity before cleanup. Do not publish those ledgers, backups or credentials.
+
+## Installed backup schedule — November 15, 2026
+
+The durable read-only key is stored as a current-user DPAPI credential in the ignored local configuration directory. A fresh cloud export with all three photos was saved and verified on the approved T7. The daily 09:00 Central task and logon trigger are installed. A manual Task Scheduler run returned exit code 0 and verified the current archive without warnings. The next scheduled run is November 16 at 09:00 Central. The original plaintext file supplied in Downloads was left unchanged.
