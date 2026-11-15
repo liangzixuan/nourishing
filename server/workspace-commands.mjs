@@ -2,6 +2,9 @@ import {act,captureCatalogFood,previewLibraryDraft} from './domain/workspace.mjs
 import {parseCompositeSources} from './domain/composite-source.mjs';
 export const invalid=message=>{throw Object.assign(Error(message),{code:400,publicMessage:message});};
 const fields={
+ 'nutrientTarget.patch':['date','id','changes'],
+ 'nutrientTarget.setCustom':['date','id','custom'],
+ 'preferences.patch':['theme'],
  'entry.add':['foodId','recipeId','mealId','date','time','group','amount','quantity','unit','portionId'],
  'entry.update':['id','date','time','group','amount','quantity','unit','portionId'],
  'entry.delete':['id'],
@@ -17,6 +20,7 @@ export function validateAction(input){
  if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!['type','payload'].includes(k)))invalid('Invalid diary action.');
  const allowed=Object.hasOwn(fields,input.type)?fields[input.type]:null,p=input.payload;
  if(!allowed||!p||typeof p!=='object'||Array.isArray(p)||Object.keys(p).some(k=>!allowed.includes(k)))invalid('Invalid diary fields.');
+ if(input.type==='preferences.patch'&&(!Object.keys(p).length||!['light','dark','system'].includes(p.theme)))invalid('Choose a theme.');
  if(p.id!==undefined&&(typeof p.id!=='string'||!p.id||p.id.length>1000))invalid('Choose a record.');
  if(input.type.endsWith('.delete')&&!p.id)invalid('Choose a record.');
  if(['recipe.save','meal.save'].includes(input.type)){
@@ -34,7 +38,7 @@ export function parseCommand(input){
 }
 export function applyWorkspaceCommand(state,input){
  validateAction(input);
- try{return act(state,input.type,libraryPayload(state,input));}catch(error){if([400,404,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
+ try{return act(state,input.type==='preferences.patch'?'settings.save':input.type,libraryPayload(state,input));}catch(error){if([400,404,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
 }
 function libraryPayload(state,{type,payload}){
  if(!['food.save','recipe.save','meal.save'].includes(type)||!payload.id)return payload;

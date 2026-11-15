@@ -46,7 +46,7 @@ The current diary reader reconstructs the account's complete workspace for the e
 
 ## Workspace writes
 
-`POST /api/workspace/command` accepts `requestId`, `revision`, `type`, and a strictly checked `payload`. Supported commands are `entry.add`, `entry.update`, `entry.delete`, `note.add`, `note.delete`, `day.complete`, `food.save`, `food.delete`, `recipe.save`, `recipe.delete`, `meal.save`, and `meal.delete`. The public interface currently exposes note addition, not note deletion. `POST /api/diary/preview` uses the same quantity and nutrition rules without saving.
+`POST /api/workspace/command` accepts `requestId`, `revision`, `type`, and a strictly checked `payload`. Supported commands are `entry.add`, `entry.update`, `entry.delete`, `note.add`, `note.delete`, `day.complete`, `food.save`, `food.delete`, `recipe.save`, `recipe.delete`, `meal.save`, `meal.delete`, `nutrientTarget.patch`, `nutrientTarget.setCustom`, and `preferences.patch`. The public interface currently exposes note addition, not note deletion. `POST /api/diary/preview` uses the same quantity and nutrition rules without saving.
 
 `GET /api/library` returns the owner's private item list and nutrient definitions. `GET /api/library/item?kind=food|recipe|meal&id=...` returns a saved item and its supported quantity choices; food lookup falls back to the shared catalog. An optional `entryId` uses that owner's diary occurrence for recipe quantity overrides. `POST /api/library/preview` validates and calculates an unsaved library draft without persisting it. No endpoint accepts a caller-selected owner.
 
@@ -63,3 +63,11 @@ The browser stores no diary data or session tokens in local storage. It clears i
 ## Cutover boundary
 
 The cloud diary can now receive edits. The PC also remains writable. Before switching users to the cloud, implement the remaining features and account lifecycle, reconcile both copies, and repeat record, media, and daily-nutrition comparisons. The importer rejects changed rows instead of overwriting cloud edits. Do not treat the baseline as a final cutover or delete the local recovery copy.
+
+## Targets and nutrition reports
+
+`GET /api/targets?date=YYYY-MM-DD` projects effective nutrient targets, maximums, visibility and each target's owning policy. `nutrientTarget.patch` accepts only a date, nutrient ID and changed fields. The original domain rejects target edits controlled by an imported schedule, macro policy or calculated-energy policy. Other settings are preserved. `preferences.patch` currently accepts only the theme.
+
+`GET /api/nutrition-report` requires `from`, `to`, `dayFilter` (`all`, `nonempty` or `complete`), `includeToday` and `includeSupplements` (literal `true` or `false`). The original report capture owns averages, missing/partial data, targets, supplement filtering and provenance. Its server clock uses the account profile time zone. Completed zero-intake days remain distinct from unlogged days. The UI presents daily averages and per-nutrient coverage; unsupported advanced Discover cards are not presented as migrated.
+
+Both reads require the account session, reject owner overrides and return `no-store`. Target writes use the same atomic revision and receipt boundary as diary/library writes. Theme follows live device changes in System mode and persists per account; the initial state is dark. Report and settings state stays in memory and is disposed when leaving the screen.

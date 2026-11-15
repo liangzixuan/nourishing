@@ -4,6 +4,17 @@ import {createWebHandler} from '../server/http.mjs';
 const config={origin:'https://candidate.example'};
 const cookie='__Host-nourishing_session=account-session';
 const req=(path,signed=true)=>new Request(config.origin+path,{headers:signed?{cookie}:{}});
+test('targets and reports enforce account and filter contracts',async()=>{
+ let calls=0;const handle=createWebHandler({config,service:{targets:async(secret,date)=>{calls++;assert.equal(secret,'account-session');return {date};},nutritionReport:async(secret,options)=>{calls++;assert.equal(secret,'account-session');return options;}}});
+ const query='from=2026-11-14&to=2026-11-14&dayFilter=all&includeToday=true&includeSupplements=false';
+ for(const path of ['/api/targets?date=2026-11-14','/api/nutrition-report?'+query]){
+  assert.equal((await handle(req(path,false))).status,401);assert.equal((await handle(req(path+'&ownerId=other'))).status,400);
+ }
+ assert.equal(calls,0);assert.equal((await handle(req('/api/targets?date=2026-11-14'))).status,200);
+ const response=await handle(req('/api/nutrition-report?'+query));assert.equal(response.headers.get('cache-control'),'no-store');assert.equal((await response.json()).includeSupplements,false);
+ assert.equal((await handle(req('/api/nutrition-report?'+query+'&from=2026-11-13'))).status,400);
+ assert.equal((await handle(req('/api/nutrition-report?'+query.replace('includeToday=true','includeToday=no')))).status,400);
+});
 test('library reads and previews require session, reject owner overrides and keep responses private',async()=>{
  let calls=0;const handle=createWebHandler({config,service:{library:async()=>{calls++;return {items:[]};},libraryItem:async(s,kind,id)=>({kind,id}),previewLibrary:async()=>{calls++;return {};}}});
  assert.equal((await handle(req('/api/library',false))).status,401);

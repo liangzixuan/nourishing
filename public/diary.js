@@ -3,21 +3,26 @@ import {escape as e} from './html.js';
 import {request,command,clearPending} from './diary-api.js';
 import {mountLibrary} from './library.js';
 import {mountFoodPicker} from './food-picker.js';
+import {mountNutrition} from './nutrition.js';
+import {applyTheme} from './appearance.js';
 import {quantityFields,quantityValue} from './quantity.js';
 const page=document.querySelector('#page'),dateBar=document.querySelector('#diary-date'),sheet=document.querySelector('#sheet'),content=document.querySelector('#sheet-content'),notice=document.querySelector('#notice');
 const svg=path=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
 const icons={check:svg('<path d="m5 12 4 4L19 6"/>'),back:svg('<path d="m15 5-7 7 7 7"/>'),chevron:svg('<path d="m9 5 7 7-7 7"/>'),more:svg('<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>'),plus:svg('<path d="M12 5v14M5 12h14"/>'),close:svg('<path d="m6 6 12 12M18 6 6 18"/>'),food:svg('<path d="M5 3v7m4-7v7m-4-4h4M7 10v11M18 3v18m0-18c-4 3-4 9 0 9"/>')};
 const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
 const num=(v,d=1)=>Number.isFinite(v)?v.toLocaleString(undefined,{maximumFractionDigits:d}):'—';
-let view='diary',library=null,pickerCleanup;
+let view='diary',library=null,nutrition=null,pickerCleanup;
 let date=today(),diary=null,loadId=0,searchId=0,group='Uncategorized';
 function show(html){pickerCleanup?.();pickerCleanup=null;searchId++;content.innerHTML=html;if(!sheet.open)sheet.showModal();sheet.scrollTop=0;}
 function close(){pickerCleanup?.();pickerCleanup=null;searchId++;sheet.close();content.replaceChildren();}
 const header=title=>`<header class="sheet-header"><button type="button" class="icon-button" data-close aria-label="Close">${icons.close}</button><h2 id="sheet-title">${e(title)}</h2></header>`;
 sheet.addEventListener('click',event=>{if(event.target===sheet){const r=sheet.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)close();}if(event.target.closest('[data-close]'))close();});
 sheet.addEventListener('cancel',event=>{event.preventDefault();close();});
-async function load(){const id=++loadId;notice.textContent='';page.setAttribute('aria-busy','true');try{const result=await request('/api/diary?date='+date);if(id!==loadId)return;diary=result;if(view==='diary')render();}catch(error){if(id===loadId){notice.textContent=error.message;if(view==='diary')page.innerHTML='<p class="empty"><button type="button" data-reload>Try again</button></p>';}}finally{if(id===loadId)page.setAttribute('aria-busy','false');}}
+async function load(){const id=++loadId;notice.textContent='';page.setAttribute('aria-busy','true');try{const result=await request('/api/diary?date='+date);if(id!==loadId)return;diary=result;applyTheme(result.theme);if(view==='diary')render();}catch(error){if(id===loadId){notice.textContent=error.message;if(view==='diary')page.innerHTML='<p class="empty"><button type="button" data-reload>Try again</button></p>';}}finally{if(id===loadId)page.setAttribute('aria-busy','false');}}
+function selectTab(id){document.querySelectorAll('.app-nav [aria-current]').forEach(b=>b.removeAttribute('aria-current'));document.getElementById(id).setAttribute('aria-current','page');}
+function leaveView(){library?.dispose();library=null;nutrition?.dispose();nutrition=null;}
 function render(){
+ selectTab('diary-tab');
  dateBar.hidden=false;document.querySelector('#diary-tab').setAttribute('aria-current','page');document.querySelector('#foods-tab').removeAttribute('aria-current');
  const s=diary.summary,totals=s.totals??{},calories=s.energy?.consumed??totals.calories;
  dateBar.innerHTML=mobileDiaryHeader({date,today:today(),complete:diary.completed,icons,menu:'<button type="button" data-reload class="icon-button" aria-label="Refresh diary">↻</button>',labels:{today:'Today',complete:'Mark day complete',reopen:'Reopen day',previous:'Previous day',next:'Next day',date:'Diary date'},language:'en'});
@@ -35,8 +40,9 @@ document.addEventListener('click',async event=>{
  if(action==='complete-day'){target.disabled=true;try{await command(diary.revision,'day.complete',{date,completed:!diary.completed});await load();}catch(error){notice.textContent=error.message;}finally{target.disabled=false;}return;}
  if(['add-food','group-quick-add'].includes(action)||target.id==='add-food'){group=target.dataset.group??(diary?.groups.includes('Uncategorized')?'Uncategorized':diary?.groups[0]);return search();}
  if(action==='edit-entry'||target.hasAttribute('data-md-context')){const id=target.dataset.id??target.closest('[data-id]')?.dataset.id;return edit(diary.entries.find(row=>row.id===id));}
- if(target.id==='foods-tab'){view='foods';dateBar.hidden=true;document.querySelector('#foods-tab').setAttribute('aria-current','page');document.querySelector('#diary-tab').removeAttribute('aria-current');library?.dispose();library=mountLibrary({page,show,close,header,content,date:()=>date,openEntry:(kind,id)=>edit(null,id,kind),onChange:load});return;}
- if(target.id==='diary-tab'){view='diary';library?.dispose();library=null;dateBar.hidden=false;document.querySelector('#diary-tab').setAttribute('aria-current','page');document.querySelector('#foods-tab').removeAttribute('aria-current');return load();}
+ if(['discover-tab','settings-tab'].includes(target.id)){leaveView();view=target.id==='discover-tab'?'discover':'targets';dateBar.hidden=true;selectTab(target.id);nutrition=mountNutrition({page,mode:view,date:()=>date,show,close,header,content,onChange:load});return;}
+ if(target.id==='foods-tab'){leaveView();selectTab('foods-tab');view='foods';dateBar.hidden=true;document.querySelector('#foods-tab').setAttribute('aria-current','page');document.querySelector('#diary-tab').removeAttribute('aria-current');library?.dispose();library=mountLibrary({page,show,close,header,content,date:()=>date,openEntry:(kind,id)=>edit(null,id,kind),onChange:load});return;}
+ if(target.id==='diary-tab'){leaveView();view='diary';library?.dispose();library=null;dateBar.hidden=false;document.querySelector('#diary-tab').setAttribute('aria-current','page');document.querySelector('#foods-tab').removeAttribute('aria-current');return load();}
 });
 function search(){
  if(!diary)return;show(`${header('Add Food')}<div class="diary-picker"></div>`);pickerCleanup=mountFoodPicker(content.querySelector('.diary-picker'),{onPick:(kind,id)=>edit(null,id,kind)});
@@ -56,6 +62,6 @@ function foodEditor({resource:food,options,kind},entry){
  if(entry)form.querySelector('[data-delete]').onclick=()=>save('entry.delete',{id:entry.id});
 }
 function noteEditor(){show(`${header('Add Note')}<form class="entry-form"><label class="field-row"><textarea name="text" aria-label="Note" required maxlength="10000"></textarea></label><p class="sheet-message" role="status"></p><footer class="entry-actions"><button class="primary">Save note</button></footer></form>`);const form=content.querySelector('form');form.onsubmit=async event=>{event.preventDefault();const button=form.querySelector('button');button.disabled=true;try{await command(diary.revision,'note.add',{date,time:new Date().toTimeString().slice(0,5),text:form.elements.text.value});close();await load();}catch(error){form.querySelector('.sheet-message').textContent=error.message;}finally{button.disabled=false;}};}
-window.addEventListener('pagehide',()=>{loadId++;library?.dispose();library=null;view='diary';clearPending();diary=null;close();page.replaceChildren();});
+window.addEventListener('pagehide',()=>{loadId++;leaveView();view='diary';clearPending();diary=null;close();page.replaceChildren();});
 window.addEventListener('pageshow',event=>{if(event.persisted)load();});
 load();

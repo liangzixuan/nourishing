@@ -17,7 +17,7 @@ export function createDataRepository(db,ownerId){
  async function catalogHead(){try{return await get('catalog_heads','active');}catch(error){if(error.code===404)throw Object.assign(Error('Food catalog is being prepared.'),{code:503,publicMessage:'Food catalog is being prepared.'});throw error;}}
  return {
    readState,
-   async diary(date){const state=await readState();return {date,revision:digest(state),groups:state.settings.groups,completed:state.settings.completedDays?.includes(date)??false,entries:state.entries.filter(r=>r.date===date).map(row=>({...row,facts:entryFacts(state,row)})),biometrics:state.biometrics.filter(r=>r.date===date),notes:state.notes.filter(r=>r.date===date),summary:calculateSummary(state,date)};},
+   async diary(date){const state=await readState();return {date,revision:digest(state),theme:state.settings.theme??'dark',groups:state.settings.groups,completed:state.settings.completedDays?.includes(date)??false,entries:state.entries.filter(r=>r.date===date).map(row=>({...row,facts:entryFacts(state,row)})),biometrics:state.biometrics.filter(r=>r.date===date),notes:state.notes.filter(r=>r.date===date),summary:calculateSummary(state,date)};},
    async catalogStatus(){const h=await catalogHead(),metadata=JSON.parse(h.metadata);return {available:true,count:h.count,datasets:metadata.datasets};},
    async search({query='',offset=0,limit=25}){
      const h=await catalogHead(),terms=searchTerms(query);if(query.trim()&&!terms.length)return {items:[],total:0,offset,nextOffset:null};

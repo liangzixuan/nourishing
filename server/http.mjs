@@ -24,6 +24,15 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
         if(req.headers.get('content-type')?.split(';')[0]!=='application/json')fail(415,'Use JSON.');
       }
       const api=service??serviceForRequest(req),secret=readSession(req.headers.get('cookie')??''),body=req.method==='GET'?null:await readBody(req);
+      if(req.method==='GET'&&['/api/targets','/api/nutrition-report'].includes(path)){
+        if(!secret)fail(401,'Please sign in.');
+        const allowed=path==='/api/targets'?['date']:['from','to','dayFilter','includeToday','includeSupplements'];
+        if([...url.searchParams.keys()].some(k=>!allowed.includes(k)||url.searchParams.getAll(k).length!==1)||allowed.some(k=>!url.searchParams.has(k)))fail(400,'Invalid query.');
+        const input=Object.fromEntries(url.searchParams);
+        if(path==='/api/targets')return json(200,await api.targets(secret,input.date));
+        for(const key of ['includeToday','includeSupplements']){if(!['true','false'].includes(input[key]))fail(400,'Invalid report filter.');input[key]=input[key]==='true';}
+        return json(200,await api.nutritionReport(secret,input));
+      }
       if(req.method==='POST'&&path==='/api/workspace/command'){if(!secret)fail(401,'Please sign in.');return json(200,await api.workspaceCommand(secret,body));}
       if(req.method==='POST'&&path==='/api/library/preview'){if(!secret)fail(401,'Please sign in.');return json(200,await api.previewLibrary(secret,body));}
       if(req.method==='GET'&&path==='/api/library'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');return json(200,await api.library(secret));}

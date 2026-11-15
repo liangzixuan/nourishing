@@ -5,6 +5,7 @@ import {createWorkspaceStore} from './workspace-store.mjs';
 import {previewDiaryItem,captureCatalogFood} from './domain/workspace.mjs';
 import {validateAction,validateLibraryPreview,previewLibrary,readActionFoods,captureActionFoods} from './workspace-commands.mjs';
 import {libraryView,libraryItem} from './library-view.mjs';
+import {targetView,reportView} from './nutrition-views.mjs';
 
 export function createAppwriteService(config, key, userAgent='') {
   const client=()=>new Client().setEndpoint(config.endpoint).setProject(config.project).setForwardedUserAgent(userAgent);
@@ -40,6 +41,8 @@ export function createAppwriteService(config, key, userAgent='') {
     return new Account(elevated()).createEmailPasswordSession({email,password,duration:2592000});
   }
   return {
+    async targets(secret,date){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();return targetView(await repository.readState(),date);},
+    async nutritionReport(secret,options){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();const account=await new Account(session(secret)).get(),profile=await ensureProfile(secret,account);return reportView(await repository.readState(),options,{timeZone:profile.timeZone});},
     async readDiary(secret,date){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();return repository.diary(date);},
     async workspaceCommand(secret,input){const {owner,repository}=await data(secret);return createWorkspaceStore(new TablesDB(elevated()),owner).command(input,catalogReader(repository));},
     async library(secret){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();return libraryView(await repository.readState());},
