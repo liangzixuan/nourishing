@@ -20,15 +20,24 @@ data class HomeWidgetSnapshot(val asOf: Instant, val date: LocalDate, val zone: 
             require(json.get("version") == 2 && json.getString("unit") == config.unit) { "Update Nourish on the PC." }
             val access = json.getJSONObject("access")
             require(access.getString("mode") == "private" && access.getString("origin") == config.origin.value && access.getString("login") == config.login) { "The widget destination or account changed. Configure it again." }
+            return parseCard(json,config.kind)
+        }
+        fun parseCloud(json:JSONObject,config:CloudWidgetConfig):HomeWidgetSnapshot{
+            require(json.get("version")==3&&json.getString("unit")==config.unit){"Update Nourishing."}
+            val access=json.getJSONObject("access")
+            require(access.getString("mode")=="cloud"&&access.getString("origin")==config.binding.origin.value&&access.getString("accountId")==config.binding.accountId){"The widget account changed. Configure it again."}
+            return parseCard(json,config.kind)
+        }
+        private fun parseCard(json:JSONObject,kind:WidgetKind):HomeWidgetSnapshot{
             val calendar = json.getJSONObject("calendar")
             val at = Instant.parse(calendar.getString("asOf"));val date = LocalDate.parse(calendar.getString("today"));val zone = ZoneId.of(calendar.getString("timeZone"))
             require(at.atZone(zone).toLocalDate() == date) { "Invalid widget date." }
-            val card = json.getJSONObject("cards").getJSONObject(config.kind.key)
+            val card = json.getJSONObject("cards").getJSONObject(kind.key)
             fun text(key: String, limit: Int): String = card.get(key).let { require(it is String && it.length <= limit) { "Invalid widget text." };it }
             val credits=card.getJSONArray("attributions")
             val attributions=(0 until credits.length()).map{credits.get(it).also{credit->require(credit is String&&credit.isNotBlank()){"Invalid widget source credit."}} as String}
             require(attributions.distinct().size==attributions.size){"Duplicate widget source credits."}
-            require(config.kind!=WidgetKind.FASTING||attributions.isEmpty()){"Fasting cards do not use nutrition source credits."}
+            require(kind!=WidgetKind.FASTING||attributions.isEmpty()){"Fasting cards do not use nutrition source credits."}
             val progress = card.get("progress").let {
                 if (it == JSONObject.NULL) null else { require(it is Number && it.toDouble().isFinite() && it.toDouble() % 1.0 == 0.0 && it.toDouble() in 0.0..100.0);it.toInt() }
             }

@@ -1,4 +1,6 @@
 import {entryAdjustmentView,previewEntryAdjustment} from './entry-adjustments.mjs';
+import {dashboardView} from './dashboard-view.mjs';
+import {cloudHomeWidgetView} from './home-widget-view.mjs';
 import {libraryToolsView} from './library-tools.mjs';
 import {createBackupStore} from './backup-store.mjs';
 import {profileSettingsView} from './profile-settings.mjs';
@@ -69,7 +71,11 @@ export function createAppwriteService(config, key, userAgent='') {
   }
   async function backups(secret){const {owner}=await data(secret),server=elevated();return createBackupStore({db:new TablesDB(server),storage:new Storage(server),ownerId:owner});}
   return {
+    async dashboard(secret,date){const {owner}=await data(secret),context=await calendarContext(secret,owner);return readView(secret,state=>dashboardView(state,{date},context));},
+    async homeWidgets(secret,unit){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();const [state,calendar]=await Promise.all([repository.readState(),calendarContext(secret,owner)]);return cloudHomeWidgetView(state,{accountId:owner,origin:config.origin,unit,now:new Date(calendar.asOf),timeZone:calendar.timeZone});},
     async exportBackup(secret){return (await backups(secret)).export();},
+    async listRecoveries(secret){return (await backups(secret)).listRecoveries();},
+    async inspectRecovery(secret,input){return (await backups(secret)).inspectRecovery(input);},
     async inspectBackup(secret,input){return (await backups(secret)).inspect(input);},
     async uploadBackupMedia(secret,input){return (await backups(secret)).upload(input);},
     async restoreBackup(secret,input){return (await backups(secret)).restore(input);},

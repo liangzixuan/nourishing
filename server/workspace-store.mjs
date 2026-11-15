@@ -1,7 +1,9 @@
 import {tickCloudFasting} from './fasting.mjs';
+import {beginCloudLogging,finishCloudLogging,loggingCalendar} from './cloud-logging.mjs';
 import {Query,ID,Permission,Role} from 'node-appwrite';
 import {digest,packWorkspace,rowId,unpackWorkspace} from './data-codec.mjs';
 import {initialState} from './domain/workspace.mjs';
+import {initializeHealthExportState,installHealthExportMetadata} from './health-export-state.mjs';
 import {applyWorkspaceCommand,parseCommand,readActionFoods,captureActionFoods} from './workspace-commands.mjs';
 const databaseId='nourishing',args=(tableId,id)=>({databaseId,tableId,rowId:id});
 const conflict=()=>{throw Object.assign(Error('This diary changed. Refresh it before saving.'),{code:409,publicMessage:'This diary changed. Refresh it before saving.'});};
@@ -16,7 +18,8 @@ const dataOf=({$id,$permissions,...data})=>data;
 export function createWorkspaceStore(db,owner){
  async function create(){
   if(await optional(db,'workspace_heads',owner))return;
-  const packed=packWorkspace(initialState(),owner,ID.unique()),tx=await db.createTransaction({ttl:60});
+  const state=initialState();initializeHealthExportState(state);
+  const packed=packWorkspace(state,owner,ID.unique()),tx=await db.createTransaction({ttl:60});
   try{
    for(const row of packed.rows)await db.createRow({...args('workspace_records',row.$id),data:dataOf(row),permissions:row.$permissions,transactionId:tx.$id});
    await db.createRow({...args('workspace_heads',owner),data:packed.head,permissions:permissions(owner),transactionId:tx.$id});
@@ -46,8 +49,11 @@ export function createWorkspaceStore(db,owner){
    const before=await workspaceRows(db,owner,h.generation);let state;
    try{state=unpackWorkspace(h,before);}catch(error){const latest=await db.getRow(args('workspace_heads',owner));if(latest.digest!==h.digest)conflict();throw error;}
    context.beforeApply?.();
+   const loggingBefore=beginCloudLogging(state,input.type);
+   const calendar=loggingBefore?await loggingCalendar(db,owner,context):null;
    const action=captureActionFoods(state,{type:input.type,payload:input.payload},catalogFoods);
    const saved=applyWorkspaceCommand(state,action,context);
+   finishCloudLogging(state,loggingBefore,input.type,calendar);
    if(context.stageMedia)await context.stageMedia({transactionId:tx.$id,generation:h.generation});
    const revision=await persist(state,before,h,tx.$id);
    const result={ok:true,revision,...(saved?.counts?{counts:saved.counts}:{}),...(saved?.entryIds?{entryIds:saved.entryIds}:{}),...(saved?.photoId?{photoId:saved.photoId}:{}),...(saved?.id?{item:{kind:saved.kind,id:saved.id}}:{})};
@@ -71,5 +77,20 @@ export function createWorkspaceStore(db,owner){
    const revision=await persist(state,before,h,tx.$id);await db.updateTransaction({transactionId:tx.$id,commit:true});return {changed:true,revision};
   }catch(error){await db.updateTransaction({transactionId:tx.$id,rollback:true}).catch(()=>{});if(error.code===409)conflict();throw error;}
  }
- return {create,command,tickFasting};
+ /** Operator-only migration. Existing heads never acquire a generated namespace on read. */
+ async function importHealthExportMetadata(metadata,{revision}={}){
+  if(typeof revision!=='string'||!/^[a-f0-9]{64}$/.test(revision))conflict();
+  const h=await db.getRow(args('workspace_heads',owner));if(h.ownerId!==owner)conflict();
+  const before=await workspaceRows(db,owner,h.generation),state=unpackWorkspace(h,before);
+  const result=installHealthExportMetadata(state,metadata);
+  if(!result.changed)return {changed:false,revision:h.digest};
+  if(h.digest!==revision)conflict();
+  const tx=await db.createTransaction({ttl:60});
+  try{
+   await db.updateRow({...args('workspace_heads',owner),data:{digest:h.digest},transactionId:tx.$id});
+   const guard=await db.getRow(args('workspace_heads',owner));if(guard.digest!==h.digest||guard.$updatedAt!==h.$updatedAt)conflict();
+   const next=await persist(state,before,h,tx.$id);await db.updateTransaction({transactionId:tx.$id,commit:true});return {changed:true,revision:next};
+  }catch(error){await db.updateTransaction({transactionId:tx.$id,rollback:true}).catch(()=>{});if(error.code===409)conflict();throw error;}
+ }
+ return {create,command,tickFasting,importHealthExportMetadata};
 }

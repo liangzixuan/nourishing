@@ -1,0 +1,22 @@
+{
+  "package": "i18next",
+  "version": "26.7.1",
+  "license": "MIT",
+  "source": "https://registry.npmjs.org/i18next/-/i18next-26.7.1.tgz",
+  "integrity": "sha512-cX+3RRVczel/V2kCMTACckSGSpqgtWYEA6beXNYVms7dOQiHojdPYHD26lT4IKimNeoGWrLvtPgjftbRvmZJVw==",
+  "files": [
+    {
+      "archivePath": "package/dist/esm/i18next.js",
+      "path": "public/vendor/i18next/26.7.1/i18next.js",
+      "sha256": "45777dc7bd00b9a83348f9e91b0d801a1690ee74ab1de2af41ff9426b628b3f7",
+      "bytes": 92769
+    },
+    {
+      "archivePath": "package/LICENSE",
+      "path": "public/vendor/i18next/26.7.1/LICENSE",
+      "sha256": "1cd0a2b02a6cc40ef8ee16310d13eeffdd7b5de4a562fd3ee7c921d8eb54f60a",
+      "bytes": 1082
+    }
+  ],
+  "modifications": "None. Standalone ESM build and license copied byte for byte from the verified archive."
+}

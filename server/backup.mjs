@@ -5,13 +5,14 @@ import {mealPhotoIds} from './domain/photo-records.mjs';
 import {notePhotoIds} from './domain/note-photo-fields.mjs';
 import {parseProgressSnapshot} from './domain/progress-snapshots.mjs';
 import {validateStoredPhoto,MAX_STORED_PHOTO_BYTES,MAX_PHOTO_EDGE} from './domain/photo-images.mjs';
+import {HEALTH_EXPORT_FAMILIES,readHealthExportState,restoreHealthExportMetadata} from './health-export-state.mjs';
 
 export const BACKUP_RECORD_MAX_BYTES=20_000_000;
 export const BACKUP_INSPECT_MAX_BYTES=20_000_000;
 export const BACKUP_FORMAT='nourishing-workspace';
 export const BACKUP_NAMESPACES=Object.freeze(['meal_photos','progress_photos','note_photos']);
 const collections=['foods','recipes','meals','entries','biometrics','notes','repeats','fasts','charts','clients','messages','templates','progressSnapshots'];
-const fields=['version','sampleData','profile','settings',...collections,'healthSync','fastingPlan','loggingStreaks','cycleRecords'];
+const fields=['version','sampleData','profile','settings',...collections,'healthSync','fastingPlan','loggingStreaks','cycleRecords',...HEALTH_EXPORT_FAMILIES];
 const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 const fail=(message,code=400)=>{throw Object.assign(Error(message),{code,publicMessage:message});};
 const hash=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
@@ -26,6 +27,7 @@ function validateWorkspace(input){
  if(input.version!==1||input.sampleData!==undefined&&typeof input.sampleData!=='boolean')fail('Choose a current Nourishing workspace backup.');
  const workspace=safeJson(input);
  rejectAuthority(workspace);
+ readHealthExportState(workspace);
  for(const family of collections){if(family==='progressSnapshots'&&!Object.hasOwn(workspace,family))continue;const values=workspace[family];if(!Array.isArray(values)||values.length>100000)fail(`Backup has invalid ${family}.`);const ids=new Set();for(const row of values){if(!object(row)||typeof row.id!=='string'||!row.id||ids.has(row.id))fail(`Backup has invalid or duplicate ${family} IDs.`);ids.add(row.id);}}
  if(!object(workspace.profile)||!object(workspace.settings))fail('Backup needs a workspace profile and settings.');
  const candidate=initialState();
@@ -84,7 +86,19 @@ export function inspectBackup(current,input,{ownerId}={}){
  exact(input,['manifest','revision']);if(typeof ownerId!=='string'||!ownerId)fail('Sign in to restore a backup.',401);
  if(input.revision!==digest(current))fail('Your workspace changed. Inspect this backup again.',409);
  const validated=validateBackupManifest(input.manifest),review={version:1,ownerId,token:randomBytes(32).toString('hex'),revision:input.revision,manifestDigest:input.manifest.digest};
+ restoredExportMetadata(current,validated.restored,review);
  return {review,manifest:validated.manifest,summary:{...validated.summary,current:countSummary(current,backupReferences(current)),reviewToken:review.token,revision:review.revision}};
+}
+function restoredExportMetadata(current,restored,review){
+ const existing=readHealthExportState(current),incoming=readHealthExportState(restored);
+ if(!existing&&!incoming)return;
+ const {saveScope:ignored,...metadata}=incoming??existing;
+ // Staging is create-only: the same retained review must yield identical rows on retry.
+ const hex=digest(['health-export-restore',review.ownerId,review.token]);
+ const saveScope=hex.slice(0,8)+'-'+hex.slice(8,12)+'-4'+hex.slice(13,16)+'-8'+hex.slice(17,20)+'-'+hex.slice(20,32);
+ const target={};if(existing){target.healthExportState=structuredClone(current.healthExportState);target.healthIntakeDrafts=structuredClone(current.healthIntakeDrafts);target.healthIntakePolicies=structuredClone(current.healthIntakePolicies);}
+ restoreHealthExportMetadata(target,metadata,{saveScope});
+ for(const family of HEALTH_EXPORT_FAMILIES)restored[family]=target[family];
 }
 export async function validateBackupMedia(manifest,input){
  exact(input,['namespace','photo']);exact(input.photo,['id','dataUrl']);
@@ -99,6 +113,7 @@ export async function prepareBackupRestore(current,manifest,input,{ownerId,revie
  if(typeof input.requestId!=='string'||!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(input.requestId)||input.confirmation!=='replace')fail('Confirm replacement of this workspace.');
  if(!object(review)||review.version!==1||review.ownerId!==ownerId||!ownerId||!hash(review.token)||review.token!==input.reviewToken||review.manifestDigest!==manifest.digest||review.revision!==digest(current))fail('Your workspace or backup changed. Inspect it again.',409);
  const validated=validateBackupManifest(manifest);if(typeof readMedia!=='function')fail('Restore photo storage is unavailable.',503);
+ restoredExportMetadata(current,validated.restored,review);
  for(const row of validated.manifest.media){const photo=await readMedia(row.namespace,row.id);await validateBackupMedia(validated.manifest,{namespace:row.namespace,photo});}
  return {state:validated.restored,summary:validated.summary,revision:review.revision,manifestDigest:manifest.digest,requestId:input.requestId};
 }

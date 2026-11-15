@@ -24,11 +24,13 @@ import org.json.JSONObject
 
 class HomeWidgetConfiguration : ComponentActivity() {
     private var request: Job? = null
+    private var cloudPanel:CloudWidgetConfigurationPanel?=null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setResult(Activity.RESULT_CANCELED)
         val id=intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,AppWidgetManager.INVALID_APPWIDGET_ID)
         val kind=widgetKind(this,id) ?: run { finish();return }
+        if(NourishingWorkspace.cloudOrigin!=null){cloudPanel=CloudWidgetConfigurationPanel(this,id,kind);setContentView(cloudPanel!!.view);return}
         val store=HomeWidgetStore(this);val previous=store.config(id)
         val column=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL;setPadding(24,28,24,28) }
         fun label(value: String) = TextView(this).apply { text=value;textSize=16f;setPadding(0,12,0,12);column.addView(this) }
@@ -78,5 +80,5 @@ class HomeWidgetConfiguration : ComponentActivity() {
             else { @Suppress("DEPRECATION") column.setPadding(24+insets.systemWindowInsetLeft,28+insets.systemWindowInsetTop,24+insets.systemWindowInsetRight,28+insets.systemWindowInsetBottom) };insets
         } })
     }
-    override fun onStop() { request?.cancel();super.onStop() }
+    override fun onStop() { request?.cancel();cloudPanel?.stop();super.onStop() }
 }

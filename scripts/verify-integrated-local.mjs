@@ -1,3 +1,4 @@
+import {dashboardView} from '../server/dashboard-view.mjs';
 // Runs the real HTTP routes and browser modules against disposable in-memory data.
 // Live Appwrite permissions and transactions are checked separately.
 import assert from 'node:assert/strict';
@@ -17,7 +18,7 @@ import {targetPolicyView} from '../server/target-policy-view.mjs';
 import {libraryView,libraryItem} from '../server/library-view.mjs';
 let state=initialState();const date='2026-11-14',context={today:date};
 state.profile.weight=80;state.foods.push({id:'fixture',name:'Fixture oats',grams:100,serving:'100 g',nutrients:{calories:200,protein:10,carbs:30,fat:4}});
-const service={
+const service={dashboard:async(_,date)=>dashboardView(state,{date},{now:new Date(),timeZone:'UTC'}),
  current:async()=>({id:'fixture'}),
  readDiary:async(_,day)=>({date:day,theme:state.settings.theme,revision:digest(state),groups:state.settings.groups,completed:state.settings.completedDays?.includes(day)??false,entries:state.entries.filter(r=>r.date===day).map(r=>({...r,facts:entryFacts(state,r)})),notes:state.notes.filter(r=>r.date===day),biometrics:state.biometrics.filter(r=>r.date===day),summary:calculateSummary(state,day)}),
  targets:async(_,day)=>targetView(state,day),nutritionReport:async(_,options)=>reportView(state,options),targetPolicies:async(_,day)=>targetPolicyView(state,day,context),
@@ -26,7 +27,7 @@ const service={
  library:async()=>libraryView(state),libraryItem:async(_,kind,id)=>libraryItem(state,kind,state[kind+'s'].find(r=>r.id===id)),searchCatalog:async()=>({items:state.foods,total:1,nextOffset:null}),previewDiary:async(_,input)=>previewDiaryItem(state,input),
  workspaceCommand:async(_,input)=>{parseCommand(input);if(input.revision!==digest(state))throw Object.assign(Error('Refresh and try again.'),{code:409});const next=structuredClone(state);const saved=applyWorkspaceCommand(next,{type:input.type,payload:input.payload},context);state=next;return {revision:digest(state),item:saved};}
 };
-const assets=new Map();for(const name of readdirSync('public'))if(/\.(html|js|css|svg)$/.test(name))assets.set('/'+name,{body:readFileSync('public/'+name),type:name.endsWith('.js')?'text/javascript':name.endsWith('.css')?'text/css':name.endsWith('.svg')?'image/svg+xml':'text/html'});assets.set('/diary',assets.get('/diary.html'));
+const assets=new Map();for(const name of readdirSync('public',{recursive:true}))if(/\.(html|js|mjs|css|svg|woff2)$/.test(name))assets.set('/'+name.replaceAll('\\','/'),{body:readFileSync('public/'+name),type:/\.m?js$/.test(name)?'text/javascript':name.endsWith('.css')?'text/css':name.endsWith('.svg')?'image/svg+xml':name.endsWith('.woff2')?'font/woff2':'text/html'});assets.set('/diary',assets.get('/diary.html'));
 let handler;const server=createServer((req,res)=>handler(req,res));await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const origin=`http://127.0.0.1:${server.address().port}`;handler=createHandler({config:{origin},service,assets});let browser;
 try{
  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const browserContext=await browser.newContext({viewport:{width:412,height:915},isMobile:true,hasTouch:true});await browserContext.setExtraHTTPHeaders({Cookie:'__Host-nourishing_session=fixture'});const page=await browserContext.newPage();page.setDefaultTimeout(12000);const errors=[];page.on('pageerror',e=>errors.push(e.message));const failures=[];page.on('response',r=>{if(r.url().includes('/api/')&&r.status()>=400)failures.push([r.status(),new URL(r.url()).pathname]);});

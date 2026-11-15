@@ -33,19 +33,21 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       const recipeRequest=req.method==='POST'&&['/api/recipe-import','/api/recipe-import/preview','/api/recipe-import/save'].includes(path);
       // Recipe source evidence can approach the domain's 16 MiB review limit.
       if(recipeRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid recipe request.');}
-      const backupRequest=req.method==='POST'&&['/api/backup/inspect','/api/backup/media','/api/backup/restore'].includes(path);
+      const backupRequest=req.method==='POST'&&['/api/backup/inspect','/api/backup/media','/api/backup/restore','/api/backup/recovery/inspect'].includes(path);
       if(backupRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid backup request.');}
       const libraryCommand=req.method==='POST'&&path==='/api/library/command',ingredientRequest=req.method==='POST'&&['/api/diary/ingredients/preview','/api/diary/ingredients/save'].includes(path);
       if(libraryCommand||ingredientRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid editor request.');}
-      const body=req.method==='GET'?null:await readBody(req,(libraryCommand||ingredientRequest)?4*1024*1024:backupRequest?(path.endsWith('/inspect')?20_000_000:path.endsWith('/media')?5*1024*1024:16384):healthRequest?HEALTH_EXPORT_MAX_BYTES:photoRequest?((path.endsWith('/analyze')||path.endsWith('/prepare'))?12:5)*1024*1024:recipeRequest&&path!=='/api/recipe-import'?16*1024*1024:16384);
+      const body=req.method==='GET'?null:await readBody(req,(libraryCommand||ingredientRequest)?4*1024*1024:backupRequest?(path==='/api/backup/inspect'?20_000_000:path.endsWith('/media')?5*1024*1024:16384):healthRequest?HEALTH_EXPORT_MAX_BYTES:photoRequest?((path.endsWith('/analyze')||path.endsWith('/prepare'))?12:5)*1024*1024:recipeRequest&&path!=='/api/recipe-import'?16*1024*1024:16384);
       if(libraryCommand){if(!['library.portions','library.retirement'].includes(body?.type))fail(400,'Choose a library action.');return json(200,await api.workspaceCommand(secret,body));}
       if(ingredientRequest){if(path.endsWith('/preview'))return json(200,await api.previewEntryAdjustment(secret,body));if(body?.type!=='entry.ingredients.adjust')fail(400,'Choose an ingredient action.');return json(200,await api.workspaceCommand(secret,body));}
       if(req.method==='GET'&&path==='/api/diary/ingredients'){if(!secret)fail(401,'Please sign in.');const keys=['kind','date','id'];if([...url.searchParams.keys()].some(k=>!keys.includes(k)||url.searchParams.getAll(k).length!==1)||keys.some(k=>!url.searchParams.has(k)))fail(400,'Choose a diary item.');return json(200,await api.entryAdjustment(secret,Object.fromEntries(url.searchParams)));}
-      if(backupRequest){const method=path.endsWith('/inspect')?'inspectBackup':path.endsWith('/media')?'uploadBackupMedia':'restoreBackup';return json(200,await api[method](secret,body));}
+      if(backupRequest){const method=path==='/api/backup/recovery/inspect'?'inspectRecovery':path.endsWith('/inspect')?'inspectBackup':path.endsWith('/media')?'uploadBackupMedia':'restoreBackup';return json(200,await api[method](secret,body));}
+      if(req.method==='GET'&&path==='/api/backup/recoveries'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid recovery query.');return json(200,await api.listRecoveries(secret));}
       if(req.method==='GET'&&path==='/api/backup/export'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid backup query.');return json(200,await api.exportBackup(secret));}
       if(healthRequest)return json(200,await api[path.endsWith('/preview')?'previewHealth':'importHealth'](secret,body,req.headers.get('x-nourish-review-token')));
       if(photoRequest){const method={'/api/photos/analyze':'analyzePhoto','/api/photos/save':'savePhoto','/api/snapshots/prepare':'prepareSnapshot','/api/snapshots/save':'saveSnapshot'}[path];return json(200,await api[method](secret,body,req.signal));}
       if(req.method==='GET'&&path==='/api/snapshots'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');return json(200,await api.snapshots(secret));}
+      if(req.method==='GET'&&path==='/api/home-widgets'){if(!secret)fail(401,'Please sign in.');if([...url.searchParams.keys()].some(k=>k!=='unit'||url.searchParams.getAll(k).length!==1))fail(400,'Invalid widget query.');const unit=url.searchParams.get('unit')??'kcal';if(!['kcal','kJ'].includes(unit))fail(400,'Choose an energy unit.');return json(200,await api.homeWidgets(secret,unit));}
       if(recipeRequest){const method=path.endsWith('/preview')?'previewRecipeImport':path.endsWith('/save')?'saveRecipeImport':'importRecipe';return json(200,await api[method](secret,body));}
       if(req.method==='GET'&&path==='/api/fasting'){
         if(!secret)fail(401,'Please sign in.');
@@ -79,11 +81,12 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
         if([...url.searchParams.keys()].some(k=>!['from','to'].includes(k)||url.searchParams.getAll(k).length!==1)||!url.searchParams.has('from')||!url.searchParams.has('to'))fail(400,'Choose chart dates.');
         return json(200,await api.charts(secret,Object.fromEntries(url.searchParams)));
       }
-      if(req.method==='GET'&&['/api/targets','/api/target-policies','/api/profile-settings','/api/nutrition-report'].includes(path)){
+      if(req.method==='GET'&&['/api/dashboard','/api/targets','/api/target-policies','/api/profile-settings','/api/nutrition-report'].includes(path)){
         if(!secret)fail(401,'Please sign in.');
         const allowed=path!=='/api/nutrition-report'?['date']:['from','to','dayFilter','includeToday','includeSupplements'];
         if([...url.searchParams.keys()].some(k=>!allowed.includes(k)||url.searchParams.getAll(k).length!==1)||allowed.some(k=>!url.searchParams.has(k)))fail(400,'Invalid query.');
         const input=Object.fromEntries(url.searchParams);
+        if(path==='/api/dashboard')return json(200,await api.dashboard(secret,input.date));
         if(path==='/api/profile-settings')return json(200,await api.profileSettings(secret,input.date));
         if(path==='/api/targets')return json(200,await api.targets(secret,input.date));
         if(path==='/api/target-policies')return json(200,await api.targetPolicies(secret,input.date));

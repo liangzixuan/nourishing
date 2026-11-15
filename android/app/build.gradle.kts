@@ -43,6 +43,9 @@ tasks.withType<Test>().configureEach {
         filter {
             includeTestsMatching("local.nourish.healthconnect.CloudAccountSessionTest")
             includeTestsMatching("local.nourish.healthconnect.CloudHealthTransferTest")
+            includeTestsMatching("local.nourish.healthconnect.CloudNativeBackgroundTest")
+            includeTestsMatching("local.nourish.healthconnect.CloudHomeWidgetTest")
+            includeTestsMatching("local.nourish.healthconnect.HomeWidgetTest")
         }
     } else {
     inputs.file(rootProject.file("fixtures/home-widget.json"))

@@ -60,7 +60,9 @@ class CloudAccountSession(
 ) {
     private var generation=0L
     private var active:CloudAccountLease?=null
+    private var observedFingerprint:String?=null
     private val lock=Any()
+    private val connectionLock=Any()
     private class Cookie(val value:String) {
         val header="__Host-nourishing_session=$value"
         val fingerprint=MessageDigest.getInstance("SHA-256").digest(value.toByteArray()).joinToString(""){"%02x".format(it)}
@@ -74,7 +76,7 @@ class CloudAccountSession(
         if(value.isEmpty()||value.length>16384||value.any{it.code !in 33..126||it in "\";,\\"})throw CloudSessionChanged()
         return Cookie(value)
     }
-    private fun invalidateLocked() { generation++;active=null;onInvalidated() }
+    private fun invalidateLocked() { generation++;active=null;observedFingerprint=null;onInvalidated() }
     fun invalidate()=synchronized(lock){invalidateLocked()}
     private fun checkedCookie(lease:CloudAccountLease):Cookie {
         val current=try{cookie()}catch(error:CloudSessionChanged){invalidateLocked();throw error}
@@ -86,16 +88,33 @@ class CloudAccountSession(
     }
     /** Run off the UI thread. The server, not a bridge message or email, supplies account identity. */
     fun connect():CloudAccountLease {
-        val start=synchronized(lock){invalidateLocked();generation to cookie()}
+        val start=synchronized(lock){
+            val current=try{cookie()}catch(error:CloudSessionChanged){invalidateLocked();throw error}
+            if(observedFingerprint?.let{it!=current.fingerprint}==true)invalidateLocked()
+            observedFingerprint=current.fingerprint
+            generation++;active=null;generation to current
+        }
         val reply=transport.exchange(Request.Builder().url(origin.endpoint("/api/account"))
             .header("Accept","application/json").header("Cookie",start.second.header).get().build())
         return synchronized(lock){
-            if(generation!=start.first||cookie().fingerprint!=start.second.fingerprint)throw CloudSessionChanged()
-            if(reply.status !in 200..299)throw CloudApiFailure(reply.status)
+            if(generation!=start.first)throw CloudSessionChanged()
+            val current=try{cookie()}catch(error:CloudSessionChanged){invalidateLocked();throw error}
+            if(current.fingerprint!=start.second.fingerprint){invalidateLocked();throw CloudSessionChanged()}
+            if(reply.status !in 200..299){if(reply.status in setOf(401,403))invalidateLocked();throw CloudApiFailure(reply.status)}
             val account=try{val json=JSONObject(reply.body);val value=json.get("id");if(value !is String)throw CloudProtocolFailure();CloudAccount(value,(json.opt("email") as? String)?.takeIf{it.length in 1..320})}
                 catch(_:Exception){throw CloudProtocolFailure()}
             CloudAccountLease(origin,account,generation,start.second.fingerprint).also{active=it}
         }
+    }
+    /** Background consumers share one verified lease instead of invalidating each other's requests. */
+    fun acquire():CloudAccountLease=synchronized(connectionLock){
+        synchronized(lock){active?.takeIf{isCurrent(it)}}?:connect()
+    }
+    fun matchesCookie(binding:CloudNativeBinding):Boolean=synchronized(lock){
+        binding.origin==origin&&runCatching{cookie().fingerprint==binding.sessionFingerprint}.getOrDefault(false)
+    }
+    fun publish(lease:CloudAccountLease,block:()->Unit):Boolean=synchronized(lock){
+        if(!isCurrent(lease))false else {block();true}
     }
     /** Caller must retain the lease selected for the operation; a different account never replaces it. */
     fun request(lease:CloudAccountLease,path:String,jsonBody:String?=null,reviewToken:String?=null):CloudHttpReply {
@@ -127,7 +146,11 @@ class CloudAccountSession(
     }
     /** Use before applying a result to local widgets, device state or a native screen. */
     fun isCurrent(lease:CloudAccountLease):Boolean=synchronized(lock){try{checkedCookie(lease);true}catch(_:CloudSessionChanged){false}}
-    fun refresh()=synchronized(lock){active?.let{isCurrent(it)};Unit}
+    fun refresh()=synchronized(lock){
+        observedFingerprint?.let{fingerprint->
+            if(runCatching{cookie().fingerprint}.getOrNull()!=fingerprint)invalidateLocked()
+        };Unit
+    }
 }
 
 /** No credential forwarding through redirects or automatic write retries. */

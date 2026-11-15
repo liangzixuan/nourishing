@@ -1,6 +1,6 @@
 // Exercise the built SSR adapter and its packaged worker with local, synthetic data only.
 import assert from 'node:assert/strict';
-import {createServer} from 'node:http';
+import {createServer,request as httpRequest} from 'node:http';
 import {readFileSync, writeFileSync} from 'node:fs';
 import {registerHooks} from 'node:module';
 import {MockAgent, getGlobalDispatcher, setGlobalDispatcher} from 'undici';
@@ -36,10 +36,13 @@ try {
   const {handler, options} = await import(new URL('entry.mjs', build));assert.equal(options.bodySizeLimit, 20_000_000);
   server = createServer(handler);await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const origin = `http://127.0.0.1:${server.address().port}`, results = [];
+  const widgetRoot=await fetch(origin+'/?widget=food',{redirect:'manual'});
+  assert.equal(widgetRoot.status,200);assert.equal(widgetRoot.headers.get('location'),null);
+  assert.match(await widgetRoot.text(),/src="\/account\.js"/);
   async function post(path, bytes, expected, {signed = true, requestOrigin = env.PUBLIC_ORIGIN, message} = {}) {
-    const body = JSON.stringify({padding: 'x'.repeat(bytes)}), response = await fetch(origin + path, {method: 'POST', headers: {origin: requestOrigin, 'content-type': 'application/json', ...(signed ? {cookie: '__Host-nourishing_session=fixture-session'} : {})}, body});
+    const started=performance.now(),body = JSON.stringify({padding: 'x'.repeat(bytes)}), response = await fetch(origin + path, {method: 'POST', headers: {origin: requestOrigin, 'content-type': 'application/json', ...(signed ? {cookie: '__Host-nourishing_session=fixture-session'} : {})}, body,signal:AbortSignal.timeout(15000)});
     const value = await response.json();assert.equal(response.status, expected, JSON.stringify({path, bytes, status: response.status, value}));
-    if (message) assert.equal(value.error, message);assert.equal(response.headers.get('cache-control'), 'no-store');results.push({path, requestBytes: Buffer.byteLength(body), status: response.status});
+    if (message) assert.equal(value.error, message);assert.equal(response.headers.get('cache-control'), 'no-store');results.push({path, requestBytes: Buffer.byteLength(body), status: response.status,elapsedMs:Math.round(performance.now()-started)});
   }
   await post('/api/photos/save', 1024 * 1024, 400, {message: 'Invalid photo fields.'});
   await post('/api/health-connect/import?summary=1', 18_000_000, 409, {message: 'Preview this export again.'});
@@ -48,6 +51,10 @@ try {
   await post('/api/photos/save', 5 * 1024 * 1024, 413, {message: 'Request too large.'});
   await post('/api/photos/analyze', 12 * 1024 * 1024, 413, {message: 'Request too large.'});
   await post('/api/recipe-import/preview', 16 * 1024 * 1024, 413, {message: 'Request too large.'});
+  await post('/api/library/command',4*1024*1024,413,{message:'Request too large.'});
+  await post('/api/diary/ingredients/preview',4*1024*1024,413,{message:'Request too large.'});
+  await post('/api/diary/ingredients/save',4*1024*1024,413,{message:'Request too large.'});
+  const early=await new Promise((resolve,reject)=>{const started=performance.now(),req=httpRequest(origin+'/api/library/command',{method:'POST',headers:{origin:env.PUBLIC_ORIGIN,'content-type':'application/json','content-length':4194318}},response=>{response.resume();clearTimeout(timer);req.destroy();resolve({status:response.statusCode,elapsedMs:Math.round(performance.now()-started)});});const timer=setTimeout(()=>{req.destroy();reject(Error('Built SSR did not reject unsigned headers before body upload.'));},3000);req.on('error',error=>{clearTimeout(timer);reject(error);});req.flushHeaders();});assert.equal(early.status,401);results.push({path:'/api/library/command',headersOnly:true,...early});
   await post('/api/workspace/command', 20_000, 413, {message: 'Request too large.'});
   assert.ok(authenticated >= 5);
   const report = {status: 'passed', actualBuiltServer: true, unchangedWorkerAssets: true, actualBuiltRecipeParser: true, remoteCalls: 0, routes: results};

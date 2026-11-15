@@ -1266,6 +1266,66 @@
       "target": "server/domain/diary-adjustment.mjs",
       "sourceSha256": "22e33de3ccc62c7378e101c4940df4faad6fa15515c83d2c9ad01754ef12ee84",
       "outputSha256": "cb0c227e7288be5a13f6cd5e3882a2250e35877e938df1d3416aff67cb58e590"
+    },
+    {
+      "source": "server/dashboard.mjs",
+      "target": "server/domain/dashboard.mjs",
+      "sourceSha256": "6bc679e5c682d3296271cc17e6adc08934833b0592d3ac0194a9fb56c56f8ed4",
+      "outputSha256": "34b27e34c2b432d1291e25b9d0372ce19b24dbcd94ead451e29247c700866174"
+    },
+    {
+      "source": "server/weight-goal-view.mjs",
+      "target": "server/domain/weight-goal-view.mjs",
+      "sourceSha256": "3d539be991056eca947997e51ef018886358c2f6e57272eadeeaee52d2acb512",
+      "outputSha256": "dcbe198506cf95dc5b735e8743613c12a47fa45978f2c1c5dee7e97562345a7c"
+    },
+    {
+      "source": "server/body-composition-view.mjs",
+      "target": "server/domain/body-composition-view.mjs",
+      "sourceSha256": "64e75cea50c56bea36063c5655e85435cd4ba8b49317d694bb03c98b3e60a442",
+      "outputSha256": "919a28616987ee4d9437d90520fc704bcb1a3b6b1c9412de659d9848530ddc32"
+    },
+    {
+      "source": "server/sleep.mjs",
+      "target": "server/domain/sleep.mjs",
+      "sourceSha256": "6ce661779d8052f84e74ba050f46d866d7c9b7d38d9eed2ad00137a315ca6a9c",
+      "outputSha256": "6ce661779d8052f84e74ba050f46d866d7c9b7d38d9eed2ad00137a315ca6a9c"
+    },
+    {
+      "source": "server/home-widgets.mjs",
+      "target": "server/domain/home-widgets.mjs",
+      "sourceSha256": "d31d8bb9c2d1a8f0a3e9149702d8d13a15784347a1b1d321118254d72d66c7d1",
+      "outputSha256": "e2997248b4f33db6dabec8bd8b3bbb1d12d826853db2bb140166414511be3841"
+    },
+    {
+      "source": "server/home-widget-language.mjs",
+      "target": "server/domain/home-widget-language.mjs",
+      "sourceSha256": "6bc8ec9a5c60d6f2bf0cddf91675b22084639f29eed4c55451a6ac33eae577b5",
+      "outputSha256": "66b986124036ee6c5ecdfa5c855fde654fc69fe48f3fcb862d10b3f67bf98cdd"
+    },
+    {
+      "source": "public/nutrient-language.js",
+      "target": "server/domain/public/nutrient-language.js",
+      "sourceSha256": "5d108ce0d26737e8e1bbf0bd10e0825157fc819a3462f5a3d785e60faac443ac",
+      "outputSha256": "5d108ce0d26737e8e1bbf0bd10e0825157fc819a3462f5a3d785e60faac443ac"
+    },
+    {
+      "source": "public/locales/nutrients.js",
+      "target": "server/domain/public/locales/nutrients.js",
+      "sourceSha256": "ee68ac4a5800af5d9adbffd920ef43e5f5e6cd64e77aed2c8129892795513f7c",
+      "outputSha256": "62ac01fe515b81cb332d5c9a90ec7ccd560c08419f555886fc29e61c7080fb31"
+    },
+    {
+      "source": "public/diary-amount.js",
+      "target": "server/domain/public/diary-amount.js",
+      "sourceSha256": "274187691abaa37f36da9defe746280dda881e90310fb9ab17bbd7fc92139fbe",
+      "outputSha256": "274187691abaa37f36da9defe746280dda881e90310fb9ab17bbd7fc92139fbe"
+    },
+    {
+      "source": "public/compact-ui.js",
+      "target": "server/domain/public/compact-ui.js",
+      "sourceSha256": "b51dc9364c154553a26d675ae6be666ee6a5356510f0322f46e7987d9c3293df",
+      "outputSha256": "b51dc9364c154553a26d675ae6be666ee6a5356510f0322f46e7987d9c3293df"
     }
   ]
 }

@@ -1,3 +1,4 @@
+import {widgetDestination} from './widget-link.js';
 import {openEntryAdjustment} from './entry-adjustments.js';
 import {openRecipeImport} from './recipe-import.js';
 import {openFoodInsights} from './food-insights.js';
@@ -77,4 +78,9 @@ function photoLog(){if(!diary)return;return mountPhotoLog({show,close,header,con
 function recordEditor(kind,record){return mountRecordEditor({kind,record,date,show,close,header,content,onChange:load});}
 window.addEventListener('pagehide',()=>{loadId++;leaveView();view='diary';clearPending();diary=null;close();page.replaceChildren();});
 window.addEventListener('pageshow',event=>{if(event.persisted)load();});
-load();
+load().then(()=>{
+ if(!diary)return;const destination=widgetDestination(location.search);if(!destination)return;
+ history.replaceState(null,'',location.pathname);
+ if(destination==='food'){group=diary.groups.includes('Uncategorized')?'Uncategorized':diary.groups[0];search();}
+ if(destination==='fasting'){leaveView();view='discover';dateBar.hidden=true;selectTab('discover-tab');nutrition=mountNutrition({page,mode:view,initialTab:'fasting',date:()=>date,show,close,header,content,onChange:load});}
+});

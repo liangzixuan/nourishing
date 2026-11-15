@@ -1,3 +1,5 @@
+import {mountDashboard} from './dashboard.js';
+import {mountRecordEditor} from './records.js';
 import {mountBackup} from './backup.js';
 import {openProfileSettings} from './profile-settings.js';
 import {mountSnapshots} from './snapshots.js';
@@ -15,8 +17,8 @@ const ordered=rows=>[...rows].sort((a,b)=>rank(a)-rank(b)||a.name.localeCompare(
 const owners={scheduler:'Macro schedule',weekday:'Weekday schedule',macros:'Macro policy',expenditure:'Calculated energy',references:'Reference targets'};
 const offset=(date,days)=>{const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10);};
 const option=(value,label,current)=>`<option value="${e(value)}" ${value===current?'selected':''}>${e(label)}</option>`;
-export function mountNutrition({page,mode,date,show,close,header,content,onChange}){
- let backup=null,snapshots=null,charts=null,fasting=null,disposed=false,serial=0,data,tab='dashboard',query='',reportOptions={from:offset(date(),-6),to:date(),dayFilter:'nonempty',includeToday:true,includeSupplements:true};
+export function mountNutrition({page,mode,date,show,close,header,content,onChange,initialTab='dashboard'}){
+ let dashboard=null,backup=null,snapshots=null,charts=null,fasting=null,disposed=false,serial=0,data,tab=initialTab,query='',reportOptions={from:offset(date(),-6),to:date(),dayFilter:'nonempty',includeToday:true,includeSupplements:true};
  const root=document.createElement('section');root.className='nutrition-page';page.replaceChildren(root);
  const alive=()=>!disposed&&root.isConnected;
  async function load(){const id=++serial;root.setAttribute('aria-busy','true');root.innerHTML='<p class="empty">Loading…</p>';
@@ -47,19 +49,17 @@ export function mountNutrition({page,mode,date,show,close,header,content,onChang
  }
  const metric=(label,value,unit)=>`<div><span>${e(label)}</span><strong>${num(value)} <small>${e(unit)}</small></strong></div>`;
  function nutrientRow(row){return `<div class="report-nutrient" data-report-nutrient="${e(row.id)}"><div><strong>${e(row.name)}</strong><span>${num(row.mean)} ${e(row.unit)}</span></div>${Number.isFinite(row.percentOfMeanTarget)?`<progress max="100" value="${Math.min(100,Math.max(0,row.percentOfMeanTarget))}" aria-label="${e(row.name)} target progress"></progress>`:''}<small>${row.mean===null?'No data':`${row.knownDays}/${row.eligibleDays} days`}${row.partialDays?` · ${row.partialDays} partial`:''}${Number.isFinite(row.meanTarget)?` · Target ${num(row.meanTarget)} ${e(row.unit)}`:''}</small></div>`;}
- function discover(){snapshots?.dispose();snapshots=null;charts?.dispose();charts=null;fasting?.dispose();fasting=null;const report=data.report,calories=report.nutrients.find(r=>r.id==='calories');
+ function discover(){dashboard?.dispose();dashboard=null;snapshots?.dispose();snapshots=null;charts?.dispose();charts=null;fasting?.dispose();fasting=null;const report=data.report,calories=report.nutrients.find(r=>r.id==='calories');
   root.innerHTML=`<nav class="discover-tabs" aria-label="Discover"><button type="button" data-tab="dashboard" ${tab==='dashboard'?'aria-current="page"':''}>Dashboard</button><button type="button" data-tab="charts" ${tab==='charts'?'aria-current="page"':''}>Charts</button><button type="button" data-tab="report" ${tab==='report'?'aria-current="page"':''}>Report</button><button type="button" data-tab="snapshots" ${tab==='snapshots'?'aria-current="page"':''}>Snapshots</button></nav><div class="report-content"></div>`;
   root.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;discover();});const panel=root.querySelector('.report-content');
   if(tab==='snapshots'){snapshots=mountSnapshots({root:panel,show,close,header,content,date,onChange});return;}
   if(tab==='fasting'){fasting=mountFasting({page:panel,show,close,header,content,onChange});return;}
   if(tab==='charts'){charts=mountCharts({page:panel,date,show,close,header,content,onChange});return;}
   if(tab==='dashboard'){
-   panel.innerHTML=`<section class="nutrition-card"><h2>Nutrition Summary</h2><p class="report-period">${e(report.options.from)} – ${e(report.options.to)} · Daily average</p><div class="dashboard-calories">${num(calories.mean,0)} <small>kcal</small></div><div class="report-macros">${['protein','carbs','fat'].map(id=>{const row=report.nutrients.find(r=>r.id===id);return metric(id==='carbs'?'Carbs':row.name,row.mean,row.unit);}).join('')}</div><p class="report-period">${report.counts.eligibleDays} ${report.options.dayFilter==='complete'?'completed':report.options.dayFilter==='nonempty'?'logged':'selected'} days</p><button type="button" class="more-results" data-full-report>View full report</button></section><section class="nutrition-card"><h2>Diary</h2><div class="report-macros">${metric('Logged days',report.days.filter(d=>d.logged).length,'')}${metric('Completed days',report.days.filter(d=>d.complete).length,'')}</div></section>`;
-   const fastingButton=document.createElement('button');fastingButton.type='button';fastingButton.className='more-results nutrition-card';fastingButton.textContent='Fasting';fastingButton.onclick=()=>{tab='fasting';discover();};panel.append(fastingButton);
-   panel.querySelector('[data-full-report]').onclick=()=>{tab='report';discover();};return;
+   dashboard=mountDashboard({root:panel,date,show,close,header,content,onChange,onReport:()=>{tab='report';discover();},onFasting:()=>{tab='fasting';discover();},onWeight:()=>mountRecordEditor({kind:'biometric',date:date(),show,close,header,content,onChange:async()=>{await onChange();await dashboard?.reload();}}),onConnect:()=>openImports({show,close,header,content,onChange})});return;
   }
   panel.innerHTML=`<form class="report-filters"><div class="report-dates"><label>From<input aria-label="From" name="from" type="date" required value="${reportOptions.from}"></label><label>To<input aria-label="To" name="to" type="date" required value="${reportOptions.to}"></label></div><label class="field-row"><span>Days</span><select name="dayFilter" aria-label="Days">${[['nonempty','Logged days'],['complete','Completed days'],['all','All days']].map(([v,l])=>option(v,l,reportOptions.dayFilter)).join('')}</select></label><label class="field-row"><span>Include today</span><input type="checkbox" name="includeToday" ${reportOptions.includeToday?'checked':''}></label><label class="field-row"><span>Include supplements</span><input type="checkbox" name="includeSupplements" ${reportOptions.includeSupplements?'checked':''}></label><button class="primary">Update report</button></form><section class="nutrition-card"><h2>Daily averages</h2><p class="report-period">${report.counts.eligibleDays} of ${report.counts.requestedDays} days</p><div class="report-macros">${metric('Calories',calories.mean,'kcal')}${metric('Target',calories.meanTarget,'kcal')}</div></section><section class="nutrition-card"><h2>Nutrients</h2>${ordered(report.nutrients).filter(r=>r.visible&&(commonIds.includes(r.id)||r.mean!==null)).map(nutrientRow).join('')}<details class=additional-nutrients><summary>More nutrients</summary>${ordered(report.nutrients).filter(r=>r.visible&&!commonIds.includes(r.id)&&r.mean===null).map(nutrientRow).join('')}</details></section>`;
   panel.querySelector('form').onsubmit=event=>{event.preventDefault();const form=event.target;reportOptions={from:form.elements.from.value,to:form.elements.to.value,dayFilter:form.elements.dayFilter.value,includeToday:form.elements.includeToday.checked,includeSupplements:form.elements.includeSupplements.checked};load();};
  }
- load();return {reload:load,dispose(){disposed=true;serial++;backup?.dispose();snapshots?.dispose();charts?.dispose();fasting?.dispose();}};
+ load();return {reload:load,dispose(){disposed=true;serial++;dashboard?.dispose();backup?.dispose();snapshots?.dispose();charts?.dispose();fasting?.dispose();}};
 }

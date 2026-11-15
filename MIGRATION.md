@@ -8,10 +8,10 @@ The earlier Nourishing project was reviewed for account lifecycle, secure sessio
 
 Before production cutover:
 
-- Port the remaining Discover widgets, Coach, news/settings, library sharing and remaining diary tools. Existing imported records and metadata remain preserved.
+- Port Coach, glucose/cycle cards, pinned charts, streak image sharing, library sharing and remaining diary tools. Dashboard news/settings, nutrition, energy/weight, streaks, sleep and fasting are implemented. Existing imported records and metadata remain preserved.
 - Activate and verify cloud background jobs, including scheduled fasting and automatic repeat items. The fasting worker is implemented and tested with disposable accounts but stays disabled.
-- Complete account-aware Android background sync/export/reconciliation, widgets, Wear and reminders. Foreground session-bound Health Connect transfer is implemented; full native and device checks remain.
-- Complete account deletion, orphan media cleanup and recovery selection. Backup download and reviewed restore are implemented. CSV exports are implemented. Snapshot deletion removes its reference; private Storage retention is not permanent deletion.
+- Complete account-aware Android export/reconciliation, Wear and reminders. Foreground transfer, explicit background-import consent and cloud widgets are implemented; full native and device checks remain.
+- Complete account deletion and orphan media cleanup. Backup download, reviewed restore and verified previous-version selection are implemented; recovery deployment verification is recorded below. CSV exports are implemented. Snapshot deletion removes its reference; private Storage retention is not permanent deletion.
 - Reconcile PC changes since the baseline and repeat record, photo, and nutrient comparisons.
 - Complete the emailed password-recovery check.
 - Verify the Android app with the PC server stopped.
@@ -26,4 +26,10 @@ Preview `6af9497ab5698c4c4cdb` adds complete JSON backup download with private p
 
 Hosted browser checks passed for download/restore, body equation and activity, nutrient reference selection, recorded measurements, settings reload, account isolation and unchanged migrated-owner data. The mobile navigation regression also passed: the Fasting card now fits its margins without expanding the layout viewport. Disposable accounts and their resources were removed.
 
-Named library portions, retirement/restoration and occurrence-only diary ingredient adjustments are integrated and pass local domain, HTTP and mobile browser checks. Their hosted deployment is pending. The source rules preserve quantity bases, library metadata and other diary occurrences. These editors use authenticated requests with a 4 MiB body limit; ordinary commands retain the smaller limit. Publication text now has an explicit UTF-8 check.
+Named library portions, retirement/restoration and occurrence-only diary ingredient adjustments are deployed and pass local and hosted mobile checks. The source rules preserve quantity bases, library metadata and other diary occurrences. These editors use authenticated requests with a 4 MiB body limit; ordinary commands retain the smaller limit. The hosted oversized upload returned 413 after 28.4 seconds; runtime logs show less than 0.3 seconds inside the handler. Publication text has an explicit UTF-8 check.
+
+## Dashboard, native identity and recovery — November 15, 2026
+
+Active preview `6af9538e4a5e7241e9ac` includes the source Dashboard, account-bound home-widget endpoint and previous-version recovery. Local and hosted browser checks cover charts, settings, streak reset, custom ranges, report navigation and widget destinations through sign-in. Hosted checks exposed static home-page precedence over the server redirect; widget navigation now belongs to the static page's client entry. Android background-import and widget code passes 30 focused tests and compiles; it is not installed on the phone.
+
+Verified previous-version recovery and Health Connect export metadata are deployed. Hosted Review and Cancel leave current data unchanged; Replace restores the selected records and exact photo bytes. The PC export namespace existed outside its workspace JSON and has now been migrated to the verified owner's account. Its source has no saved correction drafts or policies. Migration preserved all unrelated workspace data, retained the exact namespace, and passed a repeated-apply no-op check. New cloud accounts get their own stable namespace. Restore keeps lineage and correction membership history, changes the review scope, and produces identical staged data on retry. Native export endpoints remain pending.

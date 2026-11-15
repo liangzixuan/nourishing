@@ -28,6 +28,12 @@ fun widgetKind(context: Context, id: Int): WidgetKind? = when (AppWidgetManager.
     else -> null
 }
 fun refreshWidget(context: Context, id: Int) {
+    if(NourishingWorkspace.cloudOrigin!=null){
+        if(widgetKind(context,id)==null||CloudWidgetStore(context).config(id)==null)return
+        WorkManager.getInstance(context).enqueueUniqueWork(workName(id),ExistingWorkPolicy.REPLACE,
+            OneTimeWorkRequestBuilder<CloudHomeWidgetWorker>().setInputData(workDataOf("widgetId" to id)).build())
+        return
+    }
     if (widgetKind(context,id) == null || HomeWidgetStore(context).config(id) == null) return
     WorkManager.getInstance(context).enqueueUniqueWork(workName(id),ExistingWorkPolicy.REPLACE,
         OneTimeWorkRequestBuilder<HomeWidgetWorker>().setInputData(workDataOf("widgetId" to id)).build())
@@ -36,16 +42,22 @@ fun renderHomeWidget(context: Context, id: Int) = synchronized(HomeWidgetStore.l
     val manager = AppWidgetManager.getInstance(context)
     val info = manager.getAppWidgetInfo(id) ?: return@synchronized
     val store = HomeWidgetStore(context);val config = store.config(id)
-    val snapshot = config?.let { store.snapshot(id,it) }
+    val cloudStore=CloudWidgetStore(context)
+    val cloud=if(NourishingWorkspace.cloudOrigin!=null)cloudStore.config(id)?.takeIf{it.binding.origin==NourishingWorkspace.cloudOrigin&&CloudWebSessions.get(it.binding.origin).matchesCookie(it.binding)}else null
+    val snapshot = cloud?.let{cloudStore.snapshot(id,it)}?:config?.let { store.snapshot(id,it) }
+    val configured=cloud!=null||config!=null
+    val selectedKind=cloud?.kind?:config?.kind
+    val selectedOrigin=cloud?.let{WorkspaceOrigin.parse(it.binding.origin.value)}?:config?.origin
     val height = manager.getAppWidgetOptions(id).getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,180) / context.resources.configuration.fontScale
     // Below the declared 180dp minimum in scaled text space, reserve the value and date.
     val compact = height < 180
     val views = RemoteViews(context.packageName,if(compact) R.layout.home_widget_compact else R.layout.home_widget)
     val summary = RemoteViews(context.packageName,if(compact) R.layout.home_widget_summary_compact else R.layout.home_widget_summary)
     summary.setTextViewText(R.id.widget_title,snapshot?.card?.title ?: context.getString(R.string.app_name))
-    summary.setTextViewText(R.id.widget_value,snapshot?.card?.value ?: context.getString(if(config==null) R.string.widget_unconfigured else R.string.widget_refresh_needed))
+    summary.setTextViewText(R.id.widget_value,snapshot?.card?.value ?: context.getString(if(!configured) R.string.widget_unconfigured else R.string.widget_refresh_needed))
     val stamp = snapshot?.let { context.getString(R.string.widget_snapshot,it.date.toString(),DateTimeFormatter.ofPattern("HH:mm").format(it.asOf.atZone(it.zone)),it.zone.id) }
-        ?: context.getString(if(config==null) R.string.widget_choose_workspace else R.string.widget_connection_hint)
+        ?: if(NourishingWorkspace.cloudOrigin!=null){if(!configured)"Connect the account signed into Nourishing" else "Open Nourishing and sign in, then Refresh"}
+        else context.getString(if(!configured) R.string.widget_choose_workspace else R.string.widget_connection_hint)
     views.setTextViewText(R.id.widget_stamp,if(compact) snapshot?.let{context.getString(R.string.widget_as_of,it.date.toString())} ?: context.getString(R.string.widget_not_updated) else stamp)
     views.setContentDescription(R.id.widget_stamp,stamp)
     summary.setTextViewText(R.id.widget_detail,snapshot?.card?.detail.orEmpty())
@@ -58,7 +70,7 @@ fun renderHomeWidget(context: Context, id: Int) = synchronized(HomeWidgetStore.l
     val configure = Intent(context,HomeWidgetConfiguration::class.java).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id)
         .setData(Uri.parse("nourish-widget://configure/$id"))
     views.setOnClickPendingIntent(R.id.widget_configure,PendingIntent.getActivity(context,id,configure,flags))
-    val open = if(config==null) configure else NourishingWorkspace.widgetIntent(context,config.origin,if(config.kind==WidgetKind.FASTING) WidgetDestination.FASTING else WidgetDestination.DIARY)
+    val open = if(selectedOrigin==null) configure else NourishingWorkspace.widgetIntent(context,selectedOrigin,if(selectedKind==WidgetKind.FASTING) WidgetDestination.FASTING else WidgetDestination.DIARY)
     val openPending = PendingIntent.getActivity(context,id,open,flags)
     views.setOnClickPendingIntent(R.id.widget_open,openPending)
     views.setPendingIntentTemplate(R.id.widget_list,openPending)
@@ -72,8 +84,8 @@ fun renderHomeWidget(context: Context, id: Int) = synchronized(HomeWidgetStore.l
         items.addItem(1,sources)
     }
     RemoteViewsCompat.setRemoteAdapter(context,views,id,R.id.widget_list,items.build())
-    views.setViewVisibility(R.id.widget_food,if(config?.kind==WidgetKind.REMAINING && height>=250) View.VISIBLE else View.GONE)
-    if(config!=null) views.setOnClickPendingIntent(R.id.widget_food,PendingIntent.getActivity(context,id,NourishingWorkspace.widgetIntent(context,config.origin,WidgetDestination.FOOD),flags))
+    views.setViewVisibility(R.id.widget_food,if(selectedKind==WidgetKind.REMAINING && height>=250) View.VISIBLE else View.GONE)
+    if(selectedOrigin!=null) views.setOnClickPendingIntent(R.id.widget_food,PendingIntent.getActivity(context,id,NourishingWorkspace.widgetIntent(context,selectedOrigin,WidgetDestination.FOOD),flags))
     val refresh = Intent(context,Class.forName(info.provider.className)).setAction(REFRESH_WIDGET)
         .setData(Uri.parse("nourish-widget://refresh/$id")).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id)
     views.setOnClickPendingIntent(R.id.widget_refresh,PendingIntent.getBroadcast(context,id,refresh,flags))
@@ -89,10 +101,10 @@ open class HomeWidgetProvider : AppWidgetProvider() {
         if(intent.action==REFRESH_WIDGET) refreshWidget(context,intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,AppWidgetManager.INVALID_APPWIDGET_ID))
     }
     override fun onDeleted(context: Context, ids: IntArray) {
-        ids.forEach { HomeWidgetStore(context).delete(it);WorkManager.getInstance(context).cancelUniqueWork(workName(it)) }
+        ids.forEach { HomeWidgetStore(context).delete(it);CloudWidgetStore(context).delete(it);WorkManager.getInstance(context).cancelUniqueWork(workName(it)) }
     }
     override fun onRestored(context: Context, oldWidgetIds: IntArray, newWidgetIds: IntArray) {
-        onDeleted(context,oldWidgetIds);newWidgetIds.forEach { HomeWidgetStore(context).delete(it);renderHomeWidget(context,it) }
+        onDeleted(context,oldWidgetIds);newWidgetIds.forEach { HomeWidgetStore(context).delete(it);CloudWidgetStore(context).delete(it);renderHomeWidget(context,it) }
     }
 }
 class ConsumedWidget : HomeWidgetProvider()

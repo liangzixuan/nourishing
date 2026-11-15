@@ -1,0 +1,205 @@
+{
+  "version": 1,
+  "source": "../cronometer-local",
+  "files": [
+    {
+      "source": "public/discover-ui.js",
+      "target": "public/dashboard-source/discover-ui.js",
+      "sourceSha256": "b893d61eb6198ded40d71e01f97740c3b04d020c07f06ef1ac910217ad870710",
+      "sha256": "968a1c7df661de876240ddfc094d61b89d34fafb70cf1a6ee142e6c115154630",
+      "transforms": [
+        "CRLF to LF"
+      ]
+    },
+    {
+      "source": "public/discover-settings-ui.js",
+      "target": "public/dashboard-source/discover-settings-ui.js",
+      "sourceSha256": "ca9787293b283fd0808c92f78d2000f6353bb285be571b60342431df953e9962",
+      "sha256": "1fe971e436a8d1670a74e6153baedcd9eea33b087439f580fd7b2f16aae6984c",
+      "transforms": [
+        "CRLF to LF"
+      ]
+    },
+    {
+      "source": "public/discover-news.js",
+      "target": "public/dashboard-source/discover-news.js",
+      "sourceSha256": "3314bb11991b8b46756055e85addb293ccf125f7a8ca2dd106f71af6b54b3f1d",
+      "sha256": "ad34639d211a61399cf1474a1efd9475c879ad8beccfe98660ef70d399da4e54",
+      "transforms": [
+        "CRLF to LF"
+      ]
+    },
+    {
+      "source": "public/discover-sleep.js",
+      "target": "public/dashboard-source/discover-sleep.js",
+      "sourceSha256": "6adf90ed6d49d10594ac5a7bbc4c609bfb06f84a08c7dfe69798479c6c992da8",
+      "sha256": "fd9e7bbeb6e383f6c9353b6098a1a0b035c954845a9a929c55ccd85af529c528",
+      "transforms": [
+        "CRLF to LF",
+        "sleep-contract alias resolves to copied pure module"
+      ]
+    },
+    {
+      "source": "public/sleep.js",
+      "target": "public/dashboard-source/sleep.js",
+      "sourceSha256": "ad4d80026fe39fb7b4344a700fdfc6b7e12263ae73b3ca43b06f4d0a8ef9ef49",
+      "sha256": "5d60c55c2c02ef7c526775a85e1854fe7b28e3ad121af8742ae418910f84e43a",
+      "transforms": [
+        "CRLF to LF",
+        "sleep-contract alias resolves to copied pure module"
+      ]
+    },
+    {
+      "source": "public/message-formatter.js",
+      "target": "public/dashboard-source/message-formatter.js",
+      "sourceSha256": "8974ad565988331c05486bb481b8133d9d5a1bb5793c2b0c0091a037789b5853",
+      "sha256": "8974ad565988331c05486bb481b8133d9d5a1bb5793c2b0c0091a037789b5853",
+      "transforms": [
+        "CRLF to LF"
+      ]
+    },
+    {
+      "source": "public/locales/discover.js",
+      "target": "public/dashboard-source/locales/discover.js",
+      "sourceSha256": "83dece6c9cb462972ca2f1fb850543538aa41b8bb4627b68b10cd1edd3e3c151",
+      "sha256": "7311c24b9476b940a71151f101f9359334b827a9ef0427f7793d91674f4a4f6a",
+      "transforms": [
+        "CRLF to LF"
+      ]
+    },
+    {
+      "source": "public/locales/sleep.js",
+      "target": "public/dashboard-source/locales/sleep.js",
+      "sourceSha256": "5c3deb7daad9ec3b77b6f901f95d2394eff7ff0932d1ba77c773ab4a09507066",
+      "sha256": "5c3deb7daad9ec3b77b6f901f95d2394eff7ff0932d1ba77c773ab4a09507066",
+      "transforms": [
+        "CRLF to LF"
+      ]
+    },
+    {
+      "source": "public/vendor/i18next/26.7.1/i18next.js",
+      "target": "public/dashboard-source/vendor/i18next/26.7.1/i18next.js",
+      "sourceSha256": "45777dc7bd00b9a83348f9e91b0d801a1690ee74ab1de2af41ff9426b628b3f7",
+      "sha256": "45777dc7bd00b9a83348f9e91b0d801a1690ee74ab1de2af41ff9426b628b3f7",
+      "transforms": [
+        "CRLF to LF"
+      ]
+    },
+    {
+      "source": "public/vendor/i18next/26.7.1/LICENSE",
+      "target": "public/dashboard-source/vendor/i18next/26.7.1/LICENSE",
+      "sourceSha256": "1cd0a2b02a6cc40ef8ee16310d13eeffdd7b5de4a562fd3ee7c921d8eb54f60a",
+      "sha256": "1cd0a2b02a6cc40ef8ee16310d13eeffdd7b5de4a562fd3ee7c921d8eb54f60a",
+      "transforms": [
+        "CRLF to LF"
+      ]
+    },
+    {
+      "source": "public/vendor/i18next/26.7.1/PROVENANCE.json",
+      "target": "public/dashboard-source/vendor/i18next/26.7.1/PROVENANCE.json",
+      "sourceSha256": "7e7ee010d018b0f3fd5e6b1bedee320103c03b9dac044c57d0171188df1c6276",
+      "sha256": "24b3e2d11b2d631a83d6057c7bb450bb2c2e1d6e43e22a591a8beed4d90e7dc4",
+      "transforms": [
+        "CRLF to LF"
+      ]
+    },
+    {
+      "source": "server/sleep-contract.mjs",
+      "target": "public/dashboard-source/sleep-contract.mjs",
+      "sourceSha256": "f8929f80a24c7d443379ba01993bf5d425293820c9cc80382c5b3f040f1da749",
+      "sha256": "f8929f80a24c7d443379ba01993bf5d425293820c9cc80382c5b3f040f1da749",
+      "transforms": []
+    },
+    {
+      "source": "public/discover-assets/chart.umd.js",
+      "target": "public/dashboard-source/chart.umd.js",
+      "sourceSha256": "48444a82d4edcb5bec0f1965faacdde18d9c17db3063d042abada2f705c9f54a",
+      "sha256": "48444a82d4edcb5bec0f1965faacdde18d9c17db3063d042abada2f705c9f54a",
+      "transforms": []
+    },
+    {
+      "source": "public/chart-library.js",
+      "target": "public/dashboard-source/chart-library.js",
+      "sourceSha256": "dd4cf29cf607863dc2c41bf18987f6d2e5193df8cca83080c2c3afd8a6ced047",
+      "sha256": "dbbe15bb84250bb0685bd4ed5400072b64bdf56083e7a34e684da53beee03a26",
+      "transforms": [
+        "CRLF to LF",
+        "Bundled chart URL"
+      ]
+    },
+    {
+      "source": "public/energy-display.js",
+      "target": "public/dashboard-source/energy-display.js",
+      "sourceSha256": "1b27941b870f444be0bb2145030010457a134891146bed94854c1dd725defaee",
+      "sha256": "cd16ed615f8cd572272ca348b10ba84e693f8916e94eeb62c2a5fdabc6aec2e1",
+      "transforms": [
+        "CRLF to LF",
+        "Energy unit module alias"
+      ]
+    },
+    {
+      "source": "server/energy-units.mjs",
+      "target": "public/dashboard-source/energy-units.mjs",
+      "sourceSha256": "71b331eddbada89f6798505bb5da8bb152d7eaac4aa7e1fcd2fecd724156f8a4",
+      "sha256": "8960db757d79ea996d6a53c967a6e082ec597d9e00f398db6bcd8b6e56e9f188",
+      "transforms": [
+        "CRLF to LF",
+        "Unchanged calculation"
+      ]
+    },
+    {
+      "source": "server/energy-decimal.mjs",
+      "target": "public/dashboard-source/energy-decimal.mjs",
+      "sourceSha256": "b1af7ae145d01899e0e5e5af9f865be9cfe89fae3500bdcaa7d931edca8b791b",
+      "sha256": "41d83682561a5af6fa313ad8d7649f6c88c047d7ed3319366812c07a900dc00a",
+      "transforms": [
+        "CRLF to LF",
+        "Browser dependency path"
+      ]
+    },
+    {
+      "source": "node_modules/big.js/big.mjs",
+      "target": "public/dashboard-source/big.mjs",
+      "sourceSha256": "bce2c8a40bdf758848ac066732ca0c4e6c7660de9fcf310c6144f85551802bf1",
+      "sha256": "7509738ed8e8eeb4d928252ea94a90f85a3c5b3a42f6e379319f2a4c622736e5",
+      "transforms": [
+        "CRLF to LF",
+        "Unchanged dependency"
+      ]
+    },
+    {
+      "source": "public/discover.js",
+      "target": "public/dashboard-source/dashboard-charts.js",
+      "sourceSha256": "6ffc164dd2504087c9240ccbc21ca74bdb72871925c71220718ab47be5d72665",
+      "sha256": "c09ddda99b4eceec694d8d2ccc224cf9d1e1192f93c92eade22ca7da88dc65ab",
+      "transforms": [
+        "CRLF to LF",
+        "Extract original drawCharts method; explicit imports; font scale reads root computed size"
+      ]
+    },
+    {
+      "source": "public/discover-assets/symbols.woff2",
+      "target": "public/dashboard-source/symbols.woff2",
+      "sourceSha256": "042a84e1b864121186d577184b04a80ee0ef8234377e505eaee150330e70d9d9",
+      "sha256": "042a84e1b864121186d577184b04a80ee0ef8234377e505eaee150330e70d9d9",
+      "transforms": []
+    },
+    {
+      "source": "node_modules/big.js/LICENCE.md",
+      "target": "public/dashboard-source/big-LICENCE.md",
+      "sourceSha256": "def75ba75d6426f1c3f02addf8e175fbe6e0d8a82e541cbdffc16d2bd8fd7d6a",
+      "sha256": "cc84225fb9bf55cb8a8b653713d8e322fb2a962a47ff818b67a7ad65ab446932",
+      "transforms": [
+        "CRLF to LF",
+        "Trailing blank lines removed"
+      ]
+    },
+    {
+      "source": "public/discover-assets/chart-LICENSE.md",
+      "target": "public/dashboard-source/chart-LICENSE.md",
+      "sourceSha256": "41a84aa2caba645f966a18d9c2056b73e6d3a81d80bc0046bc0011a2634d4cce",
+      "sha256": "41a84aa2caba645f966a18d9c2056b73e6d3a81d80bc0046bc0011a2634d4cce",
+      "transforms": []
+    }
+  ]
+}

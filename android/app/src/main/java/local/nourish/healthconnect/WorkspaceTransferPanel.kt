@@ -30,6 +30,7 @@ class WorkspaceTransferPanel(
     private val onBusy: (Boolean) -> Unit
 ) : LinearLayout(context) {
     private val settings = SyncSettings(context)
+    private val cloudSettings=CloudBackgroundSettings(context)
     private val client = WorkspaceClient()
     private val cloudOrigin=NourishingWorkspace.cloudOrigin
     private val cloudSession=cloudOrigin?.let{CloudWebSessions.get(it)}
@@ -121,25 +122,36 @@ class WorkspaceTransferPanel(
             else requestBackgroundPermission()
         }
         enableBackground = button(context.getString(R.string.sync_enable)) { runRequest {
-            val destination = connection ?: error(context.getString(R.string.transfer_check_first))
-            checkSync(settings.isConfirmed(destination.first, destination.second),SyncError.CONFIRM_FIRST)
             val health = healthClient() ?: error(context.getString(R.string.unavailable))
             require(backgroundReadAvailable(health)) { context.getString(R.string.sync_background_version) }
             require(BACKGROUND_READ_PERMISSION in health.permissionController.getGrantedPermissions()) { context.getString(R.string.sync_grant_first) }
             val selected = selection()
             require(selected.first.isNotEmpty()) { context.getString(R.string.select_type) }
+            val days = (ChronoUnit.DAYS.between(selected.second.from, selected.second.to) + 1).toInt()
+            if(cloudSession!=null){
+                val lease=cloudLease?:throw CloudSessionChanged()
+                require(readPermissions(selected.first).all(health.permissionController.getGrantedPermissions()::contains)){"Grant the selected Health Connect permissions first."}
+                if(!cloudSession.publish(lease){cloudSettings.enable(lease,selected.first,days)})throw CloudSessionChanged()
+                scheduleCloudHealthSync(context);backgroundStatus.text=backgroundText();return@runRequest
+            }
+            val destination = connection ?: error(context.getString(R.string.transfer_check_first))
+            checkSync(settings.isConfirmed(destination.first, destination.second),SyncError.CONFIRM_FIRST)
             val currentIdentity = client.identity(destination.first)
             require(currentIdentity == destination.second) { context.getString(WorkspaceError.ACCOUNT_PREVIEW.displayResource) }
-            val days = (ChronoUnit.DAYS.between(selected.second.from, selected.second.to) + 1).toInt()
             settings.enable(destination.first,destination.second,selected.first,days,
                 if(reconciliationMode.isChecked)BackgroundSyncMode.RECONCILIATION else BackgroundSyncMode.SNAPSHOT,automaticRemovals.isChecked)
             scheduleHealthSync(context)
             backgroundStatus.text = backgroundText()
         } }
         stopBackground = button(context.getString(R.string.sync_stop)) {
-            settings.disable();stopHealthSync(context);backgroundStatus.text = backgroundText();updateEnabled()
+            if(cloudOrigin!=null){cloudSettings.disable();stopCloudHealthSync(context)}else{settings.disable();stopHealthSync(context)};backgroundStatus.text = backgroundText();updateEnabled()
         }
-        if(cloudOrigin!=null)for(index in backgroundStart until childCount)getChildAt(index).visibility=View.GONE
+        if(cloudOrigin!=null){
+            (getChildAt(backgroundStart) as TextView).text="Hourly import"
+            (getChildAt(backgroundStart+1) as TextView).text="Import selected data to this signed-in account each hour."
+            reconciliationMode.visibility=View.GONE;automaticRemovals.visibility=View.GONE
+            enableBackground.text="Enable hourly import";stopBackground.text="Stop hourly import"
+        }
         address.addTextChangedListener {
             if (!disposed && !pending) {
                 connection = null;review = null
@@ -171,9 +183,9 @@ class WorkspaceTransferPanel(
     }
     fun checkedConnection():Pair<WorkspaceOrigin,WorkspaceIdentity>? = if(cloudOrigin==null)connection else null
     fun stagedChanged() { review = null;cloudReview=null;updateEnabled() }
-    fun selectionChanged(){if(settings.background()!=null){settings.disable(SyncNotice.SELECTION_EDITED);stopHealthSync(context);backgroundStatus.text=backgroundText()}}
+    fun selectionChanged(){if(cloudOrigin!=null&&cloudSettings.config()!=null){cloudSettings.disable("Selection changed; enable hourly import again");stopCloudHealthSync(context);backgroundStatus.text=backgroundText()}else if(settings.background()!=null){settings.disable(SyncNotice.SELECTION_EDITED);stopHealthSync(context);backgroundStatus.text=backgroundText()}}
     fun setExternalBusy(value: Boolean) { externalBusy = value;updateEnabled() }
-    private fun backgroundText(): String = context.syncConfigurationText(settings.status,settings.background())
+    private fun backgroundText(): String = if(cloudOrigin!=null)cloudSettings.status else context.syncConfigurationText(settings.status,settings.background())
     fun refresh() { if (!disposed) { if(cloudLease?.let{cloudSession?.isCurrent(it)}==false){cloudLease=null;cloudReview=null;connection=null};backgroundStatus.text = backgroundText();updateEnabled() } }
     fun stopRequests() { request?.cancel() }
     fun dispose() { disposed = true;request?.cancel();updateEnabled() }
@@ -184,7 +196,7 @@ class WorkspaceTransferPanel(
         preview.isEnabled = available && connection != null && stagedFile()?.isFile == true
         importButton.isEnabled = available && (review != null||cloudReview!=null)
         grantBackground.isEnabled = available && healthClient() != null
-        enableBackground.isEnabled = available && connection?.let { settings.isConfirmed(it.first, it.second) } == true && healthClient() != null
-        stopBackground.isEnabled = settings.background() != null && !disposed
+        enableBackground.isEnabled = available && (if(cloudSession!=null)cloudLease?.let(cloudSession::isCurrent)==true else connection?.let { settings.isConfirmed(it.first, it.second) } == true) && healthClient() != null
+        stopBackground.isEnabled = (if(cloudOrigin!=null)cloudSettings.config()!=null else settings.background() != null) && !disposed
     }
 }

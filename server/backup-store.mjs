@@ -4,6 +4,7 @@ import {digest,rowId,packWorkspace,unpackWorkspace} from './data-codec.mjs';
 import {workspaceRows,createWorkspaceStore} from './workspace-store.mjs';
 import {stagePhotoMedia} from './photo-storage.mjs';
 import {backupReferences,backupManifest,inspectBackup,validateBackupMedia,prepareBackupRestore} from './backup.mjs';
+import {createRecoveryView,recoveryMarker} from './recovery-view.mjs';
 
 const databaseId='nourishing',args=(tableId,id)=>({databaseId,tableId,rowId:id});
 const fail=(message,code=409)=>{throw Object.assign(Error(message),{code,publicMessage:message});};
@@ -103,11 +104,31 @@ export function createBackupStore({db,storage,ownerId,now=()=>Date.now()}){
    // Guard first, then re-read the actual head: concurrent diary edits conflict at commit.
    await db.updateRow({...args('workspace_heads',owner),data:{digest:head.digest},transactionId:tx.$id});
    const guard=await db.getRow(args('workspace_heads',owner));assertSource(guard,review);if(guard.$updatedAt!==head.$updatedAt)conflict();
+   const retained=recoveryMarker(head,new Date(clock()).toISOString()),{$id:retainedId,$permissions:retainedPermissions,...retainedData}=retained;
+   // A prior version is recoverable only when its exact manifest commits with the head swap.
+   await db.createRow({...args('workspace_recoveries',retainedId),data:retainedData,permissions:retainedPermissions,transactionId:tx.$id});
    const result={ok:true,revision:packed.head.digest,recoveryGeneration:head.generation};
    await db.updateRow({...args('workspace_heads',owner),data:packed.head,transactionId:tx.$id});
    await db.createRow({...args('command_receipts',receiptId),data:{ownerId:owner,fingerprint,result:JSON.stringify(result)},permissions:permissions(owner),transactionId:tx.$id});
    await db.updateTransaction({transactionId:tx.$id,commit:true});return result;
   }catch(error){await db.updateTransaction({transactionId:tx.$id,rollback:true}).catch(()=>{});const saved=await receipt();if(saved)return saved;throw error;}
  }
- return {export:exportBackup,inspect,upload,restore};
+ const recovery=createRecoveryView({db,storage,ownerId:owner});
+ async function inspectRecovery(input){
+  fields(input,['generation','revision']);const value=await recovery.preview(input),inspection=await inspect({manifest:value.manifest,revision:input.revision}),{row}=await loadReview(inspection.reviewToken);
+  // Files are immutable, account-scoped and byte-verified by preview. Reuse their references;
+  // restore verifies them again before the guarded head swap. No photo upload is needed.
+  for(let offset=0;offset<value.mediaRows.length;offset+=100){
+   const tx=await db.createTransaction({ttl:60});
+   try{
+    for(const media of value.mediaRows.slice(offset,offset+100)){
+     const id=rowId(owner,row.generation,media.namespace,media.sourceId),data=Object.fromEntries(['ownerId','namespace','sourceId','fileId','digest','width','height','bytes'].map(key=>[key,media[key]]));data.generation=row.generation;
+     await db.createRow({...args('workspace_media',id),data,permissions:permissions(owner),transactionId:tx.$id});
+    }
+    await db.updateTransaction({transactionId:tx.$id,commit:true});
+   }catch(error){await db.updateTransaction({transactionId:tx.$id,rollback:true}).catch(()=>{});throw error;}
+  }
+  return inspection;
+ }
+ return {export:exportBackup,inspect,upload,restore,listRecoveries:recovery.list,inspectRecovery};
 }

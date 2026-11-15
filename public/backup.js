@@ -11,13 +11,41 @@ const labels={entries:'Diary foods and exercise',biometrics:'Biometrics',notes:'
 /** The browser assembles one portable file. Photos travel in separate bounded requests. */
 export function mountBackup({root,show,close,header,content,onChange=async()=>{}}){
  let disposed=false,busy=false,restore=null;const abort=new AbortController();
- root.innerHTML='<section class="backup-panel"><div class="backup-actions"><button type="button" class="primary" data-backup-download>Download backup</button><button type="button" data-backup-choose>Restore backup</button></div><p class="backup-scope">Diary, settings and attached photos.</p><p class="backup-status" role="status"></p><input type="file" data-backup-file accept="application/json,.json" hidden></section>';
+ root.innerHTML='<section class="backup-panel"><div class="backup-actions"><button type="button" class="primary" data-backup-download>Download backup</button><button type="button" data-backup-choose>Restore backup</button><button type="button" data-backup-recovery>Previous versions</button></div><p class="backup-scope">Diary, settings and attached photos.</p><p class="backup-status" role="status"></p><input type="file" data-backup-file accept="application/json,.json" hidden></section>';
  const panel=root.querySelector('.backup-panel'),status=panel.querySelector('[role=status]'),fileInput=panel.querySelector('input');
  const alive=()=>!disposed&&panel.isConnected;
  const setBusy=value=>{busy=value;panel.querySelectorAll('button').forEach(button=>button.disabled=value);};
  const message=text=>{if(alive())status.textContent=text;};
  panel.querySelector('[data-backup-download]').onclick=download;
  panel.querySelector('[data-backup-choose]').onclick=()=>fileInput.click();
+ panel.querySelector('[data-backup-recovery]').onclick=recoveries;
+ async function recoveries(){
+  if(busy)return;setBusy(true);message('Loading previous versions…');
+  try{
+   const inventory=await request('/api/backup/recoveries',undefined,abort.signal);if(!alive())return;message('');
+   show(header('Previous versions')+'<div class="backup-recoveries"><div data-recovery-list></div><p role="status"></p></div>');
+   const container=content.querySelector('.backup-recoveries'),list=container.querySelector('[data-recovery-list]');
+   if(!inventory.generations.length)list.textContent='No previous versions yet.';
+   for(const item of inventory.generations){
+    const row=document.createElement('div');row.className='field-row';
+    const label=item.retainedAt?new Date(item.retainedAt).toLocaleString():'Earlier version';
+    row.innerHTML=`<span>${e(label)}${item.status!=='available'?`<small> · ${e(item.status==='unverified'?'Unverified':item.status==='incomplete'?'Incomplete':'Unavailable')}</small>`:''}</span>`;
+    if(item.status==='available'){
+     const button=document.createElement('button');button.type='button';button.textContent='Review';
+     button.onclick=async()=>{
+      if(busy)return;setBusy(true);container.querySelectorAll('button').forEach(value=>value.disabled=true);const output=container.querySelector('[role=status]');output.textContent='Checking version…';
+      try{
+       const inspection=await request('/api/backup/recovery/inspect',{generation:item.generation,revision:inventory.revision},abort.signal);
+       if(!alive()||!container.isConnected)return;
+       restore={photos:[],inspection,requestId:crypto.randomUUID(),uploaded:0};review();
+      }catch(error){if(error.name!=='AbortError'&&container.isConnected)output.textContent=error.message;}
+      finally{if(alive())setBusy(false);container.querySelectorAll('button').forEach(value=>value.disabled=false);}
+     };row.append(button);
+    }
+    list.append(row);
+   }
+  }catch(error){if(error.name!=='AbortError')message(error.message);}finally{if(alive())setBusy(false);}
+ }
  async function download(){
   if(busy)return;setBusy(true);message('Preparing backup…');
   try{

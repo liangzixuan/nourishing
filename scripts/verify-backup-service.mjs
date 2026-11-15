@@ -27,12 +27,14 @@ try{
  assert.equal((await request(other,'/api/backup/media',{reviewToken:inspected.reviewToken,namespace:metadata.namespace,photo})).status,409);
  await ok(secret,'/api/backup/media',{reviewToken:inspected.reviewToken,namespace:metadata.namespace,photo});
  const restore={requestId:randomUUID(),reviewToken:inspected.reviewToken,confirmation:'replace'},result=await ok(secret,'/api/backup/restore',restore);assert.deepEqual(await ok(secret,'/api/backup/restore',restore),result);
- const final=await ok(secret,'/api/backup/export');assert.deepEqual(final.manifest.workspace,exported.manifest.workspace);assert.equal((await ok(secret,'/api/account')).id,ids[0]);
+ const final=await ok(secret,'/api/backup/export'),expected=structuredClone(exported.manifest.workspace);
+ assert.equal(final.manifest.workspace.healthExportState.namespace,expected.healthExportState.namespace);assert.notEqual(final.manifest.workspace.healthExportState.saveScope,expected.healthExportState.saveScope);expected.healthExportState.saveScope=final.manifest.workspace.healthExportState.saveScope;
+ assert.deepEqual(final.manifest.workspace,expected);assert.equal((await ok(secret,'/api/account')).id,ids[0]);
  assert.equal((await request(other,'/api/media?'+new URLSearchParams({namespace:metadata.namespace,id:metadata.id}))).status,404);
  report.checks.push('HTTP session and Origin guards','actual snapshot/media export','reviewed replacement counts','cross-account upload rejected','service restore and receipt replay','workspace and account identity preserved');
 }finally{
  const clean=async(label,work)=>{try{await work();}catch(error){if(error.code!==404)failures.push({resource:label,code:error.code??'unknown'});}};
- for(const userId of ids){for(const tableId of ['backup_reviews','command_receipts','workspace_media','workspace_records']){let rows=[];await clean(`${tableId}:list`,async()=>{rows=await allRows(db,tableId,[Query.equal('ownerId',userId)]);});for(const row of rows){assert.equal(row.ownerId,userId);if(tableId==='workspace_media'){files.add(row.fileId);remember();}await clean(`${tableId}:${row.$id}`,()=>db.deleteRow({databaseId,tableId,rowId:row.$id}));}}
+ for(const userId of ids){for(const tableId of ['backup_reviews','command_receipts','workspace_recoveries','workspace_media','workspace_records']){let rows=[];await clean(`${tableId}:list`,async()=>{rows=await allRows(db,tableId,[Query.equal('ownerId',userId)]);});for(const row of rows){assert.equal(row.ownerId,userId);if(tableId==='workspace_media'){files.add(row.fileId);remember();}await clean(`${tableId}:${row.$id}`,()=>db.deleteRow({databaseId,tableId,rowId:row.$id}));}}
   for(const tableId of ['workspace_heads','profiles'])await clean(`${tableId}:${userId}`,()=>db.deleteRow({databaseId,tableId,rowId:userId}));await clean(`user:${userId}`,()=>users.delete({userId}));}
  for(const fileId of files)await clean(`image:${fileId}`,()=>storage.deleteFile({bucketId:'private-media',fileId}));report.fixtureRemoved=failures.length===0;remember();writeFileSync(reportPath,JSON.stringify({...report,status:'verification-incomplete'},null,2));if(failures.length)throw Error('Backup service fixture cleanup incomplete.');
 }

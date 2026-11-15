@@ -12,6 +12,7 @@ import {normalizePhoto,validateStoredPhoto} from '../server/domain/photo-images.
 import {calculateSummary} from '../server/domain/nutrition.mjs';
 import {createWorkspaceStore,workspaceRows} from '../server/workspace-store.mjs';
 import {digest,rowId,unpackWorkspace} from '../server/data-codec.mjs';
+import {HEALTH_EXPORT_FAMILIES,readHealthExportState} from '../server/health-export-state.mjs';
 const {users,db,storage,config}=operator(),ids=[ID.unique(),ID.unique()],owner=ids[0],fileIds=[],cleanupFailures=[];
 const report={at:new Date().toISOString(),checks:[]},fixturePath=new URL('../.local/backup-cloud-fixture.json',import.meta.url),reportPath=new URL('../.local/backup-cloud-verification.json',import.meta.url),args=(tableId,id)=>({databaseId,tableId,rowId:id});
 const remember=()=>writeFileSync(fixturePath,JSON.stringify({accounts:ids,fileIds,createdAt:report.at,cleanupFailures}));remember();
@@ -32,7 +33,10 @@ try{
  await assert.rejects(()=>store.restore(request),/every backup photo/);assert.equal((await store.export()).revision,previous.revision);
  for(const row of media)await store.upload({reviewToken,namespace:row.namespace,photo:transport});await store.upload({reviewToken,namespace:media[0].namespace,photo:transport});
  assert.equal((await store.export()).revision,previous.revision);const restored=await store.restore(request),exported=await store.export();
- assert.equal(exported.manifest.workspace.entries.length,1);assert.deepEqual(exported.manifest.workspace,manifest.workspace);assert.deepEqual(calculateSummary(exported.manifest.workspace,'2026-11-14'),calculateSummary(source,'2026-11-14'));assert.equal(exported.manifest.media.length,3);
+ const priorExport=readHealthExportState(previous.manifest.workspace),afterExport=readHealthExportState(exported.manifest.workspace);
+ assert.ok(priorExport);assert.equal(afterExport.namespace,priorExport.namespace);assert.notEqual(afterExport.saveScope,priorExport.saveScope);assert.deepEqual(afterExport.drafts,priorExport.drafts);assert.deepEqual(afterExport.policies,priorExport.policies);
+ const expected=structuredClone(manifest.workspace);for(const family of HEALTH_EXPORT_FAMILIES)expected[family]=structuredClone(previous.manifest.workspace[family]);expected.healthExportState.saveScope=afterExport.saveScope;
+ assert.equal(exported.manifest.workspace.entries.length,1);assert.deepEqual(exported.manifest.workspace,expected);assert.deepEqual(calculateSummary(exported.manifest.workspace,'2026-11-14'),calculateSummary(source,'2026-11-14'));assert.equal(exported.manifest.media.length,3);
  const oldRows=await workspaceRows(db,owner,oldHead.generation),recovery=unpackWorkspace(oldHead,oldRows);assert.equal(recovery.notes[0].text,'Recovery generation fixture');assert.equal(restored.recoveryGeneration,oldHead.generation);
  for(const fileId of fileIds){assert.deepEqual((await storage.getFile({bucketId:'private-media',fileId})).$permissions,[`read("user:${owner}")`]);await denied(()=>otherStorage.getFileView({bucketId:'private-media',fileId}));}
  const currentHead=await db.getRow(args('workspace_heads',owner)),currentRows=await workspaceRows(db,owner,currentHead.generation);await denied(()=>otherDb.getRow(args('workspace_heads',owner)));await denied(()=>otherDb.getRow(args('workspace_records',currentRows[0].$id)));
@@ -47,7 +51,7 @@ try{
  await assert.rejects(()=>createBackupStore({db:racedDb,storage,ownerId:owner}).restore({requestId:randomUUID(),reviewToken:raceReview.reviewToken,confirmation:'replace'}),{code:409});assert.equal(injected,true);assert.equal((await store.export()).manifest.workspace.notes.at(-1).text,'Final guard fixture');report.checks.push('concurrent diary commit during staging survives final atomic head guard');
 }finally{
  const clean=async(label,operation)=>{try{await operation();}catch(error){if(error.code!==404)cleanupFailures.push({resource:label,code:error.code??'unknown'});}};
- for(const userId of ids){for(const tableId of ['backup_reviews','command_receipts','workspace_media','workspace_records']){let rows=[];await clean(`${tableId}:${userId}:list`,async()=>{rows=await allRows(db,tableId,[Query.equal('ownerId',userId)]);});for(const row of rows){assert.equal(row.ownerId,userId);await clean(`${tableId}:${row.$id}`,()=>db.deleteRow(args(tableId,row.$id)));}}
+ for(const userId of ids){for(const tableId of ['backup_reviews','command_receipts','workspace_recoveries','workspace_media','workspace_records']){let rows=[];await clean(`${tableId}:${userId}:list`,async()=>{rows=await allRows(db,tableId,[Query.equal('ownerId',userId)]);});for(const row of rows){assert.equal(row.ownerId,userId);await clean(`${tableId}:${row.$id}`,()=>db.deleteRow(args(tableId,row.$id)));}}
   for(const tableId of ['workspace_heads','profiles'])await clean(`${tableId}:${userId}`,()=>db.deleteRow(args(tableId,userId)));await clean(`users:${userId}`,()=>users.delete({userId}));}
  for(const fileId of fileIds)await clean(`private-media:${fileId}`,()=>storage.deleteFile({bucketId:'private-media',fileId}));report.fixtureRemoved=cleanupFailures.length===0;remember();writeFileSync(reportPath,JSON.stringify({...report,status:'verification-incomplete'},null,2));if(cleanupFailures.length)throw Error('Backup fixture cleanup incomplete; see .local/backup-cloud-fixture.json.');
 }
