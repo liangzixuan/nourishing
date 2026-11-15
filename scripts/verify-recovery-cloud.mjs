@@ -8,10 +8,10 @@ import sharp from 'sharp';
 import {operator,allRows,databaseId} from './operator.mjs';
 import {createBackupStore} from '../server/backup-store.mjs';
 import {backupManifest,backupReferences} from '../server/backup.mjs';
-import {stageBackupRows} from '../server/backup-store.mjs';
+import {stageWorkspaceRows,workspaceRows} from '../server/workspace-generations.mjs';
 import {initialState,act} from '../server/domain/workspace.mjs';
 import {normalizePhoto,validateStoredPhoto} from '../server/domain/photo-images.mjs';
-import {createWorkspaceStore,workspaceRows} from '../server/workspace-store.mjs';
+import {createWorkspaceStore} from '../server/workspace-store.mjs';
 import {digest,rowId,packWorkspace,unpackWorkspace} from '../server/data-codec.mjs';
 const {users,db,storage,config}=operator(),ids=[ID.unique(),ID.unique()],owner=ids[0],fileIds=[],cleanupFailures=[],created=[];
 const args=(tableId,id)=>({databaseId,tableId,rowId:id}),report={at:new Date().toISOString(),checks:[]};let phase='create accounts';
@@ -39,7 +39,7 @@ try{
  assert.deepEqual(unpackWorkspace(firstHead,await workspaceRows(db,owner,firstHead.generation)),firstState);assert.deepEqual(unpackWorkspace(secondHead,await workspaceRows(db,owner,secondHead.generation)),secondState);assert.equal((await other.export()).revision,otherBefore.revision);assert.deepEqual(await store.restore(request),restored);report.checks.push('recovery review leaves current data unchanged','review and replace recover retained photo records','source generations and other account unchanged','recovery receipt replay returns same result','private recovery manifests and cross-account selectors denied');
  phase='stale selection';await createWorkspaceStore(db,owner).command({requestId:randomUUID(),revision:active.revision,type:'note.add',payload:{date:'2026-11-14',text:'Concurrent edit'}},async()=>null);await assert.rejects(()=>store.inspectRecovery({generation:firstHead.generation,revision:active.revision}),{code:409});
  const newest=await store.export(),staleReview=await store.inspectRecovery({generation:firstHead.generation,revision:newest.revision});await createWorkspaceStore(db,owner).command({requestId:randomUUID(),revision:newest.revision,type:'note.add',payload:{date:'2026-11-14',text:'Newer concurrent edit'}},async()=>null);await assert.rejects(()=>store.restore({requestId:randomUUID(),reviewToken:staleReview.reviewToken,confirmation:'replace'}),{code:409});assert.equal((await store.export()).manifest.workspace.notes.at(-1).text,'Newer concurrent edit');report.checks.push('stale selection and stale reviewed recovery preserve newer edits');
- phase='unverified and staged inventory';const unverified=ID.unique();await stageBackupRows(db,packWorkspace(initialState(),owner,unverified).rows);const current=await store.export(),staged=await store.inspect({manifest:first.manifest,revision:current.revision}),stagedRow=await db.getRow(args('backup_reviews',rowId(owner,staged.reviewToken))),listed=await store.listRecoveries();assert.equal(listed.generations.find(row=>row.generation===unverified).status,'unverified');assert.equal(listed.generations.find(row=>row.generation===stagedRow.generation).status,'incomplete');report.checks.push('unanchored and incomplete staged generations remain visible but cannot be recovered');
+ phase='unverified and staged inventory';const unverified=ID.unique();await stageWorkspaceRows(db,packWorkspace(initialState(),owner,unverified).rows);const current=await store.export(),staged=await store.inspect({manifest:first.manifest,revision:current.revision}),stagedRow=await db.getRow(args('backup_reviews',rowId(owner,staged.reviewToken))),listed=await store.listRecoveries();assert.equal(listed.generations.find(row=>row.generation===unverified).status,'unverified');assert.equal(listed.generations.find(row=>row.generation===stagedRow.generation).status,'incomplete');report.checks.push('unanchored and incomplete staged generations remain visible but cannot be recovered');
  report.status='passed';
 }catch(error){report.status='failed';report.failure={phase,code:Number.isInteger(error.code)?error.code:null,name:error.name==='AssertionError'?'AssertionError':'OperationError'};process.exitCode=1;}
 finally{

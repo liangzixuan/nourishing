@@ -47,6 +47,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var transferPanel: WorkspaceTransferPanel
     private lateinit var reconciliationPanel: ReconciliationPanel
     private lateinit var healthExportPanel: HealthExportPanel
+    private var cloudExportPanel: CloudHealthExportPanel?=null
     private lateinit var documentExports:DocumentExportOwner
     private lateinit var documentLease:DocumentExportLease
     private val typeChecks = linkedMapOf<ExportType, CheckBox>()
@@ -185,9 +186,13 @@ class MainActivity : ComponentActivity() {
             },onBusy={setBusy(it)})
         column.addView(reconciliationPanel)
         if(NourishingWorkspace.cloudOrigin!=null)reconciliationPanel.visibility=View.GONE
-        healthExportPanel=HealthExportPanel(this,lifecycleScope,destination={transferPanel.checkedConnection()},dates={from.text.toString().trim() to to.text.toString().trim()},health={client},grant={permissionsLauncher.launch(it)},onBusy={setBusy(it)})
-        column.addView(healthExportPanel)
-        if(NourishingWorkspace.cloudOrigin!=null)healthExportPanel.visibility=View.GONE
+        if(NourishingWorkspace.cloudOrigin!=null){
+            cloudExportPanel=CloudHealthExportPanel(this,lifecycleScope,dates={from.text.toString().trim() to to.text.toString().trim()},health={client},grant={permissionsLauncher.launch(it)},onBusy={setBusy(it)})
+            column.addView(cloudExportPanel)
+        }else{
+            healthExportPanel=HealthExportPanel(this,lifecycleScope,destination={transferPanel.checkedConnection()},dates={from.text.toString().trim() to to.text.toString().trim()},health={client},grant={permissionsLauncher.launch(it)},onBusy={setBusy(it)})
+            column.addView(healthExportPanel)
+        }
         button(getString(R.string.health_settings)) {
             runCatching { startActivity(Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS)) }
                 .onFailure { result.text = getString(R.string.settings_unavailable) }
@@ -223,12 +228,14 @@ class MainActivity : ComponentActivity() {
         transferPanel.stopRequests()
         reconciliationPanel.stopRequests()
         if (::healthExportPanel.isInitialized) healthExportPanel.stopRequests()
+        cloudExportPanel?.stopRequests()
         super.onStop()
     }
     override fun onDestroy() {
         if (::transferPanel.isInitialized) transferPanel.dispose()
         if (::reconciliationPanel.isInitialized) reconciliationPanel.dispose()
         if (::healthExportPanel.isInitialized) healthExportPanel.dispose()
+        cloudExportPanel?.dispose()
         super.onDestroy()
     }
     override fun onSaveInstanceState(outState: Bundle) {
@@ -257,6 +264,7 @@ class MainActivity : ComponentActivity() {
         if (::transferPanel.isInitialized) transferPanel.setExternalBusy(value)
         if (::reconciliationPanel.isInitialized) reconciliationPanel.setExternalBusy(value)
         if (::healthExportPanel.isInitialized) healthExportPanel.setExternalBusy(value)
+        cloudExportPanel?.setExternalBusy(value)
     }
     private fun releaseReconciliationDocument(){
         if(!documentLease.finish())result.text=getString(R.string.document_cleanup_retry)

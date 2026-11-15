@@ -1,10 +1,12 @@
-import {ID,Permission,Role,Query} from 'node-appwrite';
+import {workspaceMediaRows,describeWorkspaceMedia,copyWorkspaceMediaRow} from './workspace-media.mjs';
+import {ID,Permission,Role} from 'node-appwrite';
 import {isDeepStrictEqual} from 'node:util';
 import {digest,rowId,packWorkspace,unpackWorkspace} from './data-codec.mjs';
-import {workspaceRows,createWorkspaceStore} from './workspace-store.mjs';
+import {createWorkspaceStore} from './workspace-store.mjs';
+import {workspaceRows,stageWorkspaceRows,assertStagedRows,recoveryMarker} from './workspace-generations.mjs';
 import {stagePhotoMedia} from './photo-storage.mjs';
 import {backupReferences,backupManifest,inspectBackup,validateBackupMedia,prepareBackupRestore} from './backup.mjs';
-import {createRecoveryView,recoveryMarker} from './recovery-view.mjs';
+import {createRecoveryView} from './recovery-view.mjs';
 
 const databaseId='nourishing',args=(tableId,id)=>({databaseId,tableId,rowId:id});
 const fail=(message,code=409)=>{throw Object.assign(Error(message),{code,publicMessage:message});};
@@ -13,24 +15,6 @@ const token=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
 const permissions=owner=>[Permission.read(Role.user(owner))];
 const optional=async operation=>{try{return await operation();}catch(error){if(error.code===404)return null;throw error;}};
 const fields=(value,keys)=>{if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==keys.length||keys.some(key=>!Object.hasOwn(value,key)))fail('Invalid backup request.',400);};
-const sameRows=(expected,actual)=>{
- const byId=new Map(actual.map(row=>[row.$id,row]));if(byId.size!==expected.length||actual.length!==expected.length)fail('Backup staging is incomplete. Try again.');
- for(const row of expected){const saved=byId.get(row.$id);if(!saved||Object.entries(row).some(([key,value])=>!isDeepStrictEqual(value,saved[key])))fail('Staged backup records differ from the reviewed backup.');}
-};
-
-/** Create-only writes permit retries without replacing an earlier staged or active row. */
-export async function stageBackupRows(db,rows){
- const batches=[];let batch=[],bytes=0;
- for(const row of rows){const size=Buffer.byteLength(JSON.stringify(row));if(batch.length&&(batch.length===100||bytes+size>2*1024*1024)){batches.push(batch);batch=[];bytes=0;}batch.push(row);bytes+=size;}if(batch.length)batches.push(batch);
- for(const expected of batches){
-  const read=()=>db.listRows({databaseId,tableId:'workspace_records',queries:[Query.equal('$id',expected.map(row=>row.$id)),Query.limit(100)],total:false});
-  const existing=(await read()).rows,known=new Set(existing.map(row=>row.$id));sameRows(expected.filter(row=>known.has(row.$id)),existing);
-  const pending=expected.filter(row=>!known.has(row.$id));if(!pending.length)continue;
-  try{sameRows(pending,(await db.createRows({databaseId,tableId:'workspace_records',rows:pending})).rows);}
-  catch(error){if(error.code!==409)throw error;sameRows(expected,(await read()).rows);}
- }
-}
-
 /** db/storage are server clients; ownerId comes only from the authenticated account. */
 export function createBackupStore({db,storage,ownerId,now=()=>Date.now()}){
  if(typeof ownerId!=='string'||!ownerId||ownerId.length>36)fail('Sign in to use backups.',401);
@@ -46,15 +30,8 @@ export function createBackupStore({db,storage,ownerId,now=()=>Date.now()}){
   }
   conflict();
  }
- async function mediaRows(generation){
-  const rows=[];let after;
-  do{const page=await db.listRows({databaseId,tableId:'workspace_media',queries:[Query.equal('ownerId',owner),Query.equal('generation',generation),Query.orderAsc('$id'),Query.limit(100),...(after?[Query.cursorAfter(after)]:[])],total:false});rows.push(...page.rows);after=page.rows.length===100?page.rows.at(-1).$id:null;}while(after);
-  return rows;
- }
- function mediaDescriptor(row,ref,generation){
-  if(!row||row.ownerId!==owner||row.generation!==generation||row.namespace!==ref.namespace||row.sourceId!==ref.id||row.digest!==ref.id||row.$id!==rowId(owner,generation,ref.namespace,ref.id)||row.fileId!==rowId(owner,ref.namespace,ref.id)||!isDeepStrictEqual(row.$permissions,permissions(owner)))fail('A backup photo is missing or its ownership is invalid.');
-  return {namespace:ref.namespace,id:ref.id,bytes:row.bytes,width:row.width,height:row.height};
- }
+ const mediaRows=generation=>workspaceMediaRows(db,owner,generation);
+ const mediaDescriptor=(row,ref,generation)=>describeWorkspaceMedia(row,ref,{owner,generation});
  async function exportBackup(){
   const {state,head}=await snapshot(),rows=await mediaRows(head.generation),byKey=new Map(rows.map(row=>[row.namespace+':'+row.sourceId,row]));
   const media=backupReferences(state).map(ref=>mediaDescriptor(byKey.get(ref.namespace+':'+ref.id),ref,head.generation));
@@ -96,8 +73,8 @@ export function createBackupStore({db,storage,ownerId,now=()=>Date.now()}){
    const metadata=await storage.getFile({bucketId:'private-media',fileId:saved.fileId});if(!isDeepStrictEqual(metadata.$permissions,permissions(owner)))fail('Staged photo ownership is invalid.');
    const bytes=Buffer.from(await storage.getFileView({bucketId:'private-media',fileId:saved.fileId}));return {id,dataUrl:'data:image/jpeg;base64,'+bytes.toString('base64')};
   }});
-  const packed=packWorkspace(prepared.state,owner,row.generation);await stageBackupRows(db,packed.rows);
-  const verified=await workspaceRows(db,owner,row.generation);sameRows(packed.rows,verified);unpackWorkspace(packed.head,verified);
+  const packed=packWorkspace(prepared.state,owner,row.generation);await stageWorkspaceRows(db,packed.rows);
+  const verified=await workspaceRows(db,owner,row.generation);assertStagedRows(packed.rows,verified);unpackWorkspace(packed.head,verified);
   const tx=await db.createTransaction({ttl:60});
   try{
    if(Date.parse(row.expiresAt)<=clock())fail('This backup review expired. Inspect it again.');
@@ -122,8 +99,8 @@ export function createBackupStore({db,storage,ownerId,now=()=>Date.now()}){
    const tx=await db.createTransaction({ttl:60});
    try{
     for(const media of value.mediaRows.slice(offset,offset+100)){
-     const id=rowId(owner,row.generation,media.namespace,media.sourceId),data=Object.fromEntries(['ownerId','namespace','sourceId','fileId','digest','width','height','bytes'].map(key=>[key,media[key]]));data.generation=row.generation;
-     await db.createRow({...args('workspace_media',id),data,permissions:permissions(owner),transactionId:tx.$id});
+     const {$id:id,$permissions:acl,...data}=copyWorkspaceMediaRow(media,{owner,generation:row.generation});
+     await db.createRow({...args('workspace_media',id),data,permissions:acl,transactionId:tx.$id});
     }
     await db.updateTransaction({transactionId:tx.$id,commit:true});
    }catch(error){await db.updateTransaction({transactionId:tx.$id,rollback:true}).catch(()=>{});throw error;}

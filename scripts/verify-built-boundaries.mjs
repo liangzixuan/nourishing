@@ -33,7 +33,7 @@ try {
   assert.equal(recipe.name, 'Fixture Rice');assert.equal(recipe.servings, 2);assert.equal(recipe.ingredients.length, 1);assert.ok(recipe.jsonldSource);
   await assert.rejects(() => parseRecipe(html.replace('https://schema.org', 'https://untrusted.example/context'), 'https://example.com/recipe'), /External JSON-LD contexts/);
   hooks.deregister();
-  const {handler, options} = await import(new URL('entry.mjs', build));assert.equal(options.bodySizeLimit, 20_000_000);
+  const {handler, options} = await import(new URL('entry.mjs', build));assert.equal(options.bodySizeLimit, 0);
   server = createServer(handler);await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const origin = `http://127.0.0.1:${server.address().port}`, results = [];
   const widgetRoot=await fetch(origin+'/?widget=food',{redirect:'manual'});
@@ -56,6 +56,10 @@ try {
   await post('/api/diary/ingredients/save',4*1024*1024,413,{message:'Request too large.'});
   const early=await new Promise((resolve,reject)=>{const started=performance.now(),req=httpRequest(origin+'/api/library/command',{method:'POST',headers:{origin:env.PUBLIC_ORIGIN,'content-type':'application/json','content-length':4194318}},response=>{response.resume();clearTimeout(timer);req.destroy();resolve({status:response.statusCode,elapsedMs:Math.round(performance.now()-started)});});const timer=setTimeout(()=>{req.destroy();reject(Error('Built SSR did not reject unsigned headers before body upload.'));},3000);req.on('error',error=>{clearTimeout(timer);reject(error);});req.flushHeaders();});assert.equal(early.status,401);results.push({path:'/api/library/command',headersOnly:true,...early});
   await post('/api/workspace/command', 20_000, 413, {message: 'Request too large.'});
+  await post('/api/health-connect/export/biometric/preview', 20_000, 413, {message: 'Request too large.'});
+  await post('/api/health-connect/export/intake/verify', 20_000, 401, {signed: false});
+  await post('/api/health-connect/reconcile/apply', 20_000_000, 413, {message: 'Request too large.'});
+  await post('/api/health-connect/reconcile/preview?summary=1', 20_000, 401, {signed: false});
   assert.ok(authenticated >= 5);
   const report = {status: 'passed', actualBuiltServer: true, unchangedWorkerAssets: true, actualBuiltRecipeParser: true, remoteCalls: 0, routes: results};
   writeFileSync(new URL('../.local/built-boundaries-verification.json', import.meta.url), JSON.stringify(report, null, 2));console.log(JSON.stringify(report));

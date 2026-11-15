@@ -17,7 +17,7 @@ The Foods tab supports custom foods, recipes, and meals. Recipe and meal ingredi
 Discover includes Dashboard, Charts, Report and Snapshots. Dashboard reuses the source nutrition modes, energy and weight charts, streaks, fasting, sleep, news and settings. Coach, glucose/cycle cards, pinned charts and streak image sharing remain pending. Settings supports nutrient targets and dark/light/device themes; macro/energy policies, weekday schedules and day overrides have dedicated editors. `node scripts/verify-dashboard-local.mjs` checks the production UI, CSP and widget links. Hosted verification uses disposable accounts and checks account isolation.
 
 
-Android source is in `android/`. The cloud candidate uses the same Appwrite session as its WebView and supports reviewed Health Connect transfer, explicit background-import consent and account-bound home widgets. Widget links preserve their destination through sign-in. It has not replaced the installed APK. Native exports, reconciliation, Wear and reminders remain disabled in cloud builds pending migration and device checks.
+Android source is in `android/`. The cloud candidate uses the same Appwrite session as its WebView and supports reviewed Health Connect transfer, explicit background-import consent and account-bound home widgets. Widget links preserve their destination through sign-in. It has not replaced the installed APK. Foreground export now supports explicit preview, confirmation and interrupted-write recovery for the same account. Automatic native exports, correction recovery, reconciliation on the phone, Wear and reminders remain inactive pending migration and device checks.
 
 Scheduled fasting code is in `server/scheduler-entry.mjs`. It is disabled by default and has not been activated for accounts. Deploy it as a private Function with no public execute permissions; activation belongs to the final cutover. Snapshot deletion removes the workspace reference and denies the app media route; unreferenced Storage files are retained privately pending a separate cleanup workflow.
 
@@ -25,3 +25,11 @@ Scheduled fasting code is in `server/scheduler-entry.mjs`. It is disabled by def
 Settings includes Profile & Body and Backup & Restore. Backups contain the workspace, referenced photos and Health Connect export lineage, without authentication or native consent. Restore requires review, detects concurrent edits, and retains a verified previous version. Previous versions can be reviewed and restored through the same checked path. Historical rows without a retained manifest are shown as unverified. Automatic retention cleanup remains pending. Restore preserves native export identity and correction history while invalidating earlier export reviews.
 
 Named library portions and retirement/restoration use the original validators. Diary ingredient adjustments change only the selected logged occurrence; the saved recipe/meal and other entries remain unchanged.
+
+## Health Connect cloud verification
+
+The cloud API provides account-bound biometric and intake export plans, review verification and reconciliation receipts. A confirmed removal retains the exact previous workspace and verified photos before atomically publishing the update and its receipt. Restore does not rewind the recovery counter. Empty snapshots do not remove records.
+
+Existing deployments must run `scripts/provision-health-recovery.ps1` before deploying these routes. It backs up the current schema, adds two optional metadata columns and a unique account/snapshot index, then verifies them. Repeated runs leave matching schema unchanged. No application records or access permissions are changed.
+
+`node scripts/verify-health-cloud.mjs` uses disposable Appwrite accounts to check exports, removal consent, recovery photos, lost-response replay, restore counters, concurrent edits and isolation. `node scripts/verify-health-hosted.mjs` checks the deployed HTTP routes. Both use the ignored short-lived `.local/data-key.json` operator key and record fixture ownership before writing. Native device behavior still requires a separate Pixel check.

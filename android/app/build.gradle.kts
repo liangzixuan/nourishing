@@ -45,6 +45,7 @@ tasks.withType<Test>().configureEach {
             includeTestsMatching("local.nourish.healthconnect.CloudHealthTransferTest")
             includeTestsMatching("local.nourish.healthconnect.CloudNativeBackgroundTest")
             includeTestsMatching("local.nourish.healthconnect.CloudHomeWidgetTest")
+            includeTestsMatching("local.nourish.healthconnect.CloudHealthExportTest")
             includeTestsMatching("local.nourish.healthconnect.HomeWidgetTest")
         }
     } else {

@@ -117,3 +117,21 @@ Previous versions are retained with exact head manifests in the restore transact
 Health Connect export lineage, draft and policy metadata now have strict cloud representation and backup support. The verified owner's original PC export namespace was imported after hosted checks, with exact unrelated-data comparison and repeated-apply verification. No source SQLite data changed. A subsequent read-only owner backup and Dashboard check passed. Native exports and correction/reconciliation endpoints remain pending; no phone writes were enabled.
 
 Validation: 172 tests pass, the production build and built HTTP/body/recipe-worker checks pass, and Android source compiles with 30 focused tests passing. The publication audit covers 715 files and 221 copied domain modules, plus Dashboard source assets. Known credentials, owner identity and private artifacts are absent from staged content. The candidate Android background-import and widget implementation is not installed. Native export/reconciliation, Wear/reminders, account deletion/orphan cleanup, remaining product screens, current-data reconciliation and PC-off device testing remain before production cutover. No production domain or installed Android origin change was made.
+
+
+## Health Connect exports and atomic reconciliation — November 15, 2026
+
+Preview deployment `6af95e7dd4305dedd2a5` is active. It provides biometric/intake export options, previews and verification, plus reconciliation previews, confirmed application and exact receipt lookup. The existing domain projections and record identities are preserved. Reviews bind to the authenticated account, workspace namespace and restore scope.
+
+A confirmed health-record removal now verifies and retains the exact prior workspace and photos. The fresh generation, recovery marker, monotonic snapshot number and receipt commit together. Empty snapshots do not imply deletion. Restore does not rewind the counter. Shared generation and media helpers replace duplicate staging and validation code.
+
+Validation completed:
+
+- 194 server tests and the production build passed.
+- The built-server gate passed sixteen route checks, including authentication before upload and correct 413 responses. It caught a competing framework stream limit; the API is now the sole owner of request limits.
+- Actual Appwrite checks passed for unit conversion, absent nutrients, imports, removal consent, immutable photo recovery, lost-response retry, counters across restore, concurrent edits and cross-account denial.
+- Hosted HTTP checks passed for both export services, account-bound review tokens, reconciliation summaries, confirmed deletion, retry/receipt lookup and retained recovery. Disposable resources were removed; the real owner's workspace was unchanged.
+- Android foreground export compiles and passes 37 focused tests. It retains pending write intent and verified receipts under the original origin/account/namespace across logout. No APK was installed and no native health records were written.
+- Additive recovery schema provisioning passed twice. Prior schema snapshots remain local. Publication audit covered 740 files and 231 domain provenance entries; known credentials, owner identity and private artifacts were absent.
+
+Production `nourishing.app`, the installed Android connection and background services remain unchanged. Phone reconciliation integration and correction recovery are still pending; the native export candidate needs a physical-device check. PC/cloud edits remain separate until final reconciliation and cutover.

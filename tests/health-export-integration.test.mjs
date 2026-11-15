@@ -5,7 +5,7 @@ import {initialState} from '../server/domain/workspace.mjs';
 import {packWorkspace,unpackWorkspace,digest} from '../server/data-codec.mjs';
 import {createWorkspaceStore} from '../server/workspace-store.mjs';
 import {backupManifest,inspectBackup,prepareBackupRestore} from '../server/backup.mjs';
-import {stageBackupRows} from '../server/backup-store.mjs';
+import {stageWorkspaceRows} from '../server/workspace-generations.mjs';
 import {installHealthExportMetadata,readHealthExportState,HEALTH_EXPORT_FAMILIES} from '../server/health-export-state.mjs';
 const namespace='11111111-1111-4111-8111-111111111111',other='22222222-2222-4222-8222-222222222222',scope='33333333-3333-4333-8333-333333333333';
 const metadata=()=>({version:1,namespace,drafts:[],policies:[{namespace,kind:'nutrition',date:'2026-11-14',timeZone:'UTC',revision:1,groups:[{anchorId:'a',entryIds:['a','b']}],memberIds:['a','b']}]});
@@ -42,9 +42,9 @@ test('partially committed staging retries the same restored scope and immutable 
  const staged=new Map();let drop=true;
  const db={async listRows({queries}){return {rows:JSON.parse(queries[0]).values.filter(id=>staged.has(id)).map(id=>structuredClone(staged.get(id)))};},async createRows({rows}){for(const row of rows){assert.equal(staged.has(row.$id),false);staged.set(row.$id,structuredClone(row));}if(drop){drop=false;throw Error('Lost staging reply');}return {rows};}};
  const first=await prepareBackupRestore(current,manifest,input,context),packed=packWorkspace(first.state,owner,'staged-generation');
- await assert.rejects(()=>stageBackupRows(db,packed.rows),/Lost staging reply/);assert.ok(staged.size>0&&staged.size<packed.rows.length);
+ await assert.rejects(()=>stageWorkspaceRows(db,packed.rows),/Lost staging reply/);assert.ok(staged.size>0&&staged.size<packed.rows.length);
  const second=await prepareBackupRestore(current,manifest,input,context),retried=packWorkspace(second.state,owner,'staged-generation');assert.deepEqual(retried,packed);
- await stageBackupRows(db,retried.rows);assert.deepEqual(unpackWorkspace(retried.head,[...staged.values()]),first.state);
+ await stageWorkspaceRows(db,retried.rows);assert.deepEqual(unpackWorkspace(retried.head,[...staged.values()]),first.state);
 });
 
 // Transaction adapter executes the production store and can interleave an independent commit.

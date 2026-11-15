@@ -1,4 +1,5 @@
-import {HEALTH_EXPORT_MAX_BYTES} from './health-connect.mjs';
+import {HEALTH_EXPORT_MAX_BYTES,healthWarningText} from './health-connect.mjs';
+import {HEALTH_EXPORT_RESPONSE_BYTES} from './health-export.mjs';
 import {Readable} from 'node:stream';
 import {readSession,sessionCookie,clearSession} from './session-cookie.mjs';
 const fail=(code,message)=>{throw Object.assign(Error(message),{code,publicMessage:message});};
@@ -25,6 +26,14 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
         if(req.headers.get('content-type')?.split(';')[0]!=='application/json')fail(415,'Use JSON.');
       }
       const api=service??serviceForRequest(req),secret=readSession(req.headers.get('cookie')??'');
+      const exportRoute=/^\/api\/health-connect\/export\/(biometric|intake)\/(options|preview|verify)$/.exec(path);
+      const reconciliationRequest=req.method==='POST'&&['/api/health-connect/reconcile/preview','/api/health-connect/reconcile/apply'].includes(path);
+      const exportRequest=req.method==='POST'&&exportRoute&&exportRoute[2]!=='options';
+      if(reconciliationRequest||exportRequest){
+        if(!secret)fail(401,'Please sign in.');await api.current(secret);
+        if(reconciliationRequest&&path.endsWith('/preview')){if(url.search!==''&&url.search!=='?summary=1')fail(400,'Invalid reconciliation query.');}
+        else if(url.search)fail(400,'Invalid Health Connect query.');
+      }
       const healthRequest=req.method==='POST'&&['/api/health-connect/preview','/api/health-connect/import'].includes(path);
       if(healthRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search!=='?summary=1')fail(400,'Choose the summary response.');}
       const photoRequest=req.method==='POST'&&['/api/photos/analyze','/api/photos/save','/api/snapshots/prepare','/api/snapshots/save'].includes(path);
@@ -37,7 +46,24 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       if(backupRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid backup request.');}
       const libraryCommand=req.method==='POST'&&path==='/api/library/command',ingredientRequest=req.method==='POST'&&['/api/diary/ingredients/preview','/api/diary/ingredients/save'].includes(path);
       if(libraryCommand||ingredientRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid editor request.');}
-      const body=req.method==='GET'?null:await readBody(req,(libraryCommand||ingredientRequest)?4*1024*1024:backupRequest?(path==='/api/backup/inspect'?20_000_000:path.endsWith('/media')?5*1024*1024:16384):healthRequest?HEALTH_EXPORT_MAX_BYTES:photoRequest?((path.endsWith('/analyze')||path.endsWith('/prepare'))?12:5)*1024*1024:recipeRequest&&path!=='/api/recipe-import'?16*1024*1024:16384);
+      const body=req.method==='GET'?null:await readBody(req,reconciliationRequest?HEALTH_EXPORT_MAX_BYTES:(libraryCommand||ingredientRequest)?4*1024*1024:backupRequest?(path==='/api/backup/inspect'?20_000_000:path.endsWith('/media')?5*1024*1024:16384):healthRequest?HEALTH_EXPORT_MAX_BYTES:photoRequest?((path.endsWith('/analyze')||path.endsWith('/prepare'))?12:5)*1024*1024:recipeRequest&&path!=='/api/recipe-import'?16*1024*1024:16384);
+      if(exportRoute){
+        if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid Health Connect query.');const kind=exportRoute[1],operation=exportRoute[2];
+        if(req.method==='GET'&&operation==='options')return json(200,await api.healthExportOptions(secret,kind));
+        if(exportRequest)return json(200,await api[operation==='preview'?'healthExportPreview':'healthExportVerify'](secret,kind,body));
+        fail(404,'Not found.');
+      }
+      if(reconciliationRequest){
+        if(path.endsWith('/apply'))return json(200,await api.applyHealthReconciliation(secret,body));
+        const preview=await api.previewHealthReconciliation(secret,body);if(url.searchParams.get('summary')!=='1')return json(200,preview);
+        const {changes,...summary}=preview,value={...summary,warnings:summary.warnings.map(healthWarningText)};
+        if(Buffer.byteLength(JSON.stringify(value))>HEALTH_EXPORT_RESPONSE_BYTES)fail(413,'This review exceeds the Android response limit. Select fewer dates or data types.');return json(200,value);
+      }
+      if(req.method==='GET'&&path==='/api/health-connect/reconcile/receipt'){
+        if(!secret)fail(401,'Please sign in.');const keys=['streamId','sequence','batchId','batchDigest'];
+        if([...url.searchParams.keys()].some(key=>!keys.includes(key))||keys.some(key=>url.searchParams.getAll(key).length!==1)||!/^\d+$/.test(url.searchParams.get('sequence')??''))fail(400,'Invalid reconciliation receipt query.');
+        const input=Object.fromEntries(url.searchParams);input.sequence=Number(input.sequence);if(!Number.isSafeInteger(input.sequence)||input.sequence<1)fail(400,'Invalid reconciliation sequence.');return json(200,await api.healthReconciliationReceipt(secret,input));
+      }
       if(libraryCommand){if(!['library.portions','library.retirement'].includes(body?.type))fail(400,'Choose a library action.');return json(200,await api.workspaceCommand(secret,body));}
       if(ingredientRequest){if(path.endsWith('/preview'))return json(200,await api.previewEntryAdjustment(secret,body));if(body?.type!=='entry.ingredients.adjust')fail(400,'Choose an ingredient action.');return json(200,await api.workspaceCommand(secret,body));}
       if(req.method==='GET'&&path==='/api/diary/ingredients'){if(!secret)fail(401,'Please sign in.');const keys=['kind','date','id'];if([...url.searchParams.keys()].some(k=>!keys.includes(k)||url.searchParams.getAll(k).length!==1)||keys.some(k=>!url.searchParams.has(k)))fail(400,'Choose a diary item.');return json(200,await api.entryAdjustment(secret,Object.fromEntries(url.searchParams)));}

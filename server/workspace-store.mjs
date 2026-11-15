@@ -1,6 +1,10 @@
+import {workspaceRows,stageWorkspaceRows,assertStagedRows,recoveryMarker} from './workspace-generations.mjs';
+import {verifiedWorkspaceMedia,workspaceMediaRows,copyWorkspaceMediaRow} from './workspace-media.mjs';
+import {backupReferences,backupManifest} from './backup.mjs';
+import {previewHealthReconciliation,prepareHealthReconciliation} from './health-reconciliation.mjs';
 import {tickCloudFasting} from './fasting.mjs';
 import {beginCloudLogging,finishCloudLogging,loggingCalendar} from './cloud-logging.mjs';
-import {Query,ID,Permission,Role} from 'node-appwrite';
+import {ID,Permission,Role} from 'node-appwrite';
 import {digest,packWorkspace,rowId,unpackWorkspace} from './data-codec.mjs';
 import {initialState} from './domain/workspace.mjs';
 import {initializeHealthExportState,installHealthExportMetadata} from './health-export-state.mjs';
@@ -9,12 +13,14 @@ const databaseId='nourishing',args=(tableId,id)=>({databaseId,tableId,rowId:id})
 const conflict=()=>{throw Object.assign(Error('This diary changed. Refresh it before saving.'),{code:409,publicMessage:'This diary changed. Refresh it before saving.'});};
 const permissions=owner=>[Permission.read(Role.user(owner))];
 async function optional(db,table,id){try{return await db.getRow(args(table,id));}catch(error){if(error.code===404)return null;throw error;}}
-export async function workspaceRows(db,owner,generation){
- const rows=[];let after;
- do{const page=await db.listRows({databaseId,tableId:'workspace_records',queries:[Query.equal('ownerId',owner),Query.equal('generation',generation),Query.orderAsc('$id'),Query.limit(100),...(after?[Query.cursorAfter(after)]:[])],total:false});rows.push(...page.rows);after=page.rows.length===100?page.rows.at(-1).$id:null;}while(after);
- return rows;
-}
 const dataOf=({$id,$permissions,...data})=>data;
+function nextRecoverySnapshot(head,state){
+ let current=head.recoverySequence??0;
+ if(!Number.isSafeInteger(current)||current<0)throw Object.assign(Error('Recovery sequence is invalid.'),{code:503});
+ for(const receipt of state.healthSync?.streams??[])current=Math.max(current,receipt.recoverySnapshotId??0);
+ if(!Number.isSafeInteger(current)||current>=Number.MAX_SAFE_INTEGER)throw Object.assign(Error('Recovery sequence is exhausted.'),{code:503});
+ return current+1;
+}
 export function createWorkspaceStore(db,owner){
  async function create(){
   if(await optional(db,'workspace_heads',owner))return;
@@ -92,5 +98,45 @@ export function createWorkspaceStore(db,owner){
    const next=await persist(state,before,h,tx.$id);await db.updateTransaction({transactionId:tx.$id,commit:true});return {changed:true,revision:next};
   }catch(error){await db.updateTransaction({transactionId:tx.$id,rollback:true}).catch(()=>{});if(error.code===409)conflict();throw error;}
  }
- return {create,command,tickFasting,importHealthExportMetadata};
+ async function reconcileHealth(input,{reviewSecret,storage}={}){
+  const head=await db.getRow(args('workspace_heads',owner));if(head.ownerId!==owner)conflict();
+  const before=await workspaceRows(db,owner,head.generation),state=unpackWorkspace(head,before),context={ownerId:owner,reviewSecret};
+  const preview=previewHealthReconciliation(state,input?.batch,context);
+  const removes=!preview.replayed&&preview.counts.deleted+preview.counts.replaced+preview.counts.invalidated>0;
+  const snapshotId=removes?nextRecoverySnapshot(head,state):undefined;
+  const prepared=prepareHealthReconciliation(state,input,{...context,snapshotId});
+  if(prepared.result.replayed)return prepared.result;
+  let packed,retained;
+  if(prepared.needsSnapshot){
+   // The recovery marker is a promise that this exact old generation can be restored.
+   // Verify every referenced photo and record permission before staging that promise.
+   if(before.some(row=>JSON.stringify(row.$permissions)!==JSON.stringify(permissions(owner))))throw Object.assign(Error('Recovery record ownership is invalid.'),{code:409});
+   const media=await verifiedWorkspaceMedia({db,storage,owner,generation:head.generation,references:backupReferences(state)});
+   const retainedAt=new Date().toISOString();backupManifest(state,media.descriptors,{asOf:retainedAt});
+   retained=recoveryMarker(head,retainedAt,{snapshotId});
+   const generation=rowId(owner,'health-reconciliation',head.generation,head.digest,preview.batchDigest,snapshotId);
+   packed=packWorkspace(prepared.state,owner,generation);await stageWorkspaceRows(db,packed.rows);
+   const staged=await workspaceRows(db,owner,generation);assertStagedRows(packed.rows,staged);unpackWorkspace(packed.head,staged);
+   const copied=media.rows.map(row=>copyWorkspaceMediaRow(row,{owner,generation}));
+   await stageWorkspaceRows(db,copied,{tableId:'workspace_media'});assertStagedRows(copied,await workspaceMediaRows(db,owner,generation));
+  }
+  const tx=await db.createTransaction({ttl:60});
+  try{
+   await db.updateRow({...args('workspace_heads',owner),data:{digest:head.digest},transactionId:tx.$id});
+   const guard=await db.getRow(args('workspace_heads',owner));if(guard.ownerId!==owner||guard.generation!==head.generation||guard.digest!==head.digest||guard.$updatedAt!==head.$updatedAt)conflict();
+   if(prepared.needsSnapshot){
+    const {$id,$permissions,...data}=retained;
+    await db.createRow({...args('workspace_recoveries',$id),data,permissions:$permissions,transactionId:tx.$id});
+    await db.updateRow({...args('workspace_heads',owner),data:{...packed.head,recoverySequence:snapshotId},transactionId:tx.$id});
+   }else await persist(prepared.state,before,head,tx.$id);
+   await db.updateTransaction({transactionId:tx.$id,commit:true});return prepared.result;
+  }catch(error){
+   await db.updateTransaction({transactionId:tx.$id,rollback:true}).catch(()=>{});
+   // The source receipt is committed inside healthSync with the same head. It is
+   // the sole authority for exact lost-response replay, including removal IDs.
+   try{const latest=await db.getRow(args('workspace_heads',owner));if(latest.ownerId===owner){const current=unpackWorkspace(latest,await workspaceRows(db,owner,latest.generation)),replay=prepareHealthReconciliation(current,input,context);if(replay.result.replayed)return replay.result;}}catch{}
+   if(error.code===409)conflict();throw error;
+  }
+ }
+ return {create,command,tickFasting,importHealthExportMetadata,reconcileHealth};
 }

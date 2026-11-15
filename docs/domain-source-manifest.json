@@ -1326,6 +1326,66 @@
       "target": "server/domain/public/compact-ui.js",
       "sourceSha256": "b51dc9364c154553a26d675ae6be666ee6a5356510f0322f46e7987d9c3293df",
       "outputSha256": "b51dc9364c154553a26d675ae6be666ee6a5356510f0322f46e7987d9c3293df"
+    },
+    {
+      "source": "server/health-reconciliation.mjs",
+      "target": "server/domain/health-reconciliation.mjs",
+      "sourceSha256": "26a7b54c59a08bbe47876510bd302996311769f9cd9fbe8b96ec45ff574c786e",
+      "outputSha256": "b2df7ae10119b087ecbd562915e21983c3a2fe0e0b75c1ea197a1753c3168bc2"
+    },
+    {
+      "source": "server/health-biometric-export.mjs",
+      "target": "server/domain/health-biometric-export.mjs",
+      "sourceSha256": "177c51b65ae7c1e3fe8b302c6c3499b562da4b9e0dfe0e5460a9c0425b7752fc",
+      "outputSha256": "177c51b65ae7c1e3fe8b302c6c3499b562da4b9e0dfe0e5460a9c0425b7752fc"
+    },
+    {
+      "source": "server/health-export-identity.mjs",
+      "target": "server/domain/health-export-identity.mjs",
+      "sourceSha256": "69aed29866d8bbda95ea2fc0973facdb53906392f8b6b3e8cfbbeb85ba7d56db",
+      "outputSha256": "8d6a36379f311ec54b98408f55bb88d9788c520e48f0b247d3f7d1caca6f26a6"
+    },
+    {
+      "source": "server/health-intake-export.mjs",
+      "target": "server/domain/health-intake-export.mjs",
+      "sourceSha256": "acd59205cd7a7e2f153321e46cd90f5046d174b774c03768b15f206b3dd1735b",
+      "outputSha256": "acd59205cd7a7e2f153321e46cd90f5046d174b774c03768b15f206b3dd1735b"
+    },
+    {
+      "source": "server/health-intake-nutrients.mjs",
+      "target": "server/domain/health-intake-nutrients.mjs",
+      "sourceSha256": "1e425aa2044697e816e575083009eb4bf6f3bc91fda3ab7aba25bb21289fec8a",
+      "outputSha256": "cf6032f33b534f6988b487e1ad30104dcb52f4b88caa32258db1b8800d99d890"
+    },
+    {
+      "source": "server/health-intake-policies.mjs",
+      "target": "server/domain/health-intake-policies.mjs",
+      "sourceSha256": "bbf11de7a5c17d4b9b4d96e1a82a66e1c0cffbfa115df5ae16aceb6527335e8d",
+      "outputSha256": "bbf11de7a5c17d4b9b4d96e1a82a66e1c0cffbfa115df5ae16aceb6527335e8d"
+    },
+    {
+      "source": "server/health-intake-drafts.mjs",
+      "target": "server/domain/health-intake-drafts.mjs",
+      "sourceSha256": "221eb65ffeebb5b2035fd9c3458350f0535eef4b1d4a381cc4b67cae4e384d42",
+      "outputSha256": "23c90e4e0985fc5fe402e72dd62568229c41765a8255a95ccae20f365cc24409"
+    },
+    {
+      "source": "server/health-intake-correction-review.mjs",
+      "target": "server/domain/health-intake-correction-review.mjs",
+      "sourceSha256": "2aac7d7c7e337dc64dfd33879f768d412e30821538a5b1b1cabc031d3e95bd4b",
+      "outputSha256": "ec304a7c0dde1ed852b284d9c99946c19f72f9ded37d2f98149f3949fbcc0920"
+    },
+    {
+      "source": "server/health-intake-groups.mjs",
+      "target": "server/domain/health-intake-groups.mjs",
+      "sourceSha256": "5b7e9b73d670627bdb424afecfecffc7127201dac9027d082c09469e7e3243ee",
+      "outputSha256": "5b7e9b73d670627bdb424afecfecffc7127201dac9027d082c09469e7e3243ee"
+    },
+    {
+      "source": "server/health-intake-group-projection.mjs",
+      "target": "server/domain/health-intake-group-projection.mjs",
+      "sourceSha256": "3971857fef0200875ac6f66a908bb1c2a583a29e5422fc9e0280a9bd06364a7a",
+      "outputSha256": "a6f45e7a5c8d59c2c891afe2ba3b99be1aa96b68e2f13db7e7667206832023d9"
     }
   ]
 }

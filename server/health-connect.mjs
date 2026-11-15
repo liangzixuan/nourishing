@@ -20,7 +20,7 @@ export function validateHealthExport(input){
  return input;
 }
 
-function warningText(warning){
+export function healthWarningText(warning){
  switch(warning.code){
   case 'snapshot-scope':return 'Imports add or update records. Missing records are not deleted.';
   case 'reconciliation-scope':return 'Changes apply to the reviewed sync scope.';
@@ -31,6 +31,11 @@ function warningText(warning){
   case 'protected':return `${warning.count} records protected by prior sync changes.`;
   case 'outside':return `${warning.count} records fall outside the selected dates.`;
   case 'aggregate':return 'Daily totals use Health Connect aggregates.';
+  case 'replayed':return 'This batch was already applied.';
+  case 'older-aggregate':return 'An older daily total was ignored.';
+  case 'token-expired':return `${warning.type}: change history expired; missing records are kept.`;
+  case 'initial-baseline':return `${warning.type}: initial snapshot; missing records are kept.`;
+  case 'unmatched-delete':return 'A native deletion had no matching local record.';
   default:fail('Unsupported Health Connect warning.',409);
  }
 }
@@ -40,7 +45,7 @@ export function previewHealthConnect(state,input,{ownerId}={}){
  account(ownerId);validateHealthExport(input);
  const prepared=source(()=>prepareHealthImport(state,input)),reviewToken=randomBytes(32).toString('hex');
  const review={version:1,ownerId,token:reviewToken,revision:digest(state),inputDigest:digest(input),sourceToken:prepared.reviewToken};
- return {review,summary:{reviewToken,counts:prepared.counts,range:prepared.range,warnings:prepared.warnings.map(warningText)}};
+ return {review,summary:{reviewToken,counts:prepared.counts,range:prepared.range,warnings:prepared.warnings.map(healthWarningText)}};
 }
 
 /** review must come from the server's private account-scoped store, never request JSON. */

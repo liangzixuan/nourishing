@@ -8,6 +8,8 @@ import {snapshotsView,prepareSnapshot,SNAPSHOT_MEDIA_NAMESPACE} from './snapshot
 import {importRecipeUrl,previewRecipeImport,prepareRecipeImportSave} from './recipe-import.mjs';
 import {fastingView} from './fasting.mjs';
 import {previewHealthConnect} from './health-connect.mjs';
+import {createHealthExport} from './health-export.mjs';
+import {previewHealthReconciliation,healthReconciliationReceipt} from './health-reconciliation.mjs';
 import {rowId} from './data-codec.mjs';
 import {createCloudPhotoAnalyzer} from './cloud-photo.mjs';
 import {validateStoredPhoto} from './domain/photo-images.mjs';
@@ -70,7 +72,18 @@ export function createAppwriteService(config, key, userAgent='') {
     try{return await project(state,catalog,input);}catch(error){if([400,404,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
   }
   async function backups(secret){const {owner}=await data(secret),server=elevated();return createBackupStore({db:new TablesDB(server),storage:new Storage(server),ownerId:owner});}
+  async function healthExports(secret,kind){
+    if(!['biometric','intake'].includes(kind))throw Object.assign(Error('Choose a Health Connect export type.'),{code:400});
+    const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();const profile=await ensureProfile(secret,{$id:owner});
+    return createHealthExport({readState:()=>repository.readState(),ownerId:owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET,timeZone:profile.timeZone})[kind];
+  }
   return {
+    async healthExportOptions(secret,kind){return (await healthExports(secret,kind)).options();},
+    async healthExportPreview(secret,kind,input){return (await healthExports(secret,kind)).preview(input);},
+    async healthExportVerify(secret,kind,input){return (await healthExports(secret,kind)).verify(input);},
+    async previewHealthReconciliation(secret,input){const {owner}=await data(secret);return readView(secret,state=>previewHealthReconciliation(state,input,{ownerId:owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET}));},
+    async healthReconciliationReceipt(secret,input){return readView(secret,state=>healthReconciliationReceipt(state,input));},
+    async applyHealthReconciliation(secret,input){const {owner}=await data(secret),server=elevated(),store=createWorkspaceStore(new TablesDB(server),owner);await store.create();return store.reconcileHealth(input,{reviewSecret:process.env.PHOTO_REVIEW_SECRET,storage:new Storage(server)});},
     async dashboard(secret,date){const {owner}=await data(secret),context=await calendarContext(secret,owner);return readView(secret,state=>dashboardView(state,{date},context));},
     async homeWidgets(secret,unit){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();const [state,calendar]=await Promise.all([repository.readState(),calendarContext(secret,owner)]);return cloudHomeWidgetView(state,{accountId:owner,origin:config.origin,unit,now:new Date(calendar.asOf),timeZone:calendar.timeZone});},
     async exportBackup(secret){return (await backups(secret)).export();},

@@ -1,8 +1,9 @@
+import {describeWorkspaceMedia,verifyWorkspaceMediaFile} from './workspace-media.mjs';
 import {Permission,Role,Query} from 'node-appwrite';
 import {isDeepStrictEqual} from 'node:util';
 import {rowId,unpackWorkspace} from './data-codec.mjs';
-import {workspaceRows} from './workspace-store.mjs';
-import {backupManifest,backupReferences,validateBackupManifest,validateBackupMedia} from './backup.mjs';
+import {workspaceRows} from './workspace-generations.mjs';
+import {backupManifest,backupReferences,validateBackupManifest} from './backup.mjs';
 
 const databaseId='nourishing',args=(tableId,id)=>({databaseId,tableId,rowId:id});
 const permissions=owner=>[Permission.read(Role.user(owner))];
@@ -10,13 +11,6 @@ const fail=(message,code=409)=>{throw Object.assign(Error(message),{code,publicM
 const damaged=(reason,status='invalid')=>{throw Object.assign(Error(reason),{recoveryStatus:status});};
 const identity=value=>typeof value==='string'&&value.length>0&&value.length<=36;
 const timestamp=value=>typeof value==='string'&&Number.isFinite(Date.parse(value))&&new Date(value).toISOString()===value;
-
-/** Save these exact verified fields in the same transaction that replaces the head. */
-export function recoveryMarker(head,retainedAt){
- if(!identity(head?.ownerId)||!identity(head?.generation)||!timestamp(retainedAt))fail('Recovery metadata is invalid.',503);
- const saved=Object.fromEntries(['ownerId','generation','layout','digest'].map(key=>[key,head[key]]));
- return {$id:rowId(head.ownerId,head.generation),$permissions:[],ownerId:head.ownerId,generation:head.generation,head:JSON.stringify(saved),retainedAt};
-}
 
 /** Owner is supplied by authentication. Old rows without a retained head are never inferred complete. */
 export function createRecoveryView({db,storage,ownerId}){
@@ -49,14 +43,12 @@ export function createRecoveryView({db,storage,ownerId}){
   const descriptors=refs.map(ref=>{
    const row=byKey.get(ref.namespace+':'+ref.id);
    if(!row)damaged('A recovery photo is missing.','incomplete');
-   if(row.$id!==rowId(owner,generation,ref.namespace,ref.id)||row.fileId!==rowId(owner,ref.namespace,ref.id)||row.digest!==ref.id||!isDeepStrictEqual(row.$permissions,permissions(owner)))damaged('Recovery photo ownership is invalid.');
-   selected.push(row);return {namespace:ref.namespace,id:ref.id,bytes:row.bytes,width:row.width,height:row.height};
+   let descriptor;try{descriptor=describeWorkspaceMedia(row,ref,{owner,generation});}catch{damaged('Recovery photo ownership is invalid.');}
+   selected.push(row);return descriptor;
   });
   let manifest,summary;try{manifest=backupManifest(state,descriptors,{asOf:marker.retainedAt});summary=validateBackupManifest(manifest).summary;}catch(error){if(error.code===413)throw error;damaged('Retained workspace validation failed.');}
   if(verifyFiles)for(const row of selected){
-   let file,bytes;try{file=await storage.getFile({bucketId:'private-media',fileId:row.fileId});bytes=Buffer.from(await storage.getFileView({bucketId:'private-media',fileId:row.fileId}));}catch(error){if(error.code===404)damaged('A recovery photo is missing.','incomplete');throw error;}
-   if(!isDeepStrictEqual(file.$permissions,permissions(owner))||file.sizeOriginal!==row.bytes||file.name!==row.fileId+'.jpg')damaged('Recovery photo ownership is invalid.');
-   try{await validateBackupMedia(manifest,{namespace:row.namespace,photo:{id:row.digest,dataUrl:'data:image/jpeg;base64,'+bytes.toString('base64')}});}catch{damaged('A recovery photo failed verification.');}
+   try{await verifyWorkspaceMediaFile(storage,row,{owner});}catch(error){if(error.code===404)damaged('A recovery photo is missing.','incomplete');if(error.code===409)damaged(error.message);throw error;}
   }
   return {manifest,summary,mediaRows:selected};
  }

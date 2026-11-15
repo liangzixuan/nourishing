@@ -1,7 +1,7 @@
 import {Query} from 'node-appwrite';
 import {rowId,unpackWorkspace,searchTerms,digest} from './data-codec.mjs';
 import {calculateSummary,entryFacts} from './domain/nutrition.mjs';
-import {workspaceRows} from './workspace-store.mjs';
+import {workspaceRows} from './workspace-generations.mjs';
 const databaseId='nourishing';
 const notFound=()=>{throw Object.assign(Error('No migrated data is available.'),{code:404,publicMessage:'No migrated data is available.'});};
 export function createDataRepository(db,ownerId){
