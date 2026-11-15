@@ -8,9 +8,9 @@ The earlier Nourishing project was reviewed for account lifecycle, secure sessio
 
 Before production cutover:
 
-- Restore text/voice logging and account-scoped offline queued edits. Barcode scanning and packaged-food search are implemented in the next candidate; hosted verification is recorded below.
+- Restore text/voice logging and account-scoped offline queued edits. Barcode scanning and packaged-food search are available in the cloud preview; hosted verification is recorded below.
 - Restore diary selection/copy/paste/group ordering, reusable-meal creation, note photos, CSV import, nutrition-label entry and favorites. Imported metadata is preserved, but that alone does not make these flows available.
-- Restore food/recipe printouts, report-only chart editing and nutrient-contributor drill-down. Captured nutrition reports and PDF/print preview are implemented in the next candidate; hosted verification is recorded below.
+- Restore food/recipe printouts, report-only chart editing and nutrient-contributor drill-down. Captured nutrition reports and PDF/print preview are available in the cloud preview; hosted verification is recorded below.
 - Port Coach, glucose/cycle cards, pinned charts, streak image sharing, library sharing and remaining diary tools. Dashboard news/settings, nutrition, energy/weight, streaks, sleep and fasting are implemented. Existing imported records and metadata remain preserved.
 - Activate and verify cloud background jobs, including scheduled fasting and automatic repeat items. The fasting worker is implemented and tested with disposable accounts but stays disabled.
 - Complete Android correction recovery, automatic native export, Wear and reminders. Foreground import/export/reconciliation, explicit background-import consent, cloud widgets and report printing are implemented; full native and device checks remain.
@@ -47,3 +47,10 @@ The cloud reconciliation API preserves the original stream ordering, native prov
 The 194 server tests pass. Actual Appwrite checks passed for unit conversion, absent nutrients, import without implicit removal, destructive consent, immutable recovery with photos, lost-response replay, counter continuity after restore, concurrent edits and account isolation. Synthetic accounts were removed and the real owner's workspace was unchanged. Production-build checks found and fixed a competing adapter upload limit; the API now owns authenticated streaming limits and returns 413 consistently. Preview `6af95e7dd4305dedd2a5` is active. Hosted export, reconciliation, retry and account-isolation checks passed; details are in `PROGRESS.md`.
 
 Still pending: phone reconciliation UI/session integration, correction recovery, automatic native exports and physical-device checks. Server support alone does not establish that the phone path works. Production `nourishing.app` and the installed Android connection remain unchanged.
+
+
+## Barcode, reports and foreground Android reconciliation — November 15, 2026
+
+Preview `6af9658a387768d8cdce` passed real provider barcode lookup/search, account-bound atomic saves and retry checks. The deployed mobile report captures the account’s selected sections and renders the original report with loaded styles under strict CSP. Hosted Health Connect checks passed again, including receipt snapshot numbers shown in recovery history. Disposable test resources were removed and the real owner workspace was unchanged.
+
+Local validation includes 212 server/browser tests, the production build, 20 built-server boundary checks, scanner WASM decoding and report-language/unit checks. Android foreground reconciliation and the existing print bridge compile with 64 focused tests passing. No new APK was installed. Physical reconciliation, export and print-dialog checks remain before Android cutover. Source publication audit and Git checkpoint are recorded in `PROGRESS.md`.

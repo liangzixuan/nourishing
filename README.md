@@ -37,3 +37,5 @@ Existing deployments must run `scripts/provision-health-recovery.ps1` before dep
 Barcode scanning reuses the source camera and decoder, with manual barcode and branded-food search. Selected products retain Open Food Facts provenance and known nutrition values; private signed reviews feed atomic food/diary saves. Decoder assets and licenses come from pinned npm dependencies during the build. The cloud UI uses the account energy unit.
 
 Discover → Report → Print Report captures the selected sections before displaying a script-free preview. Print / Save PDF uses the browser printer or the Android account-bound print bridge. Changes to options discard the prior capture. The report renderer and localized styles retain source hashes in `docs/print-ui-source.json` and `docs/print-ui-assets.json`.
+
+`node scripts/verify-food-report-hosted.mjs` checks deployed barcode lookup/search, private saves, exact retries and mobile report rendering using disposable accounts. It needs the ignored temporary operator key and removes its test accounts and records.
