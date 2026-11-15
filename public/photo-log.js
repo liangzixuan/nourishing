@@ -73,11 +73,10 @@ export function mountPhotoLog({show, close, header, content, date, groups, save,
     replace('<div class="photo-food-picker"></div><button type="button" class="more-results" data-back>Back to photo</button>');
     body.querySelector('[data-back]').onclick = review;
     const pickerRoot = body.querySelector('.photo-food-picker');
-    pickerCleanup = mountFoodPicker(pickerRoot, {allowMeals: false, onPick: async (kind, id) => {
+    pickerCleanup = mountFoodPicker(pickerRoot, {allowMeals: false, allowRecipes: false, onPick: async (kind, id) => {
       if (kind !== 'food') return;
       editQuantity(index, id);
     }});
-    pickerRoot.querySelector('[data-source=recipe]')?.remove();
   }
   async function editQuantity(index, replacementId = null) {
     replace('<p class="empty">Loading…</p>');const loading = body.querySelector('.empty'), row = rows[index] ?? {}, replacing = replacementId !== null;

@@ -3,8 +3,9 @@ import {Query} from 'node-appwrite';
 const fail=(message,code=409)=>{throw Object.assign(Error(message),{code,publicMessage:message});};
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const optional=async work=>{try{return await work();}catch(error){if(error.code===404)return null;throw error;}};
-const ownerTables=['workspace_records','workspace_media','workspace_recoveries','health_reviews','backup_reviews','command_receipts','account_deletions'];
-const singletonTables=['workspace_heads','profiles'];
+// Active deletion jobs persist table indexes. Append tables to preserve those cursors.
+const ownerTables=['workspace_records','workspace_media','workspace_recoveries','health_reviews','backup_reviews','command_receipts','account_deletions','push_deliveries'];
+const singletonTables=['push_accounts','fasting_dispatch','workspace_heads','profiles'];
 
 /** Bounded, resumable cleanup. Caller has already confirmed the account password before prepare. */
 export function createAccountDeletion({db,storage,users,lifecycle,database='nourishing',now=()=>Date.now(),pageSize=25}){

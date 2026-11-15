@@ -1,8 +1,8 @@
+import {mountTextLog} from './text-log.js';
 import {notePhotoThumbnail} from './note-photos.js';
 import {createDiaryTools} from './diary-tools.js';
 import {openNutrientDetail} from './nutrient-detail.js';
 import {openBarcode} from './barcode.js';
-import {widgetDestination} from './widget-link.js';
 import {openEntryAdjustment} from './entry-adjustments.js';
 import {openRecipeImport} from './recipe-import.js';
 import {openFoodInsights} from './food-insights.js';
@@ -53,7 +53,7 @@ document.addEventListener('click',async event=>{
  if(target.hasAttribute('data-reload'))return load();
  if(target.hasAttribute('data-note'))return recordEditor('note');
  if(target.dataset.recordId){const kind=target.dataset.recordKind;return recordEditor(kind,diary[kind==='note'?'notes':'biometrics'].find(r=>r.id===target.dataset.recordId));}
- if(target.id==='add-food'){return mountRecordMenu({show,header,content,onPick:kind=>kind==='food'?search():kind==='photo'?photoLog():kind==='barcode'?barcode():recordEditor(kind)});}
+ if(target.id==='add-food'){return mountRecordMenu({show,header,content,onPick:kind=>kind==='food'?search():kind==='photo'?photoLog():kind==='text'?textLog():kind==='barcode'?barcode():recordEditor(kind)});}
  if(['prev-day','next-day'].includes(action)){diaryTools.reset();const d=new Date(date+'T12:00:00');d.setDate(d.getDate()+(action==='prev-day'?-1:1));date=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;return load();}
  if(action==='complete-day'){target.disabled=true;try{await command(diary.revision,'day.complete',{date,completed:!diary.completed});await load();}catch(error){notice.textContent=error.message;}finally{target.disabled=false;}return;}
  if(['add-food','group-quick-add'].includes(action)){group=target.dataset.group??(diary?.groups.includes('Uncategorized')?'Uncategorized':diary?.groups[0]);return search();}
@@ -87,11 +87,8 @@ function photoLog(){if(!diary)return;return mountPhotoLog({show,close,header,con
 function recordEditor(kind,record){return mountRecordEditor({kind,record,date,show,close,header,content,onChange:load});}
 window.addEventListener('pagehide',()=>{diaryTools.dispose();loadId++;leaveView();view='diary';clearPending();diary=null;close();page.replaceChildren();});
 window.addEventListener('pageshow',event=>{if(event.persisted)load();});
-load().then(()=>{
- if(!diary)return;const destination=widgetDestination(location.search);if(!destination)return;
- history.replaceState(null,'',location.pathname);
- if(destination==='food'){group=diary.groups.includes('Uncategorized')?'Uncategorized':diary.groups[0];search();}
- if(destination==='fasting'){leaveView();view='discover';dateBar.hidden=true;selectTab('discover-tab');nutrition=mountNutrition({page,mode:view,initialTab:'fasting',date:()=>date,show,close,header,content,onChange:load});}
-});
+load();
 
 function barcode(mode='camera'){if(!diary)return;openBarcode({mode,show,close,header,content,date:()=>date,groups:diary.groups,group,onChange:load,revision:()=>diary.revision});}
+
+function textLog(){if(!diary)return;const log=mountTextLog({show,close,header,content,date:()=>date,groups:diary.groups,onChange:load});pickerCleanup=log.dispose;}

@@ -24,13 +24,15 @@ try {
   await users.create({userId: owner, email: `scheduler-${owner}@example.com`, password: randomUUID() + 'Aa1!', name: 'Scheduler verification fixture'});created = true;
   writeFileSync(ledgerPath, JSON.stringify({owner, created, removed: false}));
   await store.create();await schedule('11:00', '10:00');const baselineReceipts = await receipts();
+  const armed=await db.getRow(args('fasting_dispatch',owner));assert.equal(armed.ownerId,owner);assert.equal(armed.dueAt,'2026-11-14T11:00:00.000Z');assert.deepEqual(armed.$permissions,[]);
   assert.equal((await store.tickFasting(context('11:01'))).changed, true);
+  await assert.rejects(()=>db.getRow(args('fasting_dispatch',owner)),{code:404});
   let state = await repository.readState();assert.equal(state.fasts.length, 1);assert.equal(state.fasts[0].start, '2026-11-14T11:00:00Z');
   assert.equal(state.fastingPlan.schedules[0].lastOccurrence.fastId, state.fasts[0].id);
   let transactions = 0;
   const observedStore = createWorkspaceStore(wrapped({createTransaction: async input => {transactions++;return db.createTransaction(input);}}), owner);
   assert.deepEqual(await observedStore.tickFasting(context('11:02')), {changed: false});assert.equal(transactions, 0);assert.equal(await receipts(), baselineReceipts);
-  report.checks.push('due occurrence and cursor commit together', 'unchanged tick creates no transaction or receipt');
+  report.checks.push('private dispatch intent commits with schedule and is removed with its last occurrence', 'due occurrence and cursor commit together', 'unchanged tick creates no transaction or receipt');
 
   await end('11:02');await schedule('12:00', '11:03');const beforeParallel = await receipts();
   const parallel = await Promise.allSettled([store.tickFasting(context('12:01')), createWorkspaceStore(db, owner).tickFasting(context('12:01'))]);
@@ -61,6 +63,7 @@ try {
       for (const row of rows) {assert.equal(row.ownerId, owner);await clean(`${tableId}:${row.$id}`, () => db.deleteRow(args(tableId, row.$id)));}
     }
     await clean('workspace_heads', () => db.deleteRow(args('workspace_heads', owner)));
+    await clean('fasting_dispatch', () => db.deleteRow(args('fasting_dispatch', owner)));
     await clean('profiles', () => db.deleteRow(args('profiles', owner)));
     await clean('fixture_user', () => users.delete({userId: owner}));
   }

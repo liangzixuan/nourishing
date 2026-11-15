@@ -2,7 +2,7 @@ import {readFileSync} from 'node:fs';
 import {Client,TablesDB,Users,Storage} from 'node-appwrite';
 export function operator(){
  const config=JSON.parse(readFileSync(new URL('../appwrite.config.json',import.meta.url),'utf8'));
- const key=JSON.parse(readFileSync(new URL('../.local/data-key.json',import.meta.url),'utf8').replace(/^\uFEFF/,''));
+ const key=JSON.parse(readFileSync(process.env.NOURISHING_OPERATOR_KEY_FILE||new URL('../.local/data-key.json',import.meta.url),'utf8').replace(/^\uFEFF/,''));
  if(!key.secret)throw Error('Temporary operator key missing.');
  const client=new Client().setEndpoint(config.endpoint).setProject(config.projectId).setKey(key.secret);
  return {config,client,db:new TablesDB(client),users:new Users(client),storage:new Storage(client)};

@@ -9,11 +9,13 @@ import {createBackupStore} from '../server/backup-store.mjs';
 import {packWorkspace,rowId,unpackWorkspace} from '../server/data-codec.mjs';
 import {initialState,act} from '../server/domain/workspace.mjs';
 import {normalizePhoto,validateStoredPhoto} from '../server/domain/photo-images.mjs';
+import {applyFastingCommand} from '../server/fasting.mjs';
+import {planFastingDispatch} from '../server/scheduler-dispatch.mjs';
 
 const owner='fixture-owner',asOf='2026-11-15T06:00:00.000Z',permissions=[Permission.read(Role.user(owner))];
 const missing=()=>Object.assign(Error('Missing'),{code:404});
 function fixture(){
- const tables=new Map(['workspace_heads','workspace_records','workspace_media','workspace_recoveries','backup_reviews','command_receipts'].map(table=>[table,new Map()])),transactions=new Map(),reads=[];let tick=0;
+ const tables=new Map(['workspace_heads','workspace_records','workspace_media','workspace_recoveries','backup_reviews','command_receipts','fasting_dispatch'].map(table=>[table,new Map()])),transactions=new Map(),reads=[];let tick=0;
  const get=table=>tables.get(table),copy=value=>structuredClone(value);
  const db={
   async getRow({tableId,rowId}){const value=get(tableId).get(rowId);if(!value)throw missing();return copy(value);},
@@ -24,6 +26,7 @@ function fixture(){
   async createRow({tableId,rowId,data,permissions=[],transactionId}){const row={$id:rowId,$permissions:permissions,$updatedAt:String(++tick),...copy(data)},write=()=>{assert.equal(get(tableId).has(rowId),false);get(tableId).set(rowId,row);};if(transactionId)transactions.get(transactionId).push(write);else write();return copy(row);},
   async createRows({tableId,rows}){for(const row of rows){assert.equal(get(tableId).has(row.$id),false);get(tableId).set(row.$id,copy(row));}return {rows:copy(rows)};},
   async updateRow({tableId,rowId,data,transactionId}){const write=()=>get(tableId).set(rowId,{...get(tableId).get(rowId),...copy(data),$updatedAt:String(++tick)});if(transactionId)transactions.get(transactionId).push(write);else write();return {};},
+  async deleteRow({tableId,rowId,transactionId}){const write=()=>{if(!get(tableId).has(rowId))throw missing();get(tableId).delete(rowId);};if(transactionId)transactions.get(transactionId).push(write);else write();return {};},
   async updateTransaction({transactionId,commit}){if(commit)for(const write of transactions.get(transactionId))write();transactions.delete(transactionId);}
  };
  function add(generation,state,{active=false,marker=false}={}){const packed=packWorkspace(state,owner,generation);for(const row of packed.rows)get('workspace_records').set(row.$id,row);if(active)get('workspace_heads').set(owner,{$id:owner,$permissions:permissions,$updatedAt:'0',...packed.head});if(marker){const row=recoveryMarker(packed.head,asOf);get('workspace_recoveries').set(row.$id,row);}return packed;}
@@ -67,6 +70,17 @@ test('recovery stays account-scoped, rejects stale selection and checks current 
  await assert.rejects(()=>f.view.preview({generation:'old',revision:f.current.head.digest,ownerId:'other'}),{code:400});
  const foreign=createRecoveryView({db:f.db,storage:f.storage,ownerId:'other'});await assert.rejects(()=>foreign.list(),{code:404});
  const original=f.db.getRow;let calls=0;f.db.getRow=async args=>{const row=await original(args);if(args.tableId==='workspace_heads'&&++calls===2)row.digest='f'.repeat(64);return row;};await assert.rejects(()=>f.view.preview({generation:'old',revision:f.current.head.digest}),/changed/);
+});
+
+test('restore removes the previous schedule intent atomically with its workspace generation',async()=>{
+ const f=fixture(),state=initialState(),now=new Date(asOf);
+ applyFastingCommand(state,{type:'fasting.schedule.save',payload:{id:randomUUID(),revision:0,label:'Current schedule',startDate:'2026-11-15',time:'07:00',recurrence:'once',interval:1,days:[],untilDate:null,goalHours:16,enabled:true}},{now,timeZone:'UTC'});
+ const active=f.add('current',state,{active:true});f.add('prior',initialState(),{marker:true});
+ const plan=planFastingDispatch(state,{generation:'current',now,timeZone:'UTC'}),intent={$id:owner,$permissions:[],ownerId:owner,...plan,repairAt:asOf,executionId:''};f.tables.get('fasting_dispatch').set(owner,intent);
+ const store=createBackupStore({db:f.db,storage:f.storage,ownerId:owner,now:()=>Date.parse(asOf)}),inspection=await store.inspectRecovery({generation:'prior',revision:active.head.digest}),request={requestId:randomUUID(),reviewToken:inspection.reviewToken,confirmation:'replace'};
+ const commit=f.db.updateTransaction;let fail=true;f.db.updateTransaction=async input=>{if(input.commit&&fail){fail=false;throw Error('Fixture commit failed');}return commit(input);};
+ await assert.rejects(()=>store.restore(request),/Fixture commit failed/);assert.equal(f.tables.get('workspace_heads').get(owner).generation,'current');assert.deepEqual(f.tables.get('fasting_dispatch').get(owner),intent);
+ await store.restore(request);assert.notEqual(f.tables.get('workspace_heads').get(owner).generation,'current');assert.equal(f.tables.get('fasting_dispatch').has(owner),false);
 });
 
 test('retained health snapshot numbers identify the exact version and reject malformed markers',async()=>{

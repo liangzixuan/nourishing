@@ -1,24 +1,24 @@
 # Migration scope
 
-Nourishing is moving from a private PC-hosted nutrition app to Appwrite Cloud. The target uses Appwrite Auth, TablesDB, Storage, Sites, and Functions. Public registration is enabled in the preview. Only the current app's data will be migrated into its owner's account.
+Nourishing is moving from a private PC-hosted nutrition app to an installable PWA on Appwrite Cloud. The user selected PWA delivery and removed Health Connect from the product on November 15, 2026. Previously imported health records remain preserved. The target uses Appwrite Auth, TablesDB, Storage, Sites, and Functions. Public registration is enabled in the preview. Only the current app's data will be migrated into its owner's account.
 
-The cloud preview now covers the diary, custom foods/recipes/meals, exercise and biometrics, targets and macro schedules, reports/charts/snapshots, reviewed repeat items, food suggestions, nutrient search, recipe URL import, Gemini photo logging, CSV export and Health Connect imports. Core calculations reuse the current app’s domain. The PC remains the full product. Cloud and PC edits are separate; neither continuously synchronizes to the other.
+The cloud preview now covers the diary, custom foods/recipes/meals, exercise and biometrics, targets and macro schedules, reports/charts/snapshots, reviewed repeat items, food suggestions, nutrient search, recipe URL import, Gemini photo logging, CSV import/export, nutrition-label entry, favorites and text logging. Health Connect entry points are removed from the PWA. Core calculations reuse the current app’s domain. The PC remains the full product. Cloud and PC edits are separate; neither continuously synchronizes to the other.
 
 The earlier Nourishing project was reviewed for account lifecycle, secure sessions, password recovery, data isolation tests, deployment activation, and restore practices. Its custom PostgreSQL and Azure backend will not be carried over. The current app's nutrition rules, catalog provenance, and mobile interface remain the foundation.
 
 Before production cutover:
 
 - Restore text/voice logging and account-scoped offline queued edits. Barcode scanning and packaged-food search are available in the cloud preview; hosted verification is recorded below.
-- Restore CSV import, nutrition-label entry and favorites. Diary selection, copy/paste, group ordering, reusable-meal creation and note photos are now implemented; deployment checks are recorded below.
+- Verify the deployed CSV import, nutrition-label entry and favorites. Diary selection, copy/paste, group ordering, reusable-meal creation and note photos are now implemented; deployment checks are recorded below.
 - Restore food/recipe printouts and report-only chart editing. Captured nutrition reports, PDF/print preview and nutrient-contributor details are now implemented; deployment checks are recorded below.
 - Port Coach, glucose/cycle cards, pinned charts, streak image sharing, library sharing and remaining diary tools. Dashboard news/settings, nutrition, energy/weight, streaks, sleep and fasting are implemented. Existing imported records and metadata remain preserved.
-- Activate and verify cloud background jobs, including scheduled fasting and automatic repeat items. The fasting worker is implemented and tested with disposable accounts but stays disabled.
-- Complete Android correction recovery, automatic native export, Wear and reminders. Foreground import/export/reconciliation, explicit background-import consent, cloud widgets and report printing are implemented; full native and device checks remain.
-- Account deletion now removes owned rows and media across generations, including orphan media, through a durable private job. Separate expiry of retained recovery data for active accounts remains pending. Snapshot deletion removes its reference; private recovery retention remains in effect.
+- Activate and verify scheduled fasting in Appwrite. Repeat items retain the source app’s reviewed, manual logging flow. The fasting worker stays disabled until its integrated deployment checks pass.
+- Complete PWA installation, offline edits and Web Push reminders. Remove Health Connect entry points and native-only controls. APK, Wear and native health integrations are outside the new delivery scope.
+- Account deletion now removes owned rows and media across generations, including orphan media, through a durable private job. Previous versions retain the source app’s indefinite retention policy; only temporary backup reviews expire. Snapshot deletion removes its reference; private recovery retention remains in effect.
 - Independent T7 backups are installed and verified: daily at 09:00 Central and after Windows sign-in, with 14 daily copies. The PC, signed-in Windows account and approved T7 must be available. A real archive and isolated restore have passed.
 - Reconcile PC changes since the baseline and repeat record, photo, and nutrient comparisons.
 - Complete the emailed password-recovery check.
-- Verify the Android app with the PC server stopped.
+- Verify the installed PWA with the PC server stopped.
 
 The preview uses a separate domain. Personal data was imported only into the confirmed owner's account and verified against the source. All 34,885 catalog rows retain normalized foods, original source JSON, and dataset provenance. No production domain switch or Android address change has been performed. No billing settings were changed.
 
@@ -66,3 +66,7 @@ Preview `6af9696692007f0a68be` passed hosted checks for diary copy/retry, reusab
 Preview `6af9e66a8dd8246c822b` passed hosted registration, profile updates, login/logout, deletion and isolation checks. The private account cleanup Function is enabled on a 60-minute interval with no public execute permissions; targeted worker deletion and the empty-queue path passed. Its first automatic timer run is not yet observed. The separate fasting worker remains disabled.
 
 A real T7 cloud archive restored 76 rows and three photos into an isolated recovery fixture. The fixture was removed and the owner workspace stayed unchanged. Daily backup installation awaits a durable read-only key. Local validation passed 285 tests, the production build and 48 built-server checks. See `PROGRESS.md` and `docs/account-lifecycle.md` for evidence and limits. The production domain and installed Android origin have not changed.
+
+## PWA change in progress — November 15, 2026
+
+Preview deployment `6afa3a48afec3e43fad4` contains the PWA installation assets, public-only offline screen, CSV import, favorites, nutrition-label entry, text/voice logging and browser notification controls. Health Connect HTTP operations and native widget links are removed; imported records remain intact. Local validation passed 336 tests, the production build, built-server boundary checks and real Chrome PWA checks. Hosted validation is in progress. Scheduled reminders, offline queued edits and installed-phone validation remain pending.

@@ -14,3 +14,4 @@ dist/
 *.log
 *.apk
 *.aab
+public/pwa-icons/

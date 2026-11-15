@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import {initialState,act} from '../server/domain/workspace.mjs';
 import {cloudHomeWidgetView} from '../server/home-widget-view.mjs';
 import {beginCloudLogging,finishCloudLogging,loggingCalendar} from '../server/cloud-logging.mjs';
-import {createWebHandler} from '../server/http.mjs';
 const origin='https://nourishing.example';
 const calendar={asOf:'2026-11-15T01:00:00.000Z',timeZone:'America/Chicago',today:'2026-11-14'};
 function fixture(){const state=initialState();state.foods=[];state.entries=[];act(state,'food.save',{name:'Fixture',serving:'100 g',grams:100,nutrients:{calories:200,protein:10}});return state;}
@@ -29,10 +28,4 @@ test('logging clock keeps supplied server capture and reads only the owning prof
  assert.deepEqual(await loggingCalendar(db,'owner',calendar),calendar);assert.equal(calls.length,0);
  const captured=await loggingCalendar(db,'owner',{});assert.equal(captured.timeZone,'America/Chicago');assert.equal(calls[0].rowId,'owner');
  await assert.rejects(()=>loggingCalendar({getRow:async()=>{throw Object.assign(Error('denied'),{code:403});}},'owner',{}));
-});
-test('widget HTTP has session-derived identity, no owner override and no cached private response',async()=>{
- const calls=[],handle=createWebHandler({config:{origin},service:{homeWidgets:async(secret,unit)=>{calls.push([secret,unit]);return {version:3};}}});
- const get=(query='',cookie='fixture')=>handle(new Request(origin+'/api/home-widgets'+query,{headers:cookie?{Cookie:'__Host-nourishing_session='+cookie}:{}}));
- assert.equal((await get('','')).status,401);assert.equal((await get('?ownerId=other')).status,400);assert.equal((await get('?unit=kcal&unit=kJ')).status,400);assert.equal((await get('?unit=invalid')).status,400);
- const response=await get('?unit=kJ');assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'no-store');assert.deepEqual(calls,[['fixture','kJ']]);
 });

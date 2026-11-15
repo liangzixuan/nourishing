@@ -3,6 +3,7 @@ import {verifiedWorkspaceMedia,workspaceMediaRows,copyWorkspaceMediaRow} from '.
 import {backupReferences,backupManifest} from './backup.mjs';
 import {previewHealthReconciliation,prepareHealthReconciliation} from './health-reconciliation.mjs';
 import {tickCloudFasting} from './fasting.mjs';
+import {stageFastingDispatch} from './scheduler-dispatch.mjs';
 import {beginCloudLogging,finishCloudLogging,loggingCalendar} from './cloud-logging.mjs';
 import {ID,Permission,Role} from 'node-appwrite';
 import {digest,packWorkspace,rowId,unpackWorkspace} from './data-codec.mjs';
@@ -32,13 +33,18 @@ export function createWorkspaceStore(db,owner){
    await db.updateTransaction({transactionId:tx.$id,commit:true});
   }catch(error){await db.updateTransaction({transactionId:tx.$id,rollback:true}).catch(()=>{});if(error.code===409&&await optional(db,'workspace_heads',owner))return;throw error;}
  }
- async function persist(state,before,h,transactionId){
+ async function stageDispatch(state,generation,transactionId,context={}){
+  const now=context.asOf?new Date(context.asOf):context.now instanceof Date?context.now:new Date(context.now??Date.now());
+  return stageFastingDispatch({db,owner,state,generation,transactionId,now,timeZone:context.timeZone??'UTC'});
+ }
+ async function persist(state,before,h,transactionId,context={}){
    const packed=packWorkspace(state,owner,h.generation),old=new Map(before.map(row=>[row.$id,row]));
    for(const row of packed.rows){const prior=old.get(row.$id);old.delete(row.$id);if(prior&&prior.digest===row.digest&&prior.position===row.position&&prior.day===row.day)continue;
     await db[prior?'updateRow':'createRow']({...args('workspace_records',row.$id),data:dataOf(row),...(prior?{}:{permissions:row.$permissions}),transactionId:transactionId});
    }
    for(const id of old.keys())await db.deleteRow({...args('workspace_records',id),transactionId:transactionId});
    await db.updateRow({...args('workspace_heads',owner),data:packed.head,transactionId:transactionId});
+   await stageDispatch(state,h.generation,transactionId,context);
    return packed.head.digest;
  }
  async function command(raw,readCatalog,context={}){
@@ -61,7 +67,7 @@ export function createWorkspaceStore(db,owner){
    const saved=applyWorkspaceCommand(state,action,context);
    finishCloudLogging(state,loggingBefore,input.type,calendar);
    if(context.stageMedia)await context.stageMedia({transactionId:tx.$id,generation:h.generation});
-   const revision=await persist(state,before,h,tx.$id);
+   const revision=await persist(state,before,h,tx.$id,context);
    const result={ok:true,revision,...(saved?.counts?{counts:saved.counts}:{}),...(saved?.entryIds?{entryIds:saved.entryIds}:{}),...(saved?.photoId?{photoId:saved.photoId}:{}),...(saved?.id?{item:{kind:saved.kind,id:saved.id}}:{})};
    await db.createRow({...args('command_receipts',receiptId),data:{ownerId:owner,fingerprint,result:JSON.stringify(result)},permissions:permissions(owner),transactionId:tx.$id});
    await db.updateTransaction({transactionId:tx.$id,commit:true});return result;
@@ -80,7 +86,18 @@ export function createWorkspaceStore(db,owner){
   try{
    await db.updateRow({...args('workspace_heads',owner),data:{digest:h.digest},transactionId:tx.$id});
    const guard=await db.getRow(args('workspace_heads',owner));if(guard.digest!==h.digest||guard.$updatedAt!==h.$updatedAt)conflict();
-   const revision=await persist(state,before,h,tx.$id);await db.updateTransaction({transactionId:tx.$id,commit:true});return {changed:true,revision};
+   const revision=await persist(state,before,h,tx.$id,context);await db.updateTransaction({transactionId:tx.$id,commit:true});return {changed:true,revision};
+  }catch(error){await db.updateTransaction({transactionId:tx.$id,rollback:true}).catch(()=>{});if(error.code===409)conflict();throw error;}
+ }
+ /** Stage existing schedules for activation without changing health records. */
+ async function syncFastingDispatch(context={}){
+  const h=await db.getRow(args('workspace_heads',owner));if(h.ownerId!==owner)conflict();
+  const state=unpackWorkspace(h,await workspaceRows(db,owner,h.generation)),tx=await db.createTransaction({ttl:60});
+  try{
+   await db.updateRow({...args('workspace_heads',owner),data:{digest:h.digest},transactionId:tx.$id});
+   const guard=await db.getRow(args('workspace_heads',owner));if(guard.digest!==h.digest||guard.generation!==h.generation||guard.$updatedAt!==h.$updatedAt)conflict();
+   const plan=await stageDispatch(state,h.generation,tx.$id,context);
+   await db.updateTransaction({transactionId:tx.$id,commit:true});return {scheduled:!!plan};
   }catch(error){await db.updateTransaction({transactionId:tx.$id,rollback:true}).catch(()=>{});if(error.code===409)conflict();throw error;}
  }
  /** Operator-only migration. Existing heads never acquire a generated namespace on read. */
@@ -128,6 +145,7 @@ export function createWorkspaceStore(db,owner){
     const {$id,$permissions,...data}=retained;
     await db.createRow({...args('workspace_recoveries',$id),data,permissions:$permissions,transactionId:tx.$id});
     await db.updateRow({...args('workspace_heads',owner),data:{...packed.head,recoverySequence:snapshotId},transactionId:tx.$id});
+    await stageDispatch(prepared.state,packed.head.generation,tx.$id);
    }else await persist(prepared.state,before,head,tx.$id);
    await db.updateTransaction({transactionId:tx.$id,commit:true});return prepared.result;
   }catch(error){
@@ -138,5 +156,5 @@ export function createWorkspaceStore(db,owner){
    if(error.code===409)conflict();throw error;
   }
  }
- return {create,command,tickFasting,importHealthExportMetadata,reconcileHealth};
+ return {create,command,tickFasting,syncFastingDispatch,importHealthExportMetadata,reconcileHealth};
 }

@@ -48,10 +48,11 @@ test('drains owned operations and removes all generations, legacy orphans and ac
  for(const table of ['workspace_records','workspace_media','workspace_recoveries','health_reviews','backup_reviews','command_receipts'])for(let i=0;i<105;i++)f.put(table,'row'+String(i).padStart(3,'0'),{ownerId:'owner',generation:i%2?'old':'staged'});
  // Media mappings must carry an owned file reference; missing files are already removed.
  for(const row of f.table('workspace_media').values())row.fileId='missing-'+row.$id;
- for(const table of ['profiles','workspace_heads'])f.put(table,'owner',{ownerId:'owner'});f.put('workspace_records','foreign',{ownerId:'other'});f.put('catalog_foods','shared',{name:'Public catalog'});
+ for(const table of ['fasting_dispatch','profiles','workspace_heads'])f.put(table,'owner',{ownerId:'owner'});f.put('fasting_dispatch','other',{ownerId:'other'});f.put('workspace_records','foreign',{ownerId:'other'});f.put('catalog_foods','shared',{name:'Public catalog'});
  for(let i=0;i<115;i++)f.files.set('file'+String(i).padStart(3,'0'),{$id:'file'+String(i).padStart(3,'0'),$permissions:['read("user:owner")']});f.files.set('foreign',{$id:'foreign',$permissions:['read("user:other")']});
  await f.deletion.begin(ticket,'owner');await f.deletion.step(ticket.id);assert.equal(f.accounts.get('owner').status,false);assert.deepEqual(f.accounts.get('owner').sessions,[]);assert.equal((await f.deletion.status(ticket,{advance:true})).status,'pending');assert.ok(f.table('workspace_records').size>100);
  await f.lifecycle.settle(operation);const result=await finish(f,ticket);assert.equal(result.status,'deleted');assert.equal(f.accounts.has('owner'),false);assert.ok(f.accounts.has('other'));assert.equal(f.files.size,1);assert.ok(f.files.has('foreign'));assert.equal(f.table('workspace_records').size,1);assert.equal(f.table('catalog_foods').size,1);assert.equal(f.table('account_lifecycle').has('owner'),false);assert.equal(f.table('account_deletions').get(ticket.id).ownerId,'');assert.equal((await f.deletion.begin(ticket,'owner')).status,'deleted');
+ assert.equal(f.table('fasting_dispatch').has('owner'),false);assert.equal(f.table('fasting_dispatch').has('other'),true);
 });
 test('unknown upload stays pending indefinitely and deletion failures resume with retained identity',async()=>{
  const f=await setup(),op=await f.lifecycle.enter('owner','upload');await f.lifecycle.hold(op);const {ticket}=await f.deletion.prepare('owner');await f.deletion.begin(ticket,'owner');await f.deletion.step(ticket.id);const waiting=await f.deletion.step(ticket.id);assert.equal(waiting.status,'needs_attention');assert.ok(f.accounts.has('owner'));assert.equal(f.table('account_operations').size,1);
@@ -62,7 +63,7 @@ test('mixed file permissions block removal and preserve foreign access evidence'
 });
 test('row failures and duplicate workers resume, and abandoned prepared tickets are removed',async()=>{
  const f=await setup(),abandoned=await f.deletion.prepare('owner'),{ticket}=await f.deletion.prepare('owner');f.put('workspace_records','first',{ownerId:'owner'});f.put('workspace_recoveries','old',{ownerId:'owner'});await f.deletion.begin(ticket,'owner');
- for(let i=0;i<4;i++)await f.deletion.step(ticket.id);assert.equal((await f.deletion.status(ticket)).phase,'rows:0');f.failDeleteRow=true;assert.equal((await f.deletion.step(ticket.id)).status,'needs_attention');assert.ok(f.accounts.has('owner'));assert.ok(f.table('workspace_records').has('first'));
+ f.failDeleteRow=true;let failure;for(let i=0;i<20;i++){failure=await f.deletion.step(ticket.id);if(failure.status==='needs_attention')break;}assert.equal(failure.status,'needs_attention');assert.ok(f.accounts.has('owner'));assert.ok(f.table('workspace_records').has('first'));
  for(let i=0;i<30;i++){await Promise.all([f.deletion.step(ticket.id),f.deletion.step(ticket.id)]);if((await f.deletion.status(ticket)).status==='deleted')break;}
  assert.equal((await f.deletion.status(ticket)).status,'deleted');assert.equal(f.table('workspace_recoveries').size,0);assert.equal(f.table('account_deletions').has(abandoned.ticket.id),false);assert.equal(f.table('account_deletions').size,1);
 });

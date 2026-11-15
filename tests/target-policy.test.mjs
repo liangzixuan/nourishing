@@ -7,6 +7,16 @@ const today='2026-11-14',context={today};
 const apply=(state,type,payload)=>{const action=prepareTargetPolicyCommand(state,{type,payload},context);return act(state,action.type,action.payload);};
 const view=state=>targetPolicyView(state,today,context);
 const policy={version:1,resting:{mode:'custom',kcal:1600},baseline:{mode:'custom',kcal:400},activity:{mode:'manual'},thermicEffect:false,target:{mode:'calculated',adjustmentKcal:-200,includeAboveBaseline:false},display:'remaining'};
+
+test('new activity settings cannot enable retired Health Connect integration',()=>{
+ const state=initialState();
+ state.settings.energyPolicy={...policy,activity:{mode:'health-connect',zone:'America/Chicago'}};
+ const original=structuredClone(state);
+ assert.throws(()=>apply(state,'targetPolicy.energy',{policy:state.settings.energyPolicy}),/recorded exercise/);
+ assert.deepEqual(state,original);
+ apply(state,'targetPolicy.energy',{policy});
+ assert.equal(state.settings.energyPolicy.activity.mode,'manual');
+});
 test('macro and energy controls reuse source calculations and preserve unrelated settings',()=>{
  const state=initialState();state.settings.targets.fiber=35;const groups=[...state.settings.groups];
  apply(state,'targetPolicy.energy',{policy});apply(state,'targetPolicy.macros',{macro:{version:1,mode:'ratios',basis:'percent',values:{protein:30,carbohydrate:40,fat:30}}});

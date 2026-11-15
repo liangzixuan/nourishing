@@ -26,7 +26,7 @@ export function prepareTargetPolicyCommand(state,action,context={}){
   }
   case 'targetPolicy.energy':{
    if(p.policy===undefined)fail('Choose an energy policy.');
-   const policy=parseEnergyPolicy(p.policy);patch=policy===null&&!state.settings.energyPolicy?{}:{energyPolicy:policy};
+   const policy=parseEnergyPolicy(p.policy);if(policy?.activity?.mode==='health-connect')fail('Choose recorded exercise for activity.');patch=policy===null&&!state.settings.energyPolicy?{}:{energyPolicy:policy};
    if(Object.hasOwn(p,'kcal')){if(!amount(p.kcal)||p.kcal===null)fail('Enter a nonnegative calorie target.');patch.targets={...state.settings.targets,calories:p.kcal};}break;
   }
   case 'targetPolicy.carbohydrate':patch={carbohydratePolicy:parseCarbohydratePolicy(p.policy)};break;

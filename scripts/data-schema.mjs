@@ -5,6 +5,9 @@ const integer=key=>({key,type:'integer',required:true});
 const index=(key,attributes)=>({key,type:'key',attributes});
 const common=[varchar('generation',36),varchar('digest',64)];
 export const tables=[
+ {id:'push_accounts',name:'Private browser notification subscriptions',columns:[varchar('ownerId',36),integer('version'),text('payload','mediumtext')],indexes:[]},
+ {id:'push_deliveries',name:'Private notification delivery receipts',columns:[varchar('ownerId',36),varchar('fingerprint',64),varchar('outcome',16),integer('statusCode'),varchar('createdAt',24),varchar('completedAt',24)],indexes:[index('owner',['ownerId'])]},
+ {id:'fasting_dispatch',name:'Private scheduled fasting dispatch',columns:[varchar('ownerId',36),varchar('generation',36),varchar('token',64),varchar('dueAt',40),varchar('repairAt',40),varchar('executionId',36)],indexes:[index('repair_due',['repairAt'])]},
  {id:'account_lifecycle',name:'Private account lifecycle',columns:[varchar('ownerId',36),varchar('state',16),varchar('jobId',36),integer('version')],indexes:[]},
  {id:'account_operations',name:'Private active account operations',columns:[varchar('ownerId',36),varchar('label',80),varchar('state',16),varchar('createdAt',24),varchar('reason',80)],indexes:[index('owner_state',['ownerId','state'])]},
  {id:'account_deletions',name:'Private account deletion progress',columns:[varchar('ownerId',36),varchar('tokenHash',64),varchar('userCreatedAt',40),varchar('state',16),varchar('phase',32),varchar('cursor',36),integer('version'),varchar('expiresAt',24),varchar('updatedAt',24),varchar('error',80),text('counts')],indexes:[index('state_updated',['state','updatedAt']),index('state_expiry',['state','expiresAt']),index('owner',['ownerId'])]},

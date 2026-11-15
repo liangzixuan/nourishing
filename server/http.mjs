@@ -1,7 +1,6 @@
+import {CSV_BODY_BYTES} from './csv-import.mjs';
 import {deletionCookie,readDeletionTicket} from './deletion-cookie.mjs';
 import {BARCODE_BODY_BYTES} from './barcode.mjs';
-import {HEALTH_EXPORT_MAX_BYTES,healthWarningText} from './health-connect.mjs';
-import {HEALTH_EXPORT_RESPONSE_BYTES} from './health-export.mjs';
 import {Readable} from 'node:stream';
 import {readSession,sessionCookie,clearSession} from './session-cookie.mjs';
 const fail=(code,message)=>{throw Object.assign(Error(message),{code,publicMessage:message});};
@@ -38,16 +37,13 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
         if(path.endsWith('/confirm')){fields(input,['confirmation']);if(input.confirmation!=='delete')fail(400,'Confirm account deletion.');const result=await api.confirmAccountDeletion(secret,ticket);headers.set('Set-Cookie',clearSession());return json(result.status==='deleted'?200:202,result);}
         fields(input,[]);return json(200,await api.accountDeletionStatus(ticket));
       }
-      const exportRoute=/^\/api\/health-connect\/export\/(biometric|intake)\/(options|preview|verify)$/.exec(path);
-      const reconciliationRequest=req.method==='POST'&&['/api/health-connect/reconcile/preview','/api/health-connect/reconcile/apply'].includes(path);
-      const exportRequest=req.method==='POST'&&exportRoute&&exportRoute[2]!=='options';
-      if(reconciliationRequest||exportRequest){
-        if(!secret)fail(401,'Please sign in.');await api.current(secret);
-        if(reconciliationRequest&&path.endsWith('/preview')){if(url.search!==''&&url.search!=='?summary=1')fail(400,'Invalid reconciliation query.');}
-        else if(url.search)fail(400,'Invalid Health Connect query.');
-      }
-      const healthRequest=req.method==='POST'&&['/api/health-connect/preview','/api/health-connect/import'].includes(path);
-      if(healthRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search!=='?summary=1')fail(400,'Choose the summary response.');}
+      if(req.method==='GET'&&path==='/api/reminders'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid notification request.');return json(200,await api.reminders(secret));}
+      const pushRequest=req.method==='POST'&&['/api/reminders/subscribe','/api/reminders/unsubscribe','/api/reminders/test'].includes(path);
+      if(pushRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid notification request.');}
+      const textRequest=req.method==='POST'&&path==='/api/text-log/parse';
+      if(textRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid text log request.');}
+      const csvRequest=req.method==='POST'&&['/api/imports/csv/preview','/api/imports/csv/import'].includes(path);
+      if(csvRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid CSV request.');}
       const photoRequest=req.method==='POST'&&['/api/photos/analyze','/api/photos/save','/api/snapshots/prepare','/api/snapshots/save','/api/note-photos/prepare','/api/note-photos/save'].includes(path);
       // Authenticate before reading multi-megabyte image bodies. Limits include base64 expansion.
       if(photoRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid photo request.');}
@@ -64,39 +60,25 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       if(printRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid report query.');}
       const diaryToolsRequest=req.method==='POST'&&['/api/diary/tools/review','/api/diary/tools/save'].includes(path),nutrientRequest=req.method==='POST'&&['/api/nutrient-detail','/api/nutrition-report/nutrient'].includes(path);
       if(diaryToolsRequest||nutrientRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid diary query.');}
-      const body=req.method==='GET'?null:await readBody(req,barcodeRequest?BARCODE_BODY_BYTES:reconciliationRequest?HEALTH_EXPORT_MAX_BYTES:(libraryCommand||ingredientRequest||printRequest||diaryToolsRequest||path==='/api/nutrient-detail')?4*1024*1024:backupRequest?(path==='/api/backup/inspect'?20_000_000:path.endsWith('/media')?5*1024*1024:16384):healthRequest?HEALTH_EXPORT_MAX_BYTES:photoRequest?((path.endsWith('/analyze')||path.endsWith('/prepare'))?12:5)*1024*1024:recipeRequest&&path!=='/api/recipe-import'?16*1024*1024:16384);
+      const body=req.method==='GET'?null:await readBody(req,textRequest?60_100:csvRequest?CSV_BODY_BYTES:barcodeRequest?BARCODE_BODY_BYTES:(libraryCommand||ingredientRequest||printRequest||diaryToolsRequest||path==='/api/nutrient-detail')?4*1024*1024:backupRequest?(path==='/api/backup/inspect'?20_000_000:path.endsWith('/media')?5*1024*1024:16384):photoRequest?((path.endsWith('/analyze')||path.endsWith('/prepare'))?12:5)*1024*1024:recipeRequest&&path!=='/api/recipe-import'?16*1024*1024:16384);
+      if(textRequest)return json(200,await api.parseTextLog(secret,body));
+      if(pushRequest)return json(200,await api[{'/api/reminders/subscribe':'subscribePush','/api/reminders/unsubscribe':'unsubscribePush','/api/reminders/test':'testPush'}[path]](secret,body));
+      if(csvRequest)return json(200,await api[path.endsWith('/preview')?'previewCsvImport':'importCsv'](secret,body));
+      if(req.method==='GET'&&['/api/library/favorites','/api/library/label'].includes(path)){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid library request.');return json(200,await api[path.endsWith('/favorites')?'favorites':'nutritionLabel'](secret));}
+      if(req.method==='POST'&&path==='/api/library/label/preview'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid label request.');return json(200,await api.previewNutritionLabel(secret,body));}
       if(nutrientRequest)return json(200,await api[path==='/api/nutrient-detail'?'nutrientDetail':'reportNutrientDetail'](secret,body));
       if(diaryToolsRequest){if(path.endsWith('/review'))return json(200,await api.diaryToolsReview(secret,body));if(!['records.copy','records.clear-amounts','records.move-group','records.set-time','records.delete','selection.meal','diary.order','group.order'].includes(body?.type))fail(400,'Choose a diary action.');return json(200,await api.workspaceCommand(secret,body));}
       if(printRequest)return json(200,await api.previewPrintReport(secret,body));
       if(req.method==='GET'&&path==='/api/print-report/options'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid report query.');return json(200,await api.printReportOptions(secret));}
       if(barcodeRequest)return json(200,await api[{'/api/barcode/lookup':'barcodeLookup','/api/barcode/preview':'barcodePreview','/api/barcode/save':'barcodeSave','/api/branded/search':'brandedSearch'}[path]](secret,body));
-      if(exportRoute){
-        if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid Health Connect query.');const kind=exportRoute[1],operation=exportRoute[2];
-        if(req.method==='GET'&&operation==='options')return json(200,await api.healthExportOptions(secret,kind));
-        if(exportRequest)return json(200,await api[operation==='preview'?'healthExportPreview':'healthExportVerify'](secret,kind,body));
-        fail(404,'Not found.');
-      }
-      if(reconciliationRequest){
-        if(path.endsWith('/apply'))return json(200,await api.applyHealthReconciliation(secret,body));
-        const preview=await api.previewHealthReconciliation(secret,body);if(url.searchParams.get('summary')!=='1')return json(200,preview);
-        const {changes,...summary}=preview,value={...summary,warnings:summary.warnings.map(healthWarningText)};
-        if(Buffer.byteLength(JSON.stringify(value))>HEALTH_EXPORT_RESPONSE_BYTES)fail(413,'This review exceeds the Android response limit. Select fewer dates or data types.');return json(200,value);
-      }
-      if(req.method==='GET'&&path==='/api/health-connect/reconcile/receipt'){
-        if(!secret)fail(401,'Please sign in.');const keys=['streamId','sequence','batchId','batchDigest'];
-        if([...url.searchParams.keys()].some(key=>!keys.includes(key))||keys.some(key=>url.searchParams.getAll(key).length!==1)||!/^\d+$/.test(url.searchParams.get('sequence')??''))fail(400,'Invalid reconciliation receipt query.');
-        const input=Object.fromEntries(url.searchParams);input.sequence=Number(input.sequence);if(!Number.isSafeInteger(input.sequence)||input.sequence<1)fail(400,'Invalid reconciliation sequence.');return json(200,await api.healthReconciliationReceipt(secret,input));
-      }
       if(libraryCommand){if(!['library.portions','library.retirement'].includes(body?.type))fail(400,'Choose a library action.');return json(200,await api.workspaceCommand(secret,body));}
       if(ingredientRequest){if(path.endsWith('/preview'))return json(200,await api.previewEntryAdjustment(secret,body));if(body?.type!=='entry.ingredients.adjust')fail(400,'Choose an ingredient action.');return json(200,await api.workspaceCommand(secret,body));}
       if(req.method==='GET'&&path==='/api/diary/ingredients'){if(!secret)fail(401,'Please sign in.');const keys=['kind','date','id'];if([...url.searchParams.keys()].some(k=>!keys.includes(k)||url.searchParams.getAll(k).length!==1)||keys.some(k=>!url.searchParams.has(k)))fail(400,'Choose a diary item.');return json(200,await api.entryAdjustment(secret,Object.fromEntries(url.searchParams)));}
       if(backupRequest){const method=path==='/api/backup/recovery/inspect'?'inspectRecovery':path.endsWith('/inspect')?'inspectBackup':path.endsWith('/media')?'uploadBackupMedia':'restoreBackup';return json(200,await api[method](secret,body));}
       if(req.method==='GET'&&path==='/api/backup/recoveries'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid recovery query.');return json(200,await api.listRecoveries(secret));}
       if(req.method==='GET'&&path==='/api/backup/export'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid backup query.');return json(200,await api.exportBackup(secret));}
-      if(healthRequest)return json(200,await api[path.endsWith('/preview')?'previewHealth':'importHealth'](secret,body,req.headers.get('x-nourish-review-token')));
       if(photoRequest){const method={'/api/photos/analyze':'analyzePhoto','/api/photos/save':'savePhoto','/api/snapshots/prepare':'prepareSnapshot','/api/snapshots/save':'saveSnapshot','/api/note-photos/prepare':'prepareNotePhoto','/api/note-photos/save':'saveNotePhoto'}[path];return json(200,await api[method](secret,body,req.signal));}
       if(req.method==='GET'&&path==='/api/snapshots'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');return json(200,await api.snapshots(secret));}
-      if(req.method==='GET'&&path==='/api/home-widgets'){if(!secret)fail(401,'Please sign in.');if([...url.searchParams.keys()].some(k=>k!=='unit'||url.searchParams.getAll(k).length!==1))fail(400,'Invalid widget query.');const unit=url.searchParams.get('unit')??'kcal';if(!['kcal','kJ'].includes(unit))fail(400,'Choose an energy unit.');return json(200,await api.homeWidgets(secret,unit));}
       if(recipeRequest){const method=path.endsWith('/preview')?'previewRecipeImport':path.endsWith('/save')?'saveRecipeImport':'importRecipe';return json(200,await api[method](secret,body));}
       if(req.method==='GET'&&path==='/api/fasting'){
         if(!secret)fail(401,'Please sign in.');

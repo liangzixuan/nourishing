@@ -1452,6 +1452,42 @@
       "target": "server/domain/backup-mirror.mjs",
       "sourceSha256": "ab10226eddedc562c5ee450deb6af60c48b44d618ff2a75d92143a83d541b361",
       "outputSha256": "ab10226eddedc562c5ee450deb6af60c48b44d618ff2a75d92143a83d541b361"
+    },
+    {
+      "source": "server/nutrition-label.mjs",
+      "target": "server/domain/nutrition-label.mjs",
+      "sourceSha256": "daf3ea33b1b07fc8210a793df8e4698ae1b4eb9f643aec8f8addc669d97ab40e",
+      "outputSha256": "1f7592c31d9764eba953d3e4f8c57abfd7adaf6be79c5ac00b44e53a6b91e1fc"
+    },
+    {
+      "source": "server/vitamin-activity.mjs",
+      "target": "server/domain/vitamin-activity.mjs",
+      "sourceSha256": "b8d3eb384150d5ac69649fa4bf4ad6ec490567bb89c6d1d61a6a44b8627cca0c",
+      "outputSha256": "e1dd6b7ed4c9c4e60bc5b19bf2742493c9ac2941362f7f4e64c2ce7af4dca95c"
+    },
+    {
+      "source": "server/vitamin-d-units.mjs",
+      "target": "server/domain/vitamin-d-units.mjs",
+      "sourceSha256": "9474c781d3ae71cbf700a8fa56c18629efc26edc18a859fa6ee89d38006bfc2e",
+      "outputSha256": "6b99052eb21daa706d784f526f56036fe37d17e5b2d63fc08adb834ba36ec79c"
+    },
+    {
+      "source": "server/nutrition-label-profiles.mjs",
+      "target": "server/domain/nutrition-label-profiles.mjs",
+      "sourceSha256": "69ed5c107448754a1a8e36203d2a71709d6ea26c1ff424a886d88fe95f0baf72",
+      "outputSha256": "de677e3da52540aec38d8758278b27791095e45eb4e1899ab2e944182d4b9cbe"
+    },
+    {
+      "source": "server/text-log.mjs",
+      "target": "server/domain/text-log.mjs",
+      "sourceSha256": "3a724913a8212cc00c8a9eb8a0ab81507c3c0ce02e638c2abab54d7c5ea3470f",
+      "outputSha256": "dd4d849dbe9588dd070696c09ae4eebb51a8afb85ba6750199a723de9b98cb0c"
+    },
+    {
+      "source": "server/suggested-meal-adjustment.mjs",
+      "target": "server/domain/suggested-meal-adjustment.mjs",
+      "sourceSha256": "9fa79a7f1ee63985bd69323c4b4683d5358415697f54195a5967c17e9b1d2baf",
+      "outputSha256": "9fa79a7f1ee63985bd69323c4b4683d5358415697f54195a5967c17e9b1d2baf"
     }
   ]
 }

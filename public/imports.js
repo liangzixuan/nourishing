@@ -1,19 +1,40 @@
 import {request} from './diary-api.js';
 import {escape as e} from './html.js';
+
+// Keep the exact command when the server reply is uncertain, including on reopening.
+let pending=null;
 export function openImports({show,close,header,content,onChange}){
- show(`${header('Import & Devices')}<section class="entry-form"><button type="button" data-nourishing-health-connect hidden>Health Connect</button><label class="field-row"><span>Health Connect file</span><input type="file" accept=".json,application/json" aria-label="Health Connect export"></label><div data-review></div><p class="sheet-message" role="status"></p></section>`);
- const root=content.querySelector('.entry-form'),file=root.querySelector('input'),status=root.querySelector('[role=status]'),review=root.querySelector('[data-review]'),native=root.querySelector('[data-nourishing-health-connect]');
- const refreshNative=()=>{native.hidden=!window.NourishingNative?.openHealthConnect;};refreshNative();
- window.addEventListener('nourishing:nativeready',refreshNative,{once:true});
- file.onchange=async()=>{
-  const selected=file.files?.[0];review.replaceChildren();status.textContent='';if(!selected)return;
-  if(selected.size>20000000){status.textContent='Choose an export smaller than 20 MB.';return;}
-  file.disabled=true;
-  try{const snapshot=JSON.parse(await selected.text());if(!root.isConnected)return;status.textContent='Checking records…';const preview=await request('/api/health-connect/preview?summary=1',snapshot);if(!root.isConnected)return;status.textContent='';
-   review.innerHTML=`<div class="nutrition-preview">${Object.entries(preview.counts).map(([key,value])=>`<span>${e(key)}: <strong>${e(value)}</strong></span>`).join(' · ')}</div><details><summary>Details</summary>${preview.warnings.map(text=>`<p>${e(text)}</p>`).join('')}</details><footer class="entry-actions"><button type="button" class="primary" data-confirm>Import</button></footer>`;
-   review.querySelector('[data-confirm]').onclick=async event=>{event.target.disabled=true;try{
-    const response=await fetch('/api/health-connect/import?summary=1',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Nourish-Review-Token':preview.reviewToken},body:JSON.stringify(snapshot)});const result=await response.json();if(!response.ok)throw Error(result.error??'Import failed. Try again.');await onChange();if(root.isConnected)close();
-   }catch(error){if(root.isConnected)status.textContent=error.message;}finally{event.target.disabled=false;}};
-  }catch(error){if(root.isConnected)status.textContent=error instanceof SyntaxError?'Choose a valid Health Connect JSON export.':error.message;}finally{file.disabled=false;}
+ show(`${header('Import CSV')}<section class="entry-form"><label class="field-row"><span>Type</span><select aria-label="Import type"><option value="foods">Foods</option><option value="biometrics">Biometrics</option><option value="diary">Diary</option></select></label><label class="field-row"><span>CSV file</span><input type="file" accept=".csv,text/csv" aria-label="CSV file"></label><details><summary>CSV columns</summary><p data-columns></p></details><div data-review></div><p class="sheet-message" role="status"></p><footer class="entry-actions"><button type="button" class="primary" data-action>Preview</button></footer></section>`);
+ const root=content.querySelector('.entry-form'),file=root.querySelector('input'),kind=root.querySelector('select'),status=root.querySelector('[role=status]'),review=root.querySelector('[data-review]'),button=root.querySelector('[data-action]');
+ let prepared=null,busy=false;
+ const columns={foods:'name, serving, grams, calories, protein, carbs, fat',biometrics:'date, type, value, unit, time',diary:'date, foodId or name, amount, group, time'};
+ function render(){
+  root.querySelector('[data-columns]').textContent=columns[kind.value];
+  file.disabled=kind.disabled=busy||!!pending;
+  button.disabled=busy||(!pending&&!prepared&&!file.files?.[0]);
+  button.textContent=busy?'Please wait…':pending?'Retry import':prepared?'Import':'Preview';
+  review.innerHTML=prepared?`<p>${e(prepared.count)} ${prepared.count===1?'record':'records'} ready to import</p>`:'';
+ }
+ function reset(){prepared=null;status.textContent='';render();}
+ file.onchange=reset;kind.onchange=reset;
+ if(pending){kind.value=pending.kind;status.textContent='Check the previous import by retrying.';}
+ render();
+ button.onclick=async()=>{
+  if(busy)return;busy=true;status.textContent='';render();
+  try{
+   if(pending||prepared){
+    pending??={...prepared.source,revision:prepared.revision,reviewToken:prepared.reviewToken,requestId:crypto.randomUUID()};
+    const result=await request('/api/imports/csv/import',pending);
+    pending=null;prepared=null;
+    await onChange();if(root.isConnected)close();return result;
+   }
+   const selected=file.files?.[0];if(!selected)return;
+   if(selected.size>10_000_000)throw Error('Choose a CSV file below 10 MB.');
+   const source={kind:kind.value,text:await selected.text()},result=await request('/api/imports/csv/preview',source);
+   prepared={...result,source};
+  }catch(error){
+   if([400,409].includes(error.status)){pending=null;prepared=null;}
+   if(root.isConnected)status.textContent=error.message;
+  }finally{busy=false;if(root.isConnected)render();}
  };
 }

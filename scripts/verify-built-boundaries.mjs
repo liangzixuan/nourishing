@@ -50,8 +50,11 @@ try {
     const value = await response.json();assert.equal(response.status, expected, JSON.stringify({path, bytes, status: response.status, value}));
     if (message) assert.equal(value.error, message);assert.equal(response.headers.get('cache-control'), 'no-store');results.push({path, requestBytes: Buffer.byteLength(body), status: response.status,elapsedMs:Math.round(performance.now()-started)});
   }
+  for(const path of ['/api/health-connect/preview?summary=1','/api/health-connect/import?summary=1','/api/health-connect/export/biometric/preview','/api/health-connect/reconcile/apply'])await post(path,0,404,{payload:{},message:'Not found.'});
+  for(const path of ['/api/home-widgets','/api/health-connect/export/intake/options','/api/health-connect/reconcile/receipt']){
+    const response=await fetch(origin+path);assert.equal(response.status,404);assert.equal(response.headers.get('cache-control'),'no-store');results.push({path,status:response.status});
+  }
   await post('/api/photos/save', 1024 * 1024, 400, {message: 'Invalid photo fields.'});
-  await post('/api/health-connect/import?summary=1', 18_000_000, 409, {message: 'Preview this export again.'});
   await post('/api/photos/save', 1024 * 1024, 401, {signed: false});
   await post('/api/photos/save', 1024 * 1024, 403, {requestOrigin: 'https://other.fixture.invalid'});
   await post('/api/photos/save', 5 * 1024 * 1024, 413, {message: 'Request too large.'});
@@ -62,10 +65,6 @@ try {
   await post('/api/diary/ingredients/save',4*1024*1024,413,{message:'Request too large.'});
   const early=await new Promise((resolve,reject)=>{const started=performance.now(),req=httpRequest(origin+'/api/library/command',{method:'POST',headers:{origin:env.PUBLIC_ORIGIN,'content-type':'application/json','content-length':4194318}},response=>{response.resume();clearTimeout(timer);req.destroy();resolve({status:response.statusCode,elapsedMs:Math.round(performance.now()-started)});});const timer=setTimeout(()=>{req.destroy();reject(Error('Built SSR did not reject unsigned headers before body upload.'));},3000);req.on('error',error=>{clearTimeout(timer);reject(error);});req.flushHeaders();});assert.equal(early.status,401);results.push({path:'/api/library/command',headersOnly:true,...early});
   await post('/api/workspace/command', 20_000, 413, {message: 'Request too large.'});
-  await post('/api/health-connect/export/biometric/preview', 20_000, 413, {message: 'Request too large.'});
-  await post('/api/health-connect/export/intake/verify', 20_000, 401, {signed: false});
-  await post('/api/health-connect/reconcile/apply', 20_000_000, 413, {message: 'Request too large.'});
-  await post('/api/health-connect/reconcile/preview?summary=1', 20_000, 401, {signed: false});
   await post('/api/print-report/preview',4*1024*1024,413,{message:'Request too large.'});
   await post('/api/print-report/preview',20_000,401,{signed:false});
   await post('/api/barcode/lookup',128*1024,413,{message:'Request too large.'});

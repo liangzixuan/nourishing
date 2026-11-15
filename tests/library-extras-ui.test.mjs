@@ -1,0 +1,55 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createServer} from 'node:http';
+import {readFileSync,existsSync} from 'node:fs';
+import {resolve,extname} from 'node:path';
+import {chromium} from 'playwright-core';
+import {initialState,act} from '../server/domain/workspace.mjs';
+import {digest} from '../server/data-codec.mjs';
+import {libraryView} from '../server/library-view.mjs';
+import {applyWorkspaceCommand,captureActionFoods} from '../server/workspace-commands.mjs';
+import {favoriteView,nutritionLabelView,nutritionLabelPreview} from '../server/library-extras.mjs';
+
+test('mobile label entry and favorites use concise source-derived forms, preserve retries and fit the viewport',async()=>{
+ const state=initialState(),food=act(state,'food.save',{name:'Rice',serving:'100 g',grams:100,nutrients:{calories:130}}).id;act(state,'favorite.set',{kind:'food',id:food,enabled:true});
+ const catalogFood={id:'usda:fixture:7',name:'Catalog beans',serving:'100 g',grams:100,nutrients:{calories:110},readOnly:true,sample:false,source:{name:'USDA fixture',datasetId:'fixture',fdcId:7}};
+ const receipts=new Map(),requests=[];let loseNext=true,opened=null,browser;
+ const bootstrap=`import {openNutritionLabel,openFavorites} from '/library-extras.js';import {mountLibrary} from '/library.js';import {mountFoodPicker} from '/food-picker.js';const content=document.querySelector('#sheet-content'),show=html=>{content.innerHTML=html;},header=title=>'<h1>'+title+'</h1>',close=()=>content.replaceChildren();const options={show,header,close,content,date:()=> '2026-11-15',onChange:async()=>{},openEntry:(kind,id)=>{document.querySelector('#opened').textContent=kind+':'+id;}};document.querySelector('#label').onclick=()=>openNutritionLabel(options);document.querySelector('#favorites').onclick=()=>openFavorites(options);let mounted;document.querySelector('#library').onclick=()=>{mounted?.dispose?.();mounted=mountLibrary({...options,page:document.querySelector('#page')});};document.querySelector('#picker').onclick=()=>{mounted?.dispose?.();mounted={dispose:mountFoodPicker(document.querySelector('#page'),{onPick:options.openEntry})};};document.querySelector('#food-picker-only').onclick=()=>{mounted?.dispose?.();mounted={dispose:mountFoodPicker(document.querySelector('#page'),{onPick:options.openEntry,allowMeals:false,allowRecipes:false})};};`;
+ const publicRoot=resolve('public');
+ const server=createServer(async(req,res)=>{try{
+  res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'");
+  const path=new URL(req.url,'http://localhost').pathname;
+  if(path==='/'){res.setHeader('Content-Type','text/html');return res.end('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/diary.css"><link rel="stylesheet" href="/library-extras.css"><button id="label">Nutrition Label</button><button id="favorites">Favorites</button><button id="library">Library</button><button id="picker">Picker</button><button id="food-picker-only">Foods only</button><div id="page"></div><div id="sheet-content"></div><div id="opened"></div><script type="module" src="/fixture.js"></script>');}
+  if(path==='/fixture.js'){res.setHeader('Content-Type','text/javascript');return res.end(bootstrap);}
+  if(path.startsWith('/api/')){
+   res.setHeader('Content-Type','application/json');res.setHeader('Cache-Control','no-store');let body='';for await(const chunk of req)body+=chunk;const input=body?JSON.parse(body):null;
+   if(path==='/api/library')return res.end(JSON.stringify(libraryView(state)));
+   if(path==='/api/catalog/search')return res.end(JSON.stringify({items:[{id:catalogFood.id,name:catalogFood.name,serving:catalogFood.serving}],nextOffset:null}));
+   if(path==='/api/library/label')return res.end(JSON.stringify(nutritionLabelView(state)));
+   if(path==='/api/library/favorites')return res.end(JSON.stringify(favoriteView(state)));
+   if(path==='/api/library/label/preview')return res.end(JSON.stringify(nutritionLabelPreview(state,input)));
+   if(path==='/api/workspace/command'){
+    requests.push(input);if(receipts.has(input.requestId))return res.end(JSON.stringify(receipts.get(input.requestId)));
+    if(input.revision!==digest(state))throw {status:409,message:'Refresh the library.'};
+    const prepared=captureActionFoods(state,{type:input.type,payload:input.payload},new Map([[catalogFood.id,catalogFood]])),result=applyWorkspaceCommand(state,prepared),reply={revision:digest(state),result};receipts.set(input.requestId,reply);
+    if(loseNext&&input.type==='food.label.save'){loseNext=false;throw {status:503,message:'Connection interrupted. Try again.'};}return res.end(JSON.stringify(reply));
+   }
+   throw {status:404,message:'Missing route.'};
+  }
+  const file=resolve(publicRoot,'.'+path);if(!file.startsWith(publicRoot+'\\')&&!file.startsWith(publicRoot+'/'))throw {status:404};if(!existsSync(file))throw {status:404};res.setHeader('Content-Type',extname(file)==='.js'?'text/javascript':'text/css');res.end(readFileSync(file));
+ }catch(error){res.statusCode=error.code??error.status??500;res.setHeader('Content-Type','application/json');res.end(JSON.stringify({error:error.message??'Request failed.'}));}});
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const origin='http://127.0.0.1:'+server.address().port;
+ try{
+  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915},isMobile:true,hasTouch:true});page.setDefaultTimeout(5000);const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.goto(origin);
+  await page.getByRole('button',{name:'Nutrition Label',exact:true}).click();await page.getByLabel('Food name',{exact:true}).fill('Label <oats>');await page.getByLabel('Weight (g)',{exact:true}).fill('40');await page.getByLabel('Adults and children age 4 and older',{exact:true}).check();await page.getByLabel('Calories amount',{exact:true}).fill('150');await page.getByLabel('Sodium percent',{exact:true}).fill('10');await page.locator('.nutrition-preview strong').filter({hasText:'150 kcal'}).waitFor();
+  await page.getByRole('button',{name:'Save Food',exact:true}).click();await page.getByRole('status').filter({hasText:'Connection interrupted'}).waitFor();assert.equal(state.foods.filter(f=>f.name==='Label <oats>').length,1);await page.getByRole('button',{name:'Save Food',exact:true}).click();await page.locator('.nutrition-label-editor').waitFor({state:'detached'});assert.equal(requests[0].requestId,requests[1].requestId);assert.equal(state.foods.filter(f=>f.name==='Label <oats>').length,1);const saved=state.foods.find(f=>f.name==='Label <oats>');assert.equal(saved.nutrients.sodium,230);assert.equal(saved.source.original.values.sodium.percent,'10');
+  await page.getByRole('button',{name:'Favorites',exact:true}).click();await page.getByRole('button',{name:'Rice 100 g'}).click();assert.equal(await page.locator('#opened').textContent(),'food:'+food);await page.getByRole('button',{name:'Remove from favorites'}).click();await page.getByRole('status').filter({hasText:'No favorites yet.'}).waitFor();assert.equal(state.settings.favorites.length,0);
+  await page.getByRole('button',{name:'Nutrition Label',exact:true}).click();await page.getByLabel('Label format',{exact:true}).selectOption('eu-1169');await page.getByLabel('Label column',{exact:true}).selectOption('100ml');assert.equal(await page.getByLabel('Serving',{exact:true}).inputValue(),'100 mL');assert.equal(await page.getByLabel('Serving',{exact:true}).getAttribute('readonly'),'');await page.getByLabel('Food name',{exact:true}).fill('Salt label');await page.getByLabel('Average adult reference intakes',{exact:true}).check();await page.getByLabel('Salt amount',{exact:true}).fill('<1');await page.getByRole('button',{name:'Save Food',exact:true}).click();await page.getByRole('status').filter({hasText:/nonnegative decimal/}).waitFor();assert.equal(state.foods.filter(f=>f.name==='Salt label').length,0);
+  await page.getByRole('button',{name:'Library',exact:true}).click();const rice=page.locator('.library-list li').filter({has:page.locator('[data-library-item="'+food+'"]')});await rice.getByRole('button',{name:'Add to favorites'}).click();await rice.getByRole('button',{name:'Remove from favorites'}).waitFor();assert.equal(favoriteView(state).items.length,1);await page.locator('#page').getByRole('button',{name:'Favorites',exact:true}).click();await page.locator('[data-favorites]').getByRole('button',{name:'Rice 100 g'}).waitFor();
+  await page.getByRole('button',{name:'Picker',exact:true}).click();const picker=page.locator('#page');await picker.getByRole('button',{name:'Add to favorites'}).click();await picker.getByRole('button',{name:'Remove from favorites'}).waitFor();assert.equal(state.foods.filter(f=>f.id===catalogFood.id).length,1);await picker.getByRole('button',{name:'Favorites',exact:true}).click();await picker.getByRole('button',{name:'Catalog beans 100 g'}).click();assert.equal(await page.locator('#opened').textContent(),'food:'+catalogFood.id);assert.equal(favoriteView(state).items.length,2);
+  const recipe=act(state,'recipe.save',{name:'Rice recipe',servings:1,ingredients:[{foodId:food,amount:1}]}).id,meal=act(state,'meal.save',{name:'Rice meal',items:[{foodId:food,amount:1}]}).id;act(state,'favorite.set',{kind:'recipe',id:recipe,enabled:true});act(state,'favorite.set',{kind:'meal',id:meal,enabled:true});
+  await page.getByRole('button',{name:'Picker',exact:true}).click();await picker.getByRole('button',{name:'Favorites',exact:true}).click();await picker.locator('[data-item="'+recipe+'"]').waitFor();await picker.locator('[data-item="'+meal+'"]').waitFor();
+  await page.getByRole('button',{name:'Foods only',exact:true}).click();assert.equal(await picker.locator('[data-source=recipe]').count(),0);assert.equal(await picker.locator('[data-source=meal]').count(),0);await picker.getByRole('button',{name:'Favorites',exact:true}).click();await picker.getByRole('button',{name:'Catalog beans 100 g'}).waitFor();assert.equal(await picker.locator('[data-item="'+recipe+'"]').count(),0);assert.equal(await picker.locator('[data-item="'+meal+'"]').count(),0);assert.equal(await picker.locator('[data-item]').count(),2);
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(errors,[]);
+ }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
+});

@@ -1,3 +1,8 @@
+import {createWebPushStore} from './web-push-store.mjs';
+import {parseTextFoodLog} from './text-log.mjs';
+import {createFastingDispatcher} from './scheduler-dispatch.mjs';
+import {createCsvImportStore} from './csv-import-store.mjs';
+import {favoriteView,nutritionLabelView,nutritionLabelPreview} from './library-extras.mjs';
 import {createAccountLifecycle} from './account-lifecycle.mjs';
 import {createAccountDeletion} from './account-deletion.mjs';
 import {AccountOperationClient,withinAccountOperation} from './account-operation-context.mjs';
@@ -10,23 +15,18 @@ import {lookupBarcode,searchBranded,previewBarcode,validateBarcodeLookup,validat
 import {takeBrandedBudget} from './provider-budget.mjs';
 import {entryAdjustmentView,previewEntryAdjustment} from './entry-adjustments.mjs';
 import {dashboardView} from './dashboard-view.mjs';
-import {cloudHomeWidgetView} from './home-widget-view.mjs';
 import {libraryToolsView} from './library-tools.mjs';
 import {createBackupStore} from './backup-store.mjs';
 import {profileSettingsView} from './profile-settings.mjs';
 import {snapshotsView,prepareSnapshot,SNAPSHOT_MEDIA_NAMESPACE} from './snapshots.mjs';
 import {importRecipeUrl,previewRecipeImport,prepareRecipeImportSave} from './recipe-import.mjs';
 import {fastingView} from './fasting.mjs';
-import {previewHealthConnect} from './health-connect.mjs';
-import {createHealthExport} from './health-export.mjs';
-import {previewHealthReconciliation,healthReconciliationReceipt} from './health-reconciliation.mjs';
-import {rowId} from './data-codec.mjs';
 import {createCloudPhotoAnalyzer} from './cloud-photo.mjs';
 import {validateStoredPhoto} from './domain/photo-images.mjs';
 import {stagePhotoMedia} from './photo-storage.mjs';
 import {loadCatalogIndex} from './catalog-index.mjs';
 import {foodInsightOptions,foodOracle,foodSuggestions,previewFoodSuggestion,resolveFoodInsightIngredient} from './food-insights.mjs';
-import {Account,Users,TablesDB,Storage,ID,Permission,Role,Query} from 'node-appwrite';
+import {Client,Functions,Account,Users,TablesDB,Storage,ID,Permission,Role,Query} from 'node-appwrite';
 import {createHash} from 'node:crypto';
 import {createDataRepository} from './data-repository.mjs';
 import {createWorkspaceStore} from './workspace-store.mjs';
@@ -83,12 +83,9 @@ export function createAppwriteService(config, key, userAgent='') {
     const catalog=await loadCatalogIndex({storage,head,namespace:config.endpoint+'/'+config.project});
     try{return await project(state,catalog,input);}catch(error){if([400,404,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
   }
+  async function csvImports(secret){const {owner}=await data(secret);return createCsvImportStore({db:new TablesDB(elevated()),ownerId:owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET});}
+  async function pushStore(secret){const {owner}=await data(secret);return createWebPushStore({db:new TablesDB(elevated()),ownerId:owner,origin:config.origin,vapid:{publicKey:process.env.WEB_PUSH_PUBLIC_KEY,privateKey:process.env.WEB_PUSH_PRIVATE_KEY}});}
   async function backups(secret){const {owner}=await data(secret),server=elevated();return createBackupStore({db:new TablesDB(server),storage:new Storage(server),ownerId:owner});}
-  async function healthExports(secret,kind){
-    if(!['biometric','intake'].includes(kind))throw Object.assign(Error('Choose a Health Connect export type.'),{code:400});
-    const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();const profile=await ensureProfile(secret,{$id:owner});
-    return createHealthExport({readState:()=>repository.readState(),ownerId:owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET,timeZone:profile.timeZone})[kind];
-  }
   const lifecycle=()=>createAccountLifecycle({db:new TablesDB(elevated()),database:config.database});
   const deletion=()=>createAccountDeletion({db:new TablesDB(elevated()),storage:new Storage(elevated()),users:new Users(elevated()),lifecycle:lifecycle(),database:config.database});
   const service={
@@ -104,14 +101,17 @@ export function createAppwriteService(config, key, userAgent='') {
     async brandedSearch(secret,input){const {owner}=await data(secret);validateBrandedSearch(input);await takeBrandedBudget(new TablesDB(elevated()),{database:config.database,owner,operation:'search'});return searchBranded(input);},
     async barcodePreview(secret,input){const {owner}=await data(secret);return readView(secret,state=>previewBarcode(state,input,{owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET}));},
     async barcodeSave(secret,input){const {owner,repository}=await data(secret);if(input?.type!=='barcode.log')throw Object.assign(Error('Choose a barcode action.'),{code:400});return createWorkspaceStore(new TablesDB(elevated()),owner).command(input,catalogReader(repository),{owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET});},
-    async healthExportOptions(secret,kind){return (await healthExports(secret,kind)).options();},
-    async healthExportPreview(secret,kind,input){return (await healthExports(secret,kind)).preview(input);},
-    async healthExportVerify(secret,kind,input){return (await healthExports(secret,kind)).verify(input);},
-    async previewHealthReconciliation(secret,input){const {owner}=await data(secret);return readView(secret,state=>previewHealthReconciliation(state,input,{ownerId:owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET}));},
-    async healthReconciliationReceipt(secret,input){return readView(secret,state=>healthReconciliationReceipt(state,input));},
-    async applyHealthReconciliation(secret,input){const {owner}=await data(secret),server=elevated(),store=createWorkspaceStore(new TablesDB(server),owner);await store.create();return store.reconcileHealth(input,{reviewSecret:process.env.PHOTO_REVIEW_SECRET,storage:new Storage(server)});},
     async dashboard(secret,date){const {owner}=await data(secret),context=await calendarContext(secret,owner);return readView(secret,state=>dashboardView(state,{date},context));},
-    async homeWidgets(secret,unit){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();const state=await repository.readState(),calendar=await calendarContext(secret,owner);return cloudHomeWidgetView(state,{accountId:owner,origin:config.origin,unit,now:new Date(calendar.asOf),timeZone:calendar.timeZone});},
+    async reminders(secret){return (await pushStore(secret)).status();},
+    async subscribePush(secret,input){return (await pushStore(secret)).subscribe(input);},
+    async unsubscribePush(secret,input){return (await pushStore(secret)).unsubscribe(input);},
+    async testPush(secret,input){return (await pushStore(secret)).test(input);},
+    async parseTextLog(secret,input){return insights(secret,input,parseTextFoodLog);},
+    async previewCsvImport(secret,input){return (await csvImports(secret)).preview(input);},
+    async importCsv(secret,input){return (await csvImports(secret)).import(input);},
+    async favorites(secret){return readView(secret,favoriteView);},
+    async nutritionLabel(secret){return readView(secret,nutritionLabelView);},
+    async previewNutritionLabel(secret,input){return readView(secret,state=>nutritionLabelPreview(state,input));},
     async exportBackup(secret){return (await backups(secret)).export();},
     async listRecoveries(secret){return (await backups(secret)).listRecoveries();},
     async inspectRecovery(secret,input){return (await backups(secret)).inspectRecovery(input);},
@@ -150,25 +150,6 @@ export function createAppwriteService(config, key, userAgent='') {
       return createWorkspaceStore(new TablesDB(elevated()),owner).command({requestId:input.requestId,revision:input.revision,type:'recipe.save',payload},catalogReader(repository));
     },
     async fasting(secret,input){const {owner}=await data(secret),context=await calendarContext(secret,owner);return readView(secret,state=>fastingView(state,context,input));},
-    async previewHealth(secret,input){
-      const {owner,repository}=await data(secret),db=new TablesDB(elevated());await createWorkspaceStore(db,owner).create();
-      const {summary,review}=previewHealthConnect(await repository.readState(),input,{ownerId:owner});
-      const args={databaseId:config.database,tableId:'health_reviews'};
-      await db.createRow({...args,rowId:rowId(owner,review.token),data:{ownerId:owner,review:JSON.stringify(review),expiresAt:new Date(Date.now()+30*60*1000).toISOString()},permissions:[]});
-      const expired=await db.listRows({...args,queries:[Query.equal('ownerId',owner),Query.lessThan('expiresAt',new Date().toISOString()),Query.limit(25)],total:false});
-      for(const row of expired.rows)await db.deleteRow({...args,rowId:row.$id});
-      return summary;
-    },
-    async importHealth(secret,input,token){
-      if(typeof token!=='string'||!/^[a-f0-9]{64}$/.test(token))throw Object.assign(Error('Preview this export again.'),{code:409,publicMessage:'Preview this export again.'});
-      const {owner,repository}=await data(secret),db=new TablesDB(elevated());let row;
-      try{row=await db.getRow({databaseId:config.database,tableId:'health_reviews',rowId:rowId(owner,token)});}catch(error){if(error.code===404)throw Object.assign(Error('Preview this export again.'),{code:409,publicMessage:'Preview this export again.'});throw error;}
-      if(row.ownerId!==owner)throw Object.assign(Error('Preview this export again.'),{code:409});
-      const review=JSON.parse(row.review);
-      // Receipts remain replayable after expiry. New imports require a current preview.
-      const store=createWorkspaceStore(db,owner),result=await store.command({requestId:token,revision:review.revision,type:'health.import',payload:{export:input,reviewToken:token}},catalogReader(repository),{ownerId:owner,healthReview:review,beforeApply:()=>{if(Date.parse(row.expiresAt)<=Date.now())throw Object.assign(Error('Preview this export again.'),{code:409,publicMessage:'Preview this export again.'});}});
-      return {counts:result.counts};
-    },
     async foodInsightOptions(secret){return readView(secret,state=>foodInsightOptions(state));},
     async foodOracle(secret,input){return insights(secret,input,foodOracle);},
     async foodSuggestions(secret,input){return insights(secret,input,foodSuggestions);},
@@ -218,6 +199,13 @@ export function createAppwriteService(config, key, userAgent='') {
   const independent=new Set(['login','register','logout','requestRecovery','resetPassword','verifyEmail','prepareAccountDeletion','confirmAccountDeletion','accountDeletionStatus']);
   return Object.fromEntries(Object.entries(service).map(([name,method])=>[name,independent.has(name)?method:async(secret,...input)=>{
     const account=await new Account(session(secret)).get();
-    return lifecycle().run(account.$id,name,operation=>withinAccountOperation(operation,()=>method(secret,...input)));
+    const result=await lifecycle().run(account.$id,name,operation=>withinAccountOperation(operation,()=>method(secret,...input)));
+    const scheduleChanged=['restoreBackup','importCsv'].includes(name)||name==='workspaceCommand'&&/^(?:fast|fasting)\./.test(input[0]?.type??'');
+    if(process.env.SCHEDULER_ENABLED==='true'&&scheduleChanged){
+      const queueClient=new Client().setEndpoint(config.endpoint).setProject(config.project).setKey(key);
+      try{await createFastingDispatcher({db:new TablesDB(queueClient),functions:new Functions(queueClient)}).dispatch(account.$id);}
+      catch{console.warn('Fasting delivery remains queued for repair.');}
+    }
+    return result;
   }]));
 }
