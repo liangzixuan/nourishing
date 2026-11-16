@@ -118,3 +118,25 @@ Additional source audit confirms recipe/meal editing still uses the generic libr
 Deployment `6afabac7c4f4f02ce8c9` (runtime `9c483b1`) passed 480 tests, build/publication checks and four hosted checks. Source Oracle pickers and density columns open canonical quantities in Food Entry. Generic Chart detail uses immediate source controls, current revision reads and shared Charts/Dashboard plots. Energy Expenditure restores the source baseline, BMR, TEF and breakdown screens with canonical preview/save. Custom Chart create/edit/cancel/delete also passed after detail integration. Interrupted committed responses retried identical receipts; owner data was unchanged and fixtures were removed. Live screenshots were inspected, with no browser/CSP errors or horizontal overflow. The custom-food Add Serving Size background reset is deployed.
 
 Meal editing, Weight Goal and fasting are the next release. Recipe stages, dependency-aware library edits, Macro & Energy, Scheduler and remaining target tools still need restoration. Current Weight retains the generic biometric editor; installed-phone checks and the deferred email recovery check remain separate.
+
+
+## Meal, Weight Goal and fasting, November 16
+
+Deployment `6afabf363c43fbd91e57` (runtime `5b29b7a`) passed 488 tests, build/publication checks and all three hosted checks. Meal editing restores staged ingredients, reorder, canonical review and Save & Add. Weight Goal preserves inactive plans and selected measurement units; goal/rate changes survive reload. Fasting restores settings, schedule/history editors, date wheels, repeat options and deletion. Exact request retries after interrupted committed replies produced no duplicates. Fixtures were removed and owner data stayed unchanged. Live captures were inspected; browser/CSP and overflow checks passed.
+
+## Remaining workflow audit
+
+The main-screen restoration does not close these child workflows:
+
+- Recipe stages and reviewed library edits: in progress. Existing referenced items need Update or Preserve history choices, with account-bound preview and transactional retry.
+- Targets: Macro & Energy is implemented locally; Scheduler, Upper Limits and Guided Setup still need source UI adapters.
+- Display: Theme works, but energy units, timestamps, summary visibility, Diary/Calendar controls, font and language still need the source settings layout and working consumers.
+- Exercise/Biometrics: functional generic forms remain. Restore category navigation, effort/unit/group pickers and metric-specific controls from saved source components.
+- Profile: restore the captured Age, Sex, Weight, Height, BMI and Body Fat summary over canonical projections. Use `profile-reference-second-pass.png`; the earlier similarly named image shows Account confirmation.
+- Account: registration, verification, recovery, logout and deletion work. App navigation/theme alignment and authenticated name/email/password editing remain; MFA is a separate capability, not established by the old local placeholder.
+- CSV export: group inclusion and account energy units are fixed locally; cancellation/status verification is in progress.
+- Reminders and text logging: working cloud actions still have generic forms. Restore compact controls while retaining browser permission and save/review behavior.
+- Coach: recorded-fact answers/preferences work; model-backed proposals require additional cloud capability. Restore concise onboarding separately.
+- Library utility/import forms remain generic; reuse the restored editors before making cosmetic copies.
+
+Saved-reference limits: some exercise category/effort mappings were local choices; Hematocrit units are unknown; notification capture only shows the disabled state. Native health/Firebase features are excluded. Installed PWA camera/barcode, notification delivery, offline behavior and the deferred emailed password recovery check remain separate device/user acceptance items.
