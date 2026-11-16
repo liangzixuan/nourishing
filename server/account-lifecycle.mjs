@@ -25,7 +25,9 @@ export function createAccountLifecycle({db,database='nourishing',now=()=>Date.no
    const current=await db.getRow(args('account_lifecycle',owner));if(current.version!==row.version||current.$updatedAt!==row.$updatedAt)fail();
    const result=await work(row,tx.$id);await db.updateTransaction({transactionId:tx.$id,commit:true});return result;
   }catch(error){
-   let rolledBack=false;try{await db.updateTransaction({transactionId:tx.$id,rollback:true});rolledBack=true;}catch{}
+   // Appwrite ends a conflicting commit itself; a second rollback returns transaction_not_ready.
+   let rolledBack=error.code===409&&error.type==='transaction_conflict';
+   if(!rolledBack)try{await db.updateTransaction({transactionId:tx.$id,rollback:true});rolledBack=true;}catch{}
    const recovered=await recover();if(recovered)return recovered;
    if(error.code===409&&rolledBack&&attempt<3)continue;
    throw error;

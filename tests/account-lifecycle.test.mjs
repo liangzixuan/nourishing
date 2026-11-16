@@ -32,3 +32,20 @@ test('parallel operations retry definite conflicts and lost enter replies recove
 test('failed operation-row removal is recoverable only after its settled marker is durable',async()=>{
  const f=accountFixture(),life=createAccountLifecycle({db:f.db});await life.initialize('owner');const op=await life.enter('owner','finished');f.failDeleteRow=true;await life.settle(op);assert.equal(f.table('account_operations').get(op.id).state,'settled');assert.equal((await life.pending('owner')).active,0);assert.equal(f.table('account_operations').size,0);
 });
+
+test('Appwrite terminal commit conflicts retry without requiring a second rollback',async()=>{
+ const f=accountFixture(),life=createAccountLifecycle({db:f.db});await life.initialize('owner');
+ const update=f.db.updateTransaction;let rejected,commits=0;
+ f.db.updateTransaction=async input=>{
+  if(input.transactionId===rejected)throw {code:400,type:'transaction_not_ready'};
+  if(input.commit&&commits++===0){rejected=input.transactionId;await update({transactionId:rejected,rollback:true});throw {code:409,type:'transaction_conflict'};}
+  return update(input);
+ };
+ const operation=await life.enter('owner','charts');assert.equal(commits,2);assert.equal((await life.pending('owner')).active,1);await life.settle(operation);
+});
+
+test('an unclassified conflict with failed rollback is not retried',async()=>{
+ const f=accountFixture(),life=createAccountLifecycle({db:f.db});await life.initialize('owner');let commits=0;
+ f.db.updateTransaction=async input=>{if(input.commit){commits++;throw {code:409,type:'unknown_conflict'};}throw {code:503};};
+ await assert.rejects(life.enter('owner','charts'),{code:409,type:'unknown_conflict'});assert.equal(commits,1);assert.equal((await life.pending('owner')).active,0);
+});

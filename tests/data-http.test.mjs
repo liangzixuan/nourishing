@@ -4,6 +4,11 @@ import {createWebHandler} from '../server/http.mjs';
 const config={origin:'https://candidate.example'};
 const cookie='__Host-nourishing_session=account-session';
 const req=(path,signed=true)=>new Request(config.origin+path,{headers:signed?{cookie}:{}});
+test('database conflicts do not claim an account already exists',async()=>{
+ const conflict=async()=>{throw {code:409,type:'transaction_conflict'};},handle=createWebHandler({config,service:{charts:conflict,register:conflict}});
+ const chart=await handle(req('/api/charts?to=2026-11-15'));assert.equal(chart.status,409);assert.equal((await chart.json()).error,'Your data changed. Please try again.');
+ const signup=await handle(new Request(config.origin+'/api/auth/register',{method:'POST',headers:{Origin:config.origin,'Content-Type':'application/json'},body:JSON.stringify({email:'fixture@example.com',password:'test-password-123',name:'Test'})}));assert.equal(signup.status,409);assert.match((await signup.json()).error,/account with these details already exists/);
+});
 test('targets and reports enforce account and filter contracts',async()=>{
  let calls=0;const handle=createWebHandler({config,service:{targets:async(secret,date)=>{calls++;assert.equal(secret,'account-session');return {date};},nutritionReport:async(secret,options)=>{calls++;assert.equal(secret,'account-session');return options;}}});
  const query='from=2026-11-14&to=2026-11-14&dayFilter=all&includeToday=true&includeSupplements=false';

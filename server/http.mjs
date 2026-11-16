@@ -14,8 +14,9 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
     headers.set('Cache-Control','no-store');headers.set('X-Content-Type-Options','nosniff');headers.set('Referrer-Policy','no-referrer');
     headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     const json=(status,value)=>{headers.set('Content-Type','application/json; charset=utf-8');return new Response(JSON.stringify(value),{status,headers});};
+    let path='';
     try {
-      const url=new URL(req.url,config.origin),path=url.pathname;
+      const url=new URL(req.url,config.origin);path=url.pathname;
       if(req.method==='GET'&&path==='/healthz')return json(200,{status:'ok',service:'nourishing-cloud-accounts'});
       if(req.method==='GET'&&!path.startsWith('/api/')) {
         const asset=assets.get(path)||(['/', '/login','/register','/forgot-password','/reset-password','/verify-email','/account'].includes(path)?assets.get('/'):undefined);
@@ -204,7 +205,7 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       fail(404,'Not found.');
     }catch(error){
       const status=[400,401,403,404,405,409,413,415,429,499,502,503,504,507].includes(error.code)?error.code:503;
-      const messages={400:'Check your details or request a new link.',401:'Please sign in. Check your email and password.',403:'This action is not available.',404:'Not found.',409:'An account with these details already exists. Try signing in.',429:'Too many attempts. Try again later.',503:'Unable to connect. Please try again.'};
+      const messages={400:'Check your details or request a new link.',401:'Please sign in. Check your email and password.',403:'This action is not available.',404:'Not found.',409:path==='/api/auth/register'?'An account with these details already exists. Try signing in.':'Your data changed. Please try again.',429:'Too many attempts. Try again later.',503:'Unable to connect. Please try again.'};
       return json(status,{error:error.publicMessage??messages[status]??'Request failed.'});
     }
   };

@@ -7,7 +7,7 @@ import {chromium} from 'playwright-core';
 import {fixtureOperator} from './fixture-operator.mjs';
 const origin='https://nourishing-cloud.appwrite.network',{users,db}=fixtureOperator(),created=[],failures=[],checks=[];
 const owner=JSON.parse(readFileSync('.local/migration-destination.json')).accountId,args={databaseId:'nourishing',tableId:'workspace_heads',rowId:owner},before=await db.getRow(args);
-let browser,primaryError;
+let browser,page,primaryError;
 const ledger=()=>writeFileSync('.local/health-control-fixtures.json',JSON.stringify({created,failures}));
 try{
  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const contexts=[];
@@ -33,12 +33,14 @@ try{
  await command('chart.display',{id:'cgm',patch:{visible:true,hours:48,compare:{kind:'exercise',id:'duration'},targetRange:{mode:'custom',custom:{unit:'mg/dL',low:80,high:150,fastedHigh:105}}}});
  const chart=(await get('/api/charts?to=2026-11-15&card=cgm')).cards[0];assert.equal(chart.settings.hours,48);assert.equal(chart.settings.compare.id,'duration');assert.equal(chart.settings.targetRange.custom.high,150);
  checks.push('glucose source and units, CGM comparison and custom range persisted');
- const page=await context.newPage(),errors=[];page.setDefaultTimeout(30000);page.on('pageerror',error=>errors.push(error.message));await page.goto(origin+'/diary');await page.locator('.calorie-summary').waitFor();await page.locator('#settings-tab').click();await page.getByRole('button',{name:'Cycle Tracking',exact:true}).click();await page.locator('.health-observations input').waitFor();await page.screenshot({path:'.local/health-cycle-hosted.png'});await page.locator('#sheet [data-close]').click();
+ await Promise.all([get('/api/dashboard?date=2026-11-15'),get('/api/charts?to=2026-11-15')]);
+ checks.push('overlapping Dashboard and Charts reads recover provider transaction conflicts');
+ page=await context.newPage();const errors=[];page.setDefaultTimeout(30000);page.on('pageerror',error=>errors.push(error.message));await page.goto(origin+'/diary');await page.locator('.calorie-summary').waitFor();await page.locator('#settings-tab').click();await page.getByRole('button',{name:'Cycle Tracking',exact:true}).click();await page.locator('.health-observations input').waitFor();await page.screenshot({path:'.local/health-cycle-hosted.png'});await page.locator('#sheet [data-close]').click();
  await page.getByRole('button',{name:'Glucose Timeline',exact:true}).click();await page.locator('[data-gt-stat=count]').waitFor();assert.equal(await page.locator('[data-gt-stat=count]').getAttribute('data-value'),'1');await page.screenshot({path:'.local/health-glucose-hosted.png'});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.locator('#sheet [data-close]').click();
  await page.locator('#discover-tab').click();await page.getByRole('button',{name:'Charts',exact:true}).click();await page.locator('[data-chart-open=cgm]').waitFor();await page.locator('.cgm-details>summary').click();await page.locator('[data-mcl-stat=mean]').waitFor();await page.screenshot({path:'.local/health-cgm-hosted.png'});assert.deepEqual(errors,[]);
  checks.push('hosted mobile cycle review, glucose timeline and CGM statistics render without script errors');
  const removal=await post('/api/cycle/removal-preview',{ids}),remove={requestId:randomUUID(),revision:removal.revision,type:'cycle.remove',payload:{ids,reviewToken:removal.reviewToken,confirmed:true}};const removed=await post('/api/cycle/remove',remove);assert.deepEqual(await post('/api/cycle/remove',remove),removed);assert.equal((await get('/api/cycle'+range)).view.records.length,0);
  checks.push('reviewed removal and exact retry');assert.equal((await db.getRow(args)).digest,before.digest);
-}catch(error){primaryError=error;}finally{await browser?.close();for(const id of created)try{await users.delete({userId:id});}catch{failures.push(id);}ledger();if(failures.length)primaryError??=Error('Fixture cleanup incomplete; see local ledger.');}
+}catch(error){primaryError=error;if(page&&!page.isClosed()){await page.screenshot({path:'.local/health-controls-failure.png'}).catch(()=>{});writeFileSync('.local/health-controls-failure.txt',(await page.locator('body').innerText().catch(()=>'')));}}finally{await browser?.close();for(const id of created)try{await users.delete({userId:id});}catch{failures.push(id);}ledger();if(failures.length)primaryError??=Error('Fixture cleanup incomplete; see local ledger.');}
 if(primaryError)throw primaryError;
 const report={at:new Date().toISOString(),ok:true,checks,fixturesRemoved:true,ownerWorkspaceUnchanged:true};writeFileSync('.local/health-controls-cloud-verification.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));
