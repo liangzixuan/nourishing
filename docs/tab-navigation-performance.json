@@ -1,6 +1,6 @@
 {
   "method": "Three successive Dashboard → Charts → Report → Diary loops after initial Diary load, using disposable accounts with one food entry and saved French language. Chrome desktop with a 412 × 915 mobile viewport. Each timer starts before the click and stops when destination content is visible.",
-  "scope": "Diary in 51e509b shows its loaded snapshot immediately and still validates with the server. First Report visits perform a read when opened.",
+  "scope": "Runtime af2c8ff caches account-specific screen responses and photos on the device. Fresh cached reads avoid network requests for 30 seconds; older responses render immediately while refreshing. First uncached reads still depend on server and network latency.",
   "limits": [
     "Small descriptive samples; network latency varies.",
     "Not a physical Pixel measurement.",
@@ -309,6 +309,93 @@
           ]
         }
       ]
+    },
+    {
+      "runtime": "af2c8ff",
+      "at": "2026-11-16T16:49:57.010Z",
+      "samples": [
+        {
+          "round": 0,
+          "name": "Dashboard",
+          "elapsedMs": 5915,
+          "requests": [
+            "/api/dashboard",
+            "/api/charts",
+            "/api/library"
+          ]
+        },
+        {
+          "round": 0,
+          "name": "Charts",
+          "elapsedMs": 846,
+          "requests": [
+            "/api/snapshots"
+          ]
+        },
+        {
+          "round": 0,
+          "name": "Report",
+          "elapsedMs": 4891,
+          "requests": [
+            "/api/nutrition-report"
+          ]
+        },
+        {
+          "round": 0,
+          "name": "Diary",
+          "elapsedMs": 36,
+          "requests": []
+        },
+        {
+          "round": 1,
+          "name": "Dashboard",
+          "elapsedMs": 57,
+          "requests": []
+        },
+        {
+          "round": 1,
+          "name": "Charts",
+          "elapsedMs": 62,
+          "requests": []
+        },
+        {
+          "round": 1,
+          "name": "Report",
+          "elapsedMs": 63,
+          "requests": []
+        },
+        {
+          "round": 1,
+          "name": "Diary",
+          "elapsedMs": 44,
+          "requests": []
+        },
+        {
+          "round": 2,
+          "name": "Dashboard",
+          "elapsedMs": 63,
+          "requests": []
+        },
+        {
+          "round": 2,
+          "name": "Charts",
+          "elapsedMs": 63,
+          "requests": []
+        },
+        {
+          "round": 2,
+          "name": "Report",
+          "elapsedMs": 62,
+          "requests": []
+        },
+        {
+          "round": 2,
+          "name": "Diary",
+          "elapsedMs": 49,
+          "requests": []
+        }
+      ],
+      "conditions": "First visit of disposable account. Real-photo API verification ran concurrently during the initial visits; repeat samples used cached responses."
     }
   ]
 }
