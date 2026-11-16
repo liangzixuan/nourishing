@@ -1,14 +1,14 @@
 {
-  "scope": "Display units, timestamps, summary visibility and theme only.",
+  "scope": "Display units, timestamps, summary visibility, theme, Summary Column and nested Diary Settings / Group Subtotals.",
   "files": [
     {
       "source": "../cronometer-local/public/mobile-display.js",
       "target": "public/display-source/mobile-display.js",
       "sourceSha256": "048f47dbe6ef3014d6d1c586eee70e3282c88b65cedd58b59d674018d245186a",
-      "outputSha256": "00551df63ca6309f12f52c64edbd9099e8cc6ae068f2962a6425233c790e9adc",
+      "outputSha256": "7c5e2a8ae114b9550dbdf394ac2b002059057cfc1a6cf545479fab9356cca6f8",
       "transforms": [
         "Retain source rows, toggles, radio choice dialogs, Cancel/Escape/outside dismissal and focus return.",
-        "Expose only current functional cloud consumers: energy units, timestamps, energy/macros/highlights/water visibility and theme.",
+        "Expose functional cloud consumers, including Summary Column and Group Subtotals under source Diary Settings navigation.",
         "Replace navigation, default settings and transport references with account projection/callback ownership.",
         "Keep pending save controls frozen with explicit retry; do not show explanatory paragraphs.",
         "UTF-8 LF publication."
@@ -23,20 +23,33 @@
         "Reuse the already-published source row/dialog CSS; cloud switch sizing and host rules live in display.css.",
         "UTF-8 LF publication."
       ]
+    },
+    {
+      "source": "../cronometer-local/public/diary-display.js",
+      "target": "public/diary-table-presentation.js",
+      "transforms": [
+        "Extract validateRow and renderDiaryTableAmount without changing their value/coverage semantics.",
+        "Reuse canonical projectDiaryTarget, exerciseEntryFacts, energy units and locale owners already published for Report/Dashboard.",
+        "Adapt source app.js entry and group table adapters to cloud entry.facts and summary.diaryTable. Keep source negative exercise energy, nutrient N/A, empty-group zero, unknown/partial/inactive representation.",
+        "Retain existing compact source row CSS and labelled group subtotal layout.",
+        "UTF-8 LF publication."
+      ],
+      "sourceSha256": "916e4fc352c6201a6f38bb2b5b83ae098ec72a1b5f31b5b4aeeea3769642a409",
+      "outputSha256": "8788e88a52beb2a41749eb2bfa4140e4eb0c0b18ce01100499731a155110e86c"
     }
   ],
   "outputs": [
     {
       "path": "public/display.js",
-      "sha256": "0fba2cedf206ade0f73bce1734463ab1607ae90809df12d9c2dcf10223517ca4"
+      "sha256": "2dd2e99081fa732b67bad1e59753efa596a9a6237b8d27fce9454a78cb33e1e0"
     },
     {
       "path": "public/display.css",
-      "sha256": "9b8aa8852c6dd727a8937e7966ca2bce34ba56122cbb31d95d894a91b687397f"
+      "sha256": "87b6722ed8f90baadb5f9585933483ae197fe7bddeb4f7620b11e24899dd0a2a"
     },
     {
       "path": "public/more.js",
-      "sha256": "54feb21166fa2886ec6361b38e13e8e7e1557345fd9868d182c5a8cee9204afc"
+      "sha256": "21451860c4dd9dee4106e2b70e77136e7a5772d52ff556585fe616f474fb14b3"
     },
     {
       "path": "public/more.css",
@@ -44,30 +57,41 @@
     },
     {
       "path": "server/display-settings.mjs",
-      "sha256": "6150d0d9801106ac54fcdeff5f4c98be593b7b56b8217e3b0de2602a9e7d00f0"
+      "sha256": "8786c63df8888e49892a510a8542a21d246e20df4d53ef3bbce863bb9f35c521"
     },
     {
       "path": "tests/display-settings.test.mjs",
-      "sha256": "510c931e1922aec15a67248092c2c792c9439f2f8b303eabccb09b86c1312bb7"
+      "sha256": "fbf33067d2719a41df75d768443b5658efbfbc0e71e95ad6fab773e1096130aa"
     },
     {
       "path": "tests/display-browser.test.mjs",
-      "sha256": "876938c39efc104d6a1960a74f6c84ca6ff4c4fbd207ac5ced9078933ba053aa"
+      "sha256": "6e62591e25e652066cbae1338775e45fa4a15096a723c6fdc35fa4403c9aa98c"
     },
     {
       "path": "tests/more-ui-parity.test.mjs",
-      "sha256": "b0fb04550720fa797aa9baec9cfb5359555b96dc1940f52fdbdcc7174bd6647a"
+      "sha256": "d9084bbdde63c0c0bfcffad8bc114759f319743dbcce8064eb7d87051c633647"
     },
     {
       "path": "scripts/verify-display-hosted.mjs",
-      "sha256": "cf876d3335f4c9e8a899a0a4302ea908ddc5afdc8b285d8b9dcd54b3c93861a7"
+      "sha256": "ae2d61b1e42e3e9566e63933e0f5001196b0c87236ab897bc96ce87ca314d810"
+    },
+    {
+      "path": "public/diary.js",
+      "sha256": "234ceefe4338b0e8b471e49e32b642cdd4db1b80c836030a744f8808c62cd1cc"
+    },
+    {
+      "path": "public/diary-table-presentation.js",
+      "sha256": "8788e88a52beb2a41749eb2bfa4140e4eb0c0b18ce01100499731a155110e86c"
     }
   ],
   "contracts": [
     "Authenticated revision-bearing GET /api/display returns effective settings for the account.",
     "display.save is a narrow patch; energy and theme use canonical validators, summary flags reuse diary-display-settings, unrelated settings remain unchanged.",
     "One immutable command envelope is retained until its receipt and refreshed account state are acknowledged.",
-    "System theme uses the existing appearance owner; Diary consumes canonical energy conversion, timestamp setting, summary policy and hydration visibility."
+    "System theme uses the existing appearance owner; Diary consumes canonical energy conversion, timestamp setting, summary policy and hydration visibility.",
+    "GET /api/display adds canonical summaryNutrients and effective diaryTable policy; display.save validates a complete diaryTable object and preserves all unrelated settings.",
+    "Diary cells read canonical entry facts; group rows consume summary.diaryTable, without UI recalculation or subtracting exercise from food intake. Selection mode does not change whole-group totals.",
+    "Display owns child navigation; More supplies headerRoot. Child Back returns to Display before More."
   ],
   "verification": {
     "command": "node --test tests/display-settings.test.mjs tests/display-browser.test.mjs tests/more-ui-parity.test.mjs",
@@ -78,17 +102,42 @@
       "Timestamp removed and energy/macros/highlights/water panels hidden; preferences persist through reload.",
       "Units Cancel, modal Escape and outside click do not save; More Back does not focus search.",
       "Rejected save restores canonical switch; lost successful reply retries identical envelope; stale revision offers Reload latest.",
-      "System theme tracks device color scheme. Other account and unrelated preference fields unchanged."
+      "System theme tracks device color scheme. Other account and unrelated preference fields unchanged.",
+      "Summary Column Cancel and Group Subtotals Escape preserve account policy. Child Back returns Display.",
+      "Protein renders measured zero as 0 g, missing as an em dash and partial recipe as the recorded partial sum; inactive net carbohydrate is not zero.",
+      "Exercise displays negative converted energy, and N/A for nutrient columns. Empty groups display zero.",
+      "All four subtotal modes render from canonical summary; selection does not change group subtotals; macro layout has no horizontal overflow."
     ],
     "screenshot": ".local/display/settings.png",
-    "fixture": "Serve current source files and barcodeAssets() from locked dependencies; no dist/client dependency. Rejected-save assertion waits for the canonical display state and the actual 400 command response."
+    "fixture": "Serve current source files and barcodeAssets() from locked dependencies; no dist/client dependency. Rejected-save assertion waits for the canonical display state and the actual 400 command response.",
+    "screenshots": [
+      ".local/display/settings.png",
+      ".local/display/diary-macros.png"
+    ],
+    "hosted": "scripts/verify-display-hosted.mjs extended and syntax checked; not run by this worker."
   },
   "limitations": [
     "Calendar markers are not rendered by the current native date input; Calendar Settings remains absent.",
-    "Summary column is still energy; source nutrient selection requires its row/group projection consumers.",
     "Font size and match-device preference require one application appearance consumer and startup projection.",
     "Language needs source locale routing across cloud labels and server-provided presentation; primary screens remain English.",
-    "Pause Life and nested Diary/group/quick-add settings are outside this bounded group.",
-    "No new physical-device comparison. Hosted verifier is prepared and unrun by this worker."
+    "No new physical-device comparison. Hosted verifier is prepared and unrun by this worker.",
+    "Pause Life, Diary Settings group visibility/renaming/quick-add and always-expand controls remain outside this slice. No Health Connect control is restored."
+  ],
+  "references": [
+    {
+      "path": "../cronometer-local/public/mobile-diary-settings.js",
+      "use": "Diary Settings / Diary Groups / Group Subtotals navigation and modes.",
+      "sha256": "49fec4508053c2c1b6fe39306973d0a3e53d960bc219eef4254105dd567df771"
+    },
+    {
+      "path": "../cronometer-local/public/diary-amount.js",
+      "use": "Empty complete scope renders zero; Calories label for kcal.",
+      "sha256": "274187691abaa37f36da9defe746280dda881e90310fb9ab17bbd7fc92139fbe"
+    },
+    {
+      "path": "../cronometer-local/public/app.js",
+      "use": "Canonical entry projection and exercise energy/N/A; summary.diaryTable group rows.",
+      "sha256": "7885979aa41896f3058b99f181ad1c2f7700482580de8669b10826b436115447"
+    }
   ]
 }

@@ -4,7 +4,7 @@ import {mountTargets} from './targets.js';
 import {mountFasting} from './fasting.js';
 import {mountBackup} from './backup.js';
 import {mountRepeats} from './repeats.js';
-import {openProfileSettings} from './profile-settings.js';
+import {mountProfile} from './profile-settings.js';
 import {openImports} from './imports.js';
 import {openReminders} from './reminders.js';
 import {openGlucose,openCycle} from './health-controls.js';
@@ -40,7 +40,7 @@ export function mountMore({page,headerRoot,date,show,close,header,content,onChan
  function open(id){
   if(screen==='home')scroll=window.scrollY;
   if(id==='account'){location.assign('/account');return;}
-  if(id==='profile')return void openProfileSettings(ui);
+  if(id==='profile')return childView(id,'Profile',host=>mountProfile({...ui,page:host,headerRoot,onExit:home}));
   if(id==='reminders')return void openReminders(ui);
   if(id==='glucose')return void openGlucose(ui);
   if(id==='cycle')return void openCycle(ui);
@@ -50,7 +50,7 @@ export function mountMore({page,headerRoot,date,show,close,header,content,onChan
   if(id==='fasting')return childView(id,'Fasting',host=>mountFasting({...ui,page:host,headerRoot,onBack:home}));
   if(id==='backup')return childView(id,'Backup & Restore',host=>mountBackup({...ui,root:host}));
   if(id==='repeats')return childView(id,'Repeat Items',host=>mountRepeats({...ui,page:host,headerRoot,onExit:home}));
-  if(id==='display')return childView(id,'Display',host=>mountDisplay({root:host,onChange}));
+  if(id==='display')return childView(id,'Display',host=>mountDisplay({root:host,headerRoot,onChange}));
   if(id==='foods')return onFoods?.();
   if(id==='reports')return onDiscover?.('report');
   if(id==='sharing')return section(id,'Sharing',group((onFoods?row('foods','Foods & Recipes'):'')+(onDiscover?row('reports','Reports'):'')+row('backup','Backup & Restore')+row('export','Export data')));

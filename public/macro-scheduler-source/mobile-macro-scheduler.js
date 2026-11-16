@@ -59,15 +59,32 @@ export class MobileMacroScheduler extends TargetControlScreen{
  input(event,commit){
   if(this.busy||this.session.pending)return;const el=event.target;
   if(el.matches('[data-mts-enabled]')){if(commit)void this.perform({kind:'enabled',enabled:el.checked});return}
-  if(!el.closest('[data-mts-form]'))return;this.readInputs();this.controls();if(!commit||el.name==='templateName')return;
+  if(!el.closest('[data-mts-form]'))return;this.readInputs();this.controls();if(el.name==='templateName')return;if(!commit){this.cancelCalculation();this.clearCalculation();return;}
   if(el.name==='units'){if(this.draft.mode==='fixed')this.draft.fixedUnit=el.value;else this.draft.ratios.basis=el.value;this.render();return}
   if(el.name==='energyCustom'){this.draft.energy=el.checked?{mode:'fixed',kcal:this.saved.summary.macroTargets.energyTarget}:{mode:'inherit'};this.render();return}
   void this.calculate();
  }
- async calculate(){
-  this.calcController?.abort();if(!this.draft||this.disposed)return;let settings;try{settings=draftSettings(this.draft)}catch{this.clearCalculation();return}
-  const controller=new AbortController();this.calcController=controller;this.clearCalculation();
-  try{const value=await cloudRequest('/api/target-policies/template-preview',{date:this.date,settings},controller.signal);if(this.disposed||controller.signal.aborted||this.calcController!==controller||!this.draft)return;if(value.date!==this.date||value.revision!==this.saved.revision)throw Error(this.t('responseIncomplete'));const result=validateMacroTargets(value.macroTargets,this.language);this.paintCalculation(result)}catch(error){if(!this.disposed&&!controller.signal.aborted){const note=this.root.querySelector('[data-mts-calculation-note]');if(note)note.textContent=error.message}}
+ cancelCalculation(){clearTimeout(this.calculationTimer);this.calculationVersion=(this.calculationVersion??0)+1;}
+ calculate(){
+  this.cancelCalculation();this.clearCalculation();if(!this.draft||this.disposed)return;
+  const version=this.calculationVersion;this.calculationTimer=setTimeout(()=>void this.calculateLatest(version),150);
+ }
+ async calculateLatest(version){
+  if(this.calculationWork)await this.calculationWork;
+  if(this.disposed||!this.draft||this.busy||version!==this.calculationVersion)return;
+  const work=this.fetchCalculation(version);this.calculationWork=work;await work;if(this.calculationWork===work)this.calculationWork=null;
+ }
+ async fetchCalculation(version){
+  let settings;try{settings=draftSettings(this.draft)}catch{return}
+  const controller=new AbortController();this.calcController=controller;
+  try{const value=await cloudRequest('/api/target-policies/template-preview',{date:this.date,settings},controller.signal);if(this.disposed||controller.signal.aborted||version!==this.calculationVersion||!this.draft)return;if(value.date!==this.date||value.revision!==this.saved.revision)throw Error(this.t('responseIncomplete'));this.paintCalculation(validateMacroTargets(value.macroTargets,this.language));}
+  catch(error){if(!this.disposed&&!controller.signal.aborted&&version===this.calculationVersion){const note=this.root.querySelector('[data-mts-calculation-note]');if(note)note.textContent=error.message}}
+  finally{if(this.calcController===controller)this.calcController=null;}
+ }
+ async perform(change){
+  if(this.busy||this.session.pending)return;this.cancelCalculation();const version=this.calculationVersion;this.busy=true;this.render();
+  if(this.calculationWork)await this.calculationWork;
+  this.busy=false;if(this.disposed)return;if(version!==this.calculationVersion){this.render();return;}await super.perform(change);
  }
  clearCalculation(){this.calculation=null;paintKetoSource(this.root,null,this.language);for(const el of this.root.querySelectorAll('[data-mts-derived],[data-mts-energy],[data-mts-total]')){el.textContent='';delete el.dataset.value}}
  paintCalculation(value){this.calculation=value;paintKetoSource(this.root,value,this.language);
@@ -120,6 +137,6 @@ export class MobileMacroScheduler extends TargetControlScreen{
   const d=this.draft,change=d.day?{kind:'day',date:this.date,selection:{kind:'custom',settings}}:{kind:d.editing?'template-update':'template-create',template:{id:d.id,name:d.name.trim(),settings}};
   if(d.day||d.editing)this.confirm(this.m('save'),this.m(d.day?'dayWarning':'editWarning'),()=>this.perform(change));else await this.perform(change);
  }
- back(){if(this.menu){this.menu.close();return true}if(this.popup){this.popup.close();return true}if(this.draft){this.calcController?.abort();this.draft=null;this.error='';if(this.startedFromDiary)this.onDiary();else{this.render();window.scrollTo(0,0)}return true}return false}
- dispose(){this.disposed=true;this.readController?.abort();this.calcController?.abort();this.menu?.close(false);this.popup?.close(false);this.events.abort();if(this.session.listener===this.listener)this.session.listener=null;document.body.classList.remove('mts-editing')}
+ back(){if(this.menu){this.menu.close();return true}if(this.popup){this.popup.close();return true}if(this.draft){this.cancelCalculation();this.draft=null;this.error='';if(this.startedFromDiary)this.onDiary();else{this.render();window.scrollTo(0,0)}return true}return false}
+ dispose(){this.disposed=true;this.cancelCalculation();this.readController?.abort();this.calcController?.abort();this.menu?.close(false);this.popup?.close(false);this.events.abort();if(this.session.listener===this.listener)this.session.listener=null;document.body.classList.remove('mts-editing')}
 }

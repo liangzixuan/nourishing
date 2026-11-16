@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "scope": "Profile summary and existing policy editors",
+  "reference": {
+    "path": "../cronometer-local/verification/phone-discover-20261108/profile-reference-second-pass.png",
+    "sha256": "7a122bbd47cc2e5993a00bd4421c7022a9bab2d8dbadd25d3f786c9c93dfee92",
+    "description": "Second-pass Profile capture with Age, Sex, Weight, Height, BMI and Body Fat. The earlier similarly named capture shows Account confirmation and is not the layout reference."
+  },
+  "outputs": [
+    {
+      "path": "public/profile-settings.js",
+      "sha256": "997c4b24b3c57871a38bb01b08efd18afe3bf3d6a68c0558291b28ab16d1a05e"
+    },
+    {
+      "path": "public/profile-settings.css",
+      "sha256": "c201fba24bf8e1b709d08bb1273b56c5ec1a7c0e4e5248a907de2029edc1336a"
+    },
+    {
+      "path": "public/more.js",
+      "sha256": "21451860c4dd9dee4106e2b70e77136e7a5772d52ff556585fe616f474fb14b3"
+    },
+    {
+      "path": "server/profile-settings.mjs",
+      "sha256": "428a0c9d9ac94524909cee89f5e389e3409b3decc189c1ded079240645151888"
+    }
+  ],
+  "sourceReuse": [
+    "server/domain/energy-policy.mjs: projectRestingAge",
+    "server/domain/nutrient-references.mjs: projectNutrientReferences",
+    "server/domain/body-composition.mjs: projectBodyComposition and bodyMassIndex",
+    "server/domain/biometric-library.mjs: biometricEntryForPair",
+    "public/records.js: source measurement editor",
+    "public/more-source/menu-view.js: source header",
+    "public/fasting-source/anchored-menu.js: source options menu"
+  ],
+  "adaptations": [
+    "The original local app has only generic Profile forms; the compact cloud summary is implemented from the saved second-pass screenshot.",
+    "The six summary rows preserve source order and measurement units. Options retain existing Body & Activity, Nutrient References and Recorded Measurements configuration.",
+    "Age and Sex display the configured resting-equation inputs, or nutrient-reference inputs if there is no equation. The child editor identifies its policy; it does not silently synchronize distinct policies.",
+    "Measurements use exact selected series. Unselected, missing and invalid readings remain distinct. No seed-profile sample values are used. Unconfigured measurements open series selection.",
+    "BMI reuses the canonical bodyMassIndex function over canonical recorded kilogram/centimetre values; no new formula or policy schema.",
+    "Age/Sex mutations retain unrelated settings and use immutable receipt payloads for ambiguous retries. Revision conflicts require reload.",
+    "More passes headerRoot to the separate Display controller as its agreed integration change."
+  ],
+  "verification": {
+    "tests": [
+      "tests/profile-settings.test.mjs",
+      "tests/profile-browser.test.mjs",
+      "tests/weight-goal-browser.test.mjs"
+    ],
+    "captures": [
+      ".local/profile/summary.png",
+      ".local/profile/summary-light-320.png"
+    ],
+    "coverage": "Production-CSP Chrome, actual More entry point, compact header geometry, exact custom lb record, compound/source record editor reuse, age and sex ownership, immutable503 retry,409 reload, cancel, initial read retry, unknown measurements, late read after Back,320px light and412px dark.",
+    "hosted": "Prepared separately; not run here."
+  },
+  "limits": [
+    "Saved Profile screenshot establishes main row layout. Detailed Cronometer Age/Sex child dialogs were not captured; cloud dialogs use existing canonical policy fields.",
+    "Summary follows the requested diary date, matching the existing profile-settings endpoint.",
+    "No physical Pixel check in this increment."
+  ]
+}

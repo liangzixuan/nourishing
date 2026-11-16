@@ -43,3 +43,19 @@ test('invalid and overbroad edits fail without changing state',()=>{
  assert.throws(()=>run(state,'profileSettings.body',{policy:{version:2,weightMetric:null,heightMetric:null,bodyFatMetric:null,useForResting:true,useHeightForResting:false,useForKeto:false}}),{status:400});
  assert.deepEqual(state,before);
 });
+
+test('Profile summary uses explicit policies, exact series and canonical BMI, preserving unknown and zero',()=>{
+ const state=initialState();assert.deepEqual(profileSettingsView(state,'2026-11-14').profile.demographics,{source:null,age:null,sex:null,birthDate:null});
+ assert.equal(profileSettingsView(state,'2026-11-14').profile.measurements.weight.value,null);
+ run(state,'profileSettings.energy',energy());
+ run(state,'profileSettings.body',{policy:{version:2,weightMetric:{kind:'biometric',type:'Morning mass',unit:'lb'},heightMetric:{kind:'biometric',type:'Height',unit:'in'},bodyFatMetric:{kind:'biometric',type:'Fat',unit:'%'},useForResting:false,useHeightForResting:false,useForKeto:false}});
+ state.biometrics.push({date:'2026-11-13',type:'Morning mass',unit:'lb',value:176},{date:'2026-11-13',type:'Height',unit:'in',value:70},{date:'2026-11-13',type:'Fat',unit:'%',value:0},{date:'2026-11-14',type:'weight',unit:'kg',value:99});
+ let view=profileSettingsView(state,'2026-11-14').profile;assert.equal(view.demographics.age,35);assert.equal(view.measurements.weight.value,176);assert.equal(view.measurements.weight.unit,'lb');assert.deepEqual(view.measurements.weight.choice,{selection:{kind:'metric',type:'Morning mass',unit:'lb'},unit:'lb'});assert.equal(view.measurements.bodyFat.value,0);assert.ok(Math.abs(view.bmi-79.83225712/(1.778*1.778))<1e-8);
+ state.biometrics.push({date:'2026-11-14',type:'Morning mass',unit:'lb',value:0});view=profileSettingsView(state,'2026-11-14').profile;assert.equal(view.measurements.weight.status,'invalid');assert.equal(view.measurements.weight.value,null);assert.equal(view.bmi,null);
+});
+
+test('Profile age and sex use reference policy only when no resting equation exists',()=>{
+ const state=initialState(),view=profileSettingsView(state,'2026-11-14');run(state,'profileSettings.references',{policy:{version:1,referenceSet:view.referenceSet,birthDate:'1990-11-15',sex:'female',lifeStage:'standard',nutrients:['calcium']}});
+ assert.deepEqual(profileSettingsView(state,'2026-11-14').profile.demographics,{source:'references',age:35,sex:'female',birthDate:'1990-11-15'});
+ run(state,'profileSettings.energy',energy());assert.equal(profileSettingsView(state,'2026-11-14').profile.demographics.sex,'male');assert.equal(state.settings.nutrientReferences.sex,'female');
+});

@@ -1,3 +1,4 @@
+import {parseNutrientUpperLimitPolicy} from './domain/nutrient-upper-limits.mjs';
 import {parseTemplateSettings,changeMacroPlan} from './domain/macro-templates.mjs';
 import {parseMacroPolicy,DEFAULT_MACRO_RATIOS} from './domain/macro-policy.mjs';
 import {parseInactiveEnergyTarget} from './domain/energy-target-state.mjs';
@@ -6,6 +7,7 @@ import {parseEnergyPolicy,parseEnergyExpenditure} from './domain/energy-policy.m
 import {parseCarbohydratePolicy,carbohydratePreferences,DEFAULT_CARBOHYDRATE_POLICY} from './domain/carbohydrate-policy.mjs';
 
 export const targetPolicyCommandFields={
+ 'targetPolicy.upperLimits':['policy'],
  'targetPolicy.customEnergy':['enabled','kcal'],
  'targetPolicy.aboveBaseline':['enabled'],
  'targetPolicy.restoreDefaults':['section'],
@@ -27,6 +29,7 @@ export function prepareTargetPolicyCommand(state,action,context={}){
  if(!object(p)||Object.keys(p).some(key=>!allowed.includes(key))||allowed.filter(key=>key!=='kcal').some(key=>!Object.hasOwn(p,key)))fail('Choose the required target settings only.');
  let patch;
  switch(action.type){
+  case 'targetPolicy.upperLimits':if(p.policy===undefined)fail('Choose an upper-limit policy or turn it off.');patch={nutrientUpperLimits:parseNutrientUpperLimitPolicy(p.policy)};break;
   case 'targetPolicy.restoreDefaults':{
    if(!['macro','carbohydrate'].includes(p.section))fail('Choose macro or carbohydrate defaults.');patch=p.section==='macro'?{macroPolicy:parseMacroPolicy(DEFAULT_MACRO_RATIOS)}:{carbohydratePolicy:parseCarbohydratePolicy(DEFAULT_CARBOHYDRATE_POLICY)};break;
   }

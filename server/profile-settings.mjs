@@ -1,8 +1,9 @@
 import {digest} from './data-codec.mjs';
 import {date as calendarDate} from './domain/calendar.mjs';
-import {parseEnergyPolicy,parseEnergyExpenditure} from './domain/energy-policy.mjs';
+import {parseEnergyPolicy,parseEnergyExpenditure,projectRestingAge} from './domain/energy-policy.mjs';
 import {parseNutrientReferencePolicy,effectiveNutrientReferencePolicy,projectNutrientReferences,nutrientReferenceOptions,NUTRIENT_REFERENCE_SET} from './domain/nutrient-references.mjs';
-import {parseBodyCompositionPolicy,bodyMetricOptions,projectBodyComposition} from './domain/body-composition.mjs';
+import {parseBodyCompositionPolicy,bodyMetricOptions,projectBodyComposition,bodyMassIndex} from './domain/body-composition.mjs';
+import {createBiometricLibrary,biometricEntryForPair} from './domain/biometric-library.mjs';
 import {calculateSummary} from './domain/nutrition.mjs';
 
 export const profileSettingsCommandFields={
@@ -30,6 +31,8 @@ export function prepareProfileSettingsCommand(state,action){
 export function profileSettingsView(state,date){
  calendarDate(date);
  const energy=parseEnergyPolicy(state.settings.energyPolicy),references=effectiveNutrientReferencePolicy(state.settings.nutrientReferences,state.settings.nutrientTargetModes),body=parseBodyCompositionPolicy(state.settings.bodyComposition);
- const summary=calculateSummary(state,date);
- return {revision:digest(state),date,energy,referenceSet:NUTRIENT_REFERENCE_SET,references,referenceOptions:nutrientReferenceOptions,referenceProjection:projectNutrientReferences(references,date),body,bodyOptions:bodyMetricOptions(state),composition:projectBodyComposition(state.biometrics??[],body,date),effectiveEnergy:summary.energy};
+ const summary=calculateSummary(state,date),composition=projectBodyComposition(state.biometrics??[],body,date),referenceProjection=projectNutrientReferences(references,date),restingAge=projectRestingAge(energy?.resting,date),library=createBiometricLibrary(state);
+ const demographics=restingAge?{source:'energy',age:restingAge.years,sex:energy.resting.sex,birthDate:energy.resting.birthDate??null}:references?{source:'references',age:referenceProjection.age?.years??null,sex:references.sex,birthDate:references.birthDate}:{source:null,age:null,sex:null,birthDate:null};
+ const measurements=Object.fromEntries(['weight','height','bodyFat'].map(kind=>{const value=composition[kind];return [kind,{status:value.status,metric:value.metric,value:value.status==='known'?value.reading.value:null,unit:value.metric?.unit??null,date:value.reading?.date??null,choice:value.metric?biometricEntryForPair(library,value.metric.type,value.metric.unit):null}];}));
+ return {revision:digest(state),date,energy,referenceSet:NUTRIENT_REFERENCE_SET,references,referenceOptions:nutrientReferenceOptions,referenceProjection,body,bodyOptions:bodyMetricOptions(state),composition,effectiveEnergy:summary.energy,profile:{demographics,measurements,bmi:bodyMassIndex(composition.weightKg,composition.heightCm)}};
 }

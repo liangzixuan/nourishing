@@ -1,3 +1,4 @@
+import {applyTheme} from './appearance.js';
 import {rememberOfflineAccount,lockCurrentOffline,leaveOfflineAccount} from './offline-session.js';
 import {disconnectCurrentPush} from './reminders.js';
 import {installButton,refreshInstallButton} from './pwa.js';
@@ -35,11 +36,12 @@ function verification(){
 async function profile(){
   let user;try{user=await api('/api/account',null,'GET');}catch(error){if(error.status===401){await lockCurrentOffline();if(!await deletion.recover())accountForm('login');return;}root.innerHTML=`<h1>Account</h1>${notice()}<button id="retry">Try again</button>`;message(error.message,true);root.querySelector('#retry').onclick=profile;return;}
   await rememberOfflineAccount(user);
+  const display=await api('/api/display',null,'GET').catch(()=>null);applyTheme(display?.settings?.theme);
   const zone=user.profile.timeZone==='UTC'?Intl.DateTimeFormat().resolvedOptions().timeZone:user.profile.timeZone;
   root.innerHTML=`<h1>Account</h1>${installButton()}<section class="card"><p><strong>${escape(user.name)}</strong></p><p class="muted">${escape(user.email)}</p><p>${user.emailVerified?'Email verified':'Email not verified'}</p>${user.emailVerified?'':'<button class="secondary" id="verify">Send verification email</button>'}</section><form><label>Time zone<input name="timeZone" value="${escape(zone)}" required maxlength="100"></label><label>Units<select name="units"><option value="metric">Metric</option><option value="imperial">Imperial</option></select></label><button>Save settings</button></form>${notice()}<button class="secondary signout" id="signout">Sign out</button><button type="button" class="delete-account" id="delete-account">Delete account</button>`;
   refreshInstallButton();
   const form=root.querySelector('form');form.elements.units.value=user.profile.units;
-  const diaryLink=document.createElement('a');diaryLink.href='/diary';diaryLink.textContent='Open diary';diaryLink.className='links';root.prepend(diaryLink);
+  const diaryLink=document.createElement('a');diaryLink.href='/diary';diaryLink.textContent='‹ Back to diary';diaryLink.className='links';root.prepend(diaryLink);
   form.onsubmit=e=>{e.preventDefault();busy(form,async()=>{await api('/api/profile',Object.fromEntries(new FormData(form)),'PUT');message('Saved.');});};
   const verify=root.querySelector('#verify');if(verify)verify.onclick=()=>busy(verify.parentElement,async()=>{await api('/api/auth/verification',{});message('Verification email sent.');});
   root.querySelector('#delete-account').onclick=deletion.open;

@@ -98,19 +98,19 @@
     },
     {
       "path": "public/targets.js",
-      "sha256": "e0e7636decc11bc75f6a15fe399a5fa6c83026f78247f55a558ab7d46a71412f"
+      "sha256": "aedaf12445b407d78d47f2e9cbc1f27d51101fbf58f2dcfaf7ce472d05588950"
     },
     {
       "path": "public/targets.css",
-      "sha256": "ad0a6f5ab764f6a2b8ce23d962afe68011d48d198accf5e28d47e5bcecb13b16"
+      "sha256": "3a12ced2ab07ecfd2530602a484a5465994db34c8f2de1ab4543e2e0f68413ad"
     },
     {
       "path": "server/target-policy-view.mjs",
-      "sha256": "685f5e50b56e9e885c647c928ef582e649094273b3e6bb1b888d3b0662fadbae"
+      "sha256": "ec59616e55f8326d384f7a4df7c24b1fa46229c17070ec2920cb9ba97c2b6916"
     },
     {
       "path": "server/target-policy-commands.mjs",
-      "sha256": "402612ee166743b2cc95052c031d8f15b428216e178d3feead0bb56e7007c026"
+      "sha256": "8c3ef4cecf5ea3dfa5dfa39336d609ed8ad93f7df08c72db0d79d3b777cff397"
     },
     {
       "path": "server/http.mjs",

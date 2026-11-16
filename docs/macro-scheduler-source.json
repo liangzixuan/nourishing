@@ -6,7 +6,7 @@
       "source": "../cronometer-local/public/mobile-macro-scheduler.js",
       "target": "public/macro-scheduler-source/mobile-macro-scheduler.js",
       "sourceSha256": "058f427b083d0326349fc9acc06193e87677289c4a72aa45b6d04854961bf307",
-      "outputSha256": "f7cb3dd061874e0929dbb9cd4a27b52ca04cf98c7172066eb4747992a2d848c6",
+      "outputSha256": "5d0189426ea62ffcf06ab1207348d026a7682761f4b0eb9cb530d88800efcaaa",
       "transforms": [
         "LF normalization; redirect published source imports/assets; use cloud-owned policy capture, canonical template preview and shared immutable command lifecycle; scoped cloud dialog/switch resets."
       ]
@@ -26,11 +26,11 @@
     },
     {
       "target": "public/targets.js",
-      "outputSha256": "e0e7636decc11bc75f6a15fe399a5fa6c83026f78247f55a558ab7d46a71412f"
+      "outputSha256": "aedaf12445b407d78d47f2e9cbc1f27d51101fbf58f2dcfaf7ce472d05588950"
     },
     {
       "target": "public/targets.css",
-      "outputSha256": "ad0a6f5ab764f6a2b8ce23d962afe68011d48d198accf5e28d47e5bcecb13b16"
+      "outputSha256": "3a12ced2ab07ecfd2530602a484a5465994db34c8f2de1ab4543e2e0f68413ad"
     },
     {
       "target": "public/target-policies.js",
@@ -38,11 +38,11 @@
     },
     {
       "target": "public/diary.js",
-      "outputSha256": "737babaf05af259c3d448c08e1eeb18fbc9f6381ae35c1aa5af1c604a485a243"
+      "outputSha256": "234ceefe4338b0e8b471e49e32b642cdd4db1b80c836030a744f8808c62cd1cc"
     },
     {
       "target": "server/target-policy-view.mjs",
-      "outputSha256": "685f5e50b56e9e885c647c928ef582e649094273b3e6bb1b888d3b0662fadbae"
+      "outputSha256": "ec59616e55f8326d384f7a4df7c24b1fa46229c17070ec2920cb9ba97c2b6916"
     },
     {
       "target": "tests/macro-scheduler.test.mjs",
@@ -50,7 +50,7 @@
     },
     {
       "target": "tests/macro-scheduler-browser.test.mjs",
-      "outputSha256": "1cb8b11e49071364dbc8c64386aeb04ca85c05ce3ef17d384766c4920facc1e9"
+      "outputSha256": "59aebae30c7aa52fce7b0d6f1281f36d76c8b2b6f8479f8175d7ec583fdb80db"
     },
     {
       "target": "tests/targets-mobile.test.mjs",
@@ -79,7 +79,8 @@
     "Diary day sheet offers Follow schedule, Default, saved templates or Custom and returns to the selected Diary after apply/cancel.",
     "Template preview works with disabled scheduler; inherited/default versus effective scheduled settings remain distinct.",
     "Preview/save use workspace revision; stale or malformed responses do not save. Ambiguous writes retain and retry the identical envelope through shared TargetControlScreen.",
-    "Superseded generic scheduler/template/day editors removed; independent weekday nutrient overrides retained."
+    "Superseded generic scheduler/template/day editors removed; independent weekday nutrient overrides retained.",
+    "Template calculations debounce edits and serialize actual fetch completion. Superseded results cannot paint; saving waits for an active calculation; Cancel invalidates queued save before submission."
   ],
   "checks": [
     "node --test tests/macro-scheduler.test.mjs tests/macro-scheduler-browser.test.mjs tests/target-policy.test.mjs tests/targets-mobile.test.mjs (13 passed)",
@@ -96,7 +97,7 @@
   ],
   "hostedVerification": {
     "script": "scripts/verify-macro-scheduler-hosted.mjs",
-    "sha256": "134faa393108d72832b0effa41abfa266b6561aa2ddbe54741cc728f2e76f5a6",
+    "sha256": "8cdc0b4efd0b085e65ca8e052cf5acb8308d396cf70415ad43eb4468ab41ddf1",
     "status": "prepared; not run against hosted"
   }
 }

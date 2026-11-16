@@ -1,3 +1,4 @@
+import {diaryEntryAmount,diaryGroupSubtotal} from './diary-table-presentation.js';
 import {mountTargetsSheet} from './targets.js';
 import {mountFoodCopy} from './food-copy.js';
 import {mountFoodEntry} from './food-entry.js';
@@ -56,10 +57,10 @@ function render(){
  const records=display.groups.flatMap(group=>group.records.map(ref=>({...ref,group:group.name,row:maps[ref.collection].get(ref.id)})));
  const renderRow=({collection,row})=>{
   const time=diary.presentation?.settings?.showTimestamp===false?'':row.time;
-  if(collection==='entries')return mobileDiaryRecord({id:row.id,collection,name:row.facts?.name??row.name,meta:e([time,row.kind==='exercise'?`${num(row.duration)} min`:row.quantity!==undefined?`${num(row.quantity)} ${row.unit==='portion'?(row.facts?.portionLabel??'portions'):row.unit}`:`${num(row.amount)} servings`].filter(Boolean).join(' · ')),amount:`${num(row.energyValue,0)}<br>${e(energyUnit)}`,icon:diarySymbol(row.kind==='exercise'?'fitness_center':row.recipeId||row.mealId?'restaurant':'nutrition'),selectBox:diaryTools.selectBox(collection,row),action:'edit-entry'});
+  if(collection==='entries')return mobileDiaryRecord({id:row.id,collection,name:row.facts?.name??row.name,meta:e([time,row.kind==='exercise'?`${num(row.duration)} min`:row.quantity!==undefined?`${num(row.quantity)} ${row.unit==='portion'?(row.facts?.portionLabel??'portions'):row.unit}`:`${num(row.amount)} servings`].filter(Boolean).join(' · ')),amount:diaryEntryAmount(row,s.diaryTable,{energyUnit}),icon:diarySymbol(row.kind==='exercise'?'fitness_center':row.recipeId||row.mealId?'restaurant':'nutrition'),selectBox:diaryTools.selectBox(collection,row),action:'edit-entry'});
   const note=collection==='notes';return mobileDiaryRecord({id:row.id,collection,name:note?row.text:row.type,meta:e(time),amount:note?'':`${num(row.value,20)} ${e(row.unit)}`,icon:diarySymbol(note?'description':'monitor_heart'),selectBox:diaryTools.selectBox(collection,row),action:note?'edit-note':'edit-biometric',extra:note&&notePhotoThumbnail(row)?`<button type="button" class="icon-button" data-action="edit-note" aria-label="Open note photo">${notePhotoThumbnail(row)}</button>`:''});
  };
- page.innerHTML=`${diaryCycleMarkup(diary.cycleDays)}${diaryTools.toolbar()}${diarySummaryMarkup(diary)}<div class="md-diary diary-layout">${mobileDiaryGroups({groups:display.groups.map(group=>group.name),configuredGroups:diary.groups,records,renderRow,showGroups:display.showGroups,selectBox:group=>diaryTools.groupBox(group),subtotal:group=>`<button type="button" class="diary-group-tools" data-tool-group="${e(group)}" aria-label="${e(group)} actions">⋯</button>`,icons,labels:{add:'Add food'}})}</div>`;
+ page.innerHTML=`${diaryCycleMarkup(diary.cycleDays)}${diaryTools.toolbar()}${diarySummaryMarkup(diary)}<div class="md-diary diary-layout">${mobileDiaryGroups({groups:display.groups.map(group=>group.name),configuredGroups:diary.groups,records,renderRow,showGroups:display.showGroups,selectBox:group=>diaryTools.groupBox(group),subtotal:group=>diaryGroupSubtotal(s.diaryTable,group,{energyUnit})+`<button type="button" class="diary-group-tools" data-tool-group="${e(group)}" aria-label="${e(group)} actions">⋯</button>`,icons,labels:{add:'Add food'}})}</div>`;
  summaryPanel=mountDiarySummary({root:page,diary,onAction:summaryAction});
 }
 function openInsights(mode='suggestions',day=date){return openFoodInsights({mode,date:()=>day,show,close,header,content,onAdd:(kind,id,quantity)=>edit(null,id,'food',quantity),onAdded:load,onPreferences:load});}
