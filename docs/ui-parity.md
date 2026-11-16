@@ -55,8 +55,8 @@ The 434-test suite passed 433 cases initially; its Coach-to-Report test expected
 - Food entry: Edit a copy, favorite/options controls, timestamp toggle, source/nutrition sections and fixed footer are restored.
 - Photo Log review: Create Meal/Recipe, per-food macros and Energy Summary are restored.
 - Diary: mixed notes/biometrics/foods now share source groups and typed record actions.
-- Detailed chart settings/CGM comparison, snapshot editors, Targets, fasting and other child tool forms still use cloud adapters.
-- Latest Cronometer Report Remaining ring and full nutrient-detail screen differ from the saved local implementation restored here.
+- Generic/custom chart editors, Targets, fasting and other child tool forms still use cloud adapters. CGM comparison/detail and Snapshot child screens are restored.
+- Report Remaining ring and nutrient-detail hierarchy are restored; exact native multi-day nutrient popup behavior and dynamic Remaining ring colors remain unverified.
 
 Public password recovery is deferred by the owner. Installed-phone camera/barcode, notification delivery and offline operation still need device verification. Functional browser checks do not establish complete visual or device parity.
 
@@ -94,3 +94,8 @@ Frontend Photo Log checks pass automatic recognition, amount editing, default gr
 ## Mixed Diary acceptance
 
 Deployment `6afaabce06903083a7a1` (runtime `a4dd7f5`) passed 461 tests, build/publication checks and hosted mixed-record acceptance. Notes and biometrics appear before the ordered food entries within source groups. Correct context editors, Uncategorized selection without rewriting raw groups, collapse persistence, unchanged totals, account preservation and fixture cleanup passed. The live phone-width screenshot was inspected. No same-state native mixed fixture was available; ordering is derived from the saved local source.
+
+
+## Discover child-screen hosted acceptance
+
+Deployment `6afaaf75b8d285c39483`, runtime `1b1b4aa`, passed 463 tests, the build and publication checks. Hosted Report/CGM verification passed the Remaining ring, canonical nutrient sources/mean, comparison data and shared bounds, persistent settings, nested navigation and plot disposal. Hosted Snapshot verification passed automatic upload/receipt retry, metadata-preserving caption/date edits, cancel/outside/Back/navigation, full-screen viewer and deletion/media-access removal. Both fixtures were removed and owner data was unchanged. Live screenshots were inspected; physical camera behavior remains a device-only check. Source-specific reference limitations are in the feature manifests.
