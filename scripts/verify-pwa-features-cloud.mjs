@@ -49,7 +49,7 @@ try {
  assert.ok(!(await get('/api/dashboard?date='+date,other)).pinnedCharts.cards.some(card=>card.id===chartId));
  checks.push('hidden chart pinned independently with saved settings and account isolation');
  const packet=await get('/api/library/share?kind=food&id='+food);assert.equal(packet.kind,'food');assert.equal(packet.item.notes,undefined);
- const foreign=await other.request.get(origin+'/api/library/share?kind=food&id='+food);assert.equal(foreign.status(),404);
+ const foreign=await other.request.get(origin+'/api/library/share?kind=food&id='+food),missing=await other.request.get(origin+'/api/library/share?kind=food&id='+randomUUID());assert.equal(foreign.status(),400);assert.equal(missing.status(),400);assert.deepEqual(await foreign.json(),await missing.json());
  const preview=await post('/api/library/share/preview',packet,other),input={revision:preview.revision,requestId:randomUUID(),type:'share.import',payload:packet};
  const saved=await post('/api/library/share/import',input,other);assert.deepEqual(await post('/api/library/share/import',input,other),saved);
  const print=await post('/api/library/food-print',{id:food,includeNotes:false});assert.equal(print.accountId,created[0]);assert.equal(print.capture.request.id,food);
@@ -58,7 +58,8 @@ try {
  await page.goto(origin+'/diary');await page.locator('.calorie-summary').waitFor();
  await page.locator('#discover-tab').click();await page.locator('[data-health-card=glucose]').waitFor();await page.locator('[data-health-card=cycle]').waitFor();
  await page.locator('[data-chart-open="'+chartId+'"]').waitFor();
- await page.locator('[data-discover=coach]').click();await page.getByRole('button',{name:'Protein',exact:true}).click();await page.locator('.coach-results').waitFor();
+ await page.getByRole('button',{name:'Share streak',exact:true}).click();await page.locator('.dc-streak-image').waitFor();await page.screenshot({path:'.local/pwa-hosted-streak.png'});await page.locator('#sheet').evaluate(dialog=>dialog.close());
+ await page.locator('[data-discover=coach]').click();await page.getByRole('button',{name:'Protein',exact:true}).click();await page.waitForFunction(()=>document.querySelector('[data-coach-question] [name=question]')?.value==='Protein'&&document.querySelector('.coach-results h2')?.textContent==='Protein');assert.equal(await page.locator('.coach-results article').count(),1);
  await page.screenshot({path:'.local/pwa-hosted-coach.png'});
  await page.locator('#sheet').evaluate(dialog=>dialog.close());
  await page.locator('#foods-tab').click();await page.locator('[data-library-item="'+food+'"]').click();await page.locator('[data-library-print]').click();
@@ -66,7 +67,7 @@ try {
  assert.equal(await page.frameLocator('[data-print-frame]').locator('h1').textContent(),'PWA feature oats');
  await page.screenshot({path:'.local/pwa-hosted-food-print.png'});
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(errors,[]);
- checks.push('hosted Dashboard cards and pins, Coach and styled food print on mobile Chrome');
+ checks.push('hosted Dashboard cards and pins, streak image, Coach and styled food print on mobile Chrome');
  assert.equal((await db.getRow(args('workspace_heads',owner))).digest,before.digest);
 }catch(error){primaryError=error;}finally{
  await browser?.close();for(const id of created)try{await clean(id);}catch{failures.push(id);}remember();

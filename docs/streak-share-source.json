@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "source": "../cronometer-local",
+  "files": [
+    {
+      "source": "public/discover-share.js",
+      "target": "public/streak-source/discover-share.js",
+      "sourceSha256": "650fb34168f9abaea3364e31997aec7157ba7b0b3b7b5931cd711ac316d1faa0",
+      "sha256": "5760a0209416955e1868883f7765808e802827b70755ade85fd38145a53fa597",
+      "transforms": [
+        "Normalize LF",
+        "Reuse Dashboard message formatter",
+        "Remove native Android bridge paths"
+      ]
+    },
+    {
+      "source": "public/discover-assets/fonts.css",
+      "target": "public/streak-source/fonts.css",
+      "sourceSha256": "2c0b6db3c23de4def67f3c3a72a2e648a03a9d8f95abba8f545d3c5323ac39ec",
+      "sha256": "04742692ecfa60fbb7f6ca3e45e71938494533802aad5d3140eb2f71107e32f1",
+      "transforms": [
+        "Normalize LF",
+        "Resolve bundled font URLs"
+      ]
+    },
+    {
+      "source": "public/discover-assets/type-1.woff2",
+      "target": "public/streak-source/type-1.woff2",
+      "sourceSha256": "312f8ebaede0db3bb202ee6b116cbe0d467e109b69b93b1e8ff869fc76a210d1",
+      "sha256": "312f8ebaede0db3bb202ee6b116cbe0d467e109b69b93b1e8ff869fc76a210d1",
+      "transforms": []
+    },
+    {
+      "source": "public/discover-assets/type-2.woff2",
+      "target": "public/streak-source/type-2.woff2",
+      "sourceSha256": "786f58b1976ab8115f6730abc58c1dddd1c483d8310d304cfa1e1396879a08d5",
+      "sha256": "786f58b1976ab8115f6730abc58c1dddd1c483d8310d304cfa1e1396879a08d5",
+      "transforms": []
+    },
+    {
+      "source": "public/discover-assets/type-3.woff2",
+      "target": "public/streak-source/type-3.woff2",
+      "sourceSha256": "0513554cac9d5c8c9fa1f789dae0e3db1a3c7278fc532143ccf932502f2ddb46",
+      "sha256": "0513554cac9d5c8c9fa1f789dae0e3db1a3c7278fc532143ccf932502f2ddb46",
+      "transforms": []
+    },
+    {
+      "source": "public/discover-assets/type-4.woff2",
+      "target": "public/streak-source/type-4.woff2",
+      "sourceSha256": "f43f1c7780d69792278f04b136c934a0298fc66f2e974bac13dd2e53adc52bde",
+      "sha256": "f43f1c7780d69792278f04b136c934a0298fc66f2e974bac13dd2e53adc52bde",
+      "transforms": []
+    },
+    {
+      "source": "public/discover-assets/type-5.woff2",
+      "target": "public/streak-source/type-5.woff2",
+      "sourceSha256": "02e8f4be57ddc47cb7882c41b60216b6085b1ceaf717514be2b88fa15396238d",
+      "sha256": "02e8f4be57ddc47cb7882c41b60216b6085b1ceaf717514be2b88fa15396238d",
+      "transforms": []
+    },
+    {
+      "source": "public/discover-assets/symbols.woff2",
+      "target": "public/streak-source/symbols.woff2",
+      "sourceSha256": "042a84e1b864121186d577184b04a80ee0ef8234377e505eaee150330e70d9d9",
+      "sha256": "042a84e1b864121186d577184b04a80ee0ef8234377e505eaee150330e70d9d9",
+      "transforms": []
+    }
+  ]
+}

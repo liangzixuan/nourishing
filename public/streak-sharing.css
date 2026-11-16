@@ -1,0 +1,2 @@
+@import url('/streak-source/fonts.css');
+.dc-streak-image{display:block;width:100%;height:auto;border-radius:16px}.dc-share-actions{display:flex;justify-content:center;margin-top:16px}.dc-share [role=status]:empty{display:none}.dc-streak{position:relative}.dc-streak>[data-discover=share-streak]{position:absolute;right:8px;top:8px}
