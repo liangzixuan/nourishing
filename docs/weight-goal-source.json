@@ -6,7 +6,7 @@
       "source": "../cronometer-local/public/mobile-weight-goal.js",
       "target": "public/weight-goal-source/mobile-weight-goal.js",
       "sourceSha256": "cc5b3edbfddd35ade8741bd04826ea49368578425b41bff216a433ea208e1f71",
-      "outputSha256": "97164bfde791ca2cf6d9e6096a25c496c01a275c36d0a145a3fb42695d1a69b3",
+      "outputSha256": "bd71cfb50def5ffd6b5765cf2035185ab488727f3e656861d622401295724b92",
       "transforms": [
         "Redirect imports and API calls to cloud target owner; use shared immutable request lifecycle; abort cancelled preview; show concise loading/retry copy; round converted display input to 12 significant digits to avoid binary tails."
       ]

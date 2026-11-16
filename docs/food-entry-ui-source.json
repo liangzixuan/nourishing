@@ -5,7 +5,7 @@
       "source": "../cronometer-local/public/mobile-food-entry.js",
       "target": "public/food-entry-source/mobile-food-entry.js",
       "sourceSha256": "b26eb708e7913cb55b521062c3e1eefe4e0e9c9bbd6f0e9b00a7a2b90c5e62e9",
-      "sha256": "4b32ea0e1bd1616aa18379ae636e241c644dc497bbdd34cff484d4f70dc73300"
+      "sha256": "d0d1900f016beda56ef74ab2bc3da4bbaad5d356cb5e9673ef7a5ba69349594b"
     },
     {
       "source": "../cronometer-local/public/food-nutrition-view.js",

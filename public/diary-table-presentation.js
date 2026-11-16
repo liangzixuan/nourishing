@@ -5,13 +5,14 @@ import {displayValue,displayUnit} from './dashboard-source/energy-display.js';
 import {parseEnergyUnit} from './dashboard-source/energy-units.mjs';
 import {formatMessage} from './report-source/public/message-format.js';
 import {nutrientDisplayName} from './report-source/public/nutrient-language.js';
+import {coreText} from './core-cloud-messages.js';
 const message=(language,key,values)=>formatMessage(language,'diaryDisplay.'+key,values);
 const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 const number=value=>typeof value==='number'&&Number.isFinite(value);
 const nullable=value=>value===null||number(value);
 const amount=(value,language='en')=>new Intl.NumberFormat(language,Math.abs(value)>0&&Math.abs(value)<0.005?{notation:'scientific',maximumSignificantDigits:3}:{maximumFractionDigits:2}).format(value);
 export function diaryRecordedAmount(row){return row.active&&row.value===null&&row.coverage.total===0&&row.coverage.complete?0:row.value;}
-function diaryAmountName(row,energyUnit,language,name){return row.id==='calories'&&energyUnit==='kcal'?'Calories':name;}
+function diaryAmountName(row,energyUnit,language,name){return row.id==='calories'&&energyUnit==='kcal'?coreText('calories',{},language):name;}
 
 function validateRow(row,language='en'){
   const c=row?.coverage;
@@ -30,9 +31,9 @@ export function renderDiaryTableAmount(row,{label=false,energyUnit='kcal',langua
 export function diaryEntryAmount(entry,table,{energyUnit='kcal',language='en'}={}){
  const id=table?.policy.summaryNutrient??'calories';
  if(isExerciseEntry(entry)){
-  if(id!=='calories')return '<span class="diary-table-na">N/A</span>';
+  if(id!=='calories')return `<span class="diary-table-na">${esc(coreText('notApplicable',{},language))}</span>`;
   const {calories}=exerciseEntryFacts(entry),value=calories===null?'—':amount(displayValue(-calories,'kcal',energyUnit),language)+' '+energyUnit;
-  return `<span data-diary-column="calories">${esc(value)}<small class="diary-exercise-summary">Burned</small></span>`;
+  return `<span data-diary-column="calories">${esc(value)}<small class="diary-exercise-summary">${esc(coreText('burned',{},language))}</small></span>`;
  }
  const facts=entry.facts;
  return renderDiaryTableAmount(projectDiaryTarget({id,totals:facts.nutrients,targets:{},coverage:facts.coverage,complete:false,carbohydrate:facts.carbohydrate,carbohydrates:facts.carbohydrates}),{energyUnit,language});

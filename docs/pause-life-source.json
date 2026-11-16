@@ -1,11 +1,11 @@
 {
-  "scope": "Display \u2192 The Pause Life Settings, with existing whole-day Diary macro-page consumer.",
+  "scope": "Display → The Pause Life Settings, with existing whole-day Diary macro-page consumer.",
   "files": [
     {
       "source": "../cronometer-local/public/mobile-display.js",
       "target": "public/pause-life.js",
       "sourceSha256": "048f47dbe6ef3014d6d1c586eee70e3282c88b65cedd58b59d674018d245186a",
-      "outputSha256": "017ae8c039cb3cd5993f2a1cb5f642cd48aecb374c235038156d461f40aeedc3",
+      "outputSha256": "e41177cc848b49d137e7ca9886e8bd15382e969254bd3ca76a64767aeecfb20f",
       "transforms": [
         "Extract Pause Life enabled switch and mutually exclusive program choices into an isolated account controller.",
         "Use authenticated revision-bearing projection and immutable command receipts. Keep disabled-program behavior, immediate save, compact failure/retry, and parent-owned Back.",

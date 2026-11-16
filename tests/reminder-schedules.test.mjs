@@ -49,7 +49,7 @@ test('saving schedules stays paused, and resume requires a connected browser and
 });
 test('scheduled send has a durable claim, remains generic and does not repeat across worker instances',async()=>{
  const sent=[],f=await ready({send:async(...args)=>{assert.ok([...f.table('push_deliveries').values()].some(row=>row.outcome==='sending'));sent.push(args);return {statusCode:201};}});
- f.setTime('2026-10-29T12:01:00Z');assert.equal((await f.store.tick()).attempted,1);assert.equal((await createReminderScheduleStore(f.options).tick()).attempted,0);assert.equal(sent.length,1);assert.deepEqual(Object.keys(JSON.parse(sent[0][1])).sort(),['tag','version']);
+ f.setTime('2026-10-29T12:01:00Z');assert.equal((await f.store.tick()).attempted,1);assert.equal((await createReminderScheduleStore(f.options).tick()).attempted,0);assert.equal(sent.length,1);assert.deepEqual(Object.keys(JSON.parse(sent[0][1])).sort(),['language','tag','version']);
  assert.equal(f.table('reminder_dispatch').get(owner).dueAt,'2026-11-05T13:00:00.000Z');assert.equal((await f.store.status()).paused,false);
 });
 test('lost claim reply and lost result update never resend an uncertain occurrence',async()=>{
@@ -90,4 +90,12 @@ test('cloud-verifier expired subscription path reserves one receipt without invo
  assert.equal((await worker.run(request)).attempted,1);assert.equal(sends,0);
  const receipts=[...f.table('push_deliveries').values()];assert.equal(receipts.length,1);assert.equal(receipts[0].outcome,'expired');assert.equal(receipts[0].statusCode,0);
  assert.equal(f.table('reminder_dispatch').size,0);assert.equal((await f.push.status()).devices.length,0);assert.equal((await worker.run(request)).stale,true);assert.equal(f.table('account_operations').size,0);
+});
+
+
+test('scheduled and explicit test sends capture only the current account language with generic opaque payloads',async()=>{
+ const state=initialState(),sent=[];state.settings.appLanguage='fr';const f=await ready({state,send:async(...args)=>{sent.push(JSON.parse(args[1]));return {statusCode:201};}});
+ f.setTime('2026-10-29T12:01:00Z');await f.store.tick();assert.equal(sent[0].language,'fr');assert.deepEqual(Object.keys(sent[0]).sort(),['language','tag','version']);
+ state.settings.appLanguage='pt-BR';f.install(state);const device=(await f.push.status()).devices[0],input={deviceId:device.id,requestId:randomUUID()};await f.push.test(input);assert.equal(sent[1].language,'pt-BR');assert.deepEqual(Object.keys(sent[1]).sort(),['language','tag','version']);
+ state.settings.appLanguage='de';f.install(state);await f.push.test(input);assert.equal(sent.length,2);f.setTime('2026-10-29T12:03:00Z');await f.push.test({...input,requestId:randomUUID()});assert.equal(sent[2].language,'de');
 });

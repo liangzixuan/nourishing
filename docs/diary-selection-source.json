@@ -5,7 +5,7 @@
       "source": "../cronometer-local/public/app.js",
       "target": "public/diary-summary.js",
       "sourceSha256": "7885979aa41896f3058b99f181ad1c2f7700482580de8669b10826b436115447",
-      "outputSha256": "ba426f0ec9f5390b5523647139bb7494e59a63be6c8f7b93137d9f4a611d12ed",
+      "outputSha256": "4ccd864ea6560a00a95742b76ffa1b57932ed5d584f4524f27b13ef863f4fa26",
       "transforms": [
         "Reuse refreshDiaryNutritionFacts and mobileChartSummary semantics through canonical authenticated projection.",
         "Food selection changes intake, energy ring/remaining and macro/highlight rows; full-day score/water/fasting consumers remain unchanged.",

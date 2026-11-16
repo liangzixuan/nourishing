@@ -31,7 +31,7 @@
   "files": [
     {
       "target": "public/recipe-import.js",
-      "outputSha256": "7608206ca5447f5eafcc7af3b2aebbe558c3167ad7c0af34204f8e1f90dfa888"
+      "outputSha256": "255909a2a6bffeb515abbe34bb79e36d927fd36adedda4af6f0a68739780ce16"
     },
     {
       "target": "public/recipe-import.css",
@@ -43,15 +43,15 @@
     },
     {
       "target": "public/recipe-editor.js",
-      "outputSha256": "c4cbee5fa3df6c0b78030bdd8586c3220dfc7a549d6f1d2b001085a9d7a8310c"
+      "outputSha256": "2402a892645e14c92a3e577712c102287d293a0f1d13a5db5a75cd0ca1966292"
     },
     {
       "target": "public/library.js",
-      "outputSha256": "2626b7f1c072a580b44274db5ae1f6b3eb4e5bdff2b968716879aeab689f217a"
+      "outputSha256": "6e908d9c4bf2f9f0b5e9c7c9b16d4bc609499cb51b77272a6fba1f238feb70cd"
     },
     {
       "target": "public/library.css",
-      "outputSha256": "c81a6fe355c0d816e5f40fb5ac54278ed1116e29ca5dfa66e8d4066adbc13a84"
+      "outputSha256": "339e3d635fe0af287f4b209912807ec0f5c96db427d5191702499086cadf6eb9"
     },
     {
       "target": "server/recipe-import.mjs",

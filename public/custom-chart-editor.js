@@ -1,17 +1,20 @@
+import {dc,customChartText as cm} from './discover-cloud-messages.js';
+import {uiLanguage,t} from './app-language.js';
 import {request} from './diary-api.js';
+import {escape as e} from './html.js';
 import {MobileChartEditor} from './custom-chart-source/mobile-chart-editor.js';
 
 /** Cloud command/lifecycle adapter; the source editor owns the unsaved draft. */
 export function mountCustomChartEditor(chart,data,ui){
  const {show,content,close}=ui;
- const draft=chart??{version:2,name:'',primary:{kind:'biometric',type:'weight',unit:'kg'},secondary:null,days:7,visible:true,cycleOverlay:false};
- show(`<section class="mobile-chart-editor"><header class="sheet-header"><button type="button" class="icon-button" data-mce-back aria-label="Back">‹</button><h2 id="sheet-title">${chart?'Edit':'Create'} Custom Chart</h2></header><p class="mce-intro">View two different data series on your Y-Axis - one on the left and one on the right.</p><p data-mce-error role="alert"></p><button type="button" data-mce-reload hidden>Reload latest chart</button><form></form></section>`);
+ const draft=chart??{version:2,name:'',primary:{kind:'biometric',type:"weight",unit:'kg'},secondary:null,days:7,visible:true,cycleOverlay:false};
+ show(`<section class="mobile-chart-editor"><header class="sheet-header"><button type="button" class="icon-button" data-mce-back aria-label="${t('discover.back')}">‹</button><h2 id="sheet-title">${e(cm(chart?'edit':'create'))}</h2></header><p class="mce-intro">${dc('twoAxes')}</p><p data-mce-error role="alert"></p><button type="button" data-mce-reload hidden>${dc('reloadLatestChart')}</button><form></form></section>`);
  const root=content.querySelector('.mobile-chart-editor'),form=root.querySelector('form'),dialog=content.closest('dialog'),abort=new AbortController();
- const editor=new MobileChartEditor({form,chart:draft,options:data.options});
+ const editor=new MobileChartEditor({form,chart:draft,options:data.options,language:uiLanguage()});
  let disposed=false,busy=false,pending=null,conflict=false;
  const alive=()=>!disposed&&root.isConnected;
  const error=root.querySelector('[data-mce-error]');
- function controls(){editor.setSaving(busy||!!pending||conflict);root.querySelector('[data-mce-back]').disabled=busy;root.querySelectorAll('[data-mce-nav]').forEach(button=>button.disabled=busy);const save=form.querySelector('[data-mce-save]');save.disabled=busy||conflict;save.textContent=busy?'Saving…':pending?'Try again':'Save Chart';root.querySelector('[data-mce-reload]').hidden=!conflict;root.querySelector('[data-mce-reload]').disabled=busy;}
+ function controls(){editor.setSaving(busy||!!pending||conflict);root.querySelector('[data-mce-back]').disabled=busy;root.querySelectorAll('[data-mce-nav]').forEach(button=>button.disabled=busy);const save=form.querySelector('[data-mce-save]');save.disabled=busy||conflict;save.textContent=busy?t('recipeImport.saving'):pending?t('mobileSuggest.retry'):cm('save');root.querySelector('[data-mce-reload]').hidden=!conflict;root.querySelector('[data-mce-reload]').disabled=busy;}
  function dispose(){if(disposed)return;disposed=true;editor.dispose();abort.abort();observer.disconnect();}
  function back(){if(editor.back())return;if(busy)return;dispose();(ui.onBack??close)();}
  // Reuse the live navigation actions and labels; do not create a second route owner.
@@ -21,7 +24,7 @@ export function mountCustomChartEditor(chart,data,ui){
   event.preventDefault();if(busy||conflict)return;
   if(!pending){if(!form.reportValidity())return;pending={requestId:crypto.randomUUID(),revision:data.revision,type:'chart.save',payload:{...draft,name:form.elements.name.value,primary:JSON.parse(form.elements.primary.value),secondary:form.elements.secondary.value?JSON.parse(form.elements.secondary.value):null}};}
   busy=true;error.textContent='';controls();
-  try{const result=await request('/api/workspace/command',pending);if(result.ok!==true)throw Error('Unable to confirm the save. Try again.');pending=null;if(!alive())return;dispose();close();await ui.onChange?.();await ui.afterSave?.();}
+  try{const result=await request('/api/workspace/command',pending);if(result.ok!==true)throw Error(dc('saveConfirm'));pending=null;if(!alive())return;dispose();close();await ui.onChange?.();await ui.afterSave?.();}
   catch(failure){if(!alive())return;error.textContent=failure.message;if(failure.status>=400&&failure.status<500){pending=null;conflict=failure.status===409;}}
   finally{busy=false;if(alive())controls();}
  }

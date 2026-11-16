@@ -17,7 +17,7 @@
   "assets": [
     {
       "output": "public/reminders.js",
-      "outputSha256": "eee3a752db3565640b72fa8b2735de3060ec64dda86c97c3eb73e5118619caec"
+      "outputSha256": "ff37bd9574b806b9fb160f8ca79ee720c81839e1fb489c574103e585ffb36ca1"
     },
     {
       "output": "public/reminders.css",
@@ -25,7 +25,7 @@
     },
     {
       "output": "public/reminder-schedules.js",
-      "outputSha256": "4fc845d1f7967ed64a6f18bb184069d8107e0ef75ca62d51e82747c7f5a3a273"
+      "outputSha256": "35c80bc663707b9c922e09423f6cc034226cca8438a34d6a752388b0a793ba28"
     }
   ],
   "adaptations": [

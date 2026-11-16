@@ -7,7 +7,7 @@
       "source": "../cronometer-local/public/mobile-charts.js",
       "target": "public/chart-detail.js",
       "sourceSha256": "f0c9603360b4789e69d0d3a1fffb3f4b484b4f289e7f3a3bf1df763be6a62a28",
-      "outputSha256": "6d517a292e28751c0d2420bfede7087b87893c4068158bbe2999adc17a1236cf",
+      "outputSha256": "43350585f2763d08ffeb8bdc54a0a5a32cea30ad69a09eccbe7495d31a92180f",
       "transforms": [
         "Extract non-CGM renderDetail, openPicker and savePreference semantics. Adapt authenticated revision commands, conflict reload, immutable retry and host-owned disposal. Keep source metric filtering and conditional controls. Render canonical server card values.",
         "UTF-8 and LF output."

@@ -26,7 +26,7 @@
       "source": "public/ui-language.js",
       "target": "public/health-source/public/ui-language.js",
       "sourceSha256": "ed34eb900d2e35c2cad8c9fb14ab355aeb8f5f47f332f8078fde3d157603e89a",
-      "outputSha256": "055f0cfe007545da42c02af4466c131be390a852a24c57423050f7b625f3b730",
+      "outputSha256": "12e124fb9c3ae5b6cef6a536e34eae7ad983a9f8a994aad71f3dc9f7d4bf6cb4",
       "transforms": [
         "Normalize line endings to LF",
         "Resolve static imports to owned health sources or verified existing report sources"

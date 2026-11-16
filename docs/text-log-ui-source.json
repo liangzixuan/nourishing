@@ -25,7 +25,7 @@
   "assets": [
     {
       "output": "public/text-log.js",
-      "outputSha256": "d739e7a03000deacad8665c83c1176727776fbe33384b493afc2621c441c7118"
+      "outputSha256": "e4bad65820d07b8541abf0d104c783cc3594d8dfe79917a6e2c460537f3aa6f6"
     },
     {
       "output": "public/text-log.css",

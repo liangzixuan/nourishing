@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {reminderPayload} from '../server/reminder-payload.mjs';
 import {runInNewContext} from 'node:vm';
 
 function worker(windows=[]){
@@ -23,3 +24,13 @@ test('notification click focuses this app or opens its diary, ignoring notificat
  await w.emit('notificationclick',event);assert.deepEqual(w.focused,['https://nourishing.example/account']);assert.deepEqual(w.opened,[]);assert.equal(closed,1);
  const empty=worker(['https://other.example']);await empty.emit('notificationclick',event);assert.deepEqual(empty.opened,['/diary']);
 });
+
+
+test('generic push text uses supported captured languages and rejects invalid language or payload version',async()=>{
+ const w=worker(),tag='nourishing-'+'b'.repeat(36),expected={en:'Your reminder is ready.',fr:'Votre rappel est prêt.',de:'Deine Erinnerung ist bereit.','pt-BR':'Seu lembrete está pronto.'};
+ for(const [language,prefix]of Object.entries(expected)){await w.emit('push',{data:{json:()=>({version:1,tag,language,body:'Private detail'})}});assert.ok(w.notices.at(-1).body.startsWith(prefix));assert.equal(w.notices.at(-1).title,'Nourishing');}
+ for(const language of [undefined,'es','constructor','__proto__',null,{toString:()=> 'fr'}]){await w.emit('push',{data:{json:()=>({version:1,tag,language})}});assert.ok(w.notices.at(-1).body.startsWith(expected.en));}
+ await w.emit('push',{data:{json:()=>({version:2,tag,language:'fr'})}});assert.ok(w.notices.at(-1).body.startsWith(expected.en));assert.ok(!JSON.stringify(w.notices).includes('Private detail'));
+});
+
+test('producer locale is allowlisted without carrying arbitrary preference text',()=>{for(const language of ['en','fr','de','pt-BR'])assert.equal(JSON.parse(reminderPayload('opaque',language)).language,language);for(const language of [undefined,null,'Private note',{},'constructor'])assert.deepEqual(JSON.parse(reminderPayload('opaque',language)),{version:1,tag:'opaque',language:'en'});});

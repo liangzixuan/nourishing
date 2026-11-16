@@ -1,3 +1,4 @@
+import {dc} from './discover-cloud-messages.js';
 import {TargetControlScreen as CloudTargetScreen} from './energy-expenditure.js';
 import {parseTemplateSettings} from './report-source/server/macro-templates.mjs';
 import {parseCarbohydratePolicy} from './report-source/server/carbohydrate-policy.mjs';
@@ -5,7 +6,7 @@ import {parseEnergyTarget} from './report-source/server/energy-policy.mjs';
 import {validateMacroTargets} from './macro-energy-source/macro-capture.js';
 export class TargetControlScreen extends CloudTargetScreen{
  capture(value){
-  const fail=()=>{throw Error('Unable to load macro targets. Try again.');};
+  const fail=()=>{throw Error(dc('macroLoad'));};
   if(!value||value.date!==this.date||!/^[a-f0-9]{64}$/.test(value.revision)||!['kcal','kJ'].includes(value.energyUnit)||!value.defaults)fail();
   const {controls,energy,macroTargets}=value.defaults;
   parseTemplateSettings({macro:controls?.macro,energy:{mode:'inherit'}});parseCarbohydratePolicy(controls?.carbohydrate);validateMacroTargets(macroTargets,this.language);if(controls?.energy?.inactiveTarget!==null&&parseEnergyTarget(controls?.energy?.inactiveTarget).mode==='fixed')fail();
@@ -18,6 +19,6 @@ export class TargetControlScreen extends CloudTargetScreen{
   case 'energy-custom':return {type:'targetPolicy.customEnergy',payload:{enabled:change.enabled,kcal:change.kcal}};
   case 'energy-above':return {type:'targetPolicy.aboveBaseline',payload:{enabled:change.enabled}};
   case 'restore-defaults':return {type:'targetPolicy.restoreDefaults',payload:{section:change.section}};
-  default:throw Error('Choose a supported target change.');
+  default:throw Error(dc('targetChange'));
  }}
 }

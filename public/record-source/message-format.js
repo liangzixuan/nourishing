@@ -1,11 +1,1 @@
-import {createMessageFormatter} from '../barcode-source/message-formatter.js';
-import {mobileBiometricMessages} from './locales/mobile-biometric.js';
-import {exerciseBrowserMessages} from './locales/exercise-browser.js';
-import {measurementLogMessages} from './locales/measurement-log.js';
-import {measurementCatalogMessages} from './locales/measurement-catalog.js';
-import {biometricInputMessages} from './locales/biometric-input.js';
-const labels={'activity.name':'Exercise','activity.customExercise':'Custom Exercise','activity.mobileDuration':'Duration','activity.mobileBurned':'Energy Burned','activity.save':'Save Changes','activity.addToDiary':'Add to Diary','notes.timestamp':'Timestamp','notes.groupLabel':'Group'};
-const messages=Object.fromEntries(['en','fr','de','pt-BR'].map(language=>[language,{...labels,...mobileBiometricMessages[language],...exerciseBrowserMessages[language],...measurementLogMessages[language],...measurementCatalogMessages[language],...biometricInputMessages[language]}]));
-messages.en['mobileBiometric.check']='Try again';
-messages.en['mobileBiometric.unknown']='The save could not be confirmed. Try again.';
-export const formatMessage=createMessageFormatter(messages);
+export {formatMessage} from '../report-source/public/message-format.js';

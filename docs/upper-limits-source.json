@@ -37,7 +37,7 @@
       "source": "../cronometer-local/public/nutrient-references.js",
       "target": "public/upper-limits-source/reference-panel.js",
       "sourceSha256": "9394d1f4cd2d0fe83d5d96f8536682dfcea209ad6a1c8e529af5dc1b3455261f",
-      "outputSha256": "3eddfffca40b8bdf1a50c150793876d7beb886597b296e0bc7996f67a748411a",
+      "outputSha256": "4a6efea9ce1c17c9d2065ad27f3e82224ae6892a55db6b932b1afb6fac35002b",
       "transforms": [
         "LF normalization",
         "Extract source panel class for Upper Limits; adapt current/preview/save to authenticated cloud target policy routes and immutable workspace receipts. Keep confirmation and unknown-save recovery.",
@@ -56,7 +56,7 @@
     },
     {
       "target": "public/targets.js",
-      "outputSha256": "13a9bac996ad5a11a4c5db383c9641bfeaa56f9f9c71b9948b29989470bbc089"
+      "outputSha256": "7b0b4584d0bdbdc43b257da41f6b82c0a63dbc3f59806e952f2d4450b48a1a62"
     },
     {
       "target": "public/targets.css",

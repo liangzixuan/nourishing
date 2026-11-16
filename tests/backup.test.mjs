@@ -113,7 +113,7 @@ test('mobile backup review precedes writes and restore retry keeps one committed
     else{const prepared=await prepareBackupRestore(current,activeManifest,input,{ownerId,review:activeReview,readMedia:async(namespace,id)=>staged.get(namespace+':'+id)});current=prepared.state;commits++;value={ok:true,revision:digest(current)};receipts.set(input.requestId,value);}
     if(loseResponse){loseResponse=false;res.writeHead(503,{'Content-Type':'application/json'});return res.end(JSON.stringify({error:'Connection lost. Try again.'}));}
    }else throw Error('Unexpected route');
-  }else{const name=url.pathname.slice(1),path=new URL('../public/'+name,import.meta.url);if(!/^[\w.-]+\.(js|css|svg|woff2)$/.test(name)||!existsSync(path)){res.writeHead(404).end();return;}res.setHeader('Content-Type',name.endsWith('.js')?'text/javascript':name.endsWith('.css')?'text/css':'application/octet-stream');return res.end(readFileSync(path));}
+  }else{const name=url.pathname.slice(1),path=new URL('../public/'+name,import.meta.url);if(!/^[\w./-]+\.(m?js|css|svg|woff2)$/.test(name)||!existsSync(path)){res.writeHead(404).end();return;}res.setHeader('Content-Type',/\.m?js$/.test(name)?'text/javascript':name.endsWith('.css')?'text/css':'application/octet-stream');return res.end(readFileSync(path));}
   res.setHeader('Content-Type','application/json');res.end(JSON.stringify(value));
  }catch(error){res.writeHead(error.code??error.status??500,{'Content-Type':'application/json'});res.end(JSON.stringify({error:error.message}));}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));let browser;

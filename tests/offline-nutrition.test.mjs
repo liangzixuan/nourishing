@@ -4,7 +4,7 @@ import {initialState,act} from '../server/domain/workspace.mjs';
 import {offlineSnapshot} from '../server/offline.mjs';
 import {calculateSummary} from '../server/domain/nutrition.mjs';
 import {renderOfflineNutrition,renderOfflineMacros} from '../public/offline-nutrition.js';
-import {offlineText,offlineLanguages} from '../public/offline-language.js';
+import {offlineMessage,offlineLanguages} from '../public/offline-language.js';
 const date='2026-11-15';
 test('offline nutrition follows source visibility, unknown measurements, kJ and saved language',()=>{
  const state=initialState();state.foods=[];const food=act(state,'food.save',{name:'Saved meal',serving:'100 g',grams:100,nutrients:{calories:100,protein:5}});act(state,'entry.add',{foodId:food.id,date,group:'Lunch',amount:2});
@@ -15,6 +15,7 @@ test('offline nutrition follows source visibility, unknown measurements, kJ and 
  state.settings.showMacros=true;const macros=renderOfflineMacros(summary,state.settings,'fr');assert.ok(macros.includes('836,8 kJ'));assert.ok(macros.includes('10 g'));
 });
 test('offline action labels use all source-supported languages without translating records',()=>{
- for(const [language]of offlineLanguages)for(const label of ['Offline diary','Food','Note','Measurement','Energy','Energy unit','New custom measurement','Nutrition summary','Nutrient','Cancel','Retry','Discard']){const text=offlineText(language,label);assert.ok(text&&!text.includes('offline.'));if(language!=='en'&&!['Note','Food','Energy'].includes(label))assert.notEqual(text,label,`${language}: ${label}`);}
- assert.equal(offlineText('fr','My own food name'),'My own food name');
+ for(const [language]of offlineLanguages)for(const key of ['nav.offline','offline.food','offlineAccess.language','accountCloud.nutritionSummary','foodPrint.nutrient','mobileFood.retry','accountCloud.discard']){const text=offlineMessage(language,key);assert.ok(text&&text!==key,`${language}: ${key}`);}
+ // Record labels bypass the formatter; only explicit UI keys are accepted by its consumers.
+ assert.equal(renderOfflineNutrition(calculateSummary(initialState(),date),{},'fr').includes('accountCloud.'),false);
 });

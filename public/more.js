@@ -1,3 +1,5 @@
+import {t} from './app-language.js';
+import {coreText} from './core-cloud-messages.js';
 import {escape as e} from './html.js';
 import {mountDisplay} from './display.js';
 import {mountTargets} from './targets.js';
@@ -11,11 +13,11 @@ import {openGlucose,openCycle} from './health-controls.js';
 import {openExport} from './charts.js';
 import {moreRow as row,moreLink as link,moreGroup as group,moreHomeHeader,moreBackHeader} from './more-source/menu-view.js';
 
-const main=[['account','Account','account-cog'],['profile','Profile','account-circle'],['targets','Targets','bullseye'],['fasting','Fasting','timer-outline'],['display','Display','cellphone'],['sharing','Sharing','share'],['support','Support','help-circle'],['about','About','information']];
-const tools=[['reminders','Reminders'],['offline','Offline diary'],['repeats','Repeat Items'],['glucose','Glucose Timeline'],['cycle','Cycle Tracking'],['imports','Import CSV'],['export','Export data'],['backup','Backup & Restore']];
+const main=()=>[['account',t('mobileMore.account'),'account-cog'],['profile',t('mobileMore.profile'),'account-circle'],['targets',t('mobileMore.targets'),'bullseye'],['fasting',t('mobileMore.fasting'),'timer-outline'],['display',t('mobileMore.display'),'cellphone'],['sharing',t('mobileMore.sharing'),'share'],['support',t('mobileMore.support'),'help-circle'],['about',t('mobileMore.about'),'information']];
+const tools=()=>[['reminders',t('nav.reminders')],['offline',t('nav.offline')],['repeats',t('mobileRepeat.title')],['glucose',t('nav.glucose-timeline')],['cycle',coreText('cycle.title')],['imports',coreText('more.importCSV')],['export',coreText('more.export')],['backup',coreText('more.backup')]];
 
 /** Adapts the existing More layout to authenticated cloud features. */
-export function mountMore({page,headerRoot,date,show,close,header,content,onChange=async()=>{},onDiary,onFoods,onDiscover,identity='My workspace'}){
+export function mountMore({page,headerRoot,date,show,close,header,content,onChange=async()=>{},onDiary,onFoods,onDiscover,identity=coreText('more.workspace')}){
  let disposed=false,child=null,screen='home',query='',scroll=0,version=0;
  const events=new AbortController(),signal=events.signal,root=document.createElement('section');root.className='more-page';page.replaceChildren(root);
  document.body.classList.add('more-mobile');
@@ -25,7 +27,7 @@ export function mountMore({page,headerRoot,date,show,close,header,content,onChan
  function heading(title){headerRoot.innerHTML=moreBackHeader(title);document.body.classList.add('more-destination');}
  function home(){
   reset();screen='home';document.body.classList.remove('more-destination');headerRoot.innerHTML=moreHomeHeader(identity,query);
-  root.innerHTML=group(main.map(([id,label,icon])=>row(id,label,icon)).join(''),'mm-primary')+'<h2 class="mm-tools-title">Workspace tools</h2>'+group(tools.map(([id,label])=>id==='offline'?link(label,'/offline.html'):row(id,label)).join(''),'mm-tools')+'<p class="mm-empty" hidden>No results</p>';
+  root.innerHTML=group(main().map(([id,label,icon])=>row(id,label,icon)).join(''),'mm-primary')+`<h2 class="mm-tools-title">${e(t('mobileMore.tools'))}</h2>`+group(tools().map(([id,label])=>id==='offline'?link(label,'/offline.html'):row(id,label)).join(''),'mm-tools')+`<p class="mm-empty" hidden>${e(t('mobileMore.noResults'))}</p>`;
   filter();window.scrollTo(0,scroll);
  }
  function filter(){
@@ -40,25 +42,25 @@ export function mountMore({page,headerRoot,date,show,close,header,content,onChan
  function open(id){
   if(screen==='home')scroll=window.scrollY;
   if(id==='account'){location.assign('/account');return;}
-  if(id==='profile')return childView(id,'Profile',host=>mountProfile({...ui,page:host,headerRoot,onExit:home}));
-  if(id==='reminders')return childView(id,'Notifications',host=>mountReminders({root:host,...ui}));
+  if(id==='profile')return childView(id,t('mobileMore.profile'),host=>mountProfile({...ui,page:host,headerRoot,onExit:home}));
+  if(id==='reminders')return childView(id,t('nav.reminders'),host=>mountReminders({root:host,...ui}));
   if(id==='glucose')return void openGlucose(ui);
   if(id==='cycle')return void openCycle(ui);
   if(id==='imports')return void openImports(ui);
   if(id==='export')return void openExport(ui);
-  if(id==='targets')return childView(id,'Targets',host=>mountTargets({...ui,page:host,headerRoot,onExit:home}));
-  if(id==='fasting')return childView(id,'Fasting',host=>mountFasting({...ui,page:host,headerRoot,onBack:home}));
-  if(id==='backup')return childView(id,'Backup & Restore',host=>mountBackup({...ui,root:host}));
-  if(id==='repeats')return childView(id,'Repeat Items',host=>mountRepeats({...ui,page:host,headerRoot,onExit:home}));
-  if(id==='display')return childView(id,'Display',host=>mountDisplay({root:host,headerRoot,onChange}));
+  if(id==='targets')return childView(id,t('mobileMore.targets'),host=>mountTargets({...ui,page:host,headerRoot,onExit:home}));
+  if(id==='fasting')return childView(id,t('mobileMore.fasting'),host=>mountFasting({...ui,page:host,headerRoot,onBack:home}));
+  if(id==='backup')return childView(id,coreText('more.backup'),host=>mountBackup({...ui,root:host}));
+  if(id==='repeats')return childView(id,t('mobileRepeat.title'),host=>mountRepeats({...ui,page:host,headerRoot,onExit:home}));
+  if(id==='display')return childView(id,t('mobileMore.display'),host=>mountDisplay({root:host,headerRoot,onChange}));
   if(id==='foods')return onFoods?.();
   if(id==='reports')return onDiscover?.('report');
-  if(id==='sharing')return section(id,'Sharing',group((onFoods?row('foods','Foods & Recipes'):'')+(onDiscover?row('reports','Reports'):'')+row('backup','Backup & Restore')+row('export','Export data')));
-  if(id==='support')return section(id,'Support',group(link('User Manual','https://support.cronometer.com/hc/en-us/categories/360001062451-Mobile-App',true)+row('backup','Backup & Restore')+row('reminders','Notifications')));
-  if(id==='about')return section(id,'About','<div class="mm-about"><img src="/favicon.svg" alt=""><h2>Nourishing</h2></div>'+group(row('account','Account')+row('backup','Your data')));
+  if(id==='sharing')return section(id,t('mobileMore.sharing'),group((onFoods?row('foods',t('mobileMore.foods')):'')+(onDiscover?row('reports',t('mobileMore.reports')):'')+row('backup',coreText('more.backup'))+row('export',coreText('more.export'))));
+  if(id==='support')return section(id,t('mobileMore.support'),group(link(t('mobileMore.manual'),'https://support.cronometer.com/hc/en-us/categories/360001062451-Mobile-App',true)+row('backup',coreText('more.backup'))+row('reminders',t('nav.reminders'))));
+  if(id==='about')return section(id,t('mobileMore.about'),'<div class="mm-about"><img src="/favicon.svg" alt=""><h2>Nourishing</h2></div>'+group(row('account',t('mobileMore.account'))+row('backup',coreText('more.yourData'))));
  }
  const click=event=>{const button=event.target.closest('[data-more-open]');if(button){event.preventDefault();open(button.dataset.moreOpen);}else if(event.target.closest('[data-more-back]')){event.preventDefault();if(!child?.back?.())home();}};
  headerRoot.addEventListener('click',click,{signal});root.addEventListener('click',click,{signal});
  headerRoot.addEventListener('input',event=>{if(event.target.matches('[data-more-search]')){query=event.target.value;scroll=0;filter();}},{signal});
- home();return {back(){if(screen==='home')return false;if(child?.back?.())return true;home();return true;},dispose(){disposed=true;reset();events.abort();document.body.classList.remove('more-mobile','more-destination');}};
+ home();return {refreshLanguage(){if(screen==='home')home();else open(screen);},back(){if(screen==='home')return false;if(child?.back?.())return true;home();return true;},dispose(){disposed=true;reset();events.abort();document.body.classList.remove('more-mobile','more-destination');}};
 }

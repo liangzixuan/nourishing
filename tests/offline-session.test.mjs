@@ -9,7 +9,7 @@ test('sign-out preserves pending edits on cancel and explicitly discards all acc
   const path=new URL(req.url,'http://localhost').pathname;
   if(path==='/'){res.setHeader('Content-Type','text/html');return res.end('<main id="app"></main>');}
   const file=resolve(root,'.'+path);if(!file.startsWith(root+'/')&&!file.startsWith(root+'\\'))throw Error('Outside fixture');
-  res.setHeader('Content-Type',extname(file)==='.js'?'text/javascript':'text/plain');res.end(readFileSync(file));
+  res.setHeader('Content-Type',/\.m?js$/.test(file)?'text/javascript':'text/plain');res.end(readFileSync(file));
  }catch{res.statusCode=404;res.end();}});await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;
  try{
   browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const context=await browser.newContext(),page=await context.newPage(),other=await context.newPage(),origin='http://127.0.0.1:'+server.address().port;await page.goto(origin);await other.goto(origin);

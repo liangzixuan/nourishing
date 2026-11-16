@@ -24,7 +24,7 @@
       "source": "../cronometer-local/public/mobile-chart-editor.js",
       "target": "public/custom-chart-source/mobile-chart-editor.js",
       "sourceSha256": "eb57ec36918b19ddf5994cdc53cf61c39446630b63256aaf2f8ae6f053f315c6",
-      "outputSha256": "dcaf48a90d0467db30fedd22e44ae3a3e3ad532581d3092571007a02eaa4c7bc",
+      "outputSha256": "de91854df4e8cc4e8627c599d1fe8690d347d62e91415267428fbafb817868e0",
       "transforms": [
         "Replace local state/domain imports with canonical API options and source labels.",
         "Use the cloud-owned outer header, navigation and save adapter.",

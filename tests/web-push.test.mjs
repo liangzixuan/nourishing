@@ -48,7 +48,7 @@ test('status and connect stay paused; only public device metadata and public VAP
 test('one explicit test creates a durable receipt, rate limits new attempts, and never replays the send',async()=>{
  const sent=[],f=fixture({send:async(...args)=>{sent.push(args);return {statusCode:201};}}),connected=await f.store.subscribe({subscription:subscription(),label:'Pixel'}),input={deviceId:connected.deviceId,requestId:randomUUID()};
  assert.deepEqual(await f.store.test(input),{outcome:'accepted',statusCode:201});assert.deepEqual(await f.store.test(input),{outcome:'accepted',statusCode:201});assert.equal(sent.length,1);
- assert.deepEqual(Object.keys(JSON.parse(sent[0][1])).sort(),['tag','version']);assert.equal(sent[0][2].TTL,300);assert.equal(sent[0][2].vapidDetails.privateKey,vapid.privateKey);
+ assert.deepEqual(Object.keys(JSON.parse(sent[0][1])).sort(),['language','tag','version']);assert.equal(sent[0][2].TTL,300);assert.equal(sent[0][2].vapidDetails.privateKey,vapid.privateKey);
  await assert.rejects(()=>f.store.test({...input,requestId:randomUUID()}),{code:429});f.advance();await f.store.test({...input,requestId:randomUUID()});assert.equal(sent.length,2);
  await assert.rejects(()=>f.store.test({...input,deviceId:'a'.repeat(36)}),{code:409});
  assert.equal((await f.store.status()).paused,true);

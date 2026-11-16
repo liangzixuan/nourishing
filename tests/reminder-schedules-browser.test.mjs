@@ -20,7 +20,7 @@ test('schedule editor saves preferences paused and requires explicit resume, wit
    }
    return res.end(JSON.stringify(data));
   }
-  const name=path.slice(1),file=new URL('../public/'+name,import.meta.url);if(!/^[\w.-]+\.(js|css)$/.test(name)||!existsSync(file)){res.writeHead(404).end();return;}res.setHeader('Content-Type',name.endsWith('.js')?'text/javascript':'text/css');res.end(readFileSync(file));
+  const name=path.slice(1),file=new URL('../public/'+name,import.meta.url);if(!/^[\w./-]+\.(m?js|css)$/.test(name)||!existsSync(file)){res.writeHead(404).end();return;}res.setHeader('Content-Type',/\.m?js$/.test(name)?'text/javascript':'text/css');res.end(readFileSync(file));
  }catch(error){res.writeHead(500).end(JSON.stringify({error:error.message}));}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));let browser;
  try{

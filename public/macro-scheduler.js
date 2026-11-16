@@ -1,9 +1,10 @@
+import {dc} from './discover-cloud-messages.js';
 import {TargetControlScreen as CloudTargetScreen} from './energy-expenditure.js';
 import {parseMacroPlan,parseTemplateSettings} from './report-source/server/macro-templates.mjs';
 import {validateMacroTargets} from './macro-energy-source/macro-capture.js';
 const digest=/^[a-f0-9]{64}$/;
 export function captureMacroSchedule(value,date,language='en'){
- const fail=()=>{throw Error('Unable to load the macro schedule. Try again.');};
+ const fail=()=>{throw Error(dc('scheduleLoad'));};
  if(!value||value.date!==date||!/^\d{4}-\d{2}-\d{2}$/.test(value.today)||!digest.test(value.revision)||!['kcal','kJ'].includes(value.energyUnit))fail();
  const plan=parseMacroPlan(value.plan),schedule=value.week,assignment=value.effective?.assignment;
  if(!schedule||typeof schedule.enabled!=='boolean'||!(schedule.from===null||/^\d{4}-\d{2}-\d{2}$/.test(schedule.from))||!Array.isArray(schedule.days)||schedule.days.length!==7||schedule.days.some(id=>id!==null&&!plan.templates.some(t=>t.id===id)))fail();

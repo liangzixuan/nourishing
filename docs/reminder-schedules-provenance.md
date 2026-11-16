@@ -15,7 +15,7 @@ The dispatch and repair modules adapt the cloud fasting scheduler's private dela
 
 The store reserves a private delivery row before transport. Its identity includes owner, schedule, device, and occurrence. A stored claim prevents another send, including after an unknown commit or send result. Source limits remain 24 schedules, eight devices, and up to 32 candidate deliveries per execution. The existing 45-second worker budget reserves one ten-second send deadline before starting another request. Remaining candidates receive another delayed wake.
 
-Workers enter the account lifecycle before reading the workspace or reserving delivery. Pending account deletion blocks entry. Logs contain aggregate counts only. Payloads contain only version and opaque tag, with fixed notification text supplied by the service worker.
+Workers enter the account lifecycle before reading the workspace or reserving delivery. Pending account deletion blocks entry. Logs contain aggregate counts only. Payloads contain only version, opaque tag and a supported account language. The service worker supplies fixed generic text in English, French, German or Brazilian Portuguese. Missing or invalid language falls back to English. Delivery claims and replay identity do not depend on language.
 
 The focused tests use synthetic records and an in-memory Appwrite boundary. They cover late and daylight-saving behavior, food and weight conditions, canonical scheduled-fast creation, pause/resume, uncertain outcomes, backlog continuation, stale wakeups, and account deletion. They do not establish actual provider execution timing or visible device notification delivery.
 

@@ -11,7 +11,7 @@
       "source": "public/add-menu.js",
       "output": "public/add-menu-source/add-menu.js",
       "sourceSha256": "4b3ab9d23d761b27abb81ed34a81c5ccda0a8fbbd7658054e53de8f38bee5329",
-      "outputSha256": "cd889921bee432a0a8326aa5d7f52bac72dc86e0a761f15434a126819f1dd0da"
+      "outputSha256": "3f1c85716149365a18cacc2d01c57a495bc8eca6105543a93538264bd3b33e19"
     },
     {
       "source": "public/add-menu.css",

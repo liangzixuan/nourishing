@@ -1,3 +1,5 @@
+import {uiLanguage,t} from './app-language.js';
+import {fc,foodQuantityUnit} from './food-cloud-messages.js';
 import {mobileRepeatsHeader,mobileRepeatsMarkup,MobileRepeatList,mobileRepeatForm,MobileRepeatEditor} from './repeat-source/mobile-repeats.js';
 import {icon} from './repeat-source/icons.js';
 import {request, command} from './diary-api.js';
@@ -5,9 +7,9 @@ import {escape as e} from './html.js';
 import {mountFoodPicker} from './food-picker.js';
 import {quantityFields, quantityValue} from './quantity.js';
 
-const num = value => Number.isFinite(value) ? value.toLocaleString(undefined, {maximumFractionDigits: 2}) : '—';
-const quantity = row => `${num(row.quantity ?? row.amount ?? 1)} ${row.unit === 'portion' ? row.portionLabel ?? 'portions' : row.unit ?? 'servings'}`;
-const reviewQuantity = row => `${num(row.value)} ${row.label ?? row.unit ?? (row.kind === 'batch' ? 'batch' : 'servings')}`;
+const num = value => Number.isFinite(value) ? value.toLocaleString(uiLanguage(), {maximumFractionDigits: 2}) : '—';
+const quantity = row => `${num(row.quantity ?? row.amount ?? 1)} ${row.unit === 'portion' ? row.portionLabel ?? foodQuantityUnit('portions') : foodQuantityUnit(row.unit ?? 'servings')}`;
+const reviewQuantity = row => `${num(row.value)} ${row.label ?? foodQuantityUnit(row.unit ?? (row.kind === 'batch' ? 'batch' : 'servings'))}`;
 
 export function mountRepeats({page, show, close, header, content, date, headerRoot, onExit, onChange = async () => {}}) {
   let data, disposed = false, serial = 0, pickerCleanup, list, editorController, query='';
@@ -22,7 +24,7 @@ export function mountRepeats({page, show, close, header, content, date, headerRo
   const sheet=content.closest('dialog');sheet?.addEventListener('cancel',event=>{if(editorController?.back()){event.preventDefault();event.stopImmediatePropagation();}},{capture:true,signal:events.signal});
   async function reload() {
     const id = ++serial;
-    root.innerHTML = '<p class="empty">Loading…</p>';
+    root.innerHTML = `<p class="empty">${e(t("mobileNutrientDetail.loading"))}</p>`;
     try {
       const result = await request('/api/repeats?' + new URLSearchParams({date: date()}));
       if (!alive() || id !== serial) return;
@@ -30,7 +32,7 @@ export function mountRepeats({page, show, close, header, content, date, headerRo
       render();return true;
     } catch (error) {
       if (alive() && id === serial) {
-        root.innerHTML = `<p class="sheet-message" role="status">${e(error.message)}</p><button type="button" class="more-results">Try again</button>`;
+        root.innerHTML = `<p class="sheet-message" role="status">${e(error.message)}</p><button type="button" class="more-results">${e(t("mobileSuggest.retry"))}</button>`;
         root.querySelector('button').onclick = reload;
       }
       return false;
@@ -38,15 +40,15 @@ export function mountRepeats({page, show, close, header, content, date, headerRo
   }
   function render() {
     list?.dispose();
-    if(headerRoot)headerRoot.innerHTML=mobileRepeatsHeader('en',icon);
-    root.innerHTML=(headerRoot?'':mobileRepeatsHeader('en',icon))+mobileRepeatsMarkup({language:'en',rows:data.items,name:row=>row.name,quantity,icon,query})+'<p class="repeat-status sheet-message" role="status"></p>';
-    list=new MobileRepeatList({root,language:'en',onQuery:value=>{query=value;}});
-    const review=root.querySelector('[data-action=apply-repeats]');if(review){review.disabled=!data.preview.items.length||data.completed;if(data.completed)review.textContent='Day completed';}
+    if(headerRoot)headerRoot.innerHTML=mobileRepeatsHeader(uiLanguage(),icon);
+    root.innerHTML=(headerRoot?'':mobileRepeatsHeader(uiLanguage(),icon))+mobileRepeatsMarkup({language:uiLanguage(),rows:data.items,name:row=>row.name,quantity,icon,query})+'<p class="repeat-status sheet-message" role="status"></p>';
+    list=new MobileRepeatList({root,language:uiLanguage(),onQuery:value=>{query=value;}});
+    const review=root.querySelector('[data-action=apply-repeats]');if(review){review.disabled=!data.preview.items.length||data.completed;if(data.completed)review.textContent=fc("dayCompleted");}
   }
   function click(event){const button=event.target.closest('[data-action]');if(!button)return;const action=button.dataset.action;if(action==='repeat-home')onExit?.();if(action==='new-repeat')chooseItem();if(action==='edit-repeat')editItem(data.items.find(row=>row.id===button.dataset.id));if(action==='apply-repeats')review();}
   root.addEventListener('click',click,{signal:events.signal});headerRoot?.addEventListener('click',click,{signal:events.signal});
   function chooseItem(existing, draft) {
-    open(`${header('Repeat Item')}<div class="repeat-picker"></div>${existing || draft ? '<button type="button" class="more-results" data-back>Back</button>' : ''}`);
+    open(`${header(fc("repeatItem"))}<div class="repeat-picker"></div>${existing || draft ? `<button type="button" class="more-results" data-back>${e(t("mobileFoodEditor.back"))}</button>` : ''}`);
     if (existing || draft) content.querySelector('[data-back]').onclick = () => editItem(existing, draft);
     pickerCleanup = mountFoodPicker(content.querySelector('.repeat-picker'), {onPick: (kind, id) => editItem(existing, {...draft, foodId: undefined, recipeId: undefined, mealId: undefined, [kind + 'Id']: id, amount: 1, quantity: undefined, unit: undefined, portionId: undefined})});
   }
@@ -54,7 +56,7 @@ export function mountRepeats({page, show, close, header, content, date, headerRo
     const value = draft ?? existing;
     if (!value) return chooseItem();
     const kind = value.recipeId ? 'recipe' : value.mealId ? 'meal' : 'food', id = value[kind + 'Id'];
-    open(`${header('Repeat Item')}<p class="empty">Loading…</p>`);
+    open(`${header(fc("repeatItem"))}<p class="empty">${e(t("mobileNutrientDetail.loading"))}</p>`);
     const loading = content.querySelector('.empty');
     try {
       const item = await request('/api/library/item?' + new URLSearchParams({kind, id}));
@@ -64,25 +66,25 @@ export function mountRepeats({page, show, close, header, content, date, headerRo
   }
   function editor(existing, draft, item) {
     const value = {startDate: data.date, days: [0, 1, 2, 3, 4, 5, 6], time: new Date().toTimeString().slice(0, 5), group: data.groups.includes('Uncategorized') ? 'Uncategorized' : data.groups[0], enabled: true, ...draft};
-    const fields='<div class="quantity-fields" data-quantity-fields>'+quantityFields(item.options,value).replace('name="amount"','name="amount" aria-label="Amount"').replace('name="unit"','name="unit" data-quantity-unit')+'</div>';
-    open(mobileRepeatForm({language:'en',record:value,name:item.resource.name,reference:{[item.kind+'Id']:item.resource.id},quantity:fields,groupOptions:data.groups.map(group=>`<option value="${e(group)}" ${group===value.group?'selected':''}>${e(group)}</option>`).join(''),icon}));
-    const form=content.querySelector('form'),revision=data.revision;form.querySelector('h2').id='sheet-title';form.elements.group.setAttribute('aria-label','Group');
+    const fields='<div class="quantity-fields" data-quantity-fields>'+quantityFields(item.options,value).replace('name="amount"',`name="amount" aria-label="${e(t('mobileFood.amount'))}"`).replace('name="unit"','name="unit" data-quantity-unit')+'</div>';
+    open(mobileRepeatForm({language:uiLanguage(),record:value,name:item.resource.name,reference:{[item.kind+'Id']:item.resource.id},quantity:fields,groupOptions:data.groups.map(group=>`<option value="${e(group)}" ${group===value.group?'selected':''}>${e(group)}</option>`).join(''),icon}));
+    const form=content.querySelector('form'),revision=data.revision;form.querySelector('h2').id='sheet-title';form.elements.group.setAttribute('aria-label',t("mobileRepeat.group"));
     form.querySelector('.mr-footer').insertAdjacentHTML('beforebegin','<p class="repeat-status" role="status"></p>');
     const read=()=>({... (existing?{id:existing.id}:{}),[item.kind+'Id']:item.resource.id,...quantityValue(form),group:form.elements.group.value,time:form.querySelector('[data-mr-timestamp]').checked?form.elements.time.value:'',days:[...form.querySelectorAll('[name=days]:checked')].map(input=>Number(input.value)),startDate:form.elements.startDate.value,endDate:form.elements.endDate.value||null,enabled:value.enabled!==false});
     form.querySelector('[data-action=close-dialog]').onclick=()=>{cleanupEditor();close();};
-    editorController=new MobileRepeatEditor({root:form,language:'en',record:value,resetQuantity:()=>{},readDraft:()=>value.enabled===false?value:read(),onError:error=>{form.querySelector('[role=status]').textContent=error.message;},onAction:async(action,actionDraft)=>{
+    editorController=new MobileRepeatEditor({root:form,language:uiLanguage(),record:value,resetQuantity:()=>{},readDraft:()=>value.enabled===false?value:read(),onError:error=>{form.querySelector('[role=status]').textContent=error.message;},onAction:async(action,actionDraft)=>{
       if(action==='delete'){
-        const draft=actionDraft;open(`${header('Delete Repeat Item')}<div class="repeat-delete"><p class="repeat-date">${e(item.resource.name)}</p><p class="sheet-message" role="status"></p><div class="entry-actions"><button type="button" data-back>Cancel</button><button type="button" class="danger" data-confirm>Delete</button></div></div>`);
+        const draft=actionDraft;open(`${header(fc("deleteRepeat"))}<div class="repeat-delete"><p class="repeat-date">${e(item.resource.name)}</p><p class="sheet-message" role="status"></p><div class="entry-actions"><button type="button" data-back>${e(t("common.cancel"))}</button><button type="button" class="danger" data-confirm>${e(t("mobileRepeat.delete"))}</button></div></div>`);
         const panel=content.querySelector('.repeat-delete');panel.querySelector('[data-back]').onclick=()=>editor(existing,draft,item);panel.querySelector('[data-confirm]').onclick=()=>save(panel,revision,'repeat.delete',{id:existing.id});return;
       }
-      try{if(action!=='reload')await command(revision,'repeat.setEnabled',{id:existing.id,enabled:action==='enable'});await onChange();if(!await reload())throw Error('Unable to reload repeats. Try again.');if(form.isConnected){const current=data.items.find(row=>row.id===existing.id);if(current)editor(current,current,item);else close();}}
+      try{if(action!=='reload')await command(revision,'repeat.setEnabled',{id:existing.id,enabled:action==='enable'});await onChange();if(!await reload())throw Error(fc("reloadRepeatsFailed"));if(form.isConnected){const current=data.items.find(row=>row.id===existing.id);if(current)editor(current,current,item);else close();}}
       catch(error){error.reloadRequired=error.status===409||!(error.status>=400&&error.status<500);throw error;}
     }});
     form.onsubmit=event=>{event.preventDefault();if(form.checkValidity())save(form,revision,'repeat.save',read());};
   }
   function review() {
     const preview = data.preview, revision = data.revision;
-    open(`${header('Review Repeat Items')}<form class="entry-form"><p class="repeat-date">${e(preview.date)}</p>${preview.items.map(row => `<label class="repeat-review"><input type="checkbox" name="repeat" value="${e(row.id)}" checked><span><strong>${e(row.name)}</strong><small>${e(reviewQuantity(row.quantity))} · ${e(row.group)} · ${e(row.time ?? '')}</small><small>${num(row.nutrients.calories)} kcal</small></span></label>`).join('')}<p class="sheet-message" role="status"></p><footer class="entry-actions"><button class="primary">Add to diary</button></footer></form>`);
+    open(`${header(fc("reviewRepeats"))}<form class="entry-form"><p class="repeat-date">${e(preview.date)}</p>${preview.items.map(row => `<label class="repeat-review"><input type="checkbox" name="repeat" value="${e(row.id)}" checked><span><strong>${e(row.name)}</strong><small>${e(reviewQuantity(row.quantity))} · ${e(row.group)} · ${e(row.time ?? '')}</small><small>${num(row.nutrients.calories)} kcal</small></span></label>`).join('')}<p class="sheet-message" role="status"></p><footer class="entry-actions"><button class="primary">${e(t("libraryView.addToDiary"))}</button></footer></form>`);
     const form = content.querySelector('form');
     form.onsubmit = event => {
       event.preventDefault();
@@ -98,8 +100,8 @@ export function mountRepeats({page, show, close, header, content, date, headerRo
       status.replaceChildren();
       try{if(!committed){await command(revision,type,captured);committed=true;}await onChange();if(panel.isConnected)close();if(alive())await reload();}
       catch(error){if(!panel.isConnected)return;status.textContent=error.message;const button=document.createElement('button');button.type='button';
-        if(error.status===409){button.textContent='Reload repeats';button.onclick=()=>{cleanupEditor();close();reload();};}
-        else if(!(error.status>=400&&error.status<500)||committed){button.textContent='Retry';button.onclick=run;}
+        if(error.status===409){button.textContent=fc("reloadRepeats");button.onclick=()=>{cleanupEditor();close();reload();};}
+        else if(!(error.status>=400&&error.status<500)||committed){button.textContent=t("mobileOracle.retry");button.onclick=run;}
         else{delete panel.dataset.saving;controls.forEach(el=>el.disabled=false);editorController?.refresh();return;}
         status.append(button);
       }

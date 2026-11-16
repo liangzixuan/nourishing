@@ -1,13 +1,15 @@
+import {chartMetricLabel} from '../charts-source-view.js';
+import {uiLanguage} from '../app-language.js';
 import {escape as e} from '../html.js';
 import {chartPickerOptions} from './chart-picker-options.js';
 import {mobileChartEditorMessages} from './messages.js';
-const message=(_language,key)=>mobileChartEditorMessages.en[key],identity=metric=>JSON.stringify(metric),category=metric=>['biometric','score'].includes(metric.kind)?metric.kind:'nutrient';
+const message=(language,key)=>mobileChartEditorMessages[language][key],identity=metric=>JSON.stringify(metric),category=metric=>['biometric','score'].includes(metric.kind)?metric.kind:'nutrient';
 const img=(path,cls='')=>`<img class="${cls}" src="${path}" alt="">`;
 /** This editor owns presentation and drafts; the existing chart action owns validation and persistence. */
 export class MobileChartEditor {
- constructor({form,chart,options}){
-  Object.assign(this,{form,chart:structuredClone(chart),language:'en',options});this.m=key=>message('en',key);this.abort=new AbortController();this.manualName=!!chart.id;
-  this.form.innerHTML=`<input type="hidden" name="id" value="${e(chart.id??'')}"><input type="hidden" name="primary"><input type="hidden" name="secondary"><input type="hidden" name="days" value="${e(chart.days)}">${chart.visible?'<input type="hidden" name="visible" value="1">':''}${chart.cycleOverlay?'<input type="hidden" name="cycleOverlay" value="1">':''}<label class="mce-name"><strong>${e(this.m('name'))}</strong><input name="name" aria-label="Chart Name" required maxlength="200" value="${e(chart.name)}"></label><div data-mce-axes></div><footer class="mce-save"><button type="submit" data-mce-save>${e(this.m('save'))}</button></footer>`;
+ constructor({form,chart,options,language=uiLanguage()}){
+  Object.assign(this,{form,chart:structuredClone(chart),language,options});this.m=key=>message(language,key);this.abort=new AbortController();this.manualName=!!chart.id;
+  this.form.innerHTML=`<input type="hidden" name="id" value="${e(chart.id??'')}"><input type="hidden" name="primary"><input type="hidden" name="secondary"><input type="hidden" name="days" value="${e(chart.days)}">${chart.visible?'<input type="hidden" name="visible" value="1">':''}${chart.cycleOverlay?'<input type="hidden" name="cycleOverlay" value="1">':''}<label class="mce-name"><strong>${e(this.m('name'))}</strong><input name="name" aria-label="${e(this.m('name'))}" required maxlength="200" value="${e(chart.name)}"></label><div data-mce-axes></div><footer class="mce-save"><button type="submit" data-mce-save>${e(this.m('save'))}</button></footer>`;
   this.form.dataset.mobileChartEditor='';this.renderAxes();const signal=this.abort.signal;
   form.elements.name.addEventListener('input',()=>{this.manualName=true},{signal});
   form.addEventListener('click',event=>{const button=event.target.closest('button');if(!button)return;const axis=button.closest('[data-mce-axis]')?.dataset.mceAxis;
@@ -18,7 +20,7 @@ export class MobileChartEditor {
 
   },{signal});
  }
- label(metric){return this.options.find(row=>identity(row.metric)===identity(metric))?.name??metric.type??metric.id??metric.kind;}
+ label(metric){const row=this.options.find(row=>identity(row.metric)===identity(metric));return row?chartMetricLabel(row):metric.type??metric.id??metric.kind;}
  renderAxes(){
   const html=axis=>{const metric=this.chart[axis];if(!metric)return '';const kind=category(metric);return `<section data-mce-axis="${axis}"><h3>${e(this.m(axis))}${axis==='secondary'?`<button type="button" data-mce-remove-axis aria-label="${e(this.m('remove'))}">${img('/custom-chart-source/close.svg')}</button>`:''}</h3><div class="mce-categories" role="group" aria-label="${e(this.m(axis))}">${['biometric','nutrient','score'].map(id=>`<button type="button" data-mce-category="${id}" aria-pressed="${kind===id}">${e(this.m(id))}</button>`).join('')}</div><div class="mce-axis-card"><button type="button" class="mce-row" data-mce-pick="metric"><strong>${e(this.m(kind))}</strong><span>${e(this.label(metric))}${img('/custom-chart-source/chevron-right.svg','mce-dropdown')}</span></button>${kind==='biometric'?`<button type="button" class="mce-row" data-mce-pick="unit"><strong>${e(this.m('unit'))}</strong><span>${e(metric.unit??this.m('chooseUnit'))}${img('/custom-chart-source/chevron-right.svg','mce-dropdown')}</span></button>`:''}</div></section>`};
   this.form.querySelector('[data-mce-axes]').innerHTML=html('primary')+html('secondary')+(!this.chart.secondary?`<button type="button" class="mce-add-axis" data-mce-add-axis>${e(this.m('add'))}</button>`:'');

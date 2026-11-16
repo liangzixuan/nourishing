@@ -1,12 +1,13 @@
+import {dc} from './discover-cloud-messages.js';
 import {request} from './diary-api.js';
 import {parseEnergyExpenditure} from './report-source/server/energy-policy.mjs';
 import {validateExpenditureBreakdown} from './report-source/server/expenditure-breakdown.mjs';
 const digest=/^[a-f0-9]{64}$/;
 function capture(value,date){
- if(!value||value.date!==date||!digest.test(value.revision)||!['kcal','kJ'].includes(value.energyUnit)||!value.effective?.energy)throw Error('Unable to load expenditure. Try again.');
+ if(!value||value.date!==date||!digest.test(value.revision)||!['kcal','kJ'].includes(value.energyUnit)||!value.effective?.energy)throw Error(dc('expenditureLoad'));
  const energy=value.effective.energy,policy=value.energyPolicy;
  const expenditure=policy===null?null:parseEnergyExpenditure({resting:policy.resting,baseline:policy.baseline,activity:policy.activity,thermicEffect:policy.thermicEffect});
- if(expenditure&&expenditure.activity.mode!=='manual')throw Error('Choose recorded exercise in energy settings.');
+ if(expenditure&&expenditure.activity.mode!=='manual')throw Error(dc('recordedExercise'));
  validateExpenditureBreakdown(value.expenditureBreakdown,{eligibleDays:1,knownDays:energy.expenditure===null?0:1,mean:energy.expenditure});
  return {revision:value.revision,energyUnit:value.energyUnit,controls:{expenditure},energy,expenditureBreakdown:value.expenditureBreakdown};
 }
@@ -16,10 +17,10 @@ export class TargetControlScreen{
  action(change){return {type:'targetPolicy.expenditure',payload:{expenditure:change.expenditure}};}
  async previewChange(change,signal){
   const action=this.action(change),value=await request('/api/target-policies/preview',{date:this.date,...action},signal);const view=this.capture(value.view);
-  if(value.revision!==this.saved.revision)throw Object.assign(Error('Targets changed. Reload to continue.'),{status:409});return {...view,baseRevision:value.revision,action};
+  if(value.revision!==this.saved.revision)throw Object.assign(Error(dc('targetsChanged')),{status:409});return {...view,baseRevision:value.revision,action};
  }
  async commitReviewed(view){
-  if(this.disposed||this.session.pending)return;if(view.baseRevision!==this.saved.revision)throw Object.assign(Error('Targets changed. Reload to continue.'),{status:409});
+  if(this.disposed||this.session.pending)return;if(view.baseRevision!==this.saved.revision)throw Object.assign(Error(dc('targetsChanged')),{status:409});
   this.session.pending={phase:'saving',body:{requestId:crypto.randomUUID(),revision:view.baseRevision,...structuredClone(view.action)}};await this.commit();
  }
  async load(){
@@ -42,8 +43,8 @@ export class TargetControlScreen{
  async commit(retry=false){
   const pending=this.session.pending;if(!pending||retry&&pending.phase!=='unknown')return;pending.phase='saving';this.busy=true;this.error='';if(!this.disposed)this.render();
   let saved=false;
-  try{const result=await request('/api/workspace/command',pending.body);if(result?.ok!==true||!digest.test(result.revision))throw Error('Save not confirmed. Retry to check.');this.session.pending=null;saved=true;}
-  catch(error){if(error.status>=400&&error.status<500){this.session.pending=null;this.error=error.message;}else{pending.phase='unknown';this.error='Save not confirmed. Retry to check.';}}
+  try{const result=await request('/api/workspace/command',pending.body);if(result?.ok!==true||!digest.test(result.revision))throw Error(dc('saveConfirm'));this.session.pending=null;saved=true;}
+  catch(error){if(error.status>=400&&error.status<500){this.session.pending=null;this.error=error.message;}else{pending.phase='unknown';this.error=dc('saveConfirm');}}
   finally{this.busy=false;}
   if(saved){try{await this.onSaved?.();}catch{/* A refresh failure does not turn a confirmed save into an uncertain write. */}if(this.disposed)this.session.listener?.('saved');else await this.load();}else if(this.disposed)this.session.listener?.(this.session.pending?'unknown':'rejected');else this.render();
  }

@@ -29,11 +29,11 @@
     },
     {
       "output": "public/display-source/mobile-display.js",
-      "outputSha256": "2f921864a81485148e81909076e7b0e4eec6c732ecd55e92c671aa64d8272fec"
+      "outputSha256": "6a9e751a702f6c92d83d9e4da60236ada73f67cc63cafd73321baf2bc41674bf"
     },
     {
       "output": "public/display.js",
-      "outputSha256": "3f697e3f5d93832ae29f2d2616331e05db172a06cd5dc55edd9d8bdc03f7b31e"
+      "outputSha256": "c309368dc1fce863cfd4a64bc3b18b97a2a52a6306fb278c2e408dbefeec44f8"
     },
     {
       "output": "public/display.css",
@@ -41,23 +41,23 @@
     },
     {
       "output": "server/display-settings.mjs",
-      "outputSha256": "45c7910d866316cd7686242a662151a0fba0ecac02a834b0db9f205272c5dfcc"
+      "outputSha256": "8062cd331418baf3f69fba1b5ccc87151a3360a7944f69101f047851e115641c"
     },
     {
       "output": "server/diary-summary.mjs",
-      "outputSha256": "1ce0930e0eaade4e12e09297eba3b28ff64ce62071b45accec137ab49bde149f"
+      "outputSha256": "565959336fa83f6296d582d0ed9e19ac5a93a9ba944baea81499c9d45482158b"
     },
     {
       "output": "public/account.js",
-      "outputSha256": "e9b16d1f75e5477aa980ffa5a498d1f385bddf2cf03e17fa770162ea69991bc6"
+      "outputSha256": "2cc4dbd44fb527190f105ddb86d77ca3af0b0dfeddfae791bc785ef42125f66f"
     },
     {
       "output": "public/diary.js",
-      "outputSha256": "be177da058155da6d62169016bc394662d971756e11a092b95ae6302025568a2"
+      "outputSha256": "ddc4f7f3e7dfffee8237d504c2a47293a6c0e6f5e772b1ccc16ffecf9353c027"
     },
     {
       "output": "public/offline-diary.js",
-      "outputSha256": "ad478e0982deed02308840954974d2532f09a8bbda4dc0da494d7613b66e56d1"
+      "outputSha256": "6761a6d29e07f0445c7221eb4b8a178b455ea924bf0bbc45179bc082a5844e2e"
     },
     {
       "output": "public/account.css",

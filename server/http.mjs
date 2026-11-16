@@ -5,10 +5,10 @@ import {BARCODE_BODY_BYTES} from './barcode.mjs';
 import {readCloudFoodSearchQuery} from './food-search.mjs';
 import {Readable} from 'node:stream';
 import {readSession,sessionCookie,clearSession} from './session-cookie.mjs';
-const fail=(code,message)=>{throw Object.assign(Error(message),{code,publicMessage:message});};
+const fail=(code,message,errorCode)=>{throw Object.assign(Error(message),{code,publicMessage:message,...(errorCode?{errorCode}:{})});};
 function fields(value,names){if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(k=>!names.includes(k)))fail(400,'Check the form and try again.');return value;}
 function string(value,min,max){if(typeof value!=='string'||value.length<min||value.length>max)fail(400,'Check the form and try again.');return value;}
-function credentials(body,register){fields(body,register?['email','password','name']:['email','password']);const email=string(body.email,3,320).trim();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))fail(400,'Enter a valid email.');return {email,password:string(body.password,8,256),...(register?{name:string(body.name,1,128).trim()}: {})};}
+function credentials(body,register){fields(body,register?['email','password','name']:['email','password']);const email=string(body.email,3,320).trim();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))fail(400,'Enter a valid email.','auth.invalidEmail');return {email,password:string(body.password,8,256),...(register?{name:string(body.name,1,128).trim()}: {})};}
 async function readBody(req,limit=16384){let size=0,chunks=[];for await(const chunk of req.body??[]){size+=chunk.length;if(size>limit)fail(413,'Request too large.');chunks.push(Buffer.from(chunk));}try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{fail(400,'Invalid request.');}}
 export function createWebHandler({config,service,serviceForRequest,assets=new Map()}) {
   return async req=>{
@@ -210,8 +210,8 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       }
       if(req.method==='GET'&&path==='/api/account') {if(!secret)fail(401,'Please sign in.');return json(200,await api.current(secret));}
       if(req.method==='PUT'&&path==='/api/profile') {
-        fields(body,['timeZone','units']);string(body.timeZone,1,100);try{new Intl.DateTimeFormat('en',{timeZone:body.timeZone});}catch{fail(400,'Choose a valid time zone.');}
-        if(!['metric','imperial'].includes(body.units))fail(400,'Choose valid units.');if(!secret)fail(401,'Please sign in.');
+        fields(body,['timeZone','units']);string(body.timeZone,1,100);try{new Intl.DateTimeFormat('en',{timeZone:body.timeZone});}catch{fail(400,'Choose a valid time zone.','profile.invalidTimeZone');}
+        if(!['metric','imperial'].includes(body.units))fail(400,'Choose valid units.','profile.invalidUnits');if(!secret)fail(401,'Please sign in.');
         return json(200,await api.updateProfile(secret,{timeZone:body.timeZone,units:body.units}));
       }
       if(req.method!=='POST')fail(404,'Not found.');
@@ -229,7 +229,10 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
     }catch(error){
       const status=[400,401,403,404,405,409,413,415,429,499,502,503,504,507].includes(error.code)?error.code:503;
       const messages={400:'Check your details or request a new link.',401:'Please sign in. Check your email and password.',403:'This action is not available.',404:'Not found.',409:path==='/api/auth/register'?'An account with these details already exists. Try signing in.':'Your data changed. Please try again.',429:'Too many attempts. Try again later.',503:'Unable to connect. Please try again.'};
-      return json(status,{error:error.publicMessage??messages[status]??'Request failed.'});
+      const codes={400:'request.invalid',401:'auth.required',403:'request.forbidden',404:'request.notFound',409:'request.conflict',413:'request.tooLarge',415:'request.unsupportedMedia',429:'request.rateLimited'};
+      const errorCode=error.errorCode??(path==='/api/auth/login'&&status===401?'auth.invalidCredentials':path==='/api/auth/register'&&status===409?'auth.accountExists':['/api/auth/reset','/api/auth/verify'].includes(path)&&[400,401].includes(status)?'auth.invalidLink':codes[status]??(status>=500?'request.unavailable':'request.failed'));
+      const errorDetail=typeof error.nutritionLabelCode==='string'?{kind:'nutritionLabel',code:error.nutritionLabelCode,details:Object.fromEntries(['field','nutrientId','percent','profileId','min','max'].filter(key=>Object.hasOwn(error.details??{},key)).map(key=>[key,error.details[key]]))}:typeof error.vitaminActivityCode==='string'?{kind:'vitaminActivity',code:error.vitaminActivityCode}:undefined;
+      return json(status,{error:error.publicMessage??messages[status]??'Request failed.',errorCode,...(errorDetail?{errorDetail}:{})});
     }
   };
 }

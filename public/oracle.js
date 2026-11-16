@@ -1,3 +1,5 @@
+import {uiLanguage,t} from './app-language.js';
+import {fc} from './food-cloud-messages.js';
 import {MobileOracle} from './oracle-source/mobile-oracle.js';
 import {symbol} from './oracle-source/ui.js';
 import {request} from './diary-api.js';
@@ -8,7 +10,7 @@ import {escape as e} from './html.js';
 export function openOracle({date,show,close,content,onAdded}){
  if(!document.querySelector('link[data-oracle-style]')){const link=document.createElement('link');link.rel='stylesheet';link.href='/oracle.css';link.dataset.oracleStyle='';document.head.append(link);}
  const day=typeof date==='function'?date():date;
- show(`<div class="oracle-heading"><header class="mo-header"><button type="button" data-oracle-close aria-label="Back">${symbol('back')}</button><h1>Nutrient Oracle</h1><span></span></header></div><div class="oracle-body"><p class="empty" role="status">Loading…</p></div>`);
+ show(`<div class="oracle-heading"><header class="mo-header"><button type="button" data-oracle-close aria-label="${e(t("mobileFoodEditor.back"))}">${symbol('back')}</button><h1>${e(t("catalogInsights.oracle"))}</h1><span></span></header></div><div class="oracle-body"><p class="empty" role="status">${e(t("mobileNutrientDetail.loading"))}</p></div>`);
  const sheet=content.closest('dialog'),root=content.querySelector('.oracle-body'),heading=content.querySelector('.oracle-heading'),events=new AbortController(),signal=events.signal;
  sheet.classList.add('oracle-sheet');let panel,diary,options,disposed=false,detail,detailDispose,detailAbort,conflict=false;
  const alive=()=>!disposed&&root.isConnected;
@@ -22,7 +24,7 @@ export function openOracle({date,show,close,content,onAdded}){
  function closeDetail(){detailAbort?.abort();detailDispose?.();detailDispose=null;detail?.close();detail?.remove();detail=null;}
  async function refreshAfterSave(){
   try{await onAdded?.();await context();panel?.dialog?.querySelector('[data-oracle-refresh]')?.remove();}
-  catch(error){if(!alive())return;const host=panel.dialog?.querySelector('.mo-results')??root;host.querySelector('[data-oracle-refresh]')?.remove();const notice=document.createElement('p');notice.dataset.oracleRefresh='';notice.setAttribute('role','status');notice.textContent='Saved. '+error.message+' ';const retry=document.createElement('button');retry.type='button';retry.textContent='Reload latest';retry.onclick=()=>{retry.disabled=true;void refreshAfterSave();};notice.append(retry);host.prepend(notice);}
+  catch(error){if(!alive())return;const host=panel.dialog?.querySelector('.mo-results')??root;host.querySelector('[data-oracle-refresh]')?.remove();const notice=document.createElement('p');notice.dataset.oracleRefresh='';notice.setAttribute('role','status');notice.textContent='Saved. '+error.message+' ';const retry=document.createElement('button');retry.type='button';retry.textContent=fc("reloadLatest");retry.onclick=()=>{retry.disabled=true;void refreshAfterSave();};notice.append(retry);host.prepend(notice);}
  }
  async function selectFood(row,isCurrent){
   closeDetail();detailAbort=new AbortController();const selectedSignal=detailAbort.signal;
@@ -39,6 +41,6 @@ export function openOracle({date,show,close,content,onAdded}){
  const observer=new MutationObserver(()=>{if(!root.isConnected)dispose();});observer.observe(content,{childList:true});sheet.addEventListener('close',()=>dispose(),{signal});
  function dispose(){if(disposed)return;disposed=true;events.abort();observer.disconnect();closeDetail();panel?.dispose();sheet.classList.remove('oracle-sheet');}
  heading.querySelector('[data-oracle-close]').onclick=exit;
- async function start(){try{await context();if(!alive())return;panel=new MobileOracle({root,header:heading,request:sourceRequest,nutrients:options.nutrients,targets:diary.summary.targets,options:{nutrient:'protein',basis:'100g',query:''},language:'en',icon:symbol,onOptions:()=>{},onSelect:selectFood,onBack:exit});}catch(error){if(!alive())return;root.innerHTML=`<p role="alert">${e(error.message)}</p><button type="button" data-oracle-retry>Try again</button>`;root.querySelector('[data-oracle-retry]').onclick=start;}}
+ async function start(){try{await context();if(!alive())return;panel=new MobileOracle({root,header:heading,request:sourceRequest,nutrients:options.nutrients,targets:diary.summary.targets,options:{nutrient:'protein',basis:'100g',query:''},language:uiLanguage(),icon:symbol,onOptions:()=>{},onSelect:selectFood,onBack:exit});}catch(error){if(!alive())return;root.innerHTML=`<p role="alert">${e(error.message)}</p><button type="button" data-oracle-retry>${e(t("mobileSuggest.retry"))}</button>`;root.querySelector('[data-oracle-retry]').onclick=start;}}
  void start();return dispose;
 }

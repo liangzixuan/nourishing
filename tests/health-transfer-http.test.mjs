@@ -19,7 +19,7 @@ test('PWA rejects removed Health Connect and native widget endpoints without cal
  for(const [method,path] of removed)for(const signed of [false,true]){
   const response=await handle(new Request(origin+path,{method,headers:{Origin:origin,'Content-Type':'application/json',...(signed?{Cookie:'__Host-nourishing_session=fixture'}:{})},...(method==='POST'?{body:'{}'}:{})}));
   assert.equal(response.status,404,method+' '+path);assert.equal(response.headers.get('cache-control'),'no-store');
-  assert.deepEqual(await response.json(),{error:'Not found.'});
+  assert.deepEqual(await response.json(),{error:'Not found.',errorCode:'request.notFound'});
  }
  assert.equal(called,false);
 });

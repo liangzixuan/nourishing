@@ -6,7 +6,7 @@
       "source": "../cronometer-local/public/mobile-macro-energy.js",
       "target": "public/macro-energy-source/mobile-macro-energy.js",
       "sourceSha256": "77b1e6ad7542d744f7997aebb8ddc5ec0bb76b8da8386ddc6ce6e1fbc9f6ed3b",
-      "outputSha256": "f8c5048c0a6a5bfb1ed3a241790540053e4261603d2baa43b7d90162f49028d0",
+      "outputSha256": "cbef078cf4a33ecb2be983810bf58d261af837bae3ec55beb704081b7f1f6d9c",
       "transforms": [
         "Redirect imports; cloud preview and immutable receipt adapter; cancellation abort; retain Custom Energy dialog through preview failure; concise status copy; local source layout and controls retained."
       ]

@@ -5,7 +5,7 @@
       "source": "../cronometer-local/public/mobile-display.js",
       "target": "public/display-source/mobile-display.js",
       "sourceSha256": "048f47dbe6ef3014d6d1c586eee70e3282c88b65cedd58b59d674018d245186a",
-      "outputSha256": "2f921864a81485148e81909076e7b0e4eec6c732ecd55e92c671aa64d8272fec",
+      "outputSha256": "6a9e751a702f6c92d83d9e4da60236ada73f67cc63cafd73321baf2bc41674bf",
       "transforms": [
         "Retain source rows, toggles, radio choice dialogs, Cancel/Escape/outside dismissal and focus return.",
         "Expose functional cloud consumers, including Summary Column and Group Subtotals under source Diary Settings navigation.",
@@ -36,7 +36,7 @@
         "UTF-8 LF publication."
       ],
       "sourceSha256": "916e4fc352c6201a6f38bb2b5b83ae098ec72a1b5f31b5b4aeeea3769642a409",
-      "outputSha256": "8788e88a52beb2a41749eb2bfa4140e4eb0c0b18ce01100499731a155110e86c"
+      "outputSha256": "071c78a49eba44ae1722b1359c78b80bbf6a39d66ac542587bf8e81f6ecd3253"
     },
     {
       "source": "../cronometer-local/public/mobile-diary-settings.js",
@@ -47,7 +47,7 @@
         "Use explicit rename callback instead of ambient app actions."
       ],
       "sourceSha256": "49fec4508053c2c1b6fe39306973d0a3e53d960bc219eef4254105dd567df771",
-      "outputSha256": "f2d5e4eb076adcebac4df4bd5ae27879ecc0c9edfdeebcad9eca2e1c670a2e99"
+      "outputSha256": "d1d3ee11af5c9803ad88f7f3f00b5cda3288e4a1b3e18a334571441f689af5d0"
     }
   ],
   "outputs": [

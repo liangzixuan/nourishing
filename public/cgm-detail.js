@@ -1,4 +1,6 @@
 import {escape as e} from './html.js';
+import {uiLanguage} from './app-language.js';
+import {dc} from './discover-cloud-messages.js';
 import {request,command} from './diary-api.js';
 import {chartCardMarkup,mountChartPlots,validateChartView} from './chart-presentation.js';
 import {chartArrow,chartSeriesLabel} from './charts-source-view.js';
@@ -10,7 +12,7 @@ import {cgmStatistics,openCgmStatistics} from './health-source/public/mobile-cgm
 import {mobileChartsMessages} from './health-source/public/locales/mobile-charts.js';
 import {createMessageFormatter} from './report-source/public/message-formatter.js';
 import {openGlucose} from './health-controls.js';
-const format=createMessageFormatter(mobileChartsMessages),m=(key,values)=>format('en',key,values);
+const format=createMessageFormatter(mobileChartsMessages),m=(key,values)=>format(uiLanguage(),key,values);
 const gear='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 3 1-2h4l1 2 3 2 2 1v4l-2 1v3l2 1v4l-2 1-3 2-1 2h-4l-1-2-3-2-2-1v-4l2-1v-3l-2-1V6l2-1z" transform="translate(2 2) scale(.8)"/><circle cx="12" cy="12" r="3"/></svg>';
 
 /** Source detailCards semantics: a separate comparison plot sharing the captured window. */
@@ -33,10 +35,10 @@ export function mountCgmDetail(view,ui){
   if(root.querySelector('[data-mcl-stats]'))statsOpen=openCgmStatistics(root);
   plots?.dispose();plots=null;
   const title=m(screen==='target'?'targetRange':screen==='settings'?'cgmSettings':'cgm');
-  const controls=screen==='settings'?`<div class="mcl-group"><button type="button" class="mcl-row mcl-target-setting" data-cgm-target><span><strong>${e(m('targetRange'))}</strong><small>${e(m('range'+card.targetRange.mode))}</small></span>${chartArrow}</button>${pick('primaryUnit',m('cgmUnits'),card.axisUnits.find(axis=>axis.key==='primaryUnit').unit)}${toggle('showInsulin',m('showInsulin'))}${toggle('showFasting',m('showFasting'))}${toggle('showCompare',m('showCompare'))}${toggle('showOnDashboard',m('showOnDashboard'))}${toggle('showCycle','Cycle Phases')}</div><button type="button" class="mcl-row mcl-group" data-cgm-configure>${e(m('configure'))}${chartArrow}</button>`:'';
+  const controls=screen==='settings'?`<div class="mcl-group"><button type="button" class="mcl-row mcl-target-setting" data-cgm-target><span><strong>${e(m('targetRange'))}</strong><small>${e(m('range'+card.targetRange.mode))}</small></span>${chartArrow}</button>${pick('primaryUnit',m('cgmUnits'),card.axisUnits.find(axis=>axis.key==='primaryUnit').unit)}${toggle('showInsulin',m('showInsulin'))}${toggle('showFasting',m('showFasting'))}${toggle('showCompare',m('showCompare'))}${toggle('showOnDashboard',m('showOnDashboard'))}${toggle('showCycle',dc('cyclePhases'))}</div><button type="button" class="mcl-row mcl-group" data-cgm-configure>${e(m('configure'))}${chartArrow}</button>`:'';
   const cards=cgmDetailCards(card),comparison=card.settings.showCompare&&card.capture.stats.count>0?`<h3>${e(m('compare'))}</h3>${cards[1]?chartCardMarkup(cards[1],{detail:true,statistics:false}):''}<div class="mcl-group">${pick('compare',m('compareMetric'),card.comparison?chartSeriesLabel(card.comparison)+(card.comparison.unit?' ('+card.comparison.unit+')':''):m('none'))}</div>`:'';
   const chartControls=`<div class="mcl-cgm-title"><h2>${e(m('cgm'))}${card.settings.showInsulin?' + '+e(m('insulinSeries')):''}</h2><button type="button" data-cgm-settings aria-label="${e(m('cgmSettings'))}">${gear}</button></div><div class="mcl-hour-range" role="group" aria-label="${e(m('range'))}">${[3,24,48,72].map(hours=>`<button type="button" data-cgm-hours="${hours}" aria-pressed="${card.settings.hours===hours}">${hours} ${e(m('hourShort'))}</button>`).join('')}</div>`;
-  root.innerHTML=`<header class="sheet-header"><button type="button" class="icon-button" data-cgm-back aria-label="${e(m(screen==='settings'?'close':'back'))}">${screen==='settings'?'×':'‹'}</button><h2>${e(title)}</h2>${screen==='detail'?`<button type="button" class="icon-button" data-cgm-help aria-label="${e(m('cgmHelp'))}">ⓘ</button>`:''}</header><div class="mcl-body"><p data-cgm-error role="alert" ${error?'':'hidden'}>${e(error)}${pending?`<button type="button" data-cgm-retry>${e(m('retry'))}</button>`:''}</p>${screen==='target'?cgmRangeScreen(card,{language:'en',m,busy}):screen==='settings'?controls:`${chartCardMarkup(cards[0],{detail:true,statistics:false,beforePlot:chartControls})}${comparison}${cgmStatistics(card,{language:'en',m,open:statsOpen})}`}</div>`;
+  root.innerHTML=`<header class="sheet-header"><button type="button" class="icon-button" data-cgm-back aria-label="${e(m(screen==='settings'?'close':'back'))}">${screen==='settings'?'×':'‹'}</button><h2>${e(title)}</h2>${screen==='detail'?`<button type="button" class="icon-button" data-cgm-help aria-label="${e(m('cgmHelp'))}">ⓘ</button>`:''}</header><div class="mcl-body"><p data-cgm-error role="alert" ${error?'':'hidden'}>${e(error)}${pending?`<button type="button" data-cgm-retry>${e(m('retry'))}</button>`:''}</p>${screen==='target'?cgmRangeScreen(card,{language:uiLanguage(),m,busy}):screen==='settings'?controls:`${chartCardMarkup(cards[0],{detail:true,statistics:false,beforePlot:chartControls})}${comparison}${cgmStatistics(card,{language:uiLanguage(),m,open:statsOpen})}`}</div>`;
   if(screen==='target'){
    const slider=root.querySelector('.mcl-range-sliders');if(slider){const {min,max}=card.targetRange.controls,value=card.targetRange.options.custom;for(const key of ['low','high'])slider.style.setProperty('--range-'+key,100*(value[key]-min)/(max-min)+'%');}
   }
@@ -57,7 +59,7 @@ export function mountCgmDetail(view,ui){
    await refresh();pending=null;await ui.afterSave?.();await ui.onChange?.();
   }catch(failure){
    if(!alive())return;error=failure.message;
-   if(failure.status===409){pending=null;try{await refresh();}catch{error+=' Refresh this chart before changing settings.';}}
+   if(failure.status===409){pending=null;try{await refresh();}catch{error+=' '+dc('reloadLatestChart');}}
   }finally{busy=false;if(alive())render();}
  }
  function popup(key,anchor){
@@ -80,10 +82,10 @@ export function mountCgmDetail(view,ui){
   if(button.hasAttribute('data-cgm-settings')){detailScroll=scrollHost().scrollTop;screen='settings';render();scrollHost().scrollTop=0;}
   if(button.hasAttribute('data-cgm-target')){settingsScroll=scrollHost().scrollTop;screen='target';render();scrollHost().scrollTop=0;}
   if(button.hasAttribute('data-mcl-target-hint'))void save({showTargetHint:false});
-  if(button.hasAttribute('data-cgm-help'))picker=new MobileChartPicker({label:m('cgmHelp'),content:cgmHelpContent(card,{language:'en',m}),closeLabel:m('close'),presentation:'sheet',onClose:()=>picker=null});
+  if(button.hasAttribute('data-cgm-help'))picker=new MobileChartPicker({label:m('cgmHelp'),content:cgmHelpContent(card,{language:uiLanguage(),m}),closeLabel:m('close'),presentation:'sheet',onClose:()=>picker=null});
   if(button.hasAttribute('data-cgm-configure'))void openGlucose({...ui,date:()=>view.to});
  },{signal:abort.signal});
- root.addEventListener('input',event=>{if(event.target.dataset.mclRangeValue)previewCgmRange(event.target,card,'en');},{signal:abort.signal});
+ root.addEventListener('input',event=>{if(event.target.dataset.mclRangeValue)previewCgmRange(event.target,card,uiLanguage());},{signal:abort.signal});
  root.addEventListener('change',event=>{
   if(busy||pending)return;const input=event.target;
   if(input.dataset.cgmSetting)return void save({[input.dataset.cgmSetting]:input.checked});

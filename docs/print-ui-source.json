@@ -1747,7 +1747,7 @@
       "source": "public/locales/mobile-display.js",
       "target": "public/report-source/public/locales/mobile-display.js",
       "sourceSha256": "23260b550bab404dc66e4183d3d2c42e58f2506d275546e2ddda10406d3bc51b",
-      "outputSha256": "f57bd9d6b8a163d0398d4c832c6f91144feb8eccbc4a899c82868d47cb9d1b0f",
+      "outputSha256": "5badfcf9bb99433f1038e43d535780eb57f4473d42b66f2af44fd9a0b80aa5f1",
       "transforms": [
         "CRLF and lone CR to LF; one final newline",
         "Resolve static imports within report-source"

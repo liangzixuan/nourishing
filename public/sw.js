@@ -20,11 +20,17 @@ self.addEventListener('fetch',event=>{
  })());
 });
 
+const reminderBodies=Object.freeze({
+ en:'Your reminder is ready. Open Nourishing when convenient.',
+ fr:'Votre rappel est prêt. Ouvrez Nourishing quand vous le souhaitez.',
+ de:'Deine Erinnerung ist bereit. Öffne Nourishing, wenn es dir passt.',
+ 'pt-BR':'Seu lembrete está pronto. Abra o Nourishing quando for conveniente.',
+});
 self.addEventListener('push',event=>{
  let payload;try{payload=event.data?.json();}catch{}
  const tag=payload?.version===1&&/^nourishing-[a-f0-9]{36}$/.test(payload.tag)?payload.tag:'nourishing-reminder';
  event.waitUntil(self.registration.showNotification('Nourishing',{
-  body:'Your reminder is ready. Open Nourishing when convenient.',
+  body:payload?.version===1&&typeof payload.language==='string'&&Object.hasOwn(reminderBodies,payload.language)?reminderBodies[payload.language]:reminderBodies.en,
   icon:'/pwa-icons/icon-192.png',badge:'/pwa-icons/icon-192.png',tag,renotify:false,
  }));
 });

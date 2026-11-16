@@ -1,3 +1,4 @@
+import {reminderPayload} from './reminder-payload.mjs';
 import {pruneReminderReceipts,stageReminderReceiptCapacity} from './reminder-receipt-retention.mjs';
 import {rowId,digest} from './data-codec.mjs';
 import {parsePushSubscription,parseVapid,createWebPushTransport,pushFields,pushFail,PUSH_DEVICE_LIMIT} from './web-push.mjs';
@@ -37,7 +38,7 @@ export function createWebPushStore({db,ownerId:owner,origin,vapid,now=()=>Date.n
   const workspace=await readReminderWorkspace(db,owner);
   const tx=await db.createTransaction({ttl:60});
   try{
-   const result=await change(account.state,tx.$id);
+   const result=await change(account.state,tx.$id,workspace);
    if(workspace.head){
     await db.updateRow({...args('workspace_heads',owner),data:{digest:workspace.head.digest},transactionId:tx.$id});
     const head=await db.getRow(args('workspace_heads',owner));if(head.digest!==workspace.head.digest||head.generation!==workspace.head.generation||head.$updatedAt!==workspace.head.$updatedAt)conflict();
@@ -74,8 +75,10 @@ export function createWebPushStore({db,ownerId:owner,origin,vapid,now=()=>Date.n
   if(device.lastTestAt&&Date.parse(at)-Date.parse(device.lastTestAt)<60000)pushFail('Wait one minute before another test.',429);
   await pruneReminderReceipts({db,owner,now:new Date(at)});
   const claim={ownerId:owner,fingerprint,outcome:'sending',statusCode:0,createdAt:at,completedAt:''};
+  let payload;
   try{
-   await update(account,async(state,transactionId)=>{
+   await update(account,async(state,transactionId,workspace)=>{
+    payload=reminderPayload('nourishing-'+rowId(owner,input.requestId),workspace.state.settings.appLanguage);
     state.devices.find(row=>row.id===device.id).lastTestAt=at;
     await stageReminderReceiptCapacity({db,owner,transactionId});
     await db.createRow({...receiptArgs,data:claim,permissions:[],transactionId});
@@ -84,7 +87,7 @@ export function createWebPushStore({db,ownerId:owner,origin,vapid,now=()=>Date.n
   let outcome='unknown',statusCode=0;
   if(device.subscription.expirationTime!==null&&device.subscription.expirationTime<=Date.parse(at))outcome='expired';
   else try{
-   const response=await send(device.subscription,JSON.stringify({version:1,tag:'nourishing-'+rowId(owner,input.requestId)}),{TTL:300,urgency:'normal',contentEncoding:'aes128gcm',vapidDetails:config,signal:AbortSignal.timeout(10000)});
+   const response=await send(device.subscription,payload,{TTL:300,urgency:'normal',contentEncoding:'aes128gcm',vapidDetails:config,signal:AbortSignal.timeout(10000)});
    statusCode=Number.isInteger(response?.statusCode)&&response.statusCode>=100&&response.statusCode<=599?response.statusCode:0;
    outcome=statusCode>=200&&statusCode<300?'accepted':[404,410].includes(statusCode)?'expired':statusCode?'rejected':'unknown';
   }catch{/* An uncertain send is not retried: its durable claim remains authoritative. */}

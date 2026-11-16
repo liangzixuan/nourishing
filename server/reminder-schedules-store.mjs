@@ -1,3 +1,4 @@
+import {reminderPayload} from './reminder-payload.mjs';
 import {pruneReminderReceipts,stageReminderReceiptCapacity} from './reminder-receipt-retention.mjs';
 import {digest,rowId} from './data-codec.mjs';
 import {readReminderWorkspace} from './reminder-schedules-workspace.mjs';
@@ -84,7 +85,7 @@ export function createReminderScheduleStore({db,ownerId:owner,origin,vapid,now=(
    catch(error){if(await optional(()=>db.getRow(receiptArgs)))continue;throw error;}
    attempted++;let outcome='unknown',statusCode=0;
    if(subscription.expirationTime!==null&&subscription.expirationTime<=+clock())outcome='expired';
-   else try{const response=await send(subscription,JSON.stringify({version:1,tag:'nourishing-'+receiptArgs.rowId}),{TTL:300,urgency:'normal',contentEncoding:'aes128gcm',vapidDetails:config,signal:AbortSignal.timeout(10000)});statusCode=Number.isInteger(response?.statusCode)&&response.statusCode>=100&&response.statusCode<=599?response.statusCode:0;outcome=statusCode>=200&&statusCode<300?'accepted':[404,410].includes(statusCode)?'expired':statusCode?'rejected':'unknown';}catch{}
+   else try{const response=await send(subscription,reminderPayload('nourishing-'+receiptArgs.rowId,current.state.settings.appLanguage),{TTL:300,urgency:'normal',contentEncoding:'aes128gcm',vapidDetails:config,signal:AbortSignal.timeout(10000)});statusCode=Number.isInteger(response?.statusCode)&&response.statusCode>=100&&response.statusCode<=599?response.statusCode:0;outcome=statusCode>=200&&statusCode<300?'accepted':[404,410].includes(statusCode)?'expired':statusCode?'rejected':'unknown';}catch{}
    await db.updateRow({...receiptArgs,data:{outcome,statusCode,completedAt:clock().toISOString()}});
    if(outcome==='expired'){const latest=await account();latest.preferences.devices=latest.preferences.devices.filter(row=>row.id!==device.id||digest(row.subscription)!==digest(subscription));await persist(latest,await readReminderWorkspace(db,owner));}
   }

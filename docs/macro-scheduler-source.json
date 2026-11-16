@@ -22,11 +22,11 @@
     },
     {
       "target": "public/macro-scheduler.js",
-      "outputSha256": "d5a4815477f6279144f5792fe01c7698798d12cec261b57e263ccc5f4de2e26a"
+      "outputSha256": "b5a7ae0c851dd2431ea0d6727765773cf1af4abad1fc601d7c954b3dc4381284"
     },
     {
       "target": "public/targets.js",
-      "outputSha256": "13a9bac996ad5a11a4c5db383c9641bfeaa56f9f9c71b9948b29989470bbc089"
+      "outputSha256": "7b0b4584d0bdbdc43b257da41f6b82c0a63dbc3f59806e952f2d4450b48a1a62"
     },
     {
       "target": "public/targets.css",
@@ -34,11 +34,11 @@
     },
     {
       "target": "public/target-policies.js",
-      "outputSha256": "1222f6ab3afcf94adc044b2c0bbab132651e76aeb5bdd03fa226162077dfa387"
+      "outputSha256": "beb84ad5bea27a1b14c9aee0514ecd1505f62c9e1cb16dcde738b417107427f8"
     },
     {
       "target": "public/diary.js",
-      "outputSha256": "be177da058155da6d62169016bc394662d971756e11a092b95ae6302025568a2"
+      "outputSha256": "ddc4f7f3e7dfffee8237d504c2a47293a6c0e6f5e772b1ccc16ffecf9353c027"
     },
     {
       "target": "server/target-policy-view.mjs",

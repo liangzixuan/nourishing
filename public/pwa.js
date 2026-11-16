@@ -1,3 +1,4 @@
+import {accountMessage as m} from './account-cloud-messages.js';
 // Install controls are optional; browser menus remain available on every platform.
 let installPrompt;
 const installed=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
@@ -12,5 +13,5 @@ document.addEventListener('click',async event=>{
 if('serviceWorker' in navigator&&window.isSecureContext){
  window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js',{scope:'/',updateViaCache:'none'}).catch(()=>{});},{once:true});
 }
-export function installButton(){return '<button type="button" class="secondary" data-install-app hidden>Install Nourishing</button>';}
+export function installButton(){return `<button type="button" class="secondary" data-install-app hidden>${m("install.title")}</button>`;}
 export function refreshInstallButton(){refresh();}

@@ -5,7 +5,7 @@
       "source": "../cronometer-local/public/discover.js",
       "target": "public/coach.js",
       "sourceSha256": "6ffc164dd2504087c9240ccbc21ca74bdb72871925c71220718ab47be5d72665",
-      "outputSha256": "ae1fd85ab8badb7d47e4a3c2ff078ecafc08f04bd5ba65157bc7a0b39c4b1202",
+      "outputSha256": "1936525f12d0baf417d790d6856f3e4eebb46c650c5bd313b9d61f657b32e765",
       "transforms": [
         "Reuse goals/diet cards, notes, Cancel/Save header and stable custom-choice text/order through discover-ui helpers.",
         "Keep existing authenticated deterministic recorded-facts endpoint, dates, shortcuts and Report/Suggest routes. Omit unavailable model selection and AI consent gate.",

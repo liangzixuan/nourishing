@@ -1,8 +1,9 @@
+import {uiLanguage} from './app-language.js';
 import {prepareStreakImage,canShareStreak,shareStreak,saveStreak} from './streak-source/discover-share.js';
 import {formatMessage} from './dashboard-source/message-format.js';
 import {escape as e} from './html.js';
 
-export function openStreakShare(stats,{show,header,content,language='en'}){
+export function openStreakShare(stats,{show,header,content,language=uiLanguage()}){
  const message=(key,values)=>formatMessage(language,'discover.'+key,values);
  show(`${header(message('share.title'))}<section class="dashboard-panel dc-share"><p role="status">${e(message('share.preparing'))}</p></section>`);
  const host=content.querySelector('.dc-share'),dialog=host.closest('dialog');let disposed=false,url;

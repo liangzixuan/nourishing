@@ -1,1 +1,1 @@
-export const uiLanguage=()=> 'en';
+export {uiLanguage} from '../app-language.js';

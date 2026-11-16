@@ -22,3 +22,5 @@ The SQLite service, its native Android/watch transports, its Tailscale routing r
 Schedule migration and scheduled notification delivery are separate work. Existing reminder schedules are in the local SQLite `reminder_schedules` table, outside workspace JSON. Their migration must retain preferences and start paused. Existing private signing keys and local-origin subscriptions must remain local.
 
 Validation for this slice uses an in-memory Appwrite boundary, real Web Push encryption with a fake HTTP transport, and a browser with mocked Notification/PushManager APIs. These checks do not establish real device permission or visible notification delivery.
+
+The language adaptation uses `server/reminder-payload.mjs` for scheduled and explicit test sends. Only the supported locale crosses the transport boundary alongside the version and opaque tag. The worker ignores arbitrary title, body and destination fields. The generic body supports en/fr/de/pt-BR; invalid or missing language falls back to en. Existing delivery receipts prevent replay after the account language changes.

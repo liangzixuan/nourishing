@@ -1,3 +1,5 @@
+import {dc} from './discover-cloud-messages.js';
+import {uiLanguage,t} from './app-language.js';
 import {mountMobileReport} from './report-mobile.js';
 import {openGlucose,openCycle} from './health-controls.js';
 import {openCoach} from './coach.js';
@@ -19,13 +21,13 @@ export function mountNutrition({page,headerRoot,date,show,close,header,content,o
  const alive=()=>!disposed&&root.isConnected;
  async function news(){
   if(dashboard)return dashboard.openNews();
-  show(`${header('Newsfeed')}<div class="dashboard-panel" aria-busy="true"></div>`);const host=content.querySelector('.dashboard-panel');
-  try{const result=await request('/api/dashboard?'+new URLSearchParams({date:date()}));if(alive()&&host.isConnected)host.innerHTML=result.news.items.length?newsCardsMarkup(parseNewsfeed(result.news)):newsfeedMarkup('en');}
+  show(`${header(t('discover.title.newsfeed'))}<div class="dashboard-panel" aria-busy="true"></div>`);const host=content.querySelector('.dashboard-panel');
+  try{const result=await request('/api/dashboard?'+new URLSearchParams({date:date()}));if(alive()&&host.isConnected)host.innerHTML=result.news.items.length?newsCardsMarkup(parseNewsfeed(result.news)):newsfeedMarkup(uiLanguage());}
   catch(error){if(host.isConnected)host.textContent=error.message;}finally{host.removeAttribute('aria-busy');}
  }
- async function load(){const id=++serial;root.setAttribute('aria-busy','true');root.innerHTML='<p class="empty">Loading…</p>';
+ async function load(){const id=++serial;root.setAttribute('aria-busy','true');root.innerHTML=`<p class="empty">${t('mobileNutrientDetail.loading')}</p>`;
   try{const result=await request('/api/nutrition-report?'+new URLSearchParams(reportOptions));if(!alive()||serial!==id)return;data=result;discover();}
-  catch(error){if(alive()&&serial===id){if(data&&tab==='report'){discover();const status=document.createElement('p');status.className='sheet-message';status.setAttribute('role','status');status.textContent=error.message;root.querySelector('.report-content').append(status);return;}root.innerHTML=`<p class="sheet-message">${e(error.message)}</p><button class="more-results" data-retry>Try again</button>`;root.querySelector('[data-retry]').onclick=load;}}
+  catch(error){if(alive()&&serial===id){if(data&&tab==='report'){discover();const status=document.createElement('p');status.className='sheet-message';status.setAttribute('role','status');status.textContent=error.message;root.querySelector('.report-content').append(status);return;}root.innerHTML=`<p class="sheet-message">${e(error.message)}</p><button class="more-results" data-retry>${t('mobileSuggest.retry')}</button>`;root.querySelector('[data-retry]').onclick=load;}}
   finally{if(alive()&&serial===id)root.setAttribute('aria-busy','false');}
  }
  function discover(){dashboard?.dispose();dashboard=null;snapshots?.dispose();snapshots=null;charts?.dispose();charts=null;fasting?.dispose();fasting=null;mobileReport?.dispose();mobileReport=null;
@@ -41,7 +43,7 @@ export function mountNutrition({page,headerRoot,date,show,close,header,content,o
   }
   mobileReport=mountMobileReport({root:panel,value:data,onApply:async options=>{
    const id=++serial,result=await request('/api/nutrition-report?'+new URLSearchParams(options));
-   if(!alive()||serial!==id||tab!=='report')throw Error('This report is no longer open.');
+   if(!alive()||serial!==id||tab!=='report')throw Error(dc('reportClosed'));
    data=result;reportOptions={...result.report.options};return result;
   },onPrint:options=>openPrintReport({initialOptions:options,show,header,content})});
  }

@@ -4,7 +4,7 @@
   "files": [
     {
       "target": "public/setup-source/target-setup.js",
-      "outputSha256": "31cbde623971a5ff2bea6184b63434a4d1de3d7826430ef662b842bd77d310a7",
+      "outputSha256": "368ce6b41bef3cdccf6ec482af08da5b00c9fca30ff1a15fdf41f30ca6639c6e",
       "transforms": [
         "Keep source manual/adult EER inputs, percentages, canonical review and explicit confirmation; adapt preview/save to existing authenticated target-policy routes and immutable receipt retries.",
         "Collapse source guidance, shorten routine UI copy and remove inline styles for production CSP."
@@ -30,7 +30,7 @@
     },
     {
       "target": "public/targets.js",
-      "outputSha256": "13a9bac996ad5a11a4c5db383c9641bfeaa56f9f9c71b9948b29989470bbc089"
+      "outputSha256": "7b0b4584d0bdbdc43b257da41f6b82c0a63dbc3f59806e952f2d4450b48a1a62"
     },
     {
       "target": "public/targets.css",

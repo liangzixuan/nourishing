@@ -1,3 +1,5 @@
+import {dc} from './discover-cloud-messages.js';
+import {uiLanguage,t} from './app-language.js';
 import {request} from './diary-api.js';
 import {escape as e} from './html.js';
 
@@ -10,8 +12,8 @@ export function mountPauseLife({root,onChange=async()=>{}}){
   if(!alive())return;
   root.setAttribute('aria-busy',String(busy));
   const policy=view?.policy;
-  root.innerHTML=policy?`<section class="pl-card" data-pause-settings><label class="pl-enable"><strong>Enable The Pause Life Settings</strong><input type="checkbox" role="switch" data-pause-enabled aria-label="Enable The Pause Life Settings" ${policy.enabled?'checked':''} ${busy||pending||conflict?'disabled':''}></label><fieldset class="pl-programs" aria-label="Program" ${!policy.enabled||busy||pending||conflict?'disabled':''}>${[['galveston','Galveston Diet'],['bfb-ps','BFB/PS Challenge']].map(([value,label])=>`<label><input type="radio" name="pause-program" data-pause-program value="${value}" ${policy.program===value?'checked':''}><span>${label}</span></label>`).join('')}</fieldset></section>`:'<p class="pl-status" role="status">Loading…</p>';
-  if(error)root.insertAdjacentHTML('beforeend',`<div class="pl-status" role="status">${e(error)}${!busy&&(pending||conflict||!view)?`<button type="button" data-pause-retry>${conflict?'Reload settings':'Try again'}</button>`:''}</div>`);
+  root.innerHTML=policy?`<section class="pl-card" data-pause-settings><label class="pl-enable"><strong>${dc('pauseEnable')}</strong><input type="checkbox" role="switch" data-pause-enabled aria-label="${dc('pauseEnable')}" ${policy.enabled?'checked':''} ${busy||pending||conflict?'disabled':''}></label><fieldset class="pl-programs" aria-label="${dc('program')}" ${!policy.enabled||busy||pending||conflict?'disabled':''}>${[['galveston','Galveston Diet'],['bfb-ps','BFB/PS Challenge']].map(([value,label])=>`<label><input type="radio" name="pause-program" data-pause-program value="${value}" ${policy.program===value?'checked':''}><span>${label}</span></label>`).join('')}</fieldset></section>`:`<p class="pl-status" role="status">${t('mobileNutrientDetail.loading')}</p>`;
+  if(error)root.insertAdjacentHTML('beforeend',`<div class="pl-status" role="status">${e(error)}${!busy&&(pending||conflict||!view)?`<button type="button" data-pause-retry>${conflict?dc('reloadSettings'):t('mobileSuggest.retry')}</button>`:''}</div>`);
  }
  async function load(){busy=true;error='';render();try{const next=await request('/api/pause-life',undefined,abort.signal);if(!alive())return;view=next;pending=null;conflict=false;}catch(cause){if(alive())error=cause.message;}finally{busy=false;render();}}
  async function save(policy){
