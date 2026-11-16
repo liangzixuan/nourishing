@@ -20,7 +20,7 @@ export async function disconnectCurrentPush(){
 export function mountReminders({root}){
  root.innerHTML='<section class="push-panel"><p role="status">Loading…</p><div data-push-controls></div></section>';
  const panel=root.querySelector('.push-panel'),message=panel.querySelector('[role=status]'),controls=panel.querySelector('[data-push-controls]');
- let data,busy=false,disposed=false,readAbort,localSubscription=false,devicesOpen=false;
+ let data,busy=false,failed=false,disposed=false,readAbort,localSubscription=false,devicesOpen=false;
  const alive=()=>!disposed&&panel.isConnected;
  const supported=()=>window.isSecureContext&&'Notification'in window&&'PushManager'in window&&'serviceWorker'in navigator;
  const notify=text=>{if(alive())message.textContent=text;};
@@ -39,12 +39,12 @@ export function mountReminders({root}){
   if(!data.configured){controls.innerHTML='<p>Notifications are unavailable.</p>'+reload;return;}
   const permission=supported()?Notification.permission:'unsupported',canConnect=supported()&&permission!=='denied';
   const status=permission==='unsupported'?'Use a supported browser or installed app.':permission==='denied'?'Allow notifications in your browser settings.':localSubscription?'Browser subscription active':permission==='granted'?'Ready to connect':'Not connected';
-  controls.innerHTML=`${schedules.editing?'':`<section class="push-browser"><h2>This browser</h2><p class="push-muted">${status}</p><div class="push-actions"><button type="button" class="primary" data-connect ${canConnect?'':'disabled'}>Connect this browser</button><button type="button" data-disconnect ${localSubscription?'':'hidden'}>Disconnect this browser</button></div></section>`}${schedules.html()}${schedules.editing?'':`<details class="push-connections" ${devicesOpen?'open':''}><summary>Connected devices <span>${data.devices.length}</span></summary><ul class="push-devices">${data.devices.map(device=>`<li><span>${e(device.label||'Browser')}</span><div class="push-actions"><button type="button" data-test="${e(device.id)}" ${device.currentOrigin?'':'disabled'}>${pendingTests.has(device.id)?'Check result':'Test'}</button><button type="button" data-remove="${e(device.id)}">Remove</button></div></li>`).join('')||'<li class="push-muted">No connected devices</li>'}</ul></details>`}<div class="push-reload">${schedules.locked?'<p>Save not confirmed. Reload to check.</p>':''}${reload}</div>`;
+  controls.innerHTML=`${schedules.editing?'':`<section class="push-browser"><h2>This browser</h2><p class="push-muted">${status}</p><div class="push-actions"><button type="button" class="primary" data-connect ${canConnect?'':'disabled'}>Connect this browser</button><button type="button" data-disconnect ${localSubscription?'':'hidden'}>Disconnect this browser</button></div></section>`}${schedules.html()}${schedules.editing?'':`<details class="push-connections" ${devicesOpen?'open':''}><summary>Connected devices <span>${data.devices.length}</span></summary><ul class="push-devices">${data.devices.map(device=>`<li><span>${e(device.label||'Browser')}</span><div class="push-actions"><button type="button" data-test="${e(device.id)}" ${device.currentOrigin?'':'disabled'}>${pendingTests.has(device.id)?'Check result':'Test'}</button><button type="button" data-remove="${e(device.id)}">Remove</button></div></li>`).join('')||'<li class="push-muted">No connected devices</li>'}</ul>${!schedules.locked&&!failed?reload:''}</details>`}${schedules.locked||failed?`<div class="push-reload">${schedules.locked?'<p>Save not confirmed. Reload to check.</p>':''}${reload}</div>`:''}`;
   if(busy||schedules.locked)controls.querySelectorAll('button,input,select').forEach(control=>{if(!control.hasAttribute('data-push-reload')||busy)control.disabled=true;});
  }
  async function run(action){
-  if(busy||!alive())return;busy=true;notify('');
-  try{const task=action();render();await task;}catch(error){if(error.name!=='AbortError')notify(error.message);}finally{busy=false;render();}
+  if(busy||!alive())return;busy=true;failed=false;notify('');
+  try{const task=action();render();await task;}catch(error){if(error.name!=='AbortError'){failed=true;notify(error.message);}}finally{busy=false;render();}
  }
  async function connect(permission){
   const result=await permission;if(!alive())return;if(result!=='granted')throw Error('Notifications were not allowed.');

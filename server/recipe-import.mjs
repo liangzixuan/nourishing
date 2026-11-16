@@ -4,7 +4,8 @@ import {request as httpsRequest} from 'node:https';
 import {isIP} from 'node:net';
 import {createGunzip,createInflate,createBrotliDecompress} from 'node:zlib';
 import ipaddr from 'ipaddr.js';
-import {parseRecipe} from './domain/importers.mjs';
+import {parseRecipe,importRecipe as parseRecipeInput} from './domain/importers.mjs';
+import {libraryQuantityOptions} from './library-view.mjs';
 import {parseIngredientLine,convertIngredient} from './domain/recipe-ingredients.mjs';
 import {matchIngredient,assessIngredientMatch} from './domain/recipe-matching.mjs';
 import {interpretRecipeYield} from './domain/recipe-yield.mjs';
@@ -73,7 +74,8 @@ function validateDraft(draft){
  if(draft.plainTextSource!==undefined)validatePlainRecipeSource(draft.plainTextSource,draft.originalIngredients);
 }
 export async function importRecipeUrl(state,catalog,input,{fetchPage=fetchPublicRecipe}={}){
- exact(input,['url']);const url=publicRecipeUrl(input.url),page=await fetchPage(url.href),parsed=await parseRecipe(page.text,page.url);
+ exact(input,['url','ingredients','text']);const keys=Object.keys(input);if(keys.length!==1||typeof input[keys[0]]!=='string'||!input[keys[0]].trim())fail('Use one source: a recipe URL, recipe text, or an ingredient list.');
+ let parsed;if(keys[0]==='url'){const url=publicRecipeUrl(input.url),page=await fetchPage(url.href);parsed=await parseRecipe(page.text,page.url);}else parsed=await parseRecipeInput(input);
  const draft={name:parsed.name,servings:parsed.servings,instructions:parsed.instructions,source:parsed.source,originalIngredients:parsed.ingredients,recipeYield:parsed.recipeYield,...Object.fromEntries(['ingredientSource','jsonldSource','rdfaSource','plainTextSource'].filter(key=>parsed[key]!==undefined).map(key=>[key,parsed[key]]))};
  return previewRecipeImport(state,catalog,draft,{initial:true});
 }
@@ -108,4 +110,12 @@ export function prepareRecipeImportSave(state,catalog,draft){
  const result=previewRecipeImport(state,catalog,draft);if(!result.review.canSave)fail('Check ingredient matches, amounts and servings.');
  const importReview={version:1,originalIngredients:[...draft.originalIngredients],recipeYield:draft.recipeYield??null,reviewedServings:draft.servings,yieldConfirmed:draft.yieldConfirmed===true,modifiedAfterImport:false,...Object.fromEntries(['ingredientSource','jsonldSource','rdfaSource','plainTextSource'].filter(key=>draft[key]!==undefined).map(key=>[key,structuredClone(draft[key])])),...(draft.plainTextSource!==undefined?{sourceConfirmed:draft.sourceConfirmed===true}:{}),rows:result.review.rows.map(row=>({id:row.id,original:row.original,status:row.status,selection:row.selection??null,foodName:row.food?.name??null,conversion:row.conversion??null,match:row.match??null,excluded:row.status==='excluded',confirmed:draft.rows[Number(row.id)].confirmed===true,override:draft.rows[Number(row.id)].override??null}))};
  return {name:draft.name.trim(),servings:draft.servings,instructions:draft.instructions,source:draft.source,importReview,rows:result.review.rows.filter(row=>row.status==='ready').map(row=>({ref:row.selection,quantity:row.conversion.sourceQuantity}))};
+}
+
+/** Review-only handoff. Catalog identities remain references until the final recipe command. */
+export function prepareRecipeImportDraft(state,catalog,draft){
+ const {rows,...recipe}=prepareRecipeImportSave(state,catalog,draft);
+ recipe.ingredients=rows.map(row=>({foodId:row.ref.id,...row.quantity}));
+ const ingredients=rows.map((row,index)=>{const food=row.ref.kind==='catalog'?catalog.get(row.ref.id):state.foods.find(item=>item.id===row.ref.id);return {...recipe.ingredients[index],name:food.name,source:food.source??null,options:libraryQuantityOptions(state,'food',food)};});
+ return {revision:digest(state),recipe,ingredients};
 }

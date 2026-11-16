@@ -114,11 +114,11 @@
     },
     {
       "path": "server/http.mjs",
-      "sha256": "71d033e883b5012ec91e4dae7a2ba5f41cd7bfea5cc445dd364b0a5a31572e29"
+      "sha256": "068611e275404ac3451044bbf23fa21cb0adfbb4ba436d47d53a7bf39578cdb0"
     },
     {
       "path": "server/appwrite-service.mjs",
-      "sha256": "3a00bdb08fcfa852f48bbe26b9e4500d99bc5ff57f28b9be6da9cff88320d9a6"
+      "sha256": "8d6c593c1c40088eac3072e30aa227f01ae23579a350de5c3c617c5e163f652b"
     },
     {
       "path": "tests/energy-expenditure.test.mjs",

@@ -113,7 +113,7 @@
     },
     {
       "path": "public/diary.js",
-      "sha256": "f938a319d5d4f8b5eb0d343f84f79811c960bf4b6f06c0f4ad6902d531c169b4"
+      "sha256": "be177da058155da6d62169016bc394662d971756e11a092b95ae6302025568a2"
     },
     {
       "path": "server/target-policy-commands.mjs",

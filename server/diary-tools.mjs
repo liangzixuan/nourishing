@@ -3,6 +3,7 @@ import {orderDiaryEntries,diaryGroupOrders} from './domain/diary-order.mjs';
 import {parseEnergyUnit,convertEnergy} from './domain/energy-units.mjs';
 import {digest} from './data-codec.mjs';
 import {diaryRecordPresentation} from './diary-record-presentation.mjs';
+import {calculateSummary,calculateSelectionNutrition,isExerciseEntry} from './domain/nutrition.mjs';
 
 const fail=message=>{throw Object.assign(Error(message),{status:400,code:400,publicMessage:message});};
 function exact(input,fields){if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(key=>!fields.includes(key)))fail('Invalid diary action.');}
@@ -17,9 +18,17 @@ export const diaryToolCommandFields=Object.freeze({
  'group.order':['group','mode']
 });
 export function diaryToolsReview(state,input){
- exact(input,['operation','selection','destination']);let review;
+ exact(input,input?.operation==='nutrition'?['operation','selection','revision']:['operation','selection','destination']);let review;
  if(input.operation!=='copy'&&input.destination!==undefined)fail('Choose a copy destination.');
  switch(input.operation){
+  case 'nutrition':{
+   if(input.revision!==digest(state))throw Object.assign(Error('Diary changed. Reload diary.'),{status:409});
+   const source=prepareRecordSelection(state,input.selection),date=source.selection.date;
+   const entryIds=source.records.filter(({collection,row})=>collection==='entries'&&!isExerciseEntry(row)).map(({row})=>row.id),day=calculateSummary(state,date);
+   const facts=entryIds.length?calculateSelectionNutrition(state,date,entryIds):day,consumed=facts.totals?.calories;
+   const chartSummary=entryIds.length?{...day,consumedEnergy:facts.consumedEnergy,energy:{...day.energy,consumed,remaining:Number.isFinite(consumed)?day.energy.target-consumed:null}}:day;
+   review={selection:source.selection,facts,chartSummary};break;
+  }
   case 'capture':review=captureRecordSelection(state,input.selection);break;
   case 'copy':review=previewRecordCopy(state,{selection:input.selection,destination:input.destination});break;
   case 'clear':review=previewClearAmounts(state,{selection:input.selection});break;

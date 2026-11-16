@@ -1,3 +1,5 @@
+import {initialState} from '../server/domain/workspace.mjs';
+import {displayView} from '../server/display-settings.mjs';
 import {barcodeAssets} from '../scripts/package-barcode-assets.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -10,7 +12,7 @@ test('source More menu preserves search and back focus, cloud destinations and d
  let theme='dark',revision='one',delayTargets=null,origin;const writes=[];
  const vendor=new Map((await barcodeAssets()).map(asset=>['/'+asset.path,asset]));
  const server=createServer(async(req,res)=>{try{
-  if(req.url==='/api/display'){if(delayTargets)await delayTargets;res.setHeader('Content-Type','application/json');res.end(JSON.stringify({revision,summaryNutrients:[{id:'calories',name:'Energy',unit:'kcal'}],settings:{diaryTable:{version:1,summaryNutrient:'calories',groupSubtotals:'calories'},theme,energyUnit:'kcal',showTimestamp:true,showEnergy:true,showMacros:true,showWater:true,diaryDisplay:{showHighlights:true}}}));return;}
+  if(req.url==='/api/display'){if(delayTargets)await delayTargets;res.setHeader('Content-Type','application/json');const state=initialState();state.settings.theme=theme;res.end(JSON.stringify({...displayView(state),revision}));return;}
   if(req.url.startsWith('/api/targets')){if(delayTargets)await delayTargets;res.setHeader('Content-Type','application/json');res.end(JSON.stringify({revision,theme,nutrients:[{id:'protein',name:'Protein',dailyTarget:100,maximum:null,visible:true,unit:'g'}]}));return;}
   if(req.url==='/api/workspace/command'){const chunks=[];for await(const chunk of req)chunks.push(chunk);const body=JSON.parse(Buffer.concat(chunks));writes.push(body);assert.equal(body.revision,revision);assert.equal(body.type,'display.save');theme=body.payload.theme;revision='next-'+writes.length;res.setHeader('Content-Type','application/json');res.end(JSON.stringify({revision}));return;}
   if(req.url==='/account'){res.setHeader('Content-Type','text/html');res.end('<h1>Account fixture</h1>');return;}

@@ -29,11 +29,11 @@
     },
     {
       "target": "public/account.js",
-      "outputSha256": "2cbb40899bd4cb4f5268ee4fa894b715461b8951466ba19a1f8286e2288627ba"
+      "outputSha256": "e9b16d1f75e5477aa980ffa5a498d1f385bddf2cf03e17fa770162ea69991bc6"
     },
     {
       "target": "public/account.css",
-      "outputSha256": "d01f22be36e15f63e0f12cb3ce43c97ccecdece3e6e41d0ce26487bd9f2ee999"
+      "outputSha256": "f33b46e88308ac23b49143cfb4f8c9877def62c0f5a9d7d9c918c5a3143c23d7"
     },
     {
       "target": "tests/account-edit.test.mjs",

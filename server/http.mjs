@@ -65,7 +65,7 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       const photoRequest=req.method==='POST'&&['/api/photos/analyze','/api/photos/save','/api/snapshots/prepare','/api/snapshots/save','/api/note-photos/prepare','/api/note-photos/save'].includes(path);
       // Authenticate before reading multi-megabyte image bodies. Limits include base64 expansion.
       if(photoRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid photo request.');}
-      const recipeRequest=req.method==='POST'&&['/api/recipe-import','/api/recipe-import/preview','/api/recipe-import/save'].includes(path);
+      const recipeRequest=req.method==='POST'&&['/api/recipe-import','/api/recipe-import/preview','/api/recipe-import/draft'].includes(path);
       // Recipe source evidence can approach the domain's 16 MiB review limit.
       if(recipeRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid recipe request.');}
       const backupRequest=req.method==='POST'&&['/api/backup/inspect','/api/backup/media','/api/backup/restore','/api/backup/recovery/inspect'].includes(path);
@@ -78,7 +78,7 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       if(printRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid report query.');}
       const diaryToolsRequest=req.method==='POST'&&['/api/diary/tools/review','/api/diary/tools/save'].includes(path),nutrientRequest=req.method==='POST'&&['/api/nutrient-detail','/api/nutrition-report/nutrient'].includes(path);
       if(diaryToolsRequest||nutrientRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid diary query.');}
-      const body=req.method==='GET'?null:await readBody(req,(sharingRequest||cycleRequest)?20_000_000:offlineRequest?601_000:textRequest?60_100:csvRequest?CSV_BODY_BYTES:barcodeRequest?BARCODE_BODY_BYTES:(libraryCommand||libraryPreview||ingredientRequest||printRequest||diaryToolsRequest||path==='/api/nutrient-detail')?4*1024*1024:backupRequest?(path==='/api/backup/inspect'?20_000_000:path.endsWith('/media')?5*1024*1024:16384):photoRequest?((path.endsWith('/analyze')||path.endsWith('/prepare'))?12:5)*1024*1024:recipeRequest&&path!=='/api/recipe-import'?16*1024*1024:16384);
+      const body=req.method==='GET'?null:await readBody(req,(sharingRequest||cycleRequest)?20_000_000:offlineRequest?601_000:textRequest?60_100:csvRequest?CSV_BODY_BYTES:barcodeRequest?BARCODE_BODY_BYTES:(libraryCommand||libraryPreview||ingredientRequest||printRequest||diaryToolsRequest||path==='/api/nutrient-detail')?4*1024*1024:backupRequest?(path==='/api/backup/inspect'?20_000_000:path.endsWith('/media')?5*1024*1024:16384):photoRequest?((path.endsWith('/analyze')||path.endsWith('/prepare'))?12:5)*1024*1024:recipeRequest?16*1024*1024:16384);
       if(cycleRequest){
         if(path.endsWith('/preview'))return json(200,await api.cycleImportPreview(secret,body));
         if(path.endsWith('/removal-preview'))return json(200,await api.cycleRemovalPreview(secret,body));
@@ -109,7 +109,7 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       if(req.method==='GET'&&path==='/api/backup/export'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid backup query.');return json(200,await api.exportBackup(secret));}
       if(photoRequest){const method={'/api/photos/analyze':'analyzePhoto','/api/photos/save':'savePhoto','/api/snapshots/prepare':'prepareSnapshot','/api/snapshots/save':'saveSnapshot','/api/note-photos/prepare':'prepareNotePhoto','/api/note-photos/save':'saveNotePhoto'}[path];return json(200,await api[method](secret,body,req.signal));}
       if(req.method==='GET'&&path==='/api/snapshots'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');return json(200,await api.snapshots(secret));}
-      if(recipeRequest){const method=path.endsWith('/preview')?'previewRecipeImport':path.endsWith('/save')?'saveRecipeImport':'importRecipe';return json(200,await api[method](secret,body));}
+      if(recipeRequest){const method=path.endsWith('/preview')?'previewRecipeImport':path.endsWith('/draft')?'recipeImportDraft':'importRecipe';return json(200,await api[method](secret,body));}
       if(req.method==='GET'&&path==='/api/fasting'){
         if(!secret)fail(401,'Please sign in.');
         if([...url.searchParams.keys()].some(k=>!['offset','limit','revision'].includes(k)||url.searchParams.getAll(k).length!==1))fail(400,'Invalid fasting query.');
@@ -124,6 +124,7 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
         fail(404,'Not found.');
       }
       if(req.method==='GET'&&path==='/api/diary/calendar'){if(!secret)fail(401,'Please sign in.');if([...url.searchParams.keys()].some(key=>key!=='month')||url.searchParams.getAll('month').length!==1||!/^\d{4}-(0[1-9]|1[0-2])$/.test(url.searchParams.get('month')))fail(400,'Choose a calendar month.');return json(200,await api.diaryCalendar(secret,{month:url.searchParams.get('month')}));}
+      if(req.method==='GET'&&path==='/api/pause-life'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');return json(200,await api.pauseLife(secret));}
       if(req.method==='GET'&&path==='/api/display'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');return json(200,await api.display(secret));}
       const recordQueries={'/api/repeats':['date'],'/api/records/options':['date'],'/api/records/exercise-catalog':[],'/api/records/item':['collection','id'],'/api/records/exercises':['q','offset'],'/api/records/exercise-estimate':['date','code','minutes']};
       if(req.method==='GET'&&Object.hasOwn(recordQueries,path)){

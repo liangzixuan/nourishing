@@ -5,7 +5,7 @@
       "source": "public/discover.css",
       "target": "public/shell-source/discover.css",
       "sourceSha256": "2993a036c6060322ca2e636a1570e76dd6b8bfd4ba1ca521342315b7ccf7a77b",
-      "sha256": "68f6a1c57873e13eaeba0c3db12b5baa9ecfd97806326bf9a100722df99e54d1",
+      "sha256": "2466867bae3677624e3ec329ab0770bb4ac7dfc783903e2067d1b841f980c81c",
       "transforms": [
         "Remove imports supplied by the cloud entrypoint",
         "Rewrite navigation asset paths",

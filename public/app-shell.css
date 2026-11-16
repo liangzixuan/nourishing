@@ -1,6 +1,6 @@
 @import url('/streak-source/fonts.css');
 
-html{font-size:18px;font-synthesis:none;color-scheme:normal}
+html{font-size:112.5%;font-synthesis:none;color-scheme:normal}
 body.discover-mobile{font-family:Lato,Arial,sans-serif;line-height:1.4}
 h1,h2,h3{font-family:Karla,Lato,sans-serif;min-width:0;overflow-wrap:anywhere}
 button,input,select,textarea{font:inherit}

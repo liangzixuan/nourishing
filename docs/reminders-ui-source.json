@@ -17,11 +17,11 @@
   "assets": [
     {
       "output": "public/reminders.js",
-      "outputSha256": "82669265516079b1d3caf9d210299afed3f0be268abc25ea894bede3953e45c4"
+      "outputSha256": "eee3a752db3565640b72fa8b2735de3060ec64dda86c97c3eb73e5118619caec"
     },
     {
       "output": "public/reminders.css",
-      "outputSha256": "60658031d8617f5176acdc9b0bbde78b62d928bc16fbc56b6c1efec9eb6b060c"
+      "outputSha256": "5ef68c30bb3ba4c74ad54d528a5de9c2f48a8be6b9fd7b0fa68d3e641f15f03b"
     },
     {
       "output": "public/reminder-schedules.js",

@@ -15,7 +15,7 @@
       "source": "../cronometer-local/public/mobile-macro-scheduler.css",
       "target": "public/macro-scheduler-source/mobile-macro-scheduler.css",
       "sourceSha256": "a65855d8b0844e53ed63db2c06cc89489731c6939614797ffb16463768b8ac75",
-      "outputSha256": "bb919467eaf5e6a78025efc610f0084733d6bc797d9c96a21a132ebc30fbed55",
+      "outputSha256": "d27ebbcdf2df043c861bf208e1dfb84cb443097ff8ef5dc3354c3d0151ab9982",
       "transforms": [
         "LF normalization; scoped cloud baseline switch, button, chevron and dialog resets."
       ]
@@ -38,7 +38,7 @@
     },
     {
       "target": "public/diary.js",
-      "outputSha256": "f938a319d5d4f8b5eb0d343f84f79811c960bf4b6f06c0f4ad6902d531c169b4"
+      "outputSha256": "be177da058155da6d62169016bc394662d971756e11a092b95ae6302025568a2"
     },
     {
       "target": "server/target-policy-view.mjs",

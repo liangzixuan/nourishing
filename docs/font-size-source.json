@@ -1,0 +1,125 @@
+{
+  "scope": "Source Font Size controls and account-scoped PWA text presentation.",
+  "references": [
+    {
+      "source": "../cronometer-local/public/mobile-display.js",
+      "sourceSha256": "e90afb2ee85e895269dd27308988250a3c5c234283b241af69de86fcd933a868"
+    },
+    {
+      "source": "../cronometer-local/public/font-presentation.js",
+      "sourceSha256": "5625cce860d6bb2e1aff54a8bd95c9d37cd39a6d84608971b8184fa14dbdb2ef"
+    },
+    {
+      "source": "../cronometer-local/server/font-scale.mjs",
+      "sourceSha256": "6f9b931d9395686a033b52a6f3a0ea4e5289c5c385f4eea4ed636d561d38e7be"
+    }
+  ],
+  "capture": {
+    "source": "../cronometer-local/verification/phone-discover-20261108/font-size-settings.png",
+    "sha256": "57ee0a15a937bae57962195e6cbbc72396115bfed70ac432cf1af76a024d991f"
+  },
+  "assets": [
+    {
+      "output": "public/font-presentation.js",
+      "outputSha256": "77a65e8542c462fed7288c92825e564d2b6e9d7f02f741ebab45b447b06a34c8"
+    },
+    {
+      "output": "public/font-source/font-scale.mjs",
+      "outputSha256": "6f9b931d9395686a033b52a6f3a0ea4e5289c5c385f4eea4ed636d561d38e7be"
+    },
+    {
+      "output": "public/display-source/mobile-display.js",
+      "outputSha256": "2f921864a81485148e81909076e7b0e4eec6c732ecd55e92c671aa64d8272fec"
+    },
+    {
+      "output": "public/display.js",
+      "outputSha256": "3f697e3f5d93832ae29f2d2616331e05db172a06cd5dc55edd9d8bdc03f7b31e"
+    },
+    {
+      "output": "public/display.css",
+      "outputSha256": "bc4491101f89e14e85d9b96812900af0f6df4bf09dbac4db96ae3aa29936be1d"
+    },
+    {
+      "output": "server/display-settings.mjs",
+      "outputSha256": "45c7910d866316cd7686242a662151a0fba0ecac02a834b0db9f205272c5dfcc"
+    },
+    {
+      "output": "server/diary-summary.mjs",
+      "outputSha256": "1ce0930e0eaade4e12e09297eba3b28ff64ce62071b45accec137ab49bde149f"
+    },
+    {
+      "output": "public/account.js",
+      "outputSha256": "e9b16d1f75e5477aa980ffa5a498d1f385bddf2cf03e17fa770162ea69991bc6"
+    },
+    {
+      "output": "public/diary.js",
+      "outputSha256": "be177da058155da6d62169016bc394662d971756e11a092b95ae6302025568a2"
+    },
+    {
+      "output": "public/offline-diary.js",
+      "outputSha256": "ad478e0982deed02308840954974d2532f09a8bbda4dc0da494d7613b66e56d1"
+    },
+    {
+      "output": "public/account.css",
+      "outputSha256": "f33b46e88308ac23b49143cfb4f8c9877def62c0f5a9d7d9c918c5a3143c23d7"
+    },
+    {
+      "output": "public/app-shell.css",
+      "outputSha256": "ded9c06f06305bbca077e07594e1bd4fb5b80ca33513429aab56ead925382b26"
+    },
+    {
+      "output": "public/backup.css",
+      "outputSha256": "6d85a492f50bca4a76fdf8296f9e4e2f42dafaca34c81c3fb5178668b3afe2c7"
+    },
+    {
+      "output": "public/diary.css",
+      "outputSha256": "cb4de783af25f8d5f6cda72a656fc5dec1f92b411a64c99481935239949f65e0"
+    },
+    {
+      "output": "public/macro-scheduler-source/mobile-macro-scheduler.css",
+      "outputSha256": "d27ebbcdf2df043c861bf208e1dfb84cb443097ff8ef5dc3354c3d0151ab9982"
+    },
+    {
+      "output": "public/mobile-diary.css",
+      "outputSha256": "701f049e85462f9f04435a949d59b8038d10dffa20c1bc08a89f2af79738fcbd"
+    },
+    {
+      "output": "public/offline-diary.css",
+      "outputSha256": "f2c6ad55ce953d5092077479d3d5157dc4ed92a0c59c54010199986661947651"
+    },
+    {
+      "output": "public/offline.css",
+      "outputSha256": "be9acbd62a774b93ac77ae7c1e0ef52de322b7efa4d606cb09527f7865532bc4"
+    },
+    {
+      "output": "public/profile-settings.css",
+      "outputSha256": "743d8bcf205443e3f4902855bcbc241bff0ea7ca6c0af04fdff8cf619b6c0531"
+    },
+    {
+      "output": "public/reminders.css",
+      "outputSha256": "5ef68c30bb3ba4c74ad54d528a5de9c2f48a8be6b9fd7b0fa68d3e641f15f03b"
+    },
+    {
+      "output": "public/shell-source/discover.css",
+      "outputSha256": "2466867bae3677624e3ec329ab0770bb4ac7dfc783903e2067d1b841f980c81c"
+    }
+  ],
+  "adaptations": [
+    "Reuse the canonical 0.75 to 2 font scale validator and settings.save through display.save; retain the custom value when browser text size is enabled.",
+    "Use browser text size replaces the native Match device wording. A PWA cannot read the Android font multiplier; browser-relative CSS preserves the actual browser text preference.",
+    "One presentation module applies settings after Diary, Account, Display and unlocked offline loads. Root text uses the existing 18 px online and 17 px offline baselines at a 16 px browser default.",
+    "Convert fixed text sizes to rem at the same baseline. Keep touch targets, icons, canvas geometry and print documents independent. Navigation labels scale with text, and energy rings wrap at large sizes on narrow screens.",
+    "Display also mounts the separate Pause Life child controller and disposes it on Back. Its canonical settings and evidence belong to pause-life-source.json.",
+    "All output digests use UTF-8 LF publication bytes."
+  ],
+  "verification": [
+    "tests/font-size-browser.test.mjs: actual Diary/More/Display, Theme dialog and Text Log at 320 px with 75/100/200 percent sizes, exact receipt retry, reload, browser text preference, no CSP violations or horizontal overflow.",
+    "tests/account-appearance-browser.test.mjs: account fixed text scales at 200 percent on 320 px and follows browser mode after reload.",
+    "tests/offline-ui.test.mjs: packaged shell loads font dependencies offline and applies saved 200 percent at 320 px.",
+    "tests/display-settings.test.mjs: canonical ranges, invalid values, preserved unrelated preferences and idempotent receipts."
+  ],
+  "limits": [
+    "Browser accessibility settings can override application styling. Native OS font-scale matching is not claimed.",
+    "Language selection remains deferred: supported source locales and incomplete cloud coverage are documented in ui-parity.md."
+  ]
+}

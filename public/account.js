@@ -1,3 +1,4 @@
+import {applyFontPreferences} from './font-presentation.js';
 import {createAccountEditor} from './account-edit.js';
 import {applyTheme} from './appearance.js';
 import {rememberOfflineAccount,lockCurrentOffline,leaveOfflineAccount} from './offline-session.js';
@@ -38,7 +39,7 @@ function verification(){
 async function profile(knownUser=null){
   let user;try{user=knownUser?.id?knownUser:await api('/api/account',null,'GET');}catch(error){if(error.status===401){await lockCurrentOffline();if(!await deletion.recover())accountForm('login');return;}root.innerHTML=`<h1>Account</h1>${notice()}<button id="retry">Try again</button>`;message(error.message,true);root.querySelector('#retry').onclick=profile;return;}
   await rememberOfflineAccount(user);
-  const display=await api('/api/display',null,'GET').catch(()=>null);applyTheme(display?.settings?.theme);
+  const display=await api('/api/display',null,'GET').catch(()=>null);applyTheme(display?.settings?.theme);applyFontPreferences(display?.settings);
   const zone=user.profile.timeZone==='UTC'?Intl.DateTimeFormat().resolvedOptions().timeZone:user.profile.timeZone;
   root.innerHTML=`<h1>Account</h1>${installButton()}<section class="card account-identity"><button type="button" class="account-row" data-account-edit="name" aria-label="Edit name"><span>Name</span><span class="muted">${escape(user.name)}</span><span aria-hidden="true">&#8250;</span></button><button type="button" class="account-row" data-account-edit="email" aria-label="Change email"><span>Email</span><span class="muted">${escape(user.email)}</span><span aria-hidden="true">&#8250;</span></button><button type="button" class="account-row" data-account-edit="password" aria-label="Change password"><span>Password</span><span class="muted">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</span><span aria-hidden="true">&#8250;</span></button><p class="account-verification">${user.emailVerified?'Email verified':'Email not verified'}</p>${user.emailVerified?'':'<button class="secondary" id="verify">Send verification email</button>'}</section><form><label>Time zone<input name="timeZone" value="${escape(zone)}" required maxlength="100"></label><label>Units<select name="units"><option value="metric">Metric</option><option value="imperial">Imperial</option></select></label><button>Save settings</button></form>${notice()}<button class="secondary signout" id="signout">Sign out</button><button type="button" class="delete-account" id="delete-account">Delete account</button>`;
   editor?.dispose();editor=createAccountEditor({root,request:api,onSaved:async identity=>{await profile({...user,...identity});message('Saved.');}});

@@ -26,7 +26,7 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
   document.body.classList.toggle('foods-home-mobile',screen==='home');document.body.classList.toggle('mobile-library',screen==='collection');
   if(screen==='home'){
    page.innerHTML=`<section class="library-page">${renderHeader(mobileFoodsHeader('en',icon))}${mobileFoodsHome('en',icon)}</section>`;
-   page.querySelector('[data-action="recipe-import"]').setAttribute('data-recipe-import','');
+   page.querySelector('[data-action="recipe-import"]').disabled=!data;
    page.querySelector('[data-view="repeats"]').setAttribute('data-library-repeats','');
    page.querySelectorAll('[data-action="foods-insight"]').forEach(button=>button.dataset.foodInsight=button.dataset.section==='suggest'?'suggestions':'oracle');
    page.querySelectorAll('[data-action^="new-"]').forEach(button=>button.disabled=!data);
@@ -45,6 +45,7 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
   if(action==='food-tab'){event.stopPropagation();kind=b.dataset.tab.slice(0,-1);screen='collection';query='';retired=false;render();return;}
   if(action==='foods-home'){event.stopPropagation();screen='home';query='';render();return;}
   if(action?.startsWith('new-')&&labels[action.slice(4)]){event.stopPropagation();if(data)editor(action.slice(4),null);return;}
+  if(action==='recipe-import'){event.stopPropagation();if(data)editor('recipe',null,undefined,{initialImport:true});return;}
   if(action==='library-options'){event.stopPropagation();libraryOptions();return;}
   if(b.dataset.libraryItem){event.stopPropagation();openItem(kind,b.dataset.libraryItem);return;}
   if(b.hasAttribute('data-library-retry'))reload();
@@ -54,7 +55,7 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
  headerRoot?.addEventListener('click',select);
  async function openItem(itemKind,id,keptDraft){show(header(labels[itemKind])+'<p class="empty">Loading…</p>');const loading=content.querySelector('.empty');try{const item=await request('/api/library/item?'+new URLSearchParams({kind:itemKind,id}));if(!disposed&&loading.isConnected)editor(itemKind,item,keptDraft);}catch(error){if(!disposed&&loading.isConnected)loading.textContent=error.message;}}
 
- function editor(itemKind,saved,draft){
+ function editor(itemKind,saved,draft,importOptions={}){
   foodEditor?.dispose();mealEditor?.dispose();recipeEditor?.dispose();const resource=saved?.resource;
   if(itemKind==='food'){
    const savedChange=async()=>{await onChange();await reload();};
@@ -64,7 +65,7 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
   if(itemKind==='meal'||itemKind==='recipe'){
    const savedChange=async()=>{await onChange();await reload();};
    const action=(label,kept)=>{const back=()=>openItem(itemKind,resource.id,kept);if(label==='Share')extrasCleanup=openLibrarySharing({kind:itemKind,id:resource.id,show,header,content,close,onBack:back,onChange:savedChange});else if(label==='Portions & visibility')void openLibraryTools({kind:itemKind,id:resource.id,show,close,header,content,onChange:savedChange,onBack:back});else if(label==='Add to diary')openEntry(itemKind,resource.id);else if(label==='Delete'){show(header('Delete '+labels[itemKind])+'<p class="sheet-message">Delete '+e(resource.name)+'?</p><div class="entry-actions"><button type="button" data-cancel-delete>Cancel</button><button type="button" class="danger" data-confirm-delete>Delete</button></div><p role="status" class="sheet-message"></p>');content.querySelector('[data-cancel-delete]').onclick=()=>editor(itemKind,saved,kept);content.querySelector('[data-confirm-delete]').onclick=async event=>{event.target.disabled=true;try{await command(data.revision,itemKind+'.delete',{id:resource.id});await savedChange();close();}catch(error){content.querySelector('[role=status]').textContent=error.message;event.target.disabled=false;}};}};
-   const editorMount=itemKind==='recipe'?mountRecipeEditor:mountMealEditor;const mounted=editorMount({saved,data,draft,show,close,content,date,onSaved:savedChange,onAction:action,onReload:async()=>{await reload();if(resource)openItem(itemKind,resource.id);else editor(itemKind,null);},openEntry});if(itemKind==='recipe')recipeEditor=mounted;else mealEditor=mounted;return;
+   const editorMount=itemKind==='recipe'?mountRecipeEditor:mountMealEditor;const mounted=editorMount({...importOptions,onImported:prepared=>editor('recipe',null,prepared.recipe,{imported:prepared}),saved,data,draft,show,close,content,date,onSaved:savedChange,onAction:action,onReload:async()=>{await reload();if(resource)openItem(itemKind,resource.id);else editor(itemKind,null);},openEntry});if(itemKind==='recipe')recipeEditor=mounted;else mealEditor=mounted;return;
   }
  }
  render();reload();return {reload,dispose(){disposed=true;serial++;foodEditor?.dispose();mealEditor?.dispose();recipeEditor?.dispose();extrasCleanup?.();optionsSheet?.close(false);itemMenu.dispose();data=null;page.removeEventListener('click',select);headerRoot?.removeEventListener('click',select);document.body.classList.remove('foods-home-mobile','mobile-library');}};

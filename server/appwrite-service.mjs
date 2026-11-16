@@ -1,3 +1,4 @@
+import {pauseLifeView} from './pause-life-settings.mjs';
 import {editAccount} from './account-edit.mjs';
 import {diaryCalendarView} from './diary-calendar-view.mjs';
 import {displayView} from './display-settings.mjs';
@@ -30,7 +31,7 @@ import {libraryToolsView} from './library-tools.mjs';
 import {createBackupStore} from './backup-store.mjs';
 import {profileSettingsView} from './profile-settings.mjs';
 import {snapshotsView,prepareSnapshot,SNAPSHOT_MEDIA_NAMESPACE} from './snapshots.mjs';
-import {importRecipeUrl,previewRecipeImport,prepareRecipeImportSave} from './recipe-import.mjs';
+import {importRecipeUrl,previewRecipeImport,prepareRecipeImportDraft} from './recipe-import.mjs';
 import {fastingView} from './fasting.mjs';
 import {createCloudPhotoAnalyzer} from './cloud-photo.mjs';
 import {validateStoredPhoto} from './domain/photo-images.mjs';
@@ -171,14 +172,8 @@ export function createAppwriteService(config, key, userAgent='') {
       return createWorkspaceStore(db,owner).command({requestId,revision,type:'snapshot.add',payload:{photoId:photo.id,...metadata}},catalogReader(repository),{photo,stageMedia:context=>stagePhotoMedia({db,storage,owner,photo,namespace:SNAPSHOT_MEDIA_NAMESPACE,...context})});
     },
     async importRecipe(secret,input){return insights(secret,input,importRecipeUrl);},
+    async recipeImportDraft(secret,input){return insights(secret,input,prepareRecipeImportDraft);},
     async previewRecipeImport(secret,input){return insights(secret,input,previewRecipeImport);},
-    async saveRecipeImport(secret,input){
-      if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!['requestId','revision','draft'].includes(k)))throw Object.assign(Error('Invalid recipe fields.'),{code:400});
-      const prepared=await insights(secret,input.draft,prepareRecipeImportSave),{rows,...metadata}=prepared;
-      const payload={...metadata,ingredients:rows.map(row=>({foodId:row.ref.id,...row.quantity}))};
-      const {owner,repository}=await data(secret);
-      return createWorkspaceStore(new TablesDB(elevated()),owner).command({requestId:input.requestId,revision:input.revision,type:'recipe.save',payload},catalogReader(repository));
-    },
     async fasting(secret,input){const {owner}=await data(secret),context=await calendarContext(secret,owner);return readView(secret,state=>fastingView(state,context,input));},
     async foodInsightOptions(secret){return readView(secret,state=>foodInsightOptions(state));},
     async foodOracle(secret,input){return insights(secret,input,foodOracle);},
@@ -199,6 +194,7 @@ export function createAppwriteService(config, key, userAgent='') {
     async targetPolicies(secret,date){const {owner}=await data(secret),context=await calendarContext(secret,owner);return readView(secret,state=>targetPolicyView(state,date,context));},
     async repeats(secret,date){return readView(secret,state=>repeatView(state,date));},
     async exerciseCatalog(secret){await data(secret);return exerciseCatalogView();},
+    async pauseLife(secret){return readView(secret,pauseLifeView);},
     async display(secret){return readView(secret,state=>displayView(state));},
     async recordOptions(secret,date){return readView(secret,state=>recordOptions(state,date));},
     async recordItem(secret,input){return readView(secret,state=>recordView(state,input));},
@@ -254,7 +250,7 @@ export function createAppwriteService(config, key, userAgent='') {
       try{await createFastingDispatcher({db:new TablesDB(queueClient),functions:new Functions(queueClient)}).dispatch(account.$id);}
       catch{console.warn('Fasting delivery remains queued for repair.');}
     }
-    const reminderChanged=['workspaceCommand','offlineCommand','restoreBackup','importCsv','barcodeSave','savePhoto','saveNotePhoto','saveSnapshot','saveRecipeImport','saveReminder','deleteReminder','reminderSettings','subscribePush','unsubscribePush','testPush'].includes(name);
+    const reminderChanged=['workspaceCommand','offlineCommand','restoreBackup','importCsv','barcodeSave','savePhoto','saveNotePhoto','saveSnapshot','saveReminder','deleteReminder','reminderSettings','subscribePush','unsubscribePush','testPush'].includes(name);
     if(process.env.REMINDERS_ENABLED==='true'&&reminderChanged){
       const queueClient=new Client().setEndpoint(config.endpoint).setProject(config.project).setKey(key);
       try{await createReminderDispatcher({db:new TablesDB(queueClient),functions:new Functions(queueClient)}).dispatch(account.$id);}

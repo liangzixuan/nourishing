@@ -38,7 +38,8 @@ try{
  const preview=await api.previewRecipeImport(secret,draft);assert.equal(preview.review.canSave,true);
  const before=await repository.readState();assert.equal(before.recipes.length,0);assert.equal(before.foods.length,initial.foods.length);
  const originals=await Promise.all(draft.rows.map(async row=>(await repository.food(row.selection.id)).food));
- const save={requestId:randomUUID(),revision:preview.revision,draft:preview.draft},saved=await api.saveRecipeImport(secret,save);
+ const prepared=await api.recipeImportDraft(secret,preview.draft);assert.equal(prepared.revision,preview.revision);assert.equal((await repository.readState()).recipes.length,0);
+ const save={requestId:randomUUID(),revision:prepared.revision,type:'recipe.save',payload:prepared.recipe},saved=await api.workspaceCommand(secret,save);
  const state=await repository.readState();assert.equal(state.recipes.length,1);const recipe=state.recipes[0];
  assert.equal(recipe.source,source);assert.equal(recipe.instructions,'Mix and cook.');assert.deepEqual(recipe.importReview.originalIngredients,draft.originalIngredients);
  assert.equal(recipe.importReview.modifiedAfterImport,false);assert.equal(recipe.servings,4);
@@ -50,8 +51,8 @@ try{
  assert.deepEqual(recipeNutrition(state,recipe).nutrients,preview.review.preview.perServing);
  const list=await api.library(secret);assert.equal(list.items.filter(item=>item.kind==='recipe').length,1);
  report.checks.push('production parser and compact catalog preview leaves workspace unchanged','source URL, instructions, review evidence and gram quantities retained','selected catalog facts captured exactly and nutrition agrees with preview','saved recipe appears in Foods library');
- assert.deepEqual(await api.saveRecipeImport(secret,save),saved);assert.equal((await repository.readState()).recipes.length,1);
- await assert.rejects(()=>api.saveRecipeImport(secret,{...save,requestId:randomUUID()}),error=>error.code===409);
+ assert.deepEqual(await api.workspaceCommand(secret,save),saved);assert.equal((await repository.readState()).recipes.length,1);
+ await assert.rejects(()=>api.workspaceCommand(secret,{...save,requestId:randomUUID()}),error=>error.code===409);
  const receipts=await allRows(db,'command_receipts',[Query.equal('ownerId',owner)]);assert.equal(receipts.length,1);
  report.checks.push('same request replays without duplicate recipe or receipt','stale revision rejected');
  const otherDb=new TablesDB(new Client().setEndpoint(config.endpoint).setProject(config.projectId).setSession(otherSecret));
@@ -61,7 +62,7 @@ try{
  const foreign=structuredClone(draft);foreign.rows[0].selection={kind:'library',id:recipe.ingredients[0].foodId};
  await assert.rejects(()=>api.previewRecipeImport(otherSecret,foreign),error=>error.code===400);
  assert.equal((await api.library(otherSecret)).items.filter(item=>item.kind==='recipe').length,0);
- await assert.rejects(()=>api.saveRecipeImport(secret,{...save,ownerId:ids[1]}),error=>error.code===400);
+ await assert.rejects(()=>api.workspaceCommand(secret,{...save,ownerId:ids[1]}),error=>error.code===400);
  report.checks.push('other account cannot read workspace head or rows or reference private ingredients','owner override rejected');
 }finally{
  const clean=async(label,operation)=>{try{await operation();}catch(error){if(error.code!==404)cleanupFailures.push({resource:label,code:error.code??'unknown'});}};

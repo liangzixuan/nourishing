@@ -122,7 +122,7 @@
     },
     {
       "path": "public/recipe-editor.js",
-      "sha256": "091510c47165841466a2c0a81b9a414f41476d484bda251d84eb5cc24235922c"
+      "sha256": "d7faf8e12533bcc5da73e303c458d5afbb180f4db0de28886ada2142173896ef"
     },
     {
       "path": "public/composite-editor.js",
@@ -146,11 +146,11 @@
     },
     {
       "path": "public/library.js",
-      "sha256": "446eb0f59b89903bdacab6013c47950cb22327132b15dfa372010f6e396d38ea"
+      "sha256": "ebc797e5bf1861d24890bcff6932e184559cfcd81e3595bf99e624004c90b40d"
     },
     {
       "path": "public/library.css",
-      "sha256": "3d5fdd0f634e9b086ccdbf6448f3ec0d3576c0f366ea328b773df717358e4d2f"
+      "sha256": "64bb9dca85c60aaceeac045ff94530c9be6c72fad3c4c5588dcd3fecb5421a96"
     },
     {
       "path": "public/composite-source/mobile-composite-editor.css",

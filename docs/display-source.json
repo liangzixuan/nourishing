@@ -5,7 +5,7 @@
       "source": "../cronometer-local/public/mobile-display.js",
       "target": "public/display-source/mobile-display.js",
       "sourceSha256": "048f47dbe6ef3014d6d1c586eee70e3282c88b65cedd58b59d674018d245186a",
-      "outputSha256": "a76b2747a16355a85af6468352f16df5a5088a674240d9fda52b7bc355e49837",
+      "outputSha256": "2f921864a81485148e81909076e7b0e4eec6c732ecd55e92c671aa64d8272fec",
       "transforms": [
         "Retain source rows, toggles, radio choice dialogs, Cancel/Escape/outside dismissal and focus return.",
         "Expose functional cloud consumers, including Summary Column and Group Subtotals under source Diary Settings navigation.",
@@ -53,11 +53,11 @@
   "outputs": [
     {
       "path": "public/display.js",
-      "sha256": "3dc88cf4f0abfb4be1cfdbdbefe5b572e50cada4e6e3f82a58da86106f770488"
+      "sha256": "3f697e3f5d93832ae29f2d2616331e05db172a06cd5dc55edd9d8bdc03f7b31e"
     },
     {
       "path": "public/display.css",
-      "sha256": "21fc2604f8a9303e741b3f6150124dec60074e8a565ae53e36c018e0de98a783"
+      "sha256": "bc4491101f89e14e85d9b96812900af0f6df4bf09dbac4db96ae3aa29936be1d"
     },
     {
       "path": "public/more.js",
@@ -69,19 +69,19 @@
     },
     {
       "path": "server/display-settings.mjs",
-      "sha256": "052588774fb86b70acf968e8110e70e7a2c125e80b78dcdfe0662112f06c76b4"
+      "sha256": "45c7910d866316cd7686242a662151a0fba0ecac02a834b0db9f205272c5dfcc"
     },
     {
       "path": "tests/display-settings.test.mjs",
-      "sha256": "df3571c4b8de867c07dc51e6e098f63974cacf8b516929dcedca8b7aa75ce301"
+      "sha256": "015d9efbf39458cb4fd4c6a296c43c5f63f13b7bc73d70947b3981d256ed8728"
     },
     {
       "path": "tests/display-browser.test.mjs",
-      "sha256": "d30e47cfce21c998ed1c95d569db2d45804fd9a30ab0c09c95d9fe79894a0015"
+      "sha256": "094ad022cd09d7749c9784e7978e581ba6828ef91fcfe72acbcd86f2c60b421a"
     },
     {
       "path": "tests/more-ui-parity.test.mjs",
-      "sha256": "d9084bbdde63c0c0bfcffad8bc114759f319743dbcce8064eb7d87051c633647"
+      "sha256": "f165f91d38cbfd5047d39aa860543b5cb32d6ed50ebda275133f8d3be79951b4"
     },
     {
       "path": "scripts/verify-display-hosted.mjs",
@@ -89,7 +89,7 @@
     },
     {
       "path": "public/diary.js",
-      "sha256": "f938a319d5d4f8b5eb0d343f84f79811c960bf4b6f06c0f4ad6902d531c169b4"
+      "sha256": "be177da058155da6d62169016bc394662d971756e11a092b95ae6302025568a2"
     },
     {
       "path": "public/diary-table-presentation.js",
@@ -109,7 +109,7 @@
     },
     {
       "path": "server/diary-summary.mjs",
-      "sha256": "4486853341b5909cbf0fd4faca19815805dea79020c8f5d38d147ce4ad075272"
+      "sha256": "1ce0930e0eaade4e12e09297eba3b28ff64ce62071b45accec137ab49bde149f"
     },
     {
       "path": "tests/records-browser.test.mjs",
@@ -156,10 +156,9 @@
     "hosted": "scripts/verify-display-hosted.mjs extended and syntax checked; not run by this worker."
   },
   "limitations": [
-    "Font size and match-device preference require one application appearance consumer and startup projection.",
     "Language needs source locale routing across cloud labels and server-provided presentation; primary screens remain English.",
     "No new physical-device comparison. Hosted verifier is prepared and unrun by this worker.",
-    "Pause Life and Dashboard preferences are not included in this Display increment. Font size and language remain separate work."
+    "Font Size and Pause Life are restored in separate increments; see font-size-source.json and pause-life-source.json."
   ],
   "references": [
     {

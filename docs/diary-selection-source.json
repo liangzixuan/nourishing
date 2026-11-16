@@ -1,0 +1,67 @@
+{
+  "scope": "Shared Diary selected-food summary projection and existing source carousel consumers.",
+  "files": [
+    {
+      "source": "../cronometer-local/public/app.js",
+      "target": "public/diary-summary.js",
+      "sourceSha256": "7885979aa41896f3058b99f181ad1c2f7700482580de8669b10826b436115447",
+      "outputSha256": "ba426f0ec9f5390b5523647139bb7494e59a63be6c8f7b93137d9f4a611d12ed",
+      "transforms": [
+        "Reuse refreshDiaryNutritionFacts and mobileChartSummary semantics through canonical authenticated projection.",
+        "Food selection changes intake, energy ring/remaining and macro/highlight rows; full-day score/water/fasting consumers remain unchanged.",
+        "Abort reads on selection changes or disposal; reject stale revisions and hide old summaries while pending/failed."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/styles.css",
+      "target": "public/diary-tools.css",
+      "sourceSha256": "00faec7c5fba0dffd9586c75ea5bea2f2bf8c1faf5b560f47ba2d21621a75f58",
+      "outputSha256": "70cebc7e0de66140f396bcb979f1ea8071fa7ec5db9ea27699a6caca986ee224",
+      "transforms": [
+        "Restore normal-flow selection toolbar; remove obsolete sticky 132px offset that obscured summary controls."
+      ]
+    }
+  ],
+  "canonicalOwner": "server/domain/nutrition.mjs calculateSelectionNutrition",
+  "request": {
+    "path": "POST /api/diary/tools/review",
+    "operation": "nutrition",
+    "fields": [
+      "revision",
+      "selection"
+    ],
+    "response": [
+      "revision",
+      "selection",
+      "facts",
+      "chartSummary"
+    ]
+  },
+  "sourceSemantics": [
+    "Original app.js refreshDiaryNutritionFacts filters typed selected references to food entries on the chosen date. Empty or nonfood-only selection uses the whole-day summary.",
+    "mobileChartSummary overlays selected consumed breakdown and energy.consumed/remaining on the day summary. Day targets and expenditure inputs remain canonical.",
+    "selectedNutritionScores deliberately uses whole-day scores. Water, fasting, record amounts and group subtotals remain whole-day.",
+    "Nutrient detail receives selected food entryIds through its existing canonical API."
+  ],
+  "verification": {
+    "commands": [
+      "node --test tests/diary-selection-browser.test.mjs tests/diary-selection-summary.test.mjs tests/diary-tools.test.mjs tests/pause-life-browser.test.mjs",
+      "node --check scripts/verify-diary-selection-hosted.mjs"
+    ],
+    "result": "8 focused tests passed; hosted verifier syntax checked and prepared, not executed by worker.",
+    "checks": [
+      "Mixed food/note/exercise selection, 133/298 kcal chart changes, macro values and selected nutrient contributor list",
+      "Measured zero/unknown/partial projection and unchanged full-day targets, expenditure, hydration and scores",
+      "No-food/empty selection and Done restore day summary",
+      "Rapid selection changes abort prior request; late results cannot overwrite current scope",
+      "503 retry and mismatched revision reload; no stale chart displayed under selected label",
+      "Leave view while request is pending; no late charts or browser/CSP errors",
+      "Energy sheet responds to real taps at normal and 200% font sizes after normal-flow toolbar repair"
+    ],
+    "artifact": ".local/diary-selection/selected.png"
+  },
+  "limitations": [
+    "Native nonzero Pause Life program calculations remain unverified; this restoration uses the saved source presentation-only policy.",
+    "No new physical-device or live-hosted acceptance was performed by worker."
+  ]
+}

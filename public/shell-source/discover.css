@@ -135,7 +135,7 @@ html[data-nourishing-native] [data-nourishing-health-connect]{display:inline-fle
 .dc-overlay[data-screen=weight] .dc-chart-focus .dc-chart{height:270px;}
 
 /* Keep five navigation labels readable when body text is enlarged. */
-.dc-bottom .dc-nav-label{font-size:min(calc(14rem / 18),3.8vw);}
+.dc-bottom .dc-nav-label{font-size:min(calc(14rem / 18),calc(3.8vw * var(--nourishing-text-scale,1)));}
 
 .dc-overlay[data-screen=fasting] .dc-segment button.active{color:var(--mobile-button-ink);background:var(--mobile-button-bg)}
 

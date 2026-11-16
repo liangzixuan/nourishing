@@ -1,3 +1,4 @@
+import {applyFontPreferences} from './font-presentation.js';
 import {renderOfflineAnalysis} from './offline-analysis.js';
 import {createOfflineSelection} from './offline-selection.js';
 import {retryOfflineChange,discardOfflineChange,exportOfflinePending} from './offline-controls.js';
@@ -19,7 +20,7 @@ export function mountOfflineDiary(root,{request,prepareShell}={}){
  const countLabel=count=>language==='en'?'Sync '+count+' pending':offlineMessage(language,'offline.pending')+' · '+count;
  const status=text=>{message=text;const el=root.querySelector('[role=status]');if(el)el.textContent=t(text);};
  async function run(task){if(busy)return;busy=true;try{await task();}catch(error){message=error.message;await render();}finally{busy=false;}}
- async function render(){const expanded=[...root.querySelectorAll('details[open]')].map(el=>el.dataset.offlinePanel??(el.classList.contains('offline-nutrition')?'nutrition':null)).filter(Boolean);copy=await offlineCopy();if(disposed)return;language=offlineLanguage(copy&&!copy.locked?copy.snapshot.state.settings.appLanguage:visitorLanguage);root.lang=language;
+ async function render(){const expanded=[...root.querySelectorAll('details[open]')].map(el=>el.dataset.offlinePanel??(el.classList.contains('offline-nutrition')?'nutrition':null)).filter(Boolean);copy=await offlineCopy();if(disposed)return;language=offlineLanguage(copy&&!copy.locked?copy.snapshot.state.settings.appLanguage:visitorLanguage);root.lang=language;applyFontPreferences(copy&&!copy.locked?copy.snapshot.state.settings:{});
   const header=`<header><a href="/diary" aria-label="Open online diary">‹</a><h1>${escape(t('Offline diary'))}</h1></header><p role="status" aria-live="polite">${escape(t(message))}</p>`;
   if(!copy){selection.clear();root.innerHTML=header+`<label>${escape(t('Interface language'))}<select data-language>${offlineLanguages.map(([code,label])=>`<option value="${code}" ${code===language?'selected':''}>${label}</option>`).join('')}</select></label><button data-keep>${escape(t('Keep diary on this device'))}</button>`;root.querySelector('[data-language]').onchange=event=>{visitorLanguage=event.target.value;render();};root.querySelector('[data-keep]').onclick=()=>run(async()=>{status('Saving…');await keepOfflineDiary({request,prepareShell});message='Saved on this device';await render();});return;}
   if(copy.locked){selection.clear();root.innerHTML=header+`<p>${escape(t('Sign in to unlock this diary.'))}</p><a href="/login">${escape(t('Sign in'))}</a><button data-sync>${escape(t('Unlock diary'))}</button>`;root.querySelector('[data-sync]').onclick=sync;return;}
