@@ -1,8 +1,8 @@
 # Local-to-cloud UI parity
 
-Current production: `6afadad318f427a6c5ff`, runtime `d8ac865`. The Remaining workflow audit below is the current gap list; earlier dated release notes describe historical gaps.
+Current production: `6afaec0c3732a31301a1`, runtime `51e509b`. The Remaining workflow audit below is the current gap list; earlier dated release notes describe historical gaps.
 
-Status: initial shell/Diary/Foods/More restoration is live. The Add menu and Discover body/header follow-up is live and passed hosted checks. Full parity of child editors is still incomplete. Functional verification alone does not establish visual parity.
+Status: initial shell/Diary/Foods/More restoration is live. The Add menu and Discover body/header follow-up is live and passed hosted checks. Restored child workflows have acceptance recorded below. Saved-reference limits and installed-device checks remain explicit; functional verification alone does not establish pixel-level parity.
 
 ## Approved restoration work
 
@@ -188,3 +188,10 @@ This supersedes the earlier language implementation gap and shared-import Back-b
 All 572 tests, the build and publication audit passed. Production acceptance covered translated Diary/Add/Discover headers, Display cancellation, persistence across reload and exact command retry after a lost successful reply. Owner data and recorded nutrition were unchanged; the fixture was removed. Hosted captures were inspected. Local browser tests also cover 320 px width and 200 percent text, translated editors, account flows, barcode controls, CSV, offline snapshots and captured print language. Generic push text supports the four locales; physical delivery remains a separate check.
 
 Spanish and separate UK-English catalogs remain unavailable. Coach model advice and MFA remain separate capability limits. Installed-device and password-recovery acceptance are still pending.
+
+
+## Navigation acceptance, November 16
+
+Runtime `51e509b`, deployment `6afaec0c3732a31301a1`, passed all 574 tests, build and publication checks. Production language/navigation acceptance passed again with unchanged owner data and fixture cleanup. Dashboard and Charts do not load Report before rendering; Report requests are cancelled when abandoned. A loaded Diary appears immediately on return and validates in the background. Unchanged data preserves live controls and fasting timing stays current. No persistent cache was added.
+
+Three final browser samples measured Diary return at 25–33 ms, compared with about 1.8 seconds before snapshot reuse. Dashboard now makes one API read rather than two. Full samples and measurement limits are in `tab-navigation-performance.json`. Shared-import hosted acceptance passed again, and the styled Back button capture was inspected. Physical-device checks and the user's deferred recovery email remain pending.

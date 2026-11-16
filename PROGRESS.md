@@ -8,15 +8,15 @@ The domain switch, Appwrite migration and PWA installation are complete. The own
 
 ## Current checkpoint
 
-Production runtime `dc73921`, site deployment `6afae86cd143c9745487` and reminder worker `6afae86e686773fefa0c` are active. All 572 tests, the production build and publication checks passed. The Language control supports English, French, German and Brazilian Portuguese across shared navigation, source editors and cloud controls. Hosted language, cancellation, exact-retry, reload and data-integrity checks passed. The disposable fixture was removed and owner data was unchanged. Earlier restored screens and child editors have hosted acceptance recorded below and in `docs/ui-parity.md`.
+Production runtime `51e509b`, site deployment `6afaec0c3732a31301a1`, is active as of November 16 at 11:44 UTC. Reminder worker `6afae86e686773fefa0c` remains active with the four-language generic payload. All 574 tests, the production build and publication checks passed. Hosted language/navigation, cancellation, exact retries, reload and data-integrity checks passed. The disposable fixtures were removed and owner data was unchanged. Source UI restoration, language integration and the shared-import Back button are deployed. Earlier restored screens and child editors have acceptance recorded below and in `docs/ui-parity.md`.
+
+The tab-delay investigation and two measured improvements are complete: Dashboard no longer waits for an unused Report, and a loaded Diary appears immediately while it revalidates. Three final browser samples measured Diary return at 25–33 ms versus about 1.8 seconds before that change. These are click-to-visible measurements in desktop Chrome at phone width, not physical-device or fresh-data completion times. Other data-driven screens still make their own reads; this release does not claim every tab is instantaneous.
 
 ## Remaining work, in order
 
-1. Current release acceptance is complete: direct Retire/Restore, Nutrition Label, shared-library import and Coach passed hosted checks; fixtures were removed and live captures inspected. Preserve this checkpoint while closing the remaining defects.
-2. Language integration and the shared-import Back button styling are deployed. Preserve the saved reference designs and investigate any demonstrated remaining UI defect; screenshots take precedence over manuals.
-3. Reduce demonstrated tab delay. Production Dashboard navigation took 3.4–6.0 seconds in three mobile-viewport browser samples, with an unnecessary full Report request before each Dashboard request. A candidate now loads Report only when opened and cancels its abandoned requests; affected navigation tests pass. Deploy and compare equivalent samples before claiming a speed improvement. Further repeated-view improvements must preserve account, revision and dismissal behavior.
-4. Complete installed-PWA acceptance: camera/photo selection, barcode, notifications, offline restart and queued sync. Complete the password-recovery email flow when the owner is ready. Browser simulations do not replace these checks.
-5. Run the final affected regression and data-integrity checks, deploy any remaining fixes, record the actual release and close the goal only when the acceptance items pass or the user explicitly changes scope.
+1. Complete installed-PWA acceptance: new camera photo, existing-photo selection, closing Photo Log without a draft, barcode, notification delivery, offline restart and one-time queued sync. The device questions are pending; no USB or Tailscale connection is needed. Browser simulations do not replace these checks.
+2. Complete the password-recovery email flow when the owner is ready. This was explicitly deferred; do not reset the owner's password or treat the email flow as tested.
+3. Fix any failures those checks reveal, run the affected regressions, deploy and record the actual result. Close the goal only when the remaining acceptance items pass or the user explicitly changes scope.
 
 Completion requires working source-based screens and child flows, account isolation, unchanged migrated data, verified backup/restore, and explicit device results. Do not repeat unrelated successful checks without a relevant change. Continue independent work without requesting routine approval.
 
@@ -428,3 +428,12 @@ Site `6afaea1a505d92cb59c1`, runtime `af9ab2b`, loads the full Report only when 
 Three comparable production mobile-viewport samples measured Dashboard click-to-visible time at 3,900/3,370/5,972 ms before and 1,891/2,330/1,846 ms after. Dashboard entry now sends one API read instead of two. The first Report visit now performs its own read; this moves that work to when it is needed. Samples use a disposable account and include network and browser automation time; they are not physical-device or CPU/memory measurements. The shared-import hosted check also passed with fixture cleanup and unchanged owner data; its corrected Back button was visually inspected.
 
 The next candidate reuses the loaded Diary for immediate tab return while refreshing it. It follows the local app's in-memory snapshot pattern, with no added persistent cache. Unchanged data keeps live controls; an open editor retains its captured revision. A changed authoritative response replaces the snapshot when no editor is open. Fasting display time advances from the snapshot's monotonic receipt time. Focused checks pass; full regression and production timing remain in progress.
+
+
+## Diary return and final browser acceptance — November 16, 2026
+
+Runtime `51e509b`, deployment `6afaec0c3732a31301a1`, is active. All 574 tests, the production build and publication audit passed. Hosted navigation/language verification passed with exact retry, unchanged recorded nutrition and owner data, no browser/CSP errors and complete fixture cleanup. Shared-import verification also passed and its Back control capture was inspected.
+
+The Diary uses its current in-memory response on tab return and performs a fresh read. An unchanged response preserves live controls; an open editor retains its captured revision. Server revision guards still apply to all saves. Fasting display time is advanced from monotonic time since response receipt without mutating the captured response. Page teardown clears the snapshot; no persistent cache was added.
+
+Three production browser samples measured Diary return at 30/25/33 ms versus 1,834/1,850/1,850 ms in the previous release. The final Dashboard samples were 2,384/2,888/2,868 ms with one API request, compared with the original 3,900/3,370/5,972 ms with two. Report now loads when first opened. The full sample record and limitations are in `docs/tab-navigation-performance.json`. Installed-device results and the deferred recovery email remain pending, so the goal remains active.

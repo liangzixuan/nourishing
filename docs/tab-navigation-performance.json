@@ -1,0 +1,314 @@
+{
+  "method": "Three successive Dashboard → Charts → Report → Diary loops after initial Diary load, using disposable accounts with one food entry and saved French language. Chrome desktop with a 412 × 915 mobile viewport. Each timer starts before the click and stops when destination content is visible.",
+  "scope": "Diary in 51e509b shows its loaded snapshot immediately and still validates with the server. First Report visits perform a read when opened.",
+  "limits": [
+    "Small descriptive samples; network latency varies.",
+    "Not a physical Pixel measurement.",
+    "CPU, process-family memory and agent-token costs were not measured."
+  ],
+  "runs": [
+    {
+      "runtime": "dc73921",
+      "at": "2026-11-16T11:30:11.192Z",
+      "samples": [
+        {
+          "round": 0,
+          "name": "Dashboard",
+          "elapsedMs": 3900,
+          "requests": [
+            "/api/nutrition-report",
+            "/api/dashboard"
+          ]
+        },
+        {
+          "round": 0,
+          "name": "Charts",
+          "elapsedMs": 1852,
+          "requests": [
+            "/api/charts"
+          ]
+        },
+        {
+          "round": 0,
+          "name": "Report",
+          "elapsedMs": 50,
+          "requests": []
+        },
+        {
+          "round": 0,
+          "name": "Diary",
+          "elapsedMs": 1887,
+          "requests": [
+            "/api/diary"
+          ]
+        },
+        {
+          "round": 1,
+          "name": "Dashboard",
+          "elapsedMs": 3370,
+          "requests": [
+            "/api/nutrition-report",
+            "/api/dashboard"
+          ]
+        },
+        {
+          "round": 1,
+          "name": "Charts",
+          "elapsedMs": 1869,
+          "requests": [
+            "/api/charts"
+          ]
+        },
+        {
+          "round": 1,
+          "name": "Report",
+          "elapsedMs": 25,
+          "requests": []
+        },
+        {
+          "round": 1,
+          "name": "Diary",
+          "elapsedMs": 2409,
+          "requests": [
+            "/api/diary"
+          ]
+        },
+        {
+          "round": 2,
+          "name": "Dashboard",
+          "elapsedMs": 5972,
+          "requests": [
+            "/api/nutrition-report",
+            "/api/dashboard"
+          ]
+        },
+        {
+          "round": 2,
+          "name": "Charts",
+          "elapsedMs": 2370,
+          "requests": [
+            "/api/charts"
+          ]
+        },
+        {
+          "round": 2,
+          "name": "Report",
+          "elapsedMs": 26,
+          "requests": []
+        },
+        {
+          "round": 2,
+          "name": "Diary",
+          "elapsedMs": 1904,
+          "requests": [
+            "/api/diary"
+          ]
+        }
+      ]
+    },
+    {
+      "runtime": "af9ab2b",
+      "at": "2026-11-16T11:37:16.662Z",
+      "samples": [
+        {
+          "round": 0,
+          "name": "Dashboard",
+          "elapsedMs": 1891,
+          "requests": [
+            "/api/dashboard"
+          ]
+        },
+        {
+          "round": 0,
+          "name": "Charts",
+          "elapsedMs": 1864,
+          "requests": [
+            "/api/charts"
+          ]
+        },
+        {
+          "round": 0,
+          "name": "Report",
+          "elapsedMs": 1857,
+          "requests": [
+            "/api/nutrition-report"
+          ]
+        },
+        {
+          "round": 0,
+          "name": "Diary",
+          "elapsedMs": 1834,
+          "requests": [
+            "/api/diary"
+          ]
+        },
+        {
+          "round": 1,
+          "name": "Dashboard",
+          "elapsedMs": 2330,
+          "requests": [
+            "/api/dashboard"
+          ]
+        },
+        {
+          "round": 1,
+          "name": "Charts",
+          "elapsedMs": 1838,
+          "requests": [
+            "/api/charts"
+          ]
+        },
+        {
+          "round": 1,
+          "name": "Report",
+          "elapsedMs": 1864,
+          "requests": [
+            "/api/nutrition-report"
+          ]
+        },
+        {
+          "round": 1,
+          "name": "Diary",
+          "elapsedMs": 1850,
+          "requests": [
+            "/api/diary"
+          ]
+        },
+        {
+          "round": 2,
+          "name": "Dashboard",
+          "elapsedMs": 1846,
+          "requests": [
+            "/api/dashboard"
+          ]
+        },
+        {
+          "round": 2,
+          "name": "Charts",
+          "elapsedMs": 1864,
+          "requests": [
+            "/api/charts"
+          ]
+        },
+        {
+          "round": 2,
+          "name": "Report",
+          "elapsedMs": 1870,
+          "requests": [
+            "/api/nutrition-report"
+          ]
+        },
+        {
+          "round": 2,
+          "name": "Diary",
+          "elapsedMs": 1850,
+          "requests": [
+            "/api/diary"
+          ]
+        }
+      ]
+    },
+    {
+      "runtime": "51e509b",
+      "at": "2026-11-16T11:45:27.908Z",
+      "samples": [
+        {
+          "round": 0,
+          "name": "Dashboard",
+          "elapsedMs": 2384,
+          "requests": [
+            "/api/dashboard"
+          ]
+        },
+        {
+          "round": 0,
+          "name": "Charts",
+          "elapsedMs": 2406,
+          "requests": [
+            "/api/charts"
+          ]
+        },
+        {
+          "round": 0,
+          "name": "Report",
+          "elapsedMs": 1866,
+          "requests": [
+            "/api/nutrition-report"
+          ]
+        },
+        {
+          "round": 0,
+          "name": "Diary",
+          "elapsedMs": 30,
+          "requests": [
+            "/api/diary"
+          ]
+        },
+        {
+          "round": 1,
+          "name": "Dashboard",
+          "elapsedMs": 2888,
+          "requests": [
+            "/api/dashboard"
+          ]
+        },
+        {
+          "round": 1,
+          "name": "Charts",
+          "elapsedMs": 1868,
+          "requests": [
+            "/api/charts"
+          ]
+        },
+        {
+          "round": 1,
+          "name": "Report",
+          "elapsedMs": 1839,
+          "requests": [
+            "/api/nutrition-report"
+          ]
+        },
+        {
+          "round": 1,
+          "name": "Diary",
+          "elapsedMs": 25,
+          "requests": [
+            "/api/diary"
+          ]
+        },
+        {
+          "round": 2,
+          "name": "Dashboard",
+          "elapsedMs": 2868,
+          "requests": [
+            "/api/dashboard"
+          ]
+        },
+        {
+          "round": 2,
+          "name": "Charts",
+          "elapsedMs": 1835,
+          "requests": [
+            "/api/charts"
+          ]
+        },
+        {
+          "round": 2,
+          "name": "Report",
+          "elapsedMs": 1853,
+          "requests": [
+            "/api/nutrition-report"
+          ]
+        },
+        {
+          "round": 2,
+          "name": "Diary",
+          "elapsedMs": 33,
+          "requests": [
+            "/api/diary"
+          ]
+        }
+      ]
+    }
+  ]
+}
