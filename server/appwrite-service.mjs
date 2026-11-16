@@ -185,7 +185,7 @@ export function createAppwriteService(config, key, userAgent='') {
     async recordItem(secret,input){return readView(secret,state=>recordView(state,input));},
     async exercises(secret,input){await data(secret);return exerciseSearch(input);},
     async exerciseEstimate(secret,input){return readView(secret,state=>exerciseEstimateView(state,input));},
-    async charts(secret,input){const {owner}=await data(secret),context=await calendarContext(secret,owner);return readView(secret,state=>chartSurfaceView(state,input,context));},
+    async charts(secret,input){const {owner}=await data(secret),calendar=await calendarContext(secret,owner);return readView(secret,state=>chartSurfaceView(state,input,{now:new Date(calendar.asOf),timeZone:calendar.timeZone}));},
     async exportReport(secret,input){return readView(secret,state=>csvReport(state,input));},
     async targets(secret,date){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();return targetView(await repository.readState(),date);},
     async nutritionReport(secret,options){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();const account=await new Account(session(secret)).get(),profile=await ensureProfile(secret,account);return reportView(await repository.readState(),options,{timeZone:profile.timeZone});},
