@@ -12,37 +12,37 @@
       "source": "../cronometer-local/public/meal-suggestions.js",
       "output": "public/suggestion-source/meal-suggestions.js",
       "sourceSha256": "320fb0fe406f363e8083635d012646c1cd31c9d99e828ae68b43e3cdc3f8e775",
-      "outputSha256": "42531158584a564f6941380ee824eacf0420cf51b18f58413fba39bde931a6bb"
+      "outputSha256": "c9e32bcc602c7fa2ef07fe8aaa52a31d7e2e0bee1765d543aa844f0d10903634"
     },
     {
       "source": "../cronometer-local/public/mobile-meal-suggestions.js",
       "output": "public/suggestion-source/mobile-meal-suggestions.js",
       "sourceSha256": "a0cc2a9214dd8a870c44c0b159168c23e252acca1533c9bf34618b8bfc96d4f8",
-      "outputSha256": "dcca85a7e6f6fa951f1a6ea6a4b198d9ca393e740a9fca90ba0b6801d323cbd0"
+      "outputSha256": "ebdaf83dd34b800d3112c3a179f735d68fd89412f97a1e1ec812f48c08540356"
     },
     {
       "source": "../cronometer-local/public/mobile-meal-suggestions.css",
       "output": "public/suggestion-source/mobile-meal-suggestions.css",
       "sourceSha256": "81206aa23f0f6f5a3bf8cf62f481e2067188f16c901b6270e7b3555c56aace2f",
-      "outputSha256": "2a43bfe4151c1ff555057969a70fa87ffa384e13274956a3e92a4098b3c5eb50"
+      "outputSha256": "4d9b605de8a52cd944dd63b5177100827fd1efdbd1f0630fd496eb9dff38b8ec"
     },
     {
       "source": "../cronometer-local/public/meal-suggestion-draft.js",
       "output": "public/suggestion-source/meal-suggestion-draft.js",
       "sourceSha256": "33b6763dc8b345d64c8e2dc7d5eb0111994ef52ce27c8c022a96a2522256d0ad",
-      "outputSha256": "c9c41e1a07b601780008f64e842f4c0e9465936af9fa5ff95cb25e0491040a2c"
+      "outputSha256": "721c08320e205a4e1f5efba261155532a987f8dea61408509f1c50a91d313252"
     },
     {
       "source": "../cronometer-local/public/mobile-meal-carousel.js",
       "output": "public/suggestion-source/mobile-meal-carousel.js",
       "sourceSha256": "87ae0300acaf2174ef1f3dc6e4b451e61dc1603ab2820afac4521ed0974a54b6",
-      "outputSha256": "4c732856b63cf807e6b7a53caac884f3467ca121e09a03271ec8cfe899d428cb"
+      "outputSha256": "2ef46b37af6313e262f91f25ded55faa6f06e364afec702911ca2d42e39697e9"
     },
     {
       "source": "../cronometer-local/public/mobile-ingredient-detail.js",
       "output": "public/suggestion-source/mobile-ingredient-detail.js",
       "sourceSha256": "d66abfe744ddc217a0d73a7b743580515487e5c4edd6ce09f559c891ad916254",
-      "outputSha256": "c588aa39db91664e676e8962b093b90ca0e60f2268eadb1a363251a0c0df8702"
+      "outputSha256": "2b573285d004710e3b78f2035173ea4e2a02b1a90aca1c73688289e9832fd4ed"
     },
     {
       "source": "../cronometer-local/public/quantity-description.js",
@@ -104,7 +104,7 @@
     },
     {
       "path": "public/food-insights.js",
-      "sha256": "084cdfa48d678bcaf3dc9aa22c4d289120688060089de936fa9e288d66aac790"
+      "sha256": "1162013430c0d3d40286235b7f1339a53e7abaa2bbb736207d3fa1753d02b710"
     }
   ],
   "adaptations": [
@@ -114,7 +114,8 @@
     "Source style attributes become numeric data fields applied with CSSOM for production CSP. Attribution wrapping uses stylesheet.",
     "Source quantity controller uses supported food bases or recipe/meal options from existing library owner; quantities are validated again by canonical server preview.",
     "Explicit SVG icons avoid font-ligature fallback text.",
-    "New cloud shell owns disposal, nested Back, metadata loading, group/time confirmation and receipt retry. Drafts are invocation-only."
+    "New cloud shell owns disposal, nested Back, metadata loading, group/time confirmation and receipt retry. Drafts are invocation-only.",
+    "Output hashes describe published LF-normalized Git blobs."
   ],
   "checks": [
     "tests/suggestions-ui.test.mjs",

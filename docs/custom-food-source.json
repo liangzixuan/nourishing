@@ -38,11 +38,12 @@
       "source": "../cronometer-local/public/mobile-food-editor.css",
       "target": "public/custom-food-source/mobile-food-editor.css",
       "sourceSha256": "ef2f21f4c05c151af66ae6f20f96f27943ff5c2ca6d363b6b8c0d6258be059b5",
-      "outputSha256": "1c16e2add0d1d6ae602f64f5a6db78b58a6a7455159771e7470c16a31d3a5501",
+      "outputSha256": "dedcb6cba3452700037fcd80d1aa63f0290a0650ce0d336c5133a7e78a513b3b",
       "transforms": [
         "Scope source selectors to cloud sheet and editor root; source cards/rows/label fields/review/footer retained.",
         "Suppress numeric spinners inside compact label-basis input so three-digit quantities remain visible.",
-        "Normalize UTF-8 publication text to LF."
+        "Normalize UTF-8 publication text to LF.",
+        "Supply the source subtle-button reset inside the editor so Add Serving Size does not inherit a browser-default gray background."
       ]
     },
     {
@@ -75,7 +76,7 @@
     },
     {
       "path": "public/custom-food-source/mobile-food-editor.css",
-      "sha256": "1c16e2add0d1d6ae602f64f5a6db78b58a6a7455159771e7470c16a31d3a5501"
+      "sha256": "dedcb6cba3452700037fcd80d1aa63f0290a0650ce0d336c5133a7e78a513b3b"
     },
     {
       "path": "server/domain/food-label-draft.mjs",

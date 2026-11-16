@@ -1,0 +1,8 @@
+@import url('./oracle-source/mobile-oracle.css');
+@import url('./food-entry-source/mobile-food-entry.css');
+#sheet.oracle-sheet,dialog.oracle-food-detail{width:100%;max-width:700px;height:100dvh;max-height:100dvh;margin:0 auto;padding:0;border:0;border-radius:0;background:var(--bg);color:var(--ink);font:400 1rem/1.4 Lato,Arial,sans-serif;overflow:auto;overscroll-behavior:contain}
+.oracle-sheet #sheet-content{padding:0}.oracle-heading{position:sticky;top:0;z-index:8;padding:14px 8px;background:var(--paper);border-radius:0 0 16px 16px}.oracle-body>[role=alert]{padding:16px;color:var(--red)}
+.oracle-food-detail::backdrop{background:#0008}.oracle-food-detail .mf-footer{position:fixed;bottom:0;width:100%;max-width:700px;left:50%;transform:translateX(-50%)}
+.mo-category-search{padding:16px 16px 0}.mo-category-list{margin-top:12px}.mo-category-search input,.mo-food-query input,.mo-select-menu input{min-width:0;width:100%;font:inherit;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px}
+.mo-select-menu input{position:sticky;top:0;width:calc(100% - 16px);margin:0 8px 8px}.mo-food-query{display:flex;gap:8px;margin:0;padding:0 12px 12px}.mo-food-query button{font:inherit;border:0;border-radius:8px;padding:8px 14px;background:var(--paper);color:var(--ink)}
+.mo-dialog [hidden],.mo-select-menu [hidden]{display:none!important}

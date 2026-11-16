@@ -91,15 +91,15 @@
     },
     {
       "path": "public/chart-editor.js",
-      "sha256": "b6e1f4409fdd1fb88dbf39a7a44b1f408949d3dc935d0774a501835901ce077a"
+      "sha256": "18018d7c5b7b5186abaad848e05e193484a2428d30c0824b815f1aa1433a4074"
     },
     {
       "path": "public/charts.js",
-      "sha256": "cc92ed9472e8e658707d32927b0e652e99500d559689c8841ba33afba8c6f801"
+      "sha256": "a8ed03a2fb17ed78c66228186dd6244b143dc9e8d63ba21364729190dacffe47"
     },
     {
       "path": "public/charts.css",
-      "sha256": "5bf5b742c2d2fc48d9c8828ac1e71f8c6f5d901e50754239964dbf43aae5a4ce"
+      "sha256": "0d4c01cbccd40a40d619c3b42c45fdf21be0eb771764a616d079d267e1395937"
     },
     {
       "path": "server/chart-options.mjs",
@@ -115,11 +115,11 @@
     },
     {
       "path": "tests/custom-chart-browser.test.mjs",
-      "sha256": "a3952c6a043b5c029045c427d309d6539d74a260f43a1ffdc0c2827c92885cc4"
+      "sha256": "f3ebfa1e38d3324648e0a7b69a336ff09efc50c15dae3c2b759f1d17eaa8b5de"
     },
     {
       "path": "tests/charts-browser.test.mjs",
-      "sha256": "dd44ba8680741dc91a97df38ac79c3e5fa028ebaca97ab32d9cef3ef8ab66a52"
+      "sha256": "e40ab6cdd538ba567edd114b9c784949fab46a89428b7557caca68df2e774a00"
     }
   ],
   "phoneReferences": [
@@ -150,7 +150,7 @@
     "Populate the complete source-supported biometric catalog/unit choices at the server projection boundary; do not invent units for catalog definitions whose units are unknown.",
     "Keep unsent drafts transient. Cancel/back preserves the previous view; reused live navigation actions do not create another route owner.",
     "Persist immutable cloud command envelopes through dropped replies and 5xx errors. A confirmed 4xx rejection releases the envelope; conflict exposes explicit reload of latest saved chart.",
-    "Retain deletion in the existing generic chart detail with confirmation after removing the old generic definition form.",
+    "Custom details now use the shared source controller with confirmation; see chart-detail-source.json.",
     "No schema, domain calculation or CGM controller changes."
   ],
   "checks": [
@@ -162,7 +162,6 @@
     "tests/cgm-detail-browser.test.mjs"
   ],
   "limits": [
-    "Generic non-CGM chart detail controls still use the cloud form and explicit Save; restoring those grouped immediate-save controls remains separate work.",
     "Browser validation uses the real canonical projection and commands through a local HTTP fixture; it does not establish hosted acceptance.",
     "No new same-state phone capture. Saved mobile source and November 8 reference screenshots define presentation."
   ]

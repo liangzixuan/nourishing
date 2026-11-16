@@ -48,7 +48,6 @@
     "tests/dashboard-pinned-charts.test.mjs"
   ],
   "limits": [
-    "Generic chart settings and custom chart editors still use cloud forms.",
     "No same-state Cronometer phone comparison for this fixture."
   ],
   "files": [
@@ -85,5 +84,9 @@
         "Normalize publication line endings to LF."
       ]
     }
+  ],
+  "related": [
+    "custom-chart-source.json",
+    "chart-detail-source.json"
   ]
 }

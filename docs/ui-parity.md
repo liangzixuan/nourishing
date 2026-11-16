@@ -56,7 +56,7 @@ The 434-test suite passed 433 cases initially; its Coach-to-Report test expected
 - Photo Log review: Create Meal/Recipe, per-food macros and Energy Summary are restored.
 - Diary: mixed notes/biometrics/foods now share source groups and typed record actions.
 - Create/Edit Custom Chart and Targets/Nutrient Targets are deployed and verified. Generic chart detail, other Targets children, fasting and other child tool forms still use cloud adapters. CGM comparison/detail and Snapshot child screens are restored.
-- Suggest Food, Nutrient Oracle, Repeat Items and custom-food editors still need source UI restoration; saved references are sufficient.
+- Suggest Food, Repeat Items and Custom Food are restored and hosted-verified. Nutrient Oracle is in progress; recipe/meal editor stages still need the saved MobileCompositeEditor restoration.
 - Report Remaining ring and nutrient-detail hierarchy are restored; exact native multi-day nutrient popup behavior and dynamic Remaining ring colors remain unverified.
 
 Public password recovery is deferred by the owner. Installed-phone camera/barcode, notification delivery and offline operation still need device verification. Functional browser checks do not establish complete visual or device parity.
@@ -105,3 +105,9 @@ Deployment `6afaaf75b8d285c39483`, runtime `1b1b4aa`, passed 463 tests, the buil
 ## Targets and custom chart acceptance
 
 Deployment `6afab31787c32ffd19d8` (runtime `e6f623d`) passed 468 tests, build/publication checks and hosted Targets/custom-chart verification. Canonical target modes, limits and highlights persist. Custom charts support source metric tabs, unit search, a second axis and one-save receipt retry after an ambiguous 503. Edit/cancel/delete and navigation checks passed; owner data was unchanged and fixtures were removed. Live screenshots were inspected. Other Targets child editors and generic chart details remain separate gaps.
+
+## Foods child flows, November 16
+
+Deployment `6afab6f5328fe200f7b0` (runtime `b70c0fc`) restores Suggest Food filters/results/carousel/ingredient review, Repeat Items search/editor/menu, and Custom Food labels/servings/nutrition review. The suite passed 476 tests and the build passed. Hosted checks passed canonical values, cancellation, identical-request retry after committed responses were interrupted, and parent navigation. Temporary accounts were removed and owner data was unchanged, with no browser/CSP errors or horizontal overflow. Live screenshots were inspected. The custom-food Add Serving Size button still inherits a gray browser background in this release; a scoped source-style reset is ready for the next deployment.
+
+Additional source audit confirms recipe/meal editing still uses the generic library form. The source has MobileCompositeEditor stages, MobileCompositeItems, serving/cooked-weight/notes screens and final canonical FoodNutritionView review. This remains separate from the restored Custom Food editor.

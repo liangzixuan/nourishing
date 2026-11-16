@@ -157,6 +157,7 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
         return json(200,await api.nutritionReport(secret,input));
       }
       if(req.method==='POST'&&path==='/api/workspace/command'){if(!secret)fail(401,'Please sign in.');return json(200,await api.workspaceCommand(secret,body));}
+      if(req.method==='POST'&&path==='/api/target-policies/preview'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');return json(200,await api.previewTargetPolicy(secret,body));}
       if(req.method==='POST'&&path==='/api/library/preview'){if(!secret)fail(401,'Please sign in.');return json(200,await api.previewLibrary(secret,body));}
       if(req.method==='GET'&&path==='/api/library'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');return json(200,await api.library(secret));}
       if(req.method==='GET'&&path==='/api/library/share'){

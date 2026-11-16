@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "sourceRoot": "../cronometer-local/public",
+  "scope": "Non-CGM detail screens reached from Charts and pinned Dashboard cards",
+  "files": [
+    {
+      "source": "../cronometer-local/public/mobile-charts.js",
+      "target": "public/chart-detail.js",
+      "sourceSha256": "f0c9603360b4789e69d0d3a1fffb3f4b484b4f289e7f3a3bf1df763be6a62a28",
+      "outputSha256": "6d517a292e28751c0d2420bfede7087b87893c4068158bbe2999adc17a1236cf",
+      "transforms": [
+        "Extract non-CGM renderDetail, openPicker and savePreference semantics. Adapt authenticated revision commands, conflict reload, immutable retry and host-owned disposal. Keep source metric filtering and conditional controls. Render canonical server card values.",
+        "UTF-8 and LF output."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/mobile-charts.css",
+      "target": "public/chart-detail.css",
+      "sourceSha256": "ad7506e7b3524e63209ee421bcfda9e844962a4568b7c5ea7a1ead13ba7124aa",
+      "outputSha256": "e69bb2856eb89039f36eceb289315cafc36c4ed422bc94ba2c70854057cc4fcc",
+      "transforms": [
+        "Extract non-CGM detail sheet, row/value, picker indicator and text-action rules; scope to the existing cloud sheet. Reuse current shared chart and calendar styles.",
+        "UTF-8 and LF output."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/mobile-chart-picker.js",
+      "target": "public/cgm-detail-source/mobile-chart-picker.js",
+      "sourceSha256": "74d43357f103f89709f20e92486d901bb4e3e8eb6684a9d61ee725d3b11e2b3e",
+      "outputSha256": "5cc20c601ce3e3181c510389d813738a9de952d328f2a9b83466ad166a6eabb2",
+      "transforms": [
+        "Reuse previously adapted shared picker unchanged; provenance in cgm-detail-source.json.",
+        "UTF-8 and LF output."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/mobile-diary-calendar.js",
+      "target": "public/snapshot-source/mobile-diary-calendar.js",
+      "sourceSha256": "ea2a0da6c2e74efa7f05e6ffffae58f75a9b99ab84b6dc771181feb2de044a26",
+      "outputSha256": "cfa2c10cb57bd7b85530e7bedf05806085ae9e7436b8d6903ab65e7f80949d17",
+      "transforms": [
+        "Reuse previously adapted calendar unchanged with diary markers disabled; provenance in snapshot-ui-source.json.",
+        "UTF-8 and LF output."
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "path": "public/chart-detail.js",
+      "sha256": "6d517a292e28751c0d2420bfede7087b87893c4068158bbe2999adc17a1236cf"
+    },
+    {
+      "path": "public/chart-detail.css",
+      "sha256": "e69bb2856eb89039f36eceb289315cafc36c4ed422bc94ba2c70854057cc4fcc"
+    },
+    {
+      "path": "public/chart-editor.js",
+      "sha256": "18018d7c5b7b5186abaad848e05e193484a2428d30c0824b815f1aa1433a4074"
+    },
+    {
+      "path": "public/charts.js",
+      "sha256": "a8ed03a2fb17ed78c66228186dd6244b143dc9e8d63ba21364729190dacffe47"
+    },
+    {
+      "path": "public/charts.css",
+      "sha256": "0d4c01cbccd40a40d619c3b42c45fdf21be0eb771764a616d079d267e1395937"
+    },
+    {
+      "path": "public/dashboard.js",
+      "sha256": "0a148a1c6a2b9a08cbc928bf4353ec25241118dd67832041a8a512920014fc0c"
+    },
+    {
+      "path": "tests/charts-browser.test.mjs",
+      "sha256": "e40ab6cdd538ba567edd114b9c784949fab46a89428b7557caca68df2e774a00"
+    },
+    {
+      "path": "tests/custom-chart-browser.test.mjs",
+      "sha256": "f3ebfa1e38d3324648e0a7b69a336ff09efc50c15dae3c2b759f1d17eaa8b5de"
+    }
+  ],
+  "adaptations": [
+    "One detail controller owns rendering, child dismissal, save recovery and chart disposal for both entry paths.",
+    "Date/metric/unit pickers and switches save immediately through chart.display, custom source changes use chart.save, and custom Cycle Phases uses chart.cycle-overlay. No chart calculation, schema or backend contract changes.",
+    "Custom ranges begin with the displayed captured dates. Calendar cancellation does not write. Unknown values remain plot gaps.",
+    "Custom Edit Chart retains the existing source editor. Back discards its draft and returns to detail; Save Chart closes and refreshes the parent. Delete uses source confirmation.",
+    "Remove the superseded generic settings form; Charts manager retains visibility controls.",
+    "Fetch the canonical detail on every open before enabling edits, as source openDetail does. This prevents a stale revision when reopening a card before its parent refresh completes. A deterministic delayed-parent-refresh browser check reproduces and covers this case."
+  ],
+  "checks": [
+    "tests/charts-browser.test.mjs",
+    "tests/custom-chart-browser.test.mjs",
+    "tests/cgm-detail-browser.test.mjs",
+    "tests/dashboard-pinned-charts.test.mjs",
+    "tests/charts.test.mjs",
+    "tests/charts-service.test.mjs",
+    "tests/chart-presentation.test.mjs",
+    "tests/chart-options.test.mjs"
+  ],
+  "limits": [
+    "Browser evidence uses production HTTP, transactions, CSP and canonical projections with fixture data. Hosted acceptance remains the parent task.",
+    "Saved mobile source defines presentation; no new live same-state Cronometer phone comparison was performed.",
+    "The existing cloud shell owns navigation; this controller does not add a second bottom navigation bar."
+  ]
+}

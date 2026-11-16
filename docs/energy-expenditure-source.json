@@ -1,0 +1,169 @@
+{
+  "version": 1,
+  "scope": "Energy Expenditure home, baseline activity, BMR, setup and TEF",
+  "files": [
+    {
+      "source": "../cronometer-local/public/mobile-energy-expenditure.js",
+      "target": "public/expenditure-source/mobile-energy-expenditure.js",
+      "sourceSha256": "af7e0d10b5ba5436261ff8fbee39cf4cda548e01f2d7bff8cd36349868adc41e",
+      "outputSha256": "5eb34205422c2f4eb088b23b406aa2ec338a0cb72cd2afa8deab46a84842201e",
+      "transforms": [
+        "Redirect existing presentation imports, use cloud target-control adapter, manual-exercise copy, omit device controls, cancel pending previews, restore form enabled states after failure, and replace inline colors with CSS classes."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/mobile-energy-expenditure.css",
+      "target": "public/expenditure-source/mobile-energy-expenditure.css",
+      "sourceSha256": "8783fa707e9e9e1402dcb9c6eb314f79bcf80ae04729d8e8fa33ecee9354aa61",
+      "outputSha256": "0663a2678414b9512f63e562991512c80415dcd4881841824ee0dbe88e6f159b",
+      "transforms": [
+        "LF normalization; cloud dialog/icon/switch resets and root font scaling; scoped colors for CSP."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/snapshot-icons/close.svg",
+      "target": "public/expenditure-source/close.svg",
+      "sourceSha256": "518399857748e824a3e3f3c7654e259f07f337bf0f76fb72108d8572b21ab840",
+      "outputSha256": "518399857748e824a3e3f3c7654e259f07f337bf0f76fb72108d8572b21ab840",
+      "transforms": [
+        "LF normalization."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/snapshot-icons/lightbulb-on-outline.svg",
+      "target": "public/expenditure-source/lightbulb-on-outline.svg",
+      "sourceSha256": "c1d233a37d67a340f9f42b578d70f447b4d5c22e7e96bed88dd74112f3348921",
+      "outputSha256": "c1d233a37d67a340f9f42b578d70f447b4d5c22e7e96bed88dd74112f3348921",
+      "transforms": [
+        "LF normalization."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/snapshot-icons/radiobox-blank.svg",
+      "target": "public/expenditure-source/radiobox-blank.svg",
+      "sourceSha256": "ea4adde6b950dfacb8ca6497929666a367c1c17282273edc428d62a216e80000",
+      "outputSha256": "ea4adde6b950dfacb8ca6497929666a367c1c17282273edc428d62a216e80000",
+      "transforms": [
+        "LF normalization."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/snapshot-icons/radiobox-marked.svg",
+      "target": "public/expenditure-source/radiobox-marked.svg",
+      "sourceSha256": "2845eb767a5d6851a3eace2977d7192040c0b209c89db1a9fa11dab49153e77e",
+      "outputSha256": "2845eb767a5d6851a3eace2977d7192040c0b209c89db1a9fa11dab49153e77e",
+      "transforms": [
+        "LF normalization."
+      ]
+    }
+  ],
+  "additionalSources": [
+    {
+      "source": "../cronometer-local/public/target-control-screen.js",
+      "sha256": "8e3233afaf8bb667c520475123680f613d07b16e2ea1a0eb826f5bf699b851f2"
+    },
+    {
+      "source": "../cronometer-local/public/mobile-targets.css",
+      "sha256": "a35b31d545d03c2778023f009c91525403beff91116429c12c718e1f409d3ade"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "public/energy-expenditure.js",
+      "sha256": "4273d59dee6212ec7e0604354a45247b02a94d2f324710c6c9496dcf7a5544fd"
+    },
+    {
+      "path": "public/expenditure-source/mobile-energy-expenditure.js",
+      "sha256": "5eb34205422c2f4eb088b23b406aa2ec338a0cb72cd2afa8deab46a84842201e"
+    },
+    {
+      "path": "public/expenditure-source/mobile-energy-expenditure.css",
+      "sha256": "0663a2678414b9512f63e562991512c80415dcd4881841824ee0dbe88e6f159b"
+    },
+    {
+      "path": "public/expenditure-source/close.svg",
+      "sha256": "518399857748e824a3e3f3c7654e259f07f337bf0f76fb72108d8572b21ab840"
+    },
+    {
+      "path": "public/expenditure-source/lightbulb-on-outline.svg",
+      "sha256": "c1d233a37d67a340f9f42b578d70f447b4d5c22e7e96bed88dd74112f3348921"
+    },
+    {
+      "path": "public/expenditure-source/radiobox-blank.svg",
+      "sha256": "ea4adde6b950dfacb8ca6497929666a367c1c17282273edc428d62a216e80000"
+    },
+    {
+      "path": "public/expenditure-source/radiobox-marked.svg",
+      "sha256": "2845eb767a5d6851a3eace2977d7192040c0b209c89db1a9fa11dab49153e77e"
+    },
+    {
+      "path": "public/targets.js",
+      "sha256": "b295ed8df965b46b6f44321bb2454a760c544dac5acc6e3fbbfbbe168dcbae6a"
+    },
+    {
+      "path": "public/targets.css",
+      "sha256": "8f77adfa561ead3355020aca8d9ad234a23db490326632fd1526675081bd3442"
+    },
+    {
+      "path": "server/target-policy-view.mjs",
+      "sha256": "62dae6f63b968541c97b2dc6806c8b8e8ba9a89316cd16c5ff3062fddccf3afa"
+    },
+    {
+      "path": "server/target-policy-commands.mjs",
+      "sha256": "410c5b63b2337b15c282962261ec61cb91c768949f42dd211adf05ac75350cf3"
+    },
+    {
+      "path": "server/http.mjs",
+      "sha256": "94fdc3190c8d445af7348be23dbcf1d90b0b9e90cc0e8a9fec42ca72e3bcc2ab"
+    },
+    {
+      "path": "server/appwrite-service.mjs",
+      "sha256": "7469df07514f830798a6b0451d8b55eda3e362ef0035b83dcacbbec37a189393"
+    },
+    {
+      "path": "tests/energy-expenditure.test.mjs",
+      "sha256": "64aac211207013ed2c5d2c99513d803d47924f891c1aa37f4e45af139e0b7578"
+    },
+    {
+      "path": "tests/energy-expenditure-browser.test.mjs",
+      "sha256": "7b7486c67438512962bfef20072f93fede4a9d6f23c6ba3d1f6f8235dea28f1c"
+    },
+    {
+      "path": "tests/targets-mobile.test.mjs",
+      "sha256": "4a9792e834ad3110aed80f6c9c6297826536f24db755b3d707d0acddb1ad28f6"
+    }
+  ],
+  "references": [
+    {
+      "path": "../cronometer-local/verification/phone-reference-20261111/energy-expenditure.png",
+      "sha256": "106eb5ff81d5cda772e261e3a57ecc0fa5d15b6514079fb8b005003753e081d8"
+    },
+    {
+      "path": "../cronometer-local/verification/target-ui-audit-20261111/expenditure.png",
+      "sha256": "62f1656ad59b7549b44ea22ef02a988474d6c536abcac5586580be5ff871221a"
+    }
+  ],
+  "canonicalOwner": "parseEnergyExpenditure, calculateSummary and existing settings.save own validation and calculations. targetPolicy.expenditure changes expenditure only. Preview and save share prepareTargetPolicyCommand; the existing owner-scoped workspace receipt owns writes.",
+  "behavior": [
+    "Source cards, baseline level/Custom picker, Default/Custom BMR, TEF, help, daily expenditure ring, and component rows.",
+    "Respect kcal/kJ and preserve missing/zero values. Setup leaves existing fixed calorie target intact; updates preserve active goal/display or inactive goal under custom energy.",
+    "Remove Health Connect and activity-device controls per the PWA decision.",
+    "Keep editor drafts on preview failure; closing an editor aborts pending preview before save. No write on cancellation.",
+    "Validate canonical preview before immutable workspace command. Retry the same request after transport/5xx uncertainty. Reject stale revisions and reload persisted values."
+  ],
+  "checks": [
+    "tests/energy-expenditure.test.mjs",
+    "tests/energy-expenditure-browser.test.mjs",
+    "tests/target-policy.test.mjs",
+    "tests/targets-mobile.test.mjs"
+  ],
+  "visual": [
+    ".local/expenditure/home.png",
+    ".local/expenditure/activity.png"
+  ],
+  "limits": [
+    "Weight Goal, Macro & Energy, Scheduler, Upper Limits and Guided Setup are separate remaining child restorations.",
+    "Saved phone and local-source captures were used; no new phone inspection in this slice.",
+    "Hosted acceptance is performed separately by the release owner."
+  ]
+}

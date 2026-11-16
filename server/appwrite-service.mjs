@@ -46,7 +46,7 @@ import {csvReport} from './chart-view.mjs';
 import {chartSurfaceView} from './dashboard-pinned-charts.mjs';
 import {repeatView} from './repeat-view.mjs';
 import {recordOptions,recordView,exerciseSearch,exerciseEstimateView} from './record-views.mjs';
-import {targetPolicyView} from './target-policy-view.mjs';
+import {targetPolicyView,previewTargetPolicy} from './target-policy-view.mjs';
 import {captureCalendar} from './domain/calendar.mjs';
 
 async function reviewedPhoto(value){try{return await validateStoredPhoto(value);}catch(error){if(error.status===400)throw Object.assign(error,{code:400,publicMessage:'Choose a valid reviewed photo.'});throw error;}}
@@ -188,6 +188,7 @@ export function createAppwriteService(config, key, userAgent='') {
       const {requestId,revision,reviewToken,date,time,group,rows,destination}=input;
       return createWorkspaceStore(db,owner).command({requestId,revision,type:'photo.log',payload:{photoId:photo.id,reviewToken,date,time,group,rows,...(destination===undefined?{}:{destination})}},catalogReader(repository),{owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET,photo,stageMedia:context=>stagePhotoMedia({db,storage,owner,photo,...context})});
     },
+    async previewTargetPolicy(secret,input){const {owner}=await data(secret),context=await calendarContext(secret,owner);return readView(secret,state=>previewTargetPolicy(state,input,context));},
     async targetPolicies(secret,date){const {owner}=await data(secret),context=await calendarContext(secret,owner);return readView(secret,state=>targetPolicyView(state,date,context));},
     async repeats(secret,date){return readView(secret,state=>repeatView(state,date));},
     async recordOptions(secret,date){return readView(secret,state=>recordOptions(state,date));},

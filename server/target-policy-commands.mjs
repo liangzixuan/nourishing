@@ -1,8 +1,9 @@
 import {parseTemplateSettings,changeMacroPlan} from './domain/macro-templates.mjs';
-import {parseEnergyPolicy} from './domain/energy-policy.mjs';
+import {parseEnergyPolicy,parseEnergyExpenditure} from './domain/energy-policy.mjs';
 import {parseCarbohydratePolicy,carbohydratePreferences} from './domain/carbohydrate-policy.mjs';
 
 export const targetPolicyCommandFields={
+ 'targetPolicy.expenditure':['expenditure'],
  'targetPolicy.macros':['macro'],
  'targetPolicy.energy':['policy','kcal'],
  'targetPolicy.carbohydrate':['policy'],
@@ -19,6 +20,10 @@ export function prepareTargetPolicyCommand(state,action,context={}){
  if(!object(p)||Object.keys(p).some(key=>!allowed.includes(key))||allowed.filter(key=>key!=='kcal').some(key=>!Object.hasOwn(p,key)))fail('Choose the required target settings only.');
  let patch;
  switch(action.type){
+  case 'targetPolicy.expenditure':{
+   const expenditure=parseEnergyExpenditure(p.expenditure);if(expenditure.activity.mode!=='manual')fail('Choose recorded exercise for activity.');
+   const previous=parseEnergyPolicy(state.settings.energyPolicy);patch={energyPolicy:{...(previous??{version:1,target:{mode:'fixed',includeAboveBaseline:false},display:'remaining'}),...expenditure}};break;
+  }
   case 'targetPolicy.macros':{
    const macro=parseTemplateSettings({macro:p.macro,energy:{mode:'inherit'}}).macro;
    const carbohydrate=carbohydratePreferences(state.settings).mode==='net'?'netCarbohydrate':'carbs';

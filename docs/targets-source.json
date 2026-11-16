@@ -7,9 +7,10 @@
       "source": "../cronometer-local/public/mobile-targets.js",
       "target": "public/targets.js",
       "sourceSha256": "30a0259ebc75f84f4650c238dacb3d02c19f06fdda462bbaffff24815f378c00",
-      "outputSha256": "75b05d150b60de76a74a72dd4145c4194933bad64a3dc2cc5529fd225810a872",
+      "outputSha256": "b295ed8df965b46b6f44321bb2454a760c544dac5acc6e3fbbfbbe168dcbae6a",
       "transforms": [
-        "Extract the six-row home markup and target navigation. Adapt icons, authenticated cloud requests, lifecycle and host header. Reuse existing cloud editors for other destinations. Supported tools only."
+        "Extract the six-row home markup and target navigation. Adapt icons, authenticated cloud requests, lifecycle and host header. Reuse existing cloud editors for other destinations. Supported tools only.",
+        "Energy Expenditure now mounts the source child described in energy-expenditure-source.json."
       ]
     },
     {
@@ -85,7 +86,7 @@
     "weight": "Existing energy target editor",
     "macros": "Existing macro editor",
     "scheduler": "Existing macro scheduler",
-    "expenditure": "Existing energy expenditure editor",
+    "expenditure": "Source expenditure controller; see energy-expenditure-source.json",
     "scores": "Existing diary score settings",
     "diary": "Existing diary display settings",
     "references": "Existing profile reference settings",
@@ -102,7 +103,7 @@
   },
   "limitations": [
     "No same-state Cronometer phone comparison in this increment.",
-    "Weight Goal, Macro & Energy, Energy Expenditure, Macro Scheduler and Nutrition Scores retain existing working cloud child editors; their saved-source UI restoration is separate.",
+    "Weight Goal, Macro & Energy, Macro Scheduler and Nutrition Scores retain existing working cloud child editors; their saved-source UI restoration is separate.",
     "The source Reference Upper Limits and Guided Target Setup tool destinations are not exposed because their complete cloud flows are not implemented.",
     "The source controller saves field changes on change/blur. Help and linked editor cancellation do not write; numeric fields do not have a separate Save/Cancel draft flow."
   ]
