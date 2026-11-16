@@ -71,7 +71,7 @@
   "pageErrorCount": 0,
   "ownerEdits": 0,
   "activation": "current installed PWA loaded updated worker; explicit Reload flow verified in real-browser regression",
-  "ios": "owner reported stale UI; direct device verification unavailable",
+  "ios": "Owner confirmed Account returns to More after reopening; Profile and swipe feel not separately confirmed.",
   "cleanup": {
     "wakeSettingRestored": 0,
     "taskScreenshotRemoved": true,
