@@ -128,15 +128,20 @@ Deployment `6afabf363c43fbd91e57` (runtime `5b29b7a`) passed 488 tests, build/pu
 
 The main-screen restoration does not close these child workflows:
 
-- Recipe stages and reviewed library edits: in progress. Existing referenced items need Update or Preserve history choices, with account-bound preview and transactional retry.
-- Targets: Macro & Energy is implemented locally; Scheduler, Upper Limits and Guided Setup still need source UI adapters.
+- Recipe stages and reviewed library edits are deployed. Update existing uses and Preserve history choices use account-bound preview and transactional retry.
+- Targets: Macro & Energy is deployed; Scheduler/day targets are in progress. Upper Limits and Guided Setup remain.
 - Display: Theme works, but energy units, timestamps, summary visibility, Diary/Calendar controls, font and language still need the source settings layout and working consumers.
 - Exercise/Biometrics: functional generic forms remain. Restore category navigation, effort/unit/group pickers and metric-specific controls from saved source components.
 - Profile: restore the captured Age, Sex, Weight, Height, BMI and Body Fat summary over canonical projections. Use `profile-reference-second-pass.png`; the earlier similarly named image shows Account confirmation.
 - Account: registration, verification, recovery, logout and deletion work. App navigation/theme alignment and authenticated name/email/password editing remain; MFA is a separate capability, not established by the old local placeholder.
-- CSV export: group inclusion and account energy units are fixed locally. Production-handler browser checks pass grouped kJ download, cancellation without a late download, report switching and close/reopen.
+- CSV export: group inclusion and account energy units are deployed. Production-handler browser checks pass grouped kJ download, cancellation without a late download, report switching and close/reopen.
 - Reminders and text logging: working cloud actions still have generic forms. Restore compact controls while retaining browser permission and save/review behavior.
 - Coach: recorded-fact answers/preferences work; model-backed proposals require additional cloud capability. Restore concise onboarding separately.
 - Library utility/import forms remain generic; reuse the restored editors before making cosmetic copies.
 
 Saved-reference limits: some exercise category/effort mappings were local choices; Hematocrit units are unknown; notification capture only shows the disabled state. Native health/Firebase features are excluded. Installed PWA camera/barcode, notification delivery, offline behavior and the deferred emailed password recovery check remain separate device/user acceptance items.
+
+
+## Recipe, Macro & Energy and export acceptance
+
+Deployment `6afac36c92eec897ff8e` (runtime `9377eb1`) passed 506 tests and the build/publication checks. Four hosted browser flows passed: Recipe, Meal, Custom Food and Macro/export. Canonical quantity and nutrition previews, translated measures, preserved versions, exact retry receipts, source controls, scheduled/default target separation, and grouped CSV download were checked. Owner records stayed unchanged and temporary fixtures were removed. Live captures were inspected; no browser/CSP errors or horizontal overflow occurred. Physical-device comparison remains separate.
