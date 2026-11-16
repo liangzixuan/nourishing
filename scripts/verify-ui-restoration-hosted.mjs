@@ -41,7 +41,7 @@ try{
  await button('EDIT MENU').click();await button('Hide Voice Log').click();await button('Color for Search Food').click();await button('Color #ff9377').click();await button('DONE').click();await button('EDIT MENU').waitFor();
  await page.keyboard.press('Escape');await page.reload();await page.locator('.md-summary').waitFor();await page.locator('#add-food').click();assert.equal(await page.locator('[data-am=select][data-id=voice]').count(),0);assert.equal(await page.locator('[data-id=food] .am-icon').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 147, 119)');
  await button('EDIT MENU').click();await button('Hide Search Food').click();await page.keyboard.press('Escape');await button('Search Food').waitFor();await page.mouse.click(10,20);await page.locator('.am-sheet').waitFor({state:'detached'});
- await page.locator('#add-food').click();await button('Search Food').click();await page.getByRole('heading',{name:'Add Food',exact:true}).waitFor();await button('Close').click();
+ await page.locator('#add-food').click();await button('Search Food').click();await page.locator('.mfs-header').waitFor();await button('Close').click();
  await page.locator('#add-food').click();await button('New Fast').click();await page.locator('.fasting-menu').waitFor();await button('Close').click();await button('Diary').click();await page.locator('.md-summary').waitFor();
  check('source Add to Diary sheet, cloud menu preferences, cancelled edits, outside dismissal and food-search destination');
  await button('Foods').click();await page.locator('.mfh-home').waitFor();await page.waitForFunction(()=>!document.querySelector('[data-action="new-food"]').disabled);await capture('foods');assert.equal(await page.locator('.mfh-card').count(),6);

@@ -1,11 +1,19 @@
 import {createHash} from 'node:crypto';
 import {gunzipSync} from 'node:zlib';
 import {createInsightCatalog} from './food-insights.mjs';
+import {compactFoodSource} from './domain/catalog-source.mjs';
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 const unavailable=()=>{throw Object.assign(Error('Food insights are being prepared.'),{code:503,publicMessage:'Food insights are being prepared.'});};
 // Repeated nutrient keys and dataset credits dominate the JSON catalog. Store each
 // once; decoding shares immutable strings while preserving each food's own facts.
-export function encodeCatalogIndex({generation,catalogDigest,foods,sourceFactDigests}){
+export function projectCatalogIndexFood(food,compact){
+ if(food.id!==compact.id)throw Error('Catalog projection identity mismatch.');
+ const projected=Object.fromEntries(['id','name','serving','grams','milliliters','nutrients','portions','translations','servingTranslations','sample','carbohydrateBasis'].filter(key=>food[key]!==undefined).map(key=>[key,food[key]]));
+ if(compact.category!==undefined)projected.category=compact.category;
+ projected.source=compactFoodSource(food.source);return projected;
+}
+export function encodeCatalogIndex({generation,catalogDigest,foods,sourceFactDigests,searchVersion=0}){
+ if(![0,1].includes(searchVersion))throw Error('Unsupported catalog search projection.');
  const nutrientIds=[...new Set(foods.flatMap(food=>Object.keys(food.nutrients)))],nutrientIndex=new Map(nutrientIds.map((id,i)=>[id,i])),sources=[],sourceIndex=new Map();
  const commonKeys=['name','datasetId','dataset','provider','measurementBasis','releaseDate','url','archiveSha256','license','licenseUrl','attribution','retrievedAt'];
  const records=foods.map(food=>{
@@ -13,7 +21,7 @@ export function encodeCatalogIndex({generation,catalogDigest,foods,sourceFactDig
   if(index===undefined){index=sources.length;sources.push(common);sourceIndex.set(key,index);}
   return {...food,nutrients:Object.entries(food.nutrients).flatMap(([id,value])=>[nutrientIndex.get(id),value]),source:[index,Object.fromEntries(Object.entries(food.source??{}).filter(([key])=>!commonKeys.includes(key)))]};
  });
- return Buffer.from(JSON.stringify({version:2,generation,catalogDigest,nutrientIds,sources,foods:records,sourceFactDigests}));
+ return Buffer.from(JSON.stringify({version:2,searchVersion,generation,catalogDigest,nutrientIds,sources,foods:records,sourceFactDigests}));
 }
 export function decodeCatalogIndex(bytes,head){
  const metadata=JSON.parse(head.metadata),ref=metadata.insightIndex;
@@ -25,7 +33,8 @@ export function decodeCatalogIndex(bytes,head){
   if(!Array.isArray(food.source)||food.source.length!==2||!value.sources[food.source[0]])unavailable();
   food.source={...value.sources[food.source[0]],...food.source[1]};
  }
- return createInsightCatalog(value.foods,{metadata,sourceFactDigests:value.sourceFactDigests,nutrientIds:value.nutrientIds});
+ if(![0,1].includes(value.searchVersion??0))unavailable();
+ return createInsightCatalog(value.foods,{metadata,sourceFactDigests:value.sourceFactDigests,nutrientIds:value.nutrientIds,searchVersion:value.searchVersion??0});
 }
 // Only public catalog facts are shared. Account state never enters this cache.
 export function createCatalogIndexLoader(){
@@ -34,6 +43,9 @@ export function createCatalogIndexLoader(){
   const ref=JSON.parse(head.metadata).insightIndex;if(!ref||ref.bucketId!=='catalog-index'||typeof ref.fileId!=='string'||!/^[a-f0-9]{64}$/.test(ref.sha256??''))unavailable();
   const key=JSON.stringify([namespace,head.generation,head.digest,head.count,ref]);
   if(cached?.key===key)return cached.promise;
+  // A retired public artifact must not retain a live SQLite connection. An
+  // in-flight reader can still use its facts and lazily rebuild if necessary.
+  cached?.promise.then(catalog=>catalog.disposeSearch(),()=>{});
   const entry={key,promise:null};entry.promise=(async()=>{
    const file=await storage.getFile({bucketId:ref.bucketId,fileId:ref.fileId});if(file.sizeOriginal!==ref.bytes)unavailable();
    return decodeCatalogIndex(Buffer.from(await storage.getFileDownload({bucketId:ref.bucketId,fileId:ref.fileId})),head);

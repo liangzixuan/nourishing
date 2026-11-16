@@ -1,0 +1,46 @@
+{
+  "files": [
+    {
+      "source": "../cronometer-local/public/catalog-search.js",
+      "target": "public/food-search-source/catalog-search.js",
+      "sourceSha256": "2b80b41f24b8262068050297cae0308d03ad36e108c2205f8d6c5083f78c2655",
+      "sha256": "b91f67b75e6a27b2dbc4f242a6863f4ad5855653786bd160d12ed9248f3a8354"
+    },
+    {
+      "source": "../cronometer-local/public/food-search-preferences.js",
+      "target": "public/food-search-source/food-search-preferences.js",
+      "sourceSha256": "c42a555932850be270973fcefb4705f37337f38a0eb675570455cc8f64af017d",
+      "sha256": "c42a555932850be270973fcefb4705f37337f38a0eb675570455cc8f64af017d"
+    },
+    {
+      "source": "../cronometer-local/public/message-format.js",
+      "target": "public/food-search-source/message-format.js",
+      "sourceSha256": "f5f4ebe4c014f4bb10cde0100a61ea54effe1dfada6066cb18e89d298ca3e273",
+      "sha256": "112a0857ed13e4969d5802e5b88d390b6f7be8f81a56e41694c4f8203f5f51e1"
+    },
+    {
+      "source": "../cronometer-local/public/mobile-food-search-row.js",
+      "target": "public/food-search-source/mobile-food-search-row.js",
+      "sourceSha256": "6020d39c47a138465937602262eefea9e18243514601636abc8eb1b053eea3f2",
+      "sha256": "6020d39c47a138465937602262eefea9e18243514601636abc8eb1b053eea3f2"
+    },
+    {
+      "source": "../cronometer-local/public/mobile-food-search.css",
+      "target": "public/food-search-source/mobile-food-search.css",
+      "sourceSha256": "a0ff421f1bb8cafb51aa14de776ef5702eccb990bdaf2388a90bc76734374e61",
+      "sha256": "3d60c2e72e617812bfafc38ba934837d1a09520897d9e22edc0064a5b16a42bf"
+    },
+    {
+      "source": "../cronometer-local/public/mobile-food-search.js",
+      "target": "public/food-search-source/mobile-food-search.js",
+      "sourceSha256": "43247c8499616924addef93e446dc707634f86603f0dbaec293048000a102e05",
+      "sha256": "6c89754358335cf04f0ffff2c28c7f9e3450293a38e60264dfd28b9df9dbb920"
+    }
+  ],
+  "changes": [
+    "Adapt source search to the account-scoped cloud route and preserve ingredient exclusions.",
+    "Use SVG controls and a search-only translation formatter.",
+    "Expose supported single selection; multi-add remains pending."
+  ],
+  "backend": "Uses the existing canonical domain search against a verified public catalog artifact."
+}

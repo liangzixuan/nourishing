@@ -1,6 +1,7 @@
 import {CSV_BODY_BYTES} from './csv-import.mjs';
 import {deletionCookie,readDeletionTicket} from './deletion-cookie.mjs';
 import {BARCODE_BODY_BYTES} from './barcode.mjs';
+import {readCloudFoodSearchQuery} from './food-search.mjs';
 import {Readable} from 'node:stream';
 import {readSession,sessionCookie,clearSession} from './session-cookie.mjs';
 const fail=(code,message)=>{throw Object.assign(Error(message),{code,publicMessage:message});};
@@ -174,6 +175,11 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
         return json(200,await api.libraryItem(secret,kind,string(url.searchParams.get('id'),1,1000),url.searchParams.has('entryId')?string(url.searchParams.get('entryId'),1,1000):null));
       }
       if(req.method==='POST'&&path==='/api/diary/preview'){if(!secret)fail(401,'Please sign in.');return json(200,await api.previewDiary(secret,body));}
+      if(req.method==='GET'&&path==='/api/food-search'){
+        if(!secret)fail(401,'Please sign in.');
+        let input;try{input=readCloudFoodSearchQuery(url.searchParams);}catch(error){if(error.status===400)fail(400,error.message);throw error;}
+        return json(200,await api.foodSearch(secret,input));
+      }
       if(req.method==='GET'&&['/api/diary','/api/catalog/status','/api/catalog/search','/api/catalog/food','/api/media'].includes(path)){
         if(!secret)fail(401,'Please sign in.');
         const allowed={'/api/diary':['date'],'/api/catalog/status':[],'/api/catalog/search':['q','offset','limit'],'/api/catalog/food':['id'],'/api/media':['namespace','id']}[path];

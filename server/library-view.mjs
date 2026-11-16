@@ -17,5 +17,5 @@ export function libraryItem(state,kind,resource,entry){
  const volume=kind==='recipe'?item.batchVolumeMl:kind==='food'?item.milliliters:null;
  const options=[['servings',kind==='meal'?'meal':item.serving??'serving'],...availableQuantityUnits({grams,milliliters:volume}).map(unit=>[unit.id,unit.label]),...(kind==='recipe'?[['batch','Full recipe']]:[]),...(item.portions??[]).map(p=>['portion:'+p.id,p.label])];
  const ingredients=(item.ingredients??item.items??[]).map(row=>{const childKind=row.recipeId?'recipe':'food',child=state[childKind+'s'].find(r=>r.id===row[childKind+'Id']);return {...row,name:child?.name??'Missing ingredient'};});
- return {kind,resource,options,ingredients,facts:entryFacts(state,{[kind+'Id']:resource.id,amount:1,...(entry??{})})};
+ return {kind,resource,options,ingredients,nutrients:catalog.map(({id,name,unit,category})=>({id,name,unit,category})),energyUnit:state.settings.energyUnit??'kcal',facts:entryFacts(state,{[kind+'Id']:resource.id,amount:1,...(entry??{})})};
 }

@@ -66,3 +66,12 @@ Public password recovery is deferred by the owner. Installed-phone camera/barcod
 Deployment `6afa9a8c6e1c5f3b0cca`, revision `0e2a837a7bda90efe184c77e06d0e5af5d5a090d`, is active at https://nourishing.app. The production browser check passed at phone width with no browser, HTTP or CSP errors. It checked saved Add menu preferences, cancelled edits, outside dismissal, Search Food and New Fast destinations, Diary display/water, Foods/More navigation, system theme, Back focus and account access. Report and Charts header actions opened their actual settings and Newsfeed. Snapshots used the restored empty state and Add Snapshot action.
 
 The temporary account and its records were removed. The owner's workspace head remained unchanged. Live Report, Charts, Snapshots and Add menu screenshots were captured; Report and Charts were visually inspected after deployment. Evidence: ignored `.local/ui-restoration-hosted/result.json` and PNG captures. Source asset hashes were verified against published LF-normalized bytes. This does not replace installed-Pixel verification or close the child-screen gaps above.
+
+
+## Food logging restoration, November 16
+
+Candidate changes restore source Food Search categories, database filters, sort options and badges; the food-entry header, favorites, timestamp, nutrition sections and fixed Save footer; and compact Photo Log macro rows and Energy Summary. These use the cloud preview and command APIs. Photo recognition still starts on image selection, and closing Photo Log discards its state.
+
+The public catalog artifact now includes the category metadata already present in the imported SQLite compact records. All 34,885 rows were published with categories, and the downloaded artifact passed digest validation. Owner records were not changed by that publication.
+
+Remaining food-flow gaps are multi-add, Edit a copy, and Photo Log Create. Deployment and hosted acceptance for this candidate are pending.

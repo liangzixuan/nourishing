@@ -1,0 +1,43 @@
+{
+  "adapter": "public/food-entry.js",
+  "sourceFiles": [
+    {
+      "source": "../cronometer-local/public/mobile-food-entry.js",
+      "target": "public/food-entry-source/mobile-food-entry.js",
+      "sourceSha256": "b26eb708e7913cb55b521062c3e1eefe4e0e9c9bbd6f0e9b00a7a2b90c5e62e9",
+      "sha256": "c4e5a8b5a209b2d9efc0fea2259ec03ca17713c0508d58b42b726bbfaa2a21c2"
+    },
+    {
+      "source": "../cronometer-local/public/food-nutrition-view.js",
+      "target": "public/food-entry-source/food-nutrition-view.js",
+      "sourceSha256": "b47e2f1b19b72d09d017966c00f9569b70704f4340fd3fd7f339f57fbfc22a54",
+      "sha256": "207bb318c3a946282510f21814b577815d156d6ffe4679b12f53b8fe639391eb"
+    },
+    {
+      "source": "../cronometer-local/public/mobile-food-entry.css",
+      "target": "public/food-entry-source/mobile-food-entry.css",
+      "sourceSha256": "bf21b0622546599c107c5b00c539d13a7e076b70865add70691df482c7904033",
+      "sha256": "c14b78b3512a1cd026f88352271072ef307966b61568b07474072928dbc1bb0b"
+    }
+  ],
+  "changes": [
+    "Extract source entry markup; cloud adapter owns lifecycle, canonical preview and workspace commands.",
+    "Reuse current quantity serialization and opaque portion identifiers.",
+    "Keep unknown energy unavailable instead of source zero fallback.",
+    "Use SVG section arrows without font dependency.",
+    "Adapt source dialog selectors to cloud sheet; omit unsupported custom-copy menu action."
+  ],
+  "contract": {
+    "mountFoodEntry": "Returns disposer function. Invokes show(html) once; adds #sheet.mf-detail. Caller disposes before replacing or closing sheet.",
+    "item": "libraryItem response with resource/options/kind/nutrients/energyUnit",
+    "revision": "Function returning refreshed workspace revision.",
+    "onChange": "Async refresh called after favorite or entry mutation.",
+    "onBack": "Return to food picker.",
+    "onAdjust": "Open occurrence ingredient adjustment for current recipe/meal.",
+    "onConflict": "Reload latest entry on command conflict.",
+    "stylesheet": "/food-entry-source/mobile-food-entry.css"
+  },
+  "validation": [
+    "tests/food-entry-browser.test.mjs: add/edit/delete, amount/unit/portion identity, timestamps, groups, favorites, source details, menu outside/Escape dismissal, failed preview and save retry, recipe adjustment callback, pending-preview disposal, unknown values, CSP and mobile layout"
+  ]
+}

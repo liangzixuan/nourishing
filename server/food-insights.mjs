@@ -8,12 +8,13 @@ import {catalogSourceId,foodSourceFacts} from './domain/food-catalog-identity.mj
 import {contentDigest} from './domain/content-digest.mjs';
 import {resolvedCarbohydrateValues} from './domain/carbohydrate-values.mjs';
 import {digest} from './data-codec.mjs';
+import {createCatalogSearchIndex} from './catalog-search-index.mjs';
 
 const invalid=message=>{throw Object.assign(Error(message),{status:400,code:400,publicMessage:message});};
 const known=value=>typeof value==='number'&&Number.isFinite(value)&&value>=0;
 const exact=(value,keys)=>{if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(key=>!keys.includes(key)))invalid('Unsupported food insight fields.');};
 /** Public, immutable catalog facts only. The caller owns generation/digest checks and caching. */
-export function createInsightCatalog(foods,{metadata={},sourceFactDigests={},nutrientIds}={}){
+export function createInsightCatalog(foods,{metadata={},sourceFactDigests={},nutrientIds,searchVersion=1}={}){
  if(!Array.isArray(foods))throw Error('A verified catalog projection is required.');
  if(nutrientIds!==undefined&&(!Array.isArray(nutrientIds)||nutrientIds.some(id=>typeof id!=='string'||!id)||new Set(nutrientIds).size!==nutrientIds.length))throw Error('Invalid catalog nutrient dictionary.');
  const index=new Map(),categories=new Map(),search=new Map();
@@ -35,7 +36,10 @@ export function createInsightCatalog(foods,{metadata={},sourceFactDigests={},nut
   for(let i=0;i<food.nutrients.length;i+=2){const id=nutrientIds[food.nutrients[i]];if(!selected||selected.has(id))entries.push([id,food.nutrients[i+1]]);}
   return Object.fromEntries(entries);
  }
+ const searchIndex=createCatalogSearchIndex(foods,metadata,valuesFor);
  return {
+  searchWorkspace(query,options){if(searchVersion!==1)throw Object.assign(Error('Food search is being prepared.'),{code:503,publicMessage:'Food search is being prepared.'});return searchIndex.search(query,options);},
+  disposeSearch:()=>searchIndex.dispose(),
   get(id){const food=index.get(id);return !food?null:Array.isArray(food.nutrients)?{...food,nutrients:valuesFor(food)}:food;},
   status:()=>({...metadata,available:true,foodCount:foods.length}),
   categories:()=>[...categories.values()].sort((a,b)=>a.name.localeCompare(b.name)||a.id.localeCompare(b.id)),

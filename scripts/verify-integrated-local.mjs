@@ -1,3 +1,4 @@
+import {searchCloudFoods} from '../server/food-search.mjs';
 import {dashboardView} from '../server/dashboard-view.mjs';
 import {barcodeAssets} from './package-barcode-assets.mjs';
 // Runs the real HTTP routes and browser modules against disposable in-memory data.
@@ -22,7 +23,7 @@ import {applyNotePhotoCommand} from '../server/note-photos.mjs';
 import {favoriteView} from '../server/library-extras.mjs';
 let state=initialState();const date='2026-11-14',context={today:date};
 state.profile.weight=80;state.foods.push({id:'fixture',name:'Fixture oats',grams:100,serving:'100 g',nutrients:{calories:200,protein:10,carbs:30,fat:4}});
-const service={dashboard:async(_,date)=>dashboardView(state,{date},{now:new Date(),timeZone:'UTC'}),
+const service={foodSearch:async(_,input)=>searchCloudFoods(state,null,input),dashboard:async(_,date)=>dashboardView(state,{date},{now:new Date(),timeZone:'UTC'}),
  current:async()=>({id:'fixture'}),
  favorites:async()=>favoriteView(state),readCatalogFood:async(_,id)=>state.foods.find(row=>row.id===id),
  readDiary:async(_,day)=>({date:day,theme:state.settings.theme,revision:digest(state),groups:state.settings.groups,completed:state.settings.completedDays?.includes(day)??false,entries:state.entries.filter(r=>r.date===day).map(r=>({...r,facts:entryFacts(state,r)})),notes:state.notes.filter(r=>r.date===day),biometrics:state.biometrics.filter(r=>r.date===day),summary:calculateSummary(state,day)}),
@@ -43,7 +44,7 @@ try{
  await add('Add Note');await field('Note').fill('Integration note');await saved('Save');await page.locator('[data-record-kind=note][data-record-id]').click();await field('Note').fill('Edited note');await saved('Save');assert.equal(state.notes[0].text,'Edited note');
  await add('Add Exercise');await button('Custom exercise').click();await field('Exercise').fill('Integration walk');await field('Minutes').fill('30');await field('Calories (kcal)').fill('150');await saved('Add to diary');await page.locator('[data-action=edit-entry]').filter({hasText:'Integration walk'}).click();await field('Minutes').fill('45');await saved('Save changes');assert.equal(state.entries[0].duration,45);
  await add('Add Biometric');await field('Biometric').selectOption('catalog:blood-pressure');await field('Systolic').fill('120');await field('Diastolic').fill('80');await saved('Add to diary');assert.equal(state.biometrics.length,2);
- await page.locator('#foods-tab').click();await page.locator('[data-library-repeats]').click();await button('＋ New').click();await page.locator('[data-item]').click();await page.locator('[name=amount]').fill('50');await field('Serving').selectOption('g');await saved('Save');await button('Review 1 due').click();await saved('Add to diary');assert.equal(state.repeats.length,1);assert.equal(state.entries.length,2);
+ await page.locator('#foods-tab').click();await page.locator('[data-library-repeats]').click();await button('＋ New').click();await page.locator('.mfs-result').first().click();await page.locator('[name=amount]').fill('50');await field('Serving').selectOption('g');await saved('Save');await button('Review 1 due').click();await saved('Add to diary');assert.equal(state.repeats.length,1);assert.equal(state.entries.length,2);
  await page.locator('#discover-tab').click();await button('Charts').click();await page.locator('[data-create]').click();await field('Chart name').fill('Protein trend');await field('Primary metric').selectOption({label:'Protein · g'});await saved('Save');await page.getByRole('heading',{name:'Protein trend'}).waitFor();assert.equal(state.charts.length,1);
  await page.screenshot({path:'.local/integrated-charts.png',fullPage:true});
  await page.locator('#settings-tab').click();await button('Targets').click();await button('Macro & Energy Targets').click();await page.getByRole('heading',{name:'Macro & Energy Targets',exact:true}).waitFor();await button('Close').click();await button('Back').click();await button('Export data').click();const downloaded=page.waitForEvent('download');await button('Download CSV').click();const download=await downloaded;assert.ok(download.suggestedFilename().endsWith('.csv'));await button('Close').click();

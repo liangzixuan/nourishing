@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {gzipSync} from 'node:zlib';
 import {createHash} from 'node:crypto';
-import {createCatalogIndexLoader,decodeCatalogIndex,encodeCatalogIndex} from '../server/catalog-index.mjs';
+import {createCatalogIndexLoader,decodeCatalogIndex,encodeCatalogIndex,projectCatalogIndexFood} from '../server/catalog-index.mjs';
 import {initialState} from '../server/domain/workspace.mjs';
 import {applyWorkspaceCommand} from '../server/workspace-commands.mjs';
 function fixture(generation='one'){
@@ -13,9 +13,17 @@ function fixture(generation='one'){
 test('catalog artifact verifies content and generation and only shares public facts',async()=>{
  const {bytes,head}=fixture();let reads=0;const storage={getFile:async()=>({sizeOriginal:bytes.length}),getFileDownload:async()=>{reads++;return bytes;}},load=createCatalogIndexLoader();
  const [a,b]=await Promise.all([load({head,storage,namespace:'project'}),load({head,storage,namespace:'project'})]);assert.equal(a,b);assert.equal(reads,1);assert.equal(a.get('fixture').name,'Fixture oats');
- await load({head,storage,namespace:'another project'});assert.equal(reads,2);
+ let disposed=0;const dispose=a.disposeSearch;a.disposeSearch=()=>{disposed++;dispose();};
+ await load({head,storage,namespace:'another project'});assert.equal(reads,2);assert.equal(disposed,1);
+ assert.throws(()=>a.searchWorkspace('',{options:{}}),/Food search is being prepared/);
  assert.throws(()=>decodeCatalogIndex(Buffer.from('corrupt'),head));assert.throws(()=>decodeCatalogIndex(bytes,{...head,generation:'wrong'}));
  const bad={...head,metadata:JSON.stringify({...JSON.parse(head.metadata),insightIndex:{...JSON.parse(head.metadata).insightIndex,expandedBytes:1}})};assert.throws(()=>decodeCatalogIndex(bytes,bad));
+});
+test('published search projection takes canonical compact categories and marks complete search metadata',()=>{
+ const food={id:'fixture',name:'Apple juice',grams:100,serving:'100 g',nutrients:{protein:1},source:{name:'USDA',datasetId:'sr-legacy-2018-04',fdcId:1}},category={id:'usda-category:14',name:'Beverages'},projected=projectCatalogIndexFood(food,{id:food.id,category});
+ assert.deepEqual(projected.category,category);assert.equal(food.category,undefined);assert.throws(()=>projectCatalogIndexFood(food,{id:'other'}),/identity/);
+ const expanded=encodeCatalogIndex({generation:'g',catalogDigest:'d',foods:[projected],sourceFactDigests:{fixture:'f'},searchVersion:1}),bytes=gzipSync(expanded),metadata={datasets:[{id:'sr-legacy-2018-04',name:'USDA',foodCount:1}],insightIndex:{version:2,sha256:createHash('sha256').update(bytes).digest('hex'),bytes:bytes.length,expandedBytes:expanded.length}},adapter=decodeCatalogIndex(bytes,{generation:'g',digest:'d',count:1,metadata:JSON.stringify(metadata)});
+ try{assert.equal(adapter.searchWorkspace('',{options:{category:'beverages'},libraryRows:[]}).items[0].id,'fixture');}finally{adapter.disposeSearch();}
 });
 test('meal logging validates entire batch before changing the diary',()=>{
  const state=initialState(),{food}=fixture();state.foods.push(food);const input={type:'meal.log',payload:{date:'2026-11-14',group:'Lunch',time:'12:00',rows:[{foodId:food.id,quantity:50,unit:'g'},{foodId:'missing',quantity:20,unit:'g'}]}};

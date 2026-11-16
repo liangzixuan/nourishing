@@ -1,3 +1,4 @@
+import {photoMacros,photoNutritionSummary} from './photo-nutrition.js';
 import {request} from './diary-api.js';
 import {escape as e} from './html.js';
 import {mountFoodPicker} from './food-picker.js';
@@ -10,16 +11,17 @@ const fileData = file => new Promise((resolve, reject) => {const reader = new Fi
 
 /** Save is injected by the authenticated cloud owner; no photo draft is persisted. */
 export function mountPhotoLog({show, close, header, content, date, groups, save, onChange = async () => {}}) {
-  let disposed = false, serial = 0, abort, analysis, originalImage, rows = [], pickerCleanup, pendingSave = false;
+  let disposed = false, serial = 0, abort, analysis, originalImage, rows = [], pickerCleanup, pendingSave = false, nutritionAbort, nutritionVersion = 0, hintDismissed = false;
+  const nutritionCache = new Map();
   // Same default as the existing mobile photoDialog: uncategorized, then the current meal.
   const clock = new Date(), hour = clock.getHours(), meal = hour >= 6 && hour < 11 ? 'Breakfast' : hour >= 11 && hour < 16 ? 'Lunch' : hour >= 16 && hour < 22 ? 'Dinner' : 'Snacks';
   let group = groups.includes('Uncategorized') ? 'Uncategorized' : groups.includes(meal) ? meal : groups[0], time = clock.toTimeString().slice(0, 5), diaryDate = typeof date === 'function' ? date() : date;
   show(`<section class="photo-log">${header('Photo Log')}<input type="file" accept="image/jpeg,image/png,image/webp" data-photo-gallery><input type="file" accept="image/*" capture="environment" data-photo-camera><div class="photo-log-body"></div></section>`);
   const shell = content.querySelector('.photo-log'), body = shell.querySelector('.photo-log-body');
   const alive = () => !disposed && shell.isConnected;
-  function dispose() { if (disposed) return; disposed = true; serial++; abort?.abort(); pickerCleanup?.(); observer.disconnect(); originalImage = null; analysis = null; rows = []; }
+  function dispose() { if (disposed) return; disposed = true; serial++; abort?.abort(); nutritionAbort?.abort(); nutritionCache.clear(); pickerCleanup?.(); observer.disconnect(); originalImage = null; analysis = null; rows = []; }
   const observer = new MutationObserver(() => {if (!shell.isConnected) dispose();});observer.observe(content, {childList: true, subtree: true});
-  function replace(html) {pickerCleanup?.();pickerCleanup = null;body.innerHTML = html;body.scrollTop = 0;}
+  function replace(html) {nutritionVersion++;nutritionAbort?.abort();pickerCleanup?.();pickerCleanup = null;body.innerHTML = html;body.scrollTop = 0;}
   const picker = camera => {if (!pendingSave) shell.querySelector(camera ? '[data-photo-camera]' : '[data-photo-gallery]').click();};
   shell.querySelectorAll('input[type=file]').forEach(input => {input.onchange = async () => {const file = input.files?.[0];input.value = '';if (!file) return;
     const id = ++serial;abort?.abort();analysis = null;originalImage = null;rows = [];
@@ -49,11 +51,13 @@ export function mountPhotoLog({show, close, header, content, date, groups, save,
   }
   function review() {
     const additions = analysis.suggestions.filter(suggestion => suggestion.kind === 'possible-addition' && !rows.some(row => row.additionIndex === suggestion.additionIndex));
-    replace(`<div class="photo-thumb"><img src="${e(analysis.photo.dataUrl)}" alt="Meal photo"><div><strong>My Photo</strong><small>${e(time)}</small></div><button type="button" data-gallery aria-label="Choose another photo">＋</button></div><p class="photo-row-heading">Matched foods</p>${rows.map((row, index) => `<div class="photo-food-row"><div class="photo-food-main"><strong>${e(row.name)}</strong><button type="button" data-quantity="${index}">${row.foodId ? e(quantityLabel(row)) : 'Choose a match'}</button>${row.estimate ? '<small class="photo-estimate">Estimated portion</small>' : ''}</div><button type="button" class="icon-button" data-replace="${index}" aria-label="Replace ${e(row.name)}">↻</button><button type="button" class="photo-remove" data-remove="${index}" aria-label="Remove ${e(row.name)}">×</button></div>`).join('')}<button type="button" class="more-results" data-add>Search for more</button>${additions.length ? `<details class="photo-preview-details"><summary>Did you also have…?</summary>${additions.map(row => `<button type="button" class="more-results" data-addition="${row.additionIndex}">＋ ${e(row.description)}</button>`).join('')}</details>` : ''}<label class="field-row"><span>Group</span><select name="group" aria-label="Group">${groups.map(value => `<option ${value === group ? 'selected' : ''}>${e(value)}</option>`).join('')}</select></label><label class="field-row"><span>Date</span><input name="date" aria-label="Date" type="date" value="${e(diaryDate)}"></label><label class="field-row"><span>Time</span><input name="time" aria-label="Time" type="time" value="${e(time)}"></label><p class="sheet-message" role="status"></p><footer class="photo-log-actions"><button type="button" class="primary" data-save ${!rows.length || rows.some(row => !row.foodId) ? 'disabled' : ''}>Add to diary</button></footer>`);
+    replace(`<div class="photo-thumb"><img src="${e(analysis.photo.dataUrl)}" alt="Meal photo"><div><strong>My Photo</strong><input name="time" aria-label="Time" type="time" value="${e(time)}"></div><button type="button" data-gallery aria-label="Choose another photo">＋</button></div><div class="photo-review-hint" ${hintDismissed?'hidden':''}><span>Estimated portions · tap to edit</span><button type="button" data-dismiss-hint aria-label="Dismiss portion hint">×</button></div><p class="photo-row-heading">Matched foods</p>${rows.map((row, index) => `<div class="photo-food-row"><div class="photo-food-main"><strong>${e(row.name)}</strong><button type="button" data-quantity="${index}">${row.foodId ? e(quantityLabel(row)) : 'Choose a match'}</button><small class="photo-macros" data-macros="${index}" aria-live="polite"></small></div><button type="button" class="icon-button" data-replace="${index}" aria-label="Replace ${e(row.name)}">↻</button><button type="button" class="photo-remove" data-remove="${index}" aria-label="Remove ${e(row.name)}">×</button></div>`).join('')}<button type="button" class="more-results" data-add>Search for more</button>${additions.length ? `<section class="photo-additions"><p class="photo-row-heading">Did you also have…?</p>${additions.map(row => `<button type="button" class="more-results" data-addition="${row.additionIndex}">＋ ${e(row.description)}</button>`).join('')}</section>` : ''}<label class="field-row"><span>Group</span><select name="group" aria-label="Group">${groups.map(value => `<option ${value === group ? 'selected' : ''}>${e(value)}</option>`).join('')}</select></label><details class="photo-nutrition-summary" open><summary>Energy Summary</summary></details><details class="photo-preview-details"><summary>Photo details</summary><label class="field-row"><span>Date</span><input name="date" aria-label="Date" type="date" value="${e(diaryDate)}"></label></details><p class="sheet-message" role="status"></p><footer class="photo-log-actions"><button type="button" class="primary" data-save ${!rows.length || rows.some(row => !row.foodId) ? 'disabled' : ''}>Add to diary</button></footer>`);
     body.querySelector('[data-gallery]').onclick = () => picker(false);
-    body.querySelector('[name=group]').onchange = event => group = event.target.value;
-    body.querySelector('[name=date]').onchange = event => diaryDate = event.target.value;
-    body.querySelector('[name=time]').onchange = event => time = event.target.value;
+    body.querySelector('[name=group]').onchange = event => {group = event.target.value;updateNutrition();};
+    body.querySelector('[name=date]').onchange = event => {diaryDate = event.target.value;updateNutrition();};
+    body.querySelector('[name=time]').onchange = event => {time = event.target.value;updateNutrition();};
+    body.querySelector('[data-dismiss-hint]').onclick=()=>{hintDismissed=true;body.querySelector('.photo-review-hint').hidden=true;};
+    updateNutrition();
     body.querySelectorAll('[data-quantity]').forEach(button => button.onclick = () => {const index = Number(button.dataset.quantity);rows[index].foodId ? editQuantity(index) : chooseFood(index);});
     body.querySelectorAll('[data-replace]').forEach(button => button.onclick = () => chooseFood(Number(button.dataset.replace)));
     body.querySelectorAll('[data-remove]').forEach(button => button.onclick = () => {rows.splice(Number(button.dataset.remove), 1);review();});
@@ -68,6 +72,26 @@ export function mountPhotoLog({show, close, header, content, date, groups, save,
       } catch (error) {if (alive() && status.isConnected) status.textContent = error.message;}
       finally {pendingSave = false;if (saveButton.isConnected) body.querySelectorAll('button,input,select').forEach(element => element.disabled = false);}
     };
+  }
+  async function updateNutrition() {
+    nutritionAbort?.abort();nutritionAbort=new AbortController();const signal=nutritionAbort.signal,version=++nutritionVersion;
+    const summary=body.querySelector('.photo-nutrition-summary');if(!summary)return;
+    const previews=rows.map(()=>null),jobs=rows.map((row,index)=>({row,index})).filter(({row})=>row.foodId);
+    const current=()=>alive()&&summary.isConnected&&version===nutritionVersion;
+    const render=()=>{if(current())summary.innerHTML=photoNutritionSummary(previews);};
+    render();
+    async function worker(){while(jobs.length&&current()){
+      const {row,index}=jobs.shift(),payload={foodId:row.foodId,date:diaryDate,time,group,...(row.quantity!==undefined?{quantity:row.quantity,unit:row.unit,...(row.portionId?{portionId:row.portionId}:{})}:{amount:row.amount??1})},key=JSON.stringify(payload),label=body.querySelector(`[data-macros="${index}"]`);
+      try{
+        const result=nutritionCache.get(key)??await request('/api/diary/preview',payload,signal);
+        if(!current())return;
+        nutritionCache.set(key,result);previews[index]=result;if(label)label.innerHTML=photoMacros(result);render();
+      }catch(error){if(current()&&error.name!=='AbortError'&&label){label.textContent='Nutrition unavailable';label.title=error.message;}}
+    }}
+    await Promise.all(Array.from({length:Math.min(3,jobs.length)},worker));
+    if(current()&&previews.some(value=>!value)&&rows.some(row=>row.foodId)){
+      const retry=document.createElement('button');retry.type='button';retry.className='more-results';retry.textContent='Retry nutrition';retry.onclick=updateNutrition;summary.append(retry);
+    }
   }
   function chooseFood(index) {
     replace('<div class="photo-food-picker"></div><button type="button" class="more-results" data-back>Back to photo</button>');

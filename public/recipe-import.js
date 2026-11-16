@@ -40,11 +40,11 @@ export function openRecipeImport({show,close,header,content,onSave}){
  function pick(index){
   const root=screen('Choose Ingredient','<div class="recipe-food-picker"></div><button type="button" class="more-results" data-back>Back</button>'),picker=root.querySelector('.recipe-food-picker');let cleanup;
   root.querySelector('[data-back]').onclick=()=>{cleanup?.();ingredient(index);};
-  cleanup=mountFoodPicker(picker,{allowMeals:false,onPick:async(kind,id)=>{
-   if(kind!=='food')return;const catalog=picker.querySelector('[data-source="catalog"][aria-pressed="true"]');view.draft.rows[index].selection={kind:catalog?'catalog':'library',id};view.draft.rows[index].override=null;view.draft.rows[index].confirmed=true;
+  cleanup=mountFoodPicker(picker,{allowMeals:false,allowRecipes:false,onPick:async(kind,id,selection)=>{
+   if(kind!=='food')return;view.draft.rows[index].selection={kind:selection.source,id};view.draft.rows[index].override=null;view.draft.rows[index].confirmed=true;
    const status=picker.querySelector('[role=status]');status.textContent='Loading…';picker.querySelectorAll('button').forEach(b=>b.disabled=true);
    try{const next=await request('/api/recipe-import/preview',view.draft);if(root.isConnected){view=next;cleanup();ingredient(index);}}catch(error){if(root.isConnected){status.textContent=error.message;picker.querySelectorAll('button').forEach(b=>b.disabled=false);}}
-  }});picker.querySelector('[data-source="recipe"]')?.remove();
+  }});
  }
  async function run(form,fn){const status=form.querySelector('[role=status]');status.textContent='';form.querySelectorAll('button').forEach(b=>b.disabled=true);try{await fn();}catch(error){if(form.isConnected){status.textContent=error.message;if(error.status===409&&view){const reload=document.createElement('button');reload.type='button';reload.textContent='Reload latest';reload.onclick=()=>run(form,()=>refresh(form));status.append(reload);}}}finally{form.querySelectorAll('button').forEach(b=>b.disabled=false);}}
  start();

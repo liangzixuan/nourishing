@@ -1,3 +1,4 @@
+import {mountFoodEntry} from './food-entry.js';
 import {AddMenu} from './add-menu-source/add-menu.js';
 import {createAppShell} from './app-shell.js';
 import {mountMore} from './more.js';
@@ -24,7 +25,6 @@ import {mountLibrary} from './library.js';
 import {mountFoodPicker} from './food-picker.js';
 import {mountNutrition} from './nutrition.js';
 import {applyTheme} from './appearance.js';
-import {quantityFields,quantityValue} from './quantity.js';
 const page=document.querySelector('#page'),dateBar=document.querySelector('#diary-date'),sheet=document.querySelector('#sheet'),content=document.querySelector('#sheet-content'),notice=document.querySelector('#notice');
 const svg=path=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
 const icons={check:svg('<path d="m5 12 4 4L19 6"/>'),back:svg('<path d="m15 5-7 7 7 7"/>'),chevron:svg('<path d="m9 5 7 7-7 7"/>'),more:svg('<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>'),plus:svg('<path d="M12 5v14M5 12h14"/>'),close:svg('<path d="m6 6 12 12M18 6 6 18"/>'),food:svg('<path d="M5 3v7m4-7v7m-4-4h4M7 10v11M18 3v18m0-18c-4 3-4 9 0 9"/>')};
@@ -114,15 +114,12 @@ async function edit(entry,id=entry?.foodId??entry?.recipeId??entry?.mealId,kind=
  show(`${header('Food')}<p class="empty">Loading…</p>`);const serial=searchId;
  try{const item=await request('/api/library/item?'+new URLSearchParams({kind,id,...(entry?{entryId:entry.id}:{})}));if(serial!==searchId||!sheet.open)return;foodEditor(item,entry,quantity);}catch(error){if(serial===searchId)content.innerHTML=header('Food')+`<p class="sheet-message">${e(error.message)}</p>`;}
 }
-function foodEditor({resource:food,options,kind},entry,quantity){
- show(`${header(food.name)}<form class="entry-form">${quantityFields(options,entry??quantity??{})}<label class="field-row"><span>Group</span><select name="group" aria-label="Group">${diary.groups.map(g=>`<option ${g===(entry?.group??group)?'selected':''}>${e(g)}</option>`).join('')}</select></label><label class="field-row"><span>Time</span><input type="time" name="time" value="${entry?.time??new Date().toTimeString().slice(0,5)}"></label><label class="field-row"><span>Date</span><input type="date" name="date" required value="${entry?.date??date}"></label><div class="nutrition-preview" aria-live="polite"></div><p class="food-source">${e(food.source?.name??(kind==='food'?'Custom food':kind==='recipe'?'Recipe':'Meal'))}</p><p class="sheet-message" role="status"></p>${entry&&['recipe','meal'].includes(kind)?'<button type="button" class="more-results" data-adjust-ingredients>Adjust ingredients</button>':''}<footer class="entry-actions">${entry?'<button type="button" data-delete class="danger">Delete</button>':''}<button type="submit" class="primary">${entry?'Save changes':'Add to diary'}</button></footer></form>`);
- const form=content.querySelector('form'),status=form.querySelector('.sheet-message'),preview=form.querySelector('.nutrition-preview');
- const payload=()=>{const v=Object.fromEntries(new FormData(form));return {date:v.date,group:v.group,time:v.time,...(entry?{id:entry.id}:{[kind+'Id']:food.id}),...quantityValue(form)};};
- let timer,previewId=0;const update=()=>{clearTimeout(timer);const id=++previewId;preview.textContent='…';timer=setTimeout(async()=>{if(!form.isConnected)return;try{const result=await request('/api/diary/preview',payload());if(id!==previewId||!form.isConnected)return;const n=result.nutrition.totals;preview.innerHTML=`<strong>${num(result.energy.value,0)} ${e(result.energy.unit)}</strong><p>${num(n.protein)} g Protein · ${num(n.carbs)} g Carbs · ${num(n.fat)} g Fat</p>`;}catch(error){if(id===previewId&&form.isConnected)preview.textContent=error.message;}},180);};form.oninput=update;update();
- const save=async(type,payload)=>{form.querySelectorAll('button').forEach(b=>b.disabled=true);status.textContent='';try{await command(diary.revision,type,payload);await load();if(view==='foods')await library?.reload();close();}catch(error){if(status.isConnected){status.textContent=error.message;if(error.status===409){const reload=document.createElement('button');reload.type='button';reload.textContent='Reload latest';reload.className='more-results';reload.onclick=async()=>{await load();if(entry){const latest=diary.entries.find(row=>row.id===entry.id);if(latest)edit(latest);else close();}else status.textContent='Diary refreshed. You can save this entry.';};status.append(reload);}}}finally{form.querySelectorAll('button').forEach(b=>b.disabled=false);}};
- form.onsubmit=event=>{event.preventDefault();save(entry?'entry.update':'entry.add',payload());};
- if(entry&&['recipe','meal'].includes(kind))form.querySelector('[data-adjust-ingredients]').onclick=()=>{clearTimeout(timer);previewId++;openEntryAdjustment({kind,date:entry.date,id:entry.id,show,close,header,content,onSave:load,onBack:()=>edit(entry)});};
- if(entry)form.querySelector('[data-delete]').onclick=()=>save('entry.delete',{id:entry.id});
+function foodEditor(item,entry,quantity){
+ pickerCleanup=mountFoodEntry({item,entry,quantity,date,group,groups:diary.groups,revision:()=>diary.revision,show,close,content,
+  onChange:async()=>{await load();if(view==='foods')await library?.reload();},onBack:search,
+  onAdjust:()=>openEntryAdjustment({kind:item.kind,date:entry.date,id:entry.id,show,close,header,content,onSave:load,onBack:()=>edit(entry)}),
+  onConflict:async()=>{await load();if(entry){const latest=diary.entries.find(row=>row.id===entry.id);if(latest)edit(latest);else close();}}
+ });
 }
 function photoLog(){if(!diary)return;return mountPhotoLog({show,close,header,content,date:()=>date,groups:diary.groups,save:photoSaver(()=>diary.revision),onChange:load});}
 function recordEditor(kind,record){return mountRecordEditor({kind,record,date,show,close,header,content,onChange:load});}

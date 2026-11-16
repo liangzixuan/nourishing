@@ -1,3 +1,18 @@
+# Active goal — revised November 16, 2026
+
+Finish Nourishing as an Appwrite-hosted, installable PWA at https://nourishing.app. Preserve the current account and diary data, support public signup with private account data, and remove dependence on the PC server, Tailscale, APK distribution, Health Connect and native Firebase setup. Restore the saved local/Cronometer UI through working cloud adapters, validate each complete flow, deploy it, and continue through the remaining gap list.
+
+Acceptance:
+- Source-based main screens and child workflows are implemented; discrepancies are recorded and resolved using the latest saved screenshots before manuals.
+- Food search, food entry, Photo Log, barcode, diary editing, charts/reports, settings and account flows work against Appwrite.
+- Account isolation, existing data reconciliation, backup/restore, reminders and offline behavior retain their verified guarantees after relevant changes.
+- Each deployed increment has appropriate automated and live-browser verification with disposable fixtures; owner data remains unchanged.
+- Device-only checks and deferred password-recovery email checks are explicitly identified and requested only when they become the remaining blocker.
+
+Current increment: rich food search, source food-entry layout, compact Photo Log nutrition review. Next: multi-add and remaining child editors listed in docs/ui-parity.md. The platform goal remains active; its older APK objective text is superseded by this user-approved PWA scope because the available goal API cannot edit objective text.
+
+---
+
 # Appwrite migration progress
 
 Plan: `cronometer-local/docs/superpowers/plans/2026-11-13-appwrite-accounts.md` in the source workspace.
