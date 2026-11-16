@@ -70,6 +70,13 @@ test('Discover touch swipes navigate bounded tabs while preserving scrolling, co
   async function realTouch(from,to){await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:from.x,y:from.y}]});for(let i=1;i<=5;i++)await client.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:from.x+(to.x-from.x)*i/5,y:from.y+(to.y-from.y)*i/5}]});await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}
   await realTouch({x:210,y:650},{x:210,y:350});await page.waitForFunction(()=>scrollY>0);await tab('dashboard');
   await page.evaluate(()=>scrollTo(0,0));await realTouch({x:280,y:450},{x:100,y:450});await tab('charts');
+  // Empty tabs must own the blank viewport below their short content too.
+  await page.evaluate(()=>{const shell=document.createElement('div');shell.className='app-shell';document.body.prepend(shell);shell.append(document.querySelector('#header'),document.querySelector('main'));document.querySelector('main').id='page';});
+  await page.locator('[data-tab=snapshots]').click();await page.locator('.snapshot-list [data-snapshot-add]').waitFor();
+  await page.evaluate(()=>scrollTo(0,0));
+  assert.equal(await page.evaluate(()=>document.elementFromPoint(120,650)?.closest('.nutrition-page')!==null),true);
+  await realTouch({x:120,y:650},{x:300,y:650});await tab('report');await page.locator('.mobile-report-toolbar').waitFor();
+  await page.locator('[data-tab=charts]').click();await page.locator('[data-manage]').waitFor();
   await page.evaluate(()=>window.panel.dispose());await swipe();await tab('charts');assert.deepEqual(errors,[]);
  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
 });

@@ -18,6 +18,9 @@ button,input,select,textarea{font:inherit}
 .app-header .screen-title{font:700 calc(32rem / 18) Karla,Lato,sans-serif;margin:0;display:flex;align-items:center;justify-content:space-between;min-height:50px}
 #notice{margin:0}
 .discover-home #page{padding:0}
+.discover-home .app-shell{display:flex;flex-direction:column;padding-bottom:var(--dc-nav-space,70px)}
+.discover-home #page{display:flex;flex:1;flex-direction:column}
+.discover-home .nutrition-page{flex:1}
 .discover-home .discover-tabs{position:static}
 .dashboard-header-fallback{background:var(--paper);padding:8px 16px;border-radius:0 0 16px 16px;margin-bottom:16px}
 .sheet-header{border-radius:0 0 16px 16px;min-height:56px;padding:6px 16px}
