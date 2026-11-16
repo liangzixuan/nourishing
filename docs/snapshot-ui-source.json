@@ -1,25 +1,185 @@
 {
-  "source": "cronometer-local/public/mobile-snapshots.js render/facts",
-  "adapter": "public/snapshot-view.js",
+  "sourceRoot": "../cronometer-local",
+  "sources": [
+    {
+      "source": "public/mobile-snapshots.js",
+      "sha256": "a1f9f83b5b18edb6d123955cd974903f0e480de0f1eac300802c13b6ffea0137",
+      "adapters": [
+        "public/snapshot-view.js",
+        "public/snapshots.js"
+      ]
+    }
+  ],
   "changes": [
-    "cloud resource URLs and selectors",
-    "cloud BMI precision preserved"
+    "Retain cloud account-scoped media URLs and idempotent prepare/save/update/delete requests.",
+    "Source modal markup and labels replace the combined editor. Date/caption edits retain all other metadata.",
+    "Source camera uses snapshot-local asset paths. Calendar uses snapshot-local imports and omits diary markers without an account-scoped marker capture.",
+    "Source snapshot facts show rounded BMI, while stored precision stays unchanged.",
+    "Options navigation forwards to the mounted app navigation.",
+    "Camera CSS final blank line removed; remaining copied styles are unchanged.",
+    "Copied text assets use LF line endings so working and published Git bytes match."
   ],
   "assets": [
     {
+      "sourceRoot": "../cronometer-local",
       "source": "public/mobile-snapshots.css",
       "output": "public/snapshot-source/mobile-snapshots.css",
-      "sha256": "65ad5e63539c2dd2adcc2e2becab5769b6d535f0fa9be957e0efb7ba24d22dca"
+      "sourceSha256": "c1387d8cdff350430f3ebaf9ea5ba9668928baddb1689f49f99569bb0f5a6226",
+      "outputSha256": "65ad5e63539c2dd2adcc2e2becab5769b6d535f0fa9be957e0efb7ba24d22dca"
     },
     {
+      "sourceRoot": "../cronometer-local",
+      "source": "public/mobile-photo-capture.js",
+      "output": "public/snapshot-source/mobile-photo-capture.js",
+      "sourceSha256": "167d52ee2d0774eceaf72e33b24eae52cc560fe9f76642a1a375cc4c52f2b3cf",
+      "outputSha256": "5c3bd650d25ed27c8e2dc609ba5ceb733bc9fe72674ac94e14c7d09498727f28"
+    },
+    {
+      "sourceRoot": "../cronometer-local",
+      "source": "public/mobile-photo-capture.css",
+      "output": "public/snapshot-source/mobile-photo-capture.css",
+      "sourceSha256": "918c901ee5e43631c0b6e3cc5f08cc61645279d31d3147e8caad02a0bf8b9826",
+      "outputSha256": "d0b4529cb6217b68bc45cc33cf8cf3f090088ec8b1ed01dc483051e7c786af64"
+    },
+    {
+      "sourceRoot": "../cronometer-local",
+      "source": "public/mobile-diary-calendar.js",
+      "output": "public/snapshot-source/mobile-diary-calendar.js",
+      "sourceSha256": "ea2a0da6c2e74efa7f05e6ffffae58f75a9b99ab84b6dc771181feb2de044a26",
+      "outputSha256": "cfa2c10cb57bd7b85530e7bedf05806085ae9e7436b8d6903ab65e7f80949d17"
+    },
+    {
+      "sourceRoot": "../cronometer-local",
+      "source": "public/mobile-diary-calendar.css",
+      "output": "public/snapshot-source/mobile-diary-calendar.css",
+      "sourceSha256": "92529f56c889ffbe1235007522dcc081268a5dded553151741be60b97a5eb7f3",
+      "outputSha256": "7cd940bac485df0b906e8a92a36bb665c7e9b5611699fb66f597b63b5463de9d"
+    },
+    {
+      "sourceRoot": "../cronometer-local",
+      "source": "public/locales/mobile-photo.js",
+      "output": "public/snapshot-source/mobile-photo-messages.js",
+      "sourceSha256": "b7c7a782b02e7f844191352532904cc6d8c1b5b31f92efe982f5cf26acac6acc",
+      "outputSha256": "b7c7a782b02e7f844191352532904cc6d8c1b5b31f92efe982f5cf26acac6acc"
+    },
+    {
+      "sourceRoot": "../cronometer-local",
+      "source": "public/locales/mobile-snapshots.js",
+      "output": "public/snapshot-source/snapshot-messages.js",
+      "sourceSha256": "c8865fd72dab63807ee38a339b2f37a50d001ec9d5471547d16866070b9a7e0f",
+      "outputSha256": "c8865fd72dab63807ee38a339b2f37a50d001ec9d5471547d16866070b9a7e0f"
+    },
+    {
+      "sourceRoot": ".",
+      "source": "server/domain/diary-calendar.mjs",
+      "output": "public/snapshot-source/diary-calendar.mjs",
+      "sourceSha256": "f647a6d89c031c8ff72532ee0ac8e354ad1de76d61115f2bedc2c09104682d9e",
+      "outputSha256": "f647a6d89c031c8ff72532ee0ac8e354ad1de76d61115f2bedc2c09104682d9e"
+    },
+    {
+      "sourceRoot": ".",
+      "source": "server/domain/calendar.mjs",
+      "output": "public/snapshot-source/calendar.mjs",
+      "sourceSha256": "229b5891f511ae7dfec0e71f01a053820ec43191e07e80bd28f26181fe65633f",
+      "outputSha256": "229b5891f511ae7dfec0e71f01a053820ec43191e07e80bd28f26181fe65633f"
+    },
+    {
+      "sourceRoot": "../cronometer-local",
+      "source": "public/snapshot-icons/camera.svg",
+      "output": "public/snapshot-source/camera.svg",
+      "sourceSha256": "d421c1751d33da6250ab5b49f512d0b1859eb10edad5e71259fda94a0b38005a",
+      "outputSha256": "d421c1751d33da6250ab5b49f512d0b1859eb10edad5e71259fda94a0b38005a"
+    },
+    {
+      "sourceRoot": "../cronometer-local",
+      "source": "public/snapshot-icons/folder.svg",
+      "output": "public/snapshot-source/folder.svg",
+      "sourceSha256": "96d5494bc46a8c1ab84578d1efc7534ddbd863403e3a6461f0c2678f8a9bf07f",
+      "outputSha256": "96d5494bc46a8c1ab84578d1efc7534ddbd863403e3a6461f0c2678f8a9bf07f"
+    },
+    {
+      "sourceRoot": "../cronometer-local",
+      "source": "public/snapshot-icons/pencil.svg",
+      "output": "public/snapshot-source/pencil.svg",
+      "sourceSha256": "8ee0f00491ba035baa4cd7aca81b144d3a8c3b67f0216ce082a13cd02948ce77",
+      "outputSha256": "8ee0f00491ba035baa4cd7aca81b144d3a8c3b67f0216ce082a13cd02948ce77"
+    },
+    {
+      "sourceRoot": "../cronometer-local",
+      "source": "public/snapshot-icons/delete.svg",
+      "output": "public/snapshot-source/delete.svg",
+      "sourceSha256": "4540e2a3e726df9ec25810a4cafda79b5546b848eb6462322c08adfdff9c5525",
+      "outputSha256": "4540e2a3e726df9ec25810a4cafda79b5546b848eb6462322c08adfdff9c5525"
+    },
+    {
+      "sourceRoot": "../cronometer-local",
+      "source": "public/snapshot-icons/close.svg",
+      "output": "public/snapshot-source/close.svg",
+      "sourceSha256": "518399857748e824a3e3f3c7654e259f07f337bf0f76fb72108d8572b21ab840",
+      "outputSha256": "518399857748e824a3e3f3c7654e259f07f337bf0f76fb72108d8572b21ab840"
+    },
+    {
+      "sourceRoot": "../cronometer-local",
       "source": "public/snapshot-icons/camera-outline.svg",
       "output": "public/snapshot-source/camera-outline.svg",
-      "sha256": "1d6f16d7de3853bd2e23046c1cd9070f162f3e7c1e84dd5f2b29abe0f81de5b4"
+      "sourceSha256": "1d6f16d7de3853bd2e23046c1cd9070f162f3e7c1e84dd5f2b29abe0f81de5b4",
+      "outputSha256": "1d6f16d7de3853bd2e23046c1cd9070f162f3e7c1e84dd5f2b29abe0f81de5b4"
     },
     {
+      "sourceRoot": "../cronometer-local",
       "source": "public/snapshot-icons/dots-vertical.svg",
       "output": "public/snapshot-source/dots-vertical.svg",
-      "sha256": "dc9414bb8a2eab51eec02acc3577ead1e80f33ed7f62456426cc09754de3f6f4"
+      "sourceSha256": "dc9414bb8a2eab51eec02acc3577ead1e80f33ed7f62456426cc09754de3f6f4",
+      "outputSha256": "dc9414bb8a2eab51eec02acc3577ead1e80f33ed7f62456426cc09754de3f6f4"
+    },
+    {
+      "sourceRoot": "../cronometer-local",
+      "source": "public/more-icons/chevron-left.svg",
+      "output": "public/snapshot-source/chevron-left.svg",
+      "sourceSha256": "63017df5d04537d76bd4f5b3147b25366abfc48ed3f6f498caae699f9179b61b",
+      "outputSha256": "63017df5d04537d76bd4f5b3147b25366abfc48ed3f6f498caae699f9179b61b"
+    },
+    {
+      "sourceRoot": "../cronometer-local",
+      "source": "public/more-icons/chevron-right.svg",
+      "output": "public/snapshot-source/chevron-right.svg",
+      "sourceSha256": "391f6b0267c48b1dbb4197cde4ab7637084a34eadb1746571809f743ef0903aa",
+      "outputSha256": "391f6b0267c48b1dbb4197cde4ab7637084a34eadb1746571809f743ef0903aa"
+    },
+    {
+      "sourceRoot": "../cronometer-local",
+      "source": "public/photo-icons/image-multiple.svg",
+      "output": "public/snapshot-source/image-multiple.svg",
+      "sourceSha256": "cfc236bb8a1eddbb256fd47707c9c3df20b69005189e8fb246784a3c5ad5f922",
+      "outputSha256": "cfc236bb8a1eddbb256fd47707c9c3df20b69005189e8fb246784a3c5ad5f922"
+    },
+    {
+      "sourceRoot": "../cronometer-local",
+      "source": "public/photo-icons/circle.svg",
+      "output": "public/snapshot-source/circle.svg",
+      "sourceSha256": "d4f3049827c93ab15b74217bc9bc73f93d77ca8d85de6839a444e353ac8f4c87",
+      "outputSha256": "d4f3049827c93ab15b74217bc9bc73f93d77ca8d85de6839a444e353ac8f4c87"
+    },
+    {
+      "sourceRoot": "../cronometer-local",
+      "source": "public/snapshot-icons/LICENSE",
+      "output": "public/snapshot-source/LICENSE",
+      "sourceSha256": "f3bc8715bad84b26396bb42d2abd11f919cf58163be158eab79ecbaabf84cdf2",
+      "outputSha256": "3bae6305bcaa6d10219b999f65c342034c2d40b1c0e8567fa08605e73ccba829"
+    }
+  ],
+  "adapters": [
+    {
+      "output": "public/snapshots.js",
+      "sha256": "e0055eac54be1e2dd024f697f40101d15cca6bbb2fd3fa1cc9abc36f63e974eb"
+    },
+    {
+      "output": "public/snapshots.css",
+      "sha256": "6d481be1c34464a61457501fb47c3c2df70e2b6a5459203dc4a2c9559c3f8a65"
+    },
+    {
+      "output": "public/snapshot-source/message-format.js",
+      "sha256": "b443ac815f4602d982dd352b39bb78aa325d15f22c62c1c89280be26666f7de0"
     }
   ]
 }

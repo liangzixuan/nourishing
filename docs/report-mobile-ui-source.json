@@ -9,7 +9,10 @@
     "Use authenticated cloud nutrition-report capture and existing nutrient detail/print flows.",
     "Move Include Today and print/refresh actions to More within Report Settings; keep latest phone primary settings.",
     "Use canonical record dates for All Time, capped at the existing report maximum.",
-    "Newsfeed is available on every Discover tab; gear opens per-tab settings, absent on Snapshots."
+    "Newsfeed is available on every Discover tab; gear opens per-tab settings, absent on Snapshots.",
+    "Restore Remaining title and neutral ring from the latest saved phone screenshot; render canonical mean and selected energy unit, retaining unknown and negative values.",
+    "Restore source full-screen report nutrient targets, range chart, top sources, education and help; validate one atomic report/detail capture and retain applied filters.",
+    "Report owns modal cleanup, aborts pending reads on close or disposal, and keeps report source averages distinct from editable daily targets."
   ],
   "files": [
     {
@@ -35,6 +38,114 @@
       "sourceSha256": "62b31a9e1a215a2bbb6f0dff29a09195d56e658d9525c104cdcf4adedec59ac0",
       "sha256": "62b31a9e1a215a2bbb6f0dff29a09195d56e658d9525c104cdcf4adedec59ac0",
       "transforms": []
+    },
+    {
+      "source": "../cronometer-local/public/mobile-report-nutrient-detail.js",
+      "target": "public/report-mobile-source/mobile-report-nutrient-detail.js",
+      "sourceSha256": "84fb2da0dd37b43f3a37934d5db9f7d925480555224561c1399e62597e8105b9",
+      "sha256": "59bba2eeb301991637fdbcbdcab3176b414b8c90acd6008766615740c495686a",
+      "transforms": [
+        "Source module imports and icon URLs resolve inside cloud assets; line endings normalized to LF."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/mobile-report-nutrient-detail.css",
+      "target": "public/report-mobile-source/mobile-report-nutrient-detail.css",
+      "sourceSha256": "6be4997e234266f4d70a24ca41cc6c20d972effd10df774c5996d7f2f2d079ff",
+      "sha256": "e21a92b4a663f343f8204d4dda30230cddfe738e466058da1ff163180d9fec95",
+      "transforms": [
+        "Source module imports and icon URLs resolve inside cloud assets; line endings normalized to LF."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/mobile-nutrient-detail.css",
+      "target": "public/report-mobile-source/mobile-nutrient-detail.css",
+      "sourceSha256": "4d3b90377fe04604d11e02a31193aa2c014e7799eb6eeeaf95fe8fe89bb7e244",
+      "sha256": "4cb0a9739a85f062cd25815eea8400d1dec604de28080c89603c6f2a51ef2dcd",
+      "transforms": [
+        "Source module imports and icon URLs resolve inside cloud assets; line endings normalized to LF."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/nutrient-range-chart.js",
+      "target": "public/report-mobile-source/nutrient-range-chart.js",
+      "sourceSha256": "8e9a7645daa1c34c8e47c871307c94ec43338f7a1bfce3ece8b1dfbfae195b1f",
+      "sha256": "49fbbde28194791e7409b2c52c055168430bb0d412a521a8eef1ee61acce976b",
+      "transforms": [
+        "Source module imports and icon URLs resolve inside cloud assets; line endings normalized to LF."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/nutrient-education.js",
+      "target": "public/report-mobile-source/nutrient-education.js",
+      "sourceSha256": "af3d59f4f9db20fc4a04895e9527dd6f8ef34f95e0870f1f1f45e86a8a26fb05",
+      "sha256": "1ae8d85fdc592050e1c8cd7dc03d24dedf18bc2c6559d777f046e21caefad711",
+      "transforms": [
+        "Source module imports and icon URLs resolve inside cloud assets; line endings normalized to LF."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/nutrient-education-content.js",
+      "target": "public/report-mobile-source/nutrient-education-content.js",
+      "sourceSha256": "70c433dbac1b2f11e73e3dcebbdf90999a72ceb456f3b37a158eeaa3b3c40fc1",
+      "sha256": "82801fe4af46003f45dd35218e7f44c10fbd3c051a4f4cf52700cc9c0fdebc20",
+      "transforms": [
+        "Source module imports and icon URLs resolve inside cloud assets; line endings normalized to LF."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/locales/report-nutrient-detail.js",
+      "target": "public/report-mobile-source/locales/report-nutrient-detail.js",
+      "sourceSha256": "1a5bd72dbb6cf7a7a0c1919e14db6b39f3b94c2466862d969495a3fdcf009d3b",
+      "sha256": "dd74324f452202e27372d7cf7babeabd28a5918fd2634fcbd9f7e2c6fd932702",
+      "transforms": [
+        "Source module imports and icon URLs resolve inside cloud assets; line endings normalized to LF."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/locales/mobile-nutrient-detail.js",
+      "target": "public/report-mobile-source/locales/mobile-nutrient-detail.js",
+      "sourceSha256": "e2e6c6f23767c456acaa4098bafff3d4785278697171e46543ebc38143b80dcc",
+      "sha256": "3b69811491266522a4d20cf30f3077948b84049451fa2565dfc15f788c1f6424",
+      "transforms": [
+        "Source module imports and icon URLs resolve inside cloud assets; line endings normalized to LF."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/close.svg",
+      "target": "public/report-mobile-source/exercise-icons/close.svg",
+      "sourceSha256": "518399857748e824a3e3f3c7654e259f07f337bf0f76fb72108d8572b21ab840",
+      "sha256": "518399857748e824a3e3f3c7654e259f07f337bf0f76fb72108d8572b21ab840",
+      "transforms": [
+        "Source module imports and icon URLs resolve inside cloud assets; line endings normalized to LF."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/score-icons/help-circle-outline.svg",
+      "target": "public/report-mobile-source/score-icons/help-circle-outline.svg",
+      "sourceSha256": "30b17112dab1f9e5c7e78fd4e14a4eabd2aca2b66507bdafdd11c04d8289dbf3",
+      "sha256": "30b17112dab1f9e5c7e78fd4e14a4eabd2aca2b66507bdafdd11c04d8289dbf3",
+      "transforms": [
+        "Source module imports and icon URLs resolve inside cloud assets; line endings normalized to LF."
+      ]
     }
+  ],
+  "references": [
+    {
+      "path": ".local/cronometer-report.png",
+      "authority": "Latest saved Cronometer Report screenshot: Remaining label and neutral ring."
+    },
+    {
+      "path": "../cronometer-local/verification/phone-discover-20261108/nutrient-vitamin-c-detail.png",
+      "authority": "Native daily nutrient-detail hierarchy; multi-day report remains a source-derived adaptation."
+    }
+  ],
+  "limitations": [
+    "No populated native multi-day nutrient popup was captured. Report detail retains existing known-day averages, applied filters and read-only average targets; it does not claim native averaging equivalence.",
+    "Remaining ring is neutral, matching the captured empty-consumption screen. No percentage or positive/negative color rule is inferred without evidence."
+  ],
+  "verification": [
+    "node --test tests/nutrient-detail-ui.test.mjs tests/discover-report-browser.test.mjs tests/nutrient-detail.test.mjs tests/nutrient-detail-http.test.mjs",
+    "Visual inspection: .local/report-vitamin-source-restored.png at 412px, browser checks at 320px."
   ]
 }

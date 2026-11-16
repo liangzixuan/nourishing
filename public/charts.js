@@ -1,3 +1,4 @@
+import {mountCgmDetail} from './cgm-detail.js';
 import {escape as e} from './html.js';
 import {request,command} from './diary-api.js';
 import {chartCardMarkup,mountChartPlots,validateChartView} from './chart-presentation.js';
@@ -5,9 +6,9 @@ import {chartArrow,chartTitle} from './charts-source-view.js';
 import {openChartDefinition,openChartSettings} from './chart-editor.js';
 export function mountCharts({page,date,show,close,header,content,onChange,onReady}){
  const root=document.createElement('section');root.className='chart-page';page.replaceChildren(root);
- let data,disposed=false,serial=0,plots,detailPlots,detailHost;
+ let data,disposed=false,serial=0,plots,detailPlots,detailHost,cgmDetail;
  const alive=()=>!disposed&&root.isConnected;
- const disposeDetail=()=>{detailPlots?.dispose();detailPlots=null;detailHost=null;};
+ const disposeDetail=()=>{cgmDetail?.dispose();cgmDetail=null;detailPlots?.dispose();detailPlots=null;detailHost=null;};
  const observer=new MutationObserver(()=>{if(detailHost&&!detailHost.isConnected)disposeDetail();});observer.observe(content,{childList:true});
  const showSheet=html=>{disposeDetail();show(html);};
  const ui={show:showSheet,close,header,content,onChange,afterSave:()=>alive()?load():undefined};
@@ -30,6 +31,7 @@ export function mountCharts({page,date,show,close,header,content,onChange,onRead
    catch(error){if(pending.isConnected)pending.textContent=error.message;return;}
   }
   if(!card)return;
+  if(card.id==='cgm'){cgmDetail=mountCgmDetail(view,ui);detailHost=cgmDetail.element;return;}
   await openChartSettings(id,view,{...ui,header:()=>header(chartTitle(card))});
   const form=content.querySelector('form');if(!alive()||!form)return;
   detailHost=document.createElement('div');detailHost.className='chart-detail';detailHost.innerHTML=chartCardMarkup(card,{detail:true});form.before(detailHost);

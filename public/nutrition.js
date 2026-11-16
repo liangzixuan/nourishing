@@ -14,7 +14,6 @@ import {escape as e} from './html.js';
 import {request,command} from './diary-api.js';
 import {applyTheme} from './appearance.js';
 import {openPrintReport} from './print-report.js';
-import {openNutrientDetail} from './nutrient-detail.js';
 const num=(n,d=1)=>Number.isFinite(n)?n.toLocaleString(undefined,{maximumFractionDigits:d}):'—';
 const commonIds=['calories','protein','carbs','fat','fiber','water','sugar','sodium','potassium','calcium','iron','magnesium','vitaminA','vitaminC','vitaminD','vitaminE','vitaminK','vitaminB6','vitaminB12','omega3','omega6'];
 const rank=row=>commonIds.includes(row.id)?commonIds.indexOf(row.id):commonIds.length;
@@ -67,7 +66,7 @@ export function mountNutrition({page,headerRoot,mode,date,show,close,header,cont
    const id=++serial,result=await request('/api/nutrition-report?'+new URLSearchParams(options));
    if(!alive()||serial!==id||tab!=='report')throw Error('This report is no longer open.');
    data=result;reportOptions={...result.report.options};return result;
-  },onNutrient:(nutrient,options)=>openNutrientDetail({nutrient,options,show,header,content}),onPrint:options=>openPrintReport({initialOptions:options,show,header,content})});
+  },onPrint:options=>openPrintReport({initialOptions:options,show,header,content})});
  }
  load();return {reload:load,dispose(){disposed=true;serial++;dashboard?.dispose();snapshots?.dispose();charts?.dispose();fasting?.dispose();mobileReport?.dispose();}};
 }
