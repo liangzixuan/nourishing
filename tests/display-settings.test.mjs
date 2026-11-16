@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {initialState} from '../server/domain/workspace.mjs';
+import {initialState,act} from '../server/domain/workspace.mjs';
 import {applyWorkspaceCommand} from '../server/workspace-commands.mjs';
 import {displayView} from '../server/display-settings.mjs';
 import {createWebHandler} from '../server/http.mjs';
@@ -21,4 +21,14 @@ test('Display GET is authenticated, account scoped and rejects caller ownership 
  const get=(path,secret)=>handler(new Request(origin+path,{headers:secret?{cookie:'__Host-nourishing_session='+secret}:{}}));
  assert.equal((await get('/api/display')).status,401);assert.equal((await get('/api/display?owner=two','one')).status,400);assert.deepEqual(reads,[]);
  assert.equal((await (await get('/api/display','one')).json()).settings.theme,'dark');assert.equal((await (await get('/api/display','two')).json()).settings.theme,'light');assert.deepEqual(reads,['one','two']);
+});
+
+test('Diary preferences and renamed groups preserve canonical assignments and expand new meal logs',async()=>{
+ const seed=initialState();seed.foods=[{id:'food',name:'Food',grams:100,nutrients:{calories:10}}];seed.meals=[{id:'meal',name:'Meal',items:[{foodId:'food',amount:2}]}];act(seed,'entry.add',{foodId:'food',date:'2026-11-16',group:'Lunch',amount:1});seed.notes=[{id:'note',date:'2026-11-16',group:'Lunch',text:'Note'},{id:'ungrouped',date:'2026-11-16',group:null,text:'Keep null'}];seed.biometrics=[{id:'weight',date:'2026-11-16',group:'Lunch',type:'weight',unit:'kg',value:70}];seed.repeats=[{id:'repeat',foodId:'food',group:'Lunch',amount:1,days:[1]}];
+ const fixture=diaryStoreFixture(seed),store=createWorkspaceStore(fixture.db,'fixture'),save=(type,payload)=>store.command({requestId:crypto.randomUUID(),revision:displayView(fixture.state()).revision,type,payload});
+ await save('display.save',{diaryGroups:{version:1,showGroups:true,hiddenGroups:['Lunch']},diaryQuickAdd:{version:1,shortcuts:[{group:'Lunch',action:'note'}]},alwaysExpandMeals:true,diaryCalendar:{version:1,food:false,exercise:true,biometric:true,note:true,fast:true}});const before=fixture.state();
+ const rename={requestId:crypto.randomUUID(),revision:displayView(before).revision,type:'group.rename',payload:{from:'Lunch',to:'Midday'}};const result=await store.command(rename);assert.deepEqual(await store.command(rename),result);const renamed=fixture.state();for(const key of ['entries','biometrics','repeats'])assert.equal(renamed[key][0].group,'Midday');assert.equal(renamed.notes[0].group,'Midday');assert.equal(renamed.notes[1].group,null);assert.deepEqual(renamed.settings.diaryGroups.hiddenGroups,['Midday']);assert.equal(renamed.settings.diaryQuickAdd.shortcuts[0].group,'Midday');assert.deepEqual(renamed.foods,before.foods);assert.deepEqual(renamed.meals,before.meals);
+ await save('entry.add',{mealId:'meal',date:'2026-11-16',group:'Midday',amount:1});assert.equal(fixture.state().entries.at(-1).foodId,'food');assert.equal(fixture.state().entries.at(-1).amount,2);
+ for(const payload of [{diaryGroups:{version:1,showGroups:true,hiddenGroups:['foreign']}},{diaryQuickAdd:{version:1,shortcuts:[{group:'Midday',action:'foreign'}]}},{alwaysExpandMeals:'yes'},{diaryCalendar:{version:1,food:true}}]){const snapshot=fixture.state();await assert.rejects(save('display.save',payload),error=>(error.status??error.code)===400);assert.deepEqual(fixture.state(),snapshot);}
+ await assert.rejects(save('group.rename',{from:'Midday',to:'Dinner'}),error=>(error.status??error.code)===409);
 });

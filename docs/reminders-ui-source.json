@@ -1,0 +1,47 @@
+{
+  "purpose": "Concise PWA notification settings with explicit browser connection and account reminder controls.",
+  "references": [
+    {
+      "source": "../cronometer-local/public/reminders.js",
+      "sha256": "09a9b13cbfb7a3353ce45e25855e6b592b64b8fd955387fa366308f61158a3a6"
+    },
+    {
+      "source": "../cronometer-local/public/reminders.css",
+      "sha256": "dd902e22da1c47665e330f520a6d8f0f96d9cc2f3df48643cf9f911db44e673c"
+    },
+    {
+      "source": "../cronometer-local/verification/phone-discover-20261108/notification-settings.png",
+      "sha256": "6e583100da9f38a83f2e1054217b87250de9fbd6e1b7f407eaae6c71e24acffc"
+    }
+  ],
+  "assets": [
+    {
+      "output": "public/reminders.js",
+      "outputSha256": "82669265516079b1d3caf9d210299afed3f0be268abc25ea894bede3953e45c4"
+    },
+    {
+      "output": "public/reminders.css",
+      "outputSha256": "60658031d8617f5176acdc9b0bbde78b62d928bc16fbc56b6c1efec9eb6b060c"
+    },
+    {
+      "output": "public/reminder-schedules.js",
+      "outputSha256": "4fc845d1f7967ed64a6f18bb184069d8107e0ef75ca62d51e82747c7f5a3a273"
+    }
+  ],
+  "adaptations": [
+    "Captured Cronometer reference shows the Notifications title and disabled Allow Notifications switch only; enabled settings and schedules are not captured.",
+    "Existing cloud reminder kinds, conditions, account pause/resume and browser Web Push remain authoritative. No native integration is copied.",
+    "Schedules use the existing revision guard and stable creationId. An uncertain mutation freezes its draft; explicit Reload reads saved state and reconciles matching identity and canonical fields, without automatically resubmitting.",
+    "Source local notification UI informs labels and grouping; cloud controls remain explicit for browser permission, connection, and account resume.",
+    "Closing aborts reads and stops follow-on permission work; a subscription newly created after close is removed."
+  ],
+  "verification": [
+    "tests/reminders-lifecycle-browser.test.mjs: actual More child under production CSP, uncertain create/edit/delete/pause, failed reads, 409, validation, cancel/back, late permission and late subscription cleanup",
+    "tests/reminder-schedules-browser.test.mjs: daily/weight conditions, explicit resume/pause",
+    "tests/web-push-browser.test.mjs: explicit connect/test and unchanged uncertain test identity across close/reopen, independent logout cleanup"
+  ],
+  "limits": [
+    "No exact enabled native Notifications UI reference is available.",
+    "Browser notification delivery requires a supported browser and explicit user permission; hosted UI verifier does not request permission or send a push."
+  ]
+}

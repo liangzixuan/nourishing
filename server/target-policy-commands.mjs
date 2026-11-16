@@ -1,3 +1,4 @@
+import {prepareTargetSetup} from './domain/workspace.mjs';
 import {parseNutrientUpperLimitPolicy} from './domain/nutrient-upper-limits.mjs';
 import {parseTemplateSettings,changeMacroPlan} from './domain/macro-templates.mjs';
 import {parseMacroPolicy,DEFAULT_MACRO_RATIOS} from './domain/macro-policy.mjs';
@@ -7,6 +8,7 @@ import {parseEnergyPolicy,parseEnergyExpenditure} from './domain/energy-policy.m
 import {parseCarbohydratePolicy,carbohydratePreferences,DEFAULT_CARBOHYDRATE_POLICY} from './domain/carbohydrate-policy.mjs';
 
 export const targetPolicyCommandFields={
+ 'targetPolicy.setup':['input','confirmed'],
  'targetPolicy.upperLimits':['policy'],
  'targetPolicy.customEnergy':['enabled','kcal'],
  'targetPolicy.aboveBaseline':['enabled'],
@@ -22,6 +24,12 @@ export const targetPolicyCommandFields={
 const fail=message=>{throw Object.assign(Error(message),{status:400});};
 const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 const amount=value=>value===null||typeof value==='number'&&Number.isFinite(value)&&value>=0;
+/** Canonical setup owns calculations; this boundary rejects discarded fields. */
+export function prepareGuidedSetup(input){
+ const keys=input?.method==='manual'?['method','calories','percentages']:['method','adultScope','age','height','weight','units','equation','activity','percentages'];
+ if(!object(input)||Object.keys(input).length!==keys.length||keys.some(key=>!Object.hasOwn(input,key))||!object(input.percentages)||Object.keys(input.percentages).length!==3||['carbs','protein','fat'].some(key=>!Object.hasOwn(input.percentages,key)))fail('Enter only the required target setup values.');
+ return prepareTargetSetup(input);
+}
 /** Adapt narrow cloud edits to the existing settings owner. No target arithmetic lives here. */
 export function prepareTargetPolicyCommand(state,action,context={}){
  if(!Object.hasOwn(targetPolicyCommandFields,action.type))return action;
@@ -29,6 +37,7 @@ export function prepareTargetPolicyCommand(state,action,context={}){
  if(!object(p)||Object.keys(p).some(key=>!allowed.includes(key))||allowed.filter(key=>key!=='kcal').some(key=>!Object.hasOwn(p,key)))fail('Choose the required target settings only.');
  let patch;
  switch(action.type){
+  case 'targetPolicy.setup':{if(p.confirmed!==true)fail('Review the targets before applying.');const plan=prepareGuidedSetup(p.input);return {type:'targets.setup',payload:{input:plan.input,confirmed:true}};}
   case 'targetPolicy.upperLimits':if(p.policy===undefined)fail('Choose an upper-limit policy or turn it off.');patch={nutrientUpperLimits:parseNutrientUpperLimitPolicy(p.policy)};break;
   case 'targetPolicy.restoreDefaults':{
    if(!['macro','carbohydrate'].includes(p.section))fail('Choose macro or carbohydrate defaults.');patch=p.section==='macro'?{macroPolicy:parseMacroPolicy(DEFAULT_MACRO_RATIOS)}:{carbohydratePolicy:parseCarbohydratePolicy(DEFAULT_CARBOHYDRATE_POLICY)};break;

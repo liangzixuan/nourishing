@@ -1,3 +1,4 @@
+import {TargetSetupPanel} from './setup-source/target-setup.js';
 import {NutrientReferencePanel} from './upper-limits-source/reference-panel.js';
 import {upperLimitConfiguration} from './upper-limits-source/nutrient-upper-limits.js';
 import {MobileMacroScheduler} from './macro-scheduler-source/mobile-macro-scheduler.js';
@@ -16,7 +17,7 @@ import {openProfileSettings} from './profile-settings.js';
 import {openDiarySummaryAction} from './diary-summary-actions.js';
 
 const main=['weight','macros','scheduler','expenditure','nutrients','scores'];
-const tools=['diary','display','references','limits','body','weekday'];
+const tools=['diary','display','references','limits','body','weekday','guided'];
 const m=key=>formatMessage('en','mobileTargets.'+key);
 
 /** Source Targets navigation; account commands and calculations stay server owned. */
@@ -26,7 +27,7 @@ export function mountTargets({page,headerRoot,date,show,close,header,content,onC
  document.body.classList.add('targets-mobile');
  const alive=()=>!disposed&&root.isConnected;
  const day=()=>typeof date==='function'?date():date;
- const expenditureSession={pending:null,listener:null},weightSession={pending:null,listener:null},macroSession={pending:null,listener:null},schedulerSession={pending:null,listener:null},limitsSession={pending:null,listener:null};
+ const expenditureSession={pending:null,listener:null},weightSession={pending:null,listener:null},macroSession={pending:null,listener:null},schedulerSession={pending:null,listener:null},limitsSession={pending:null,listener:null},setupSession={pending:null,listener:null};
  const ui={date,show,close,header,content,onChange:async()=>{await onChange();if(alive()&&child)await child.load();}};
  function heading(title){headerRoot.innerHTML=`<div class="mm-child-header"><button type="button" data-mt-back aria-label="Back">${moreIcon('chevron-left')}</button><h1>${e(title)}</h1><button type="button" data-mt-menu aria-label="${e(m('tools'))}" aria-haspopup="menu" aria-expanded="false">⋮</button></div>`;}
  function reset(){operation++;menu?.close(false);menu=null;child?.dispose();child=null;}
@@ -38,6 +39,10 @@ export function mountTargets({page,headerRoot,date,show,close,header,content,onC
  }
  function open(id){
   menu?.close();
+  if(id==='guided'){
+   reset();screen=id;heading(m('guided'));root.innerHTML='<section class="target-setup"></section>';window.scrollTo(0,0);
+   child=new TargetSetupPanel({root:root.firstElementChild,date:day(),session:setupSession,onSaved:onChange});return;
+  }
   if(id==='limits'){
    reset();screen=id;heading(m('limits'));root.innerHTML='<div class="mt-section"><section class="card" id="nutrient-upper-limits-root"></section></div>';window.scrollTo(0,0);
    child=new NutrientReferencePanel({root:root.querySelector('#nutrient-upper-limits-root'),date:day(),configuration:upperLimitConfiguration,language:'en',session:limitsSession,onSaved:onChange});return;

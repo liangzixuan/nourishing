@@ -1,3 +1,5 @@
+import {editAccount} from './account-edit.mjs';
+import {diaryCalendarView} from './diary-calendar-view.mjs';
 import {displayView} from './display-settings.mjs';
 import {previewLibraryEdit,validateLibraryEdit} from './library-edit.mjs';
 import {foodCopyView,validateFoodCopySelection} from './food-copy.mjs';
@@ -106,6 +108,8 @@ export function createAppwriteService(config, key, userAgent='') {
     async accountDeletionStatus(ticket){return deletion().status(ticket,{advance:true});},
     async nutrientDetail(secret,input){return readView(secret,state=>nutrientDetail(state,input));},
     async reportNutrientDetail(secret,input){const {owner}=await data(secret),calendar=await calendarContext(secret,owner);return readView(secret,state=>reportNutrientDetail(state,input,{now:new Date(calendar.asOf),timeZone:calendar.timeZone}));},
+    async updateAccount(secret,input){return editAccount(new Account(session(secret)),input);},
+    async diaryCalendar(secret,input){const {owner}=await data(secret),calendar=await calendarContext(secret,owner);return readView(secret,state=>diaryCalendarView(state,input,calendar));},
     async diaryToolsReview(secret,input){return readView(secret,state=>diaryToolsReview(state,input));},
     async printReportOptions(secret){const {owner}=await data(secret);return readView(secret,state=>({...printReportOptions(state),accountId:owner}));},
     async previewPrintReport(secret,input){const {owner}=await data(secret),calendar=await calendarContext(secret,owner);return readView(secret,state=>({...previewPrintReport(state,input,{now:new Date(calendar.asOf),timeZone:calendar.timeZone}),accountId:owner}));},

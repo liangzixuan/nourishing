@@ -37,7 +37,7 @@
       "source": "../cronometer-local/public/nutrient-references.js",
       "target": "public/upper-limits-source/reference-panel.js",
       "sourceSha256": "9394d1f4cd2d0fe83d5d96f8536682dfcea209ad6a1c8e529af5dc1b3455261f",
-      "outputSha256": "68b4c356512f9bb651bef32a1b1364791c8414d60cb6b5b3bea0cce5ee30f7c6",
+      "outputSha256": "3eddfffca40b8bdf1a50c150793876d7beb886597b296e0bc7996f67a748411a",
       "transforms": [
         "LF normalization",
         "Extract source panel class for Upper Limits; adapt current/preview/save to authenticated cloud target policy routes and immutable workspace receipts. Keep confirmation and unknown-save recovery.",
@@ -56,19 +56,19 @@
     },
     {
       "target": "public/targets.js",
-      "outputSha256": "aedaf12445b407d78d47f2e9cbc1f27d51101fbf58f2dcfaf7ce472d05588950"
+      "outputSha256": "13a9bac996ad5a11a4c5db383c9641bfeaa56f9f9c71b9948b29989470bbc089"
     },
     {
       "target": "public/targets.css",
-      "outputSha256": "3a12ced2ab07ecfd2530602a484a5465994db34c8f2de1ab4543e2e0f68413ad"
+      "outputSha256": "8323d1c9772add7c5fc0ef0b9c9441c7e655cc7c84c6c70a97780257258d5d49"
     },
     {
       "target": "server/target-policy-view.mjs",
-      "outputSha256": "ec59616e55f8326d384f7a4df7c24b1fa46229c17070ec2920cb9ba97c2b6916"
+      "outputSha256": "380b4343fe6edecc8dc33e9aafc6a3f17b3e619de482ba3b561c606bf0f1a2c8"
     },
     {
       "target": "server/target-policy-commands.mjs",
-      "outputSha256": "8c3ef4cecf5ea3dfa5dfa39336d609ed8ad93f7df08c72db0d79d3b777cff397"
+      "outputSha256": "442f43f37a7cfe500dc0ca3dc975d705d8c0f4a356ac90f2305c5351bafc7521"
     },
     {
       "target": "tests/upper-limits.test.mjs",
@@ -76,7 +76,7 @@
     },
     {
       "target": "tests/upper-limits-browser.test.mjs",
-      "outputSha256": "59fa877125ce451d946571c242cbc288dcb77c764cc7c3ffefd236c73580adf5"
+      "outputSha256": "d2c0cb8f4c622a00d7d62ccc76b2f4fcd8a61084f2f326e5f177462b3a999c6c"
     }
   ],
   "canonicalOwner": "parseNutrientUpperLimitPolicy, effectiveNutrientUpperLimitPolicy, projectNutrientUpperLimits, calculateSummary and settings.save reconciliation remain canonical. targetPolicy.upperLimits adapts a single explicit policy or null. Existing preview and workspace receipts enforce owner/revision and retry; no schema, nutrient formulas or reference values changed.",
@@ -101,7 +101,7 @@
   ],
   "hostedVerification": {
     "script": "scripts/verify-upper-limits-hosted.mjs",
-    "sha256": "1a13b16b29c493cb7dfd0136dc24a16089fb3944a2af29d0fc9e25b285879dde",
+    "sha256": "aeed172dd7ba826dbf98bfaee4d09ca448fb0922fd178aeee5df3338068a0d0f",
     "status": "prepared; not run against hosted"
   },
   "visualEvidence": [

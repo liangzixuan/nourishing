@@ -11,12 +11,12 @@ const quantityLabel = row => `${num(row.quantity ?? row.amount ?? 1)} ${row.unit
 const fileData = file => new Promise((resolve, reject) => {const reader = new FileReader();reader.onload = () => resolve(reader.result);reader.onerror = () => reject(Error('Could not open this photo.'));reader.readAsDataURL(file);});
 
 /** Save is injected by the authenticated cloud owner; no photo draft is persisted. */
-export function mountPhotoLog({show, close, header, content, date, groups, save, onChange = async () => {}}) {
+export function mountPhotoLog({show, close, header, content, date, groups, initialGroup, save, onChange = async () => {}}) {
   let disposed = false, serial = 0, abort, analysis, originalImage, rows = [], pickerCleanup, pendingSave = false, nutritionAbort, nutritionVersion = 0, hintDismissed = false, createCleanup;
   const nutritionCache = new Map();
   // Same default as the existing mobile photoDialog: uncategorized, then the current meal.
   const clock = new Date(), hour = clock.getHours(), meal = hour >= 6 && hour < 11 ? 'Breakfast' : hour >= 11 && hour < 16 ? 'Lunch' : hour >= 16 && hour < 22 ? 'Dinner' : 'Snacks';
-  let group = groups.includes('Uncategorized') ? 'Uncategorized' : groups.includes(meal) ? meal : groups[0], time = clock.toTimeString().slice(0, 5), diaryDate = typeof date === 'function' ? date() : date;
+  let group = groups.includes(initialGroup) ? initialGroup : groups.includes('Uncategorized') ? 'Uncategorized' : groups.includes(meal) ? meal : groups[0], time = clock.toTimeString().slice(0, 5), diaryDate = typeof date === 'function' ? date() : date;
   show(`<section class="photo-log">${header('Photo Log')}<input type="file" accept="image/jpeg,image/png,image/webp" data-photo-gallery><input type="file" accept="image/*" capture="environment" data-photo-camera><div class="photo-log-body"></div></section>`);
   const shell = content.querySelector('.photo-log'), body = shell.querySelector('.photo-log-body');
   const alive = () => !disposed && shell.isConnected;

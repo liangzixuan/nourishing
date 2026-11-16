@@ -1,0 +1,149 @@
+{
+  "scope": "Diary month picker, Calendar Settings, Diary group controls and explicit group shortcuts.",
+  "files": [
+    {
+      "source": "../cronometer-local/public/mobile-diary-calendar.js",
+      "target": "public/snapshot-source/mobile-diary-calendar.js",
+      "sourceSha256": "ea2a0da6c2e74efa7f05e6ffffae58f75a9b99ab84b6dc771181feb2de044a26",
+      "outputSha256": "b25b9392dd02d449bc9e96aea3315a5da06786f63202d6bdb634d11f29495e0d",
+      "transforms": [
+        "Retain source markup, month controls, tentative selected date, legend, Cancel/OK, focus return and marker styling.",
+        "Replace raw client workspace interpretation with authenticated monthly projection callback; cancel superseded/closed requests and ignore late results.",
+        "Retain marker-free calendar behavior for Charts and Snapshots.",
+        "Use existing snapshot-local imports/icons and UTF-8 LF."
+      ]
+    }
+  ],
+  "references": [
+    {
+      "path": "../cronometer-local/verification/phone-discover-20261108/diary-calendar.png",
+      "sha256": "1ea1d1fb50e4f10eccba807f91c34d618e656ac80143db1c5c784b23119438d2"
+    },
+    {
+      "path": "../cronometer-local/verification/phone-discover-20261108/calendar-legend.png",
+      "sha256": "8f8b384c70b433f932256c5cf85fcea821cf39a867006c468cd78d168dca63f3"
+    },
+    {
+      "path": "../cronometer-local/verification/phone-discover-20261108/calendar-settings.png",
+      "sha256": "2444aad127b1c4643c88baf9617ed739c111999701d96d77232ee69cf9977fe6"
+    },
+    {
+      "path": "../cronometer-local/verification/phone-discover-20261108/diary-settings-top.png",
+      "sha256": "56d69e6111176bb521303e248cc9775ab1c73949d79b49b4ca1c64e5a53eb61d"
+    },
+    {
+      "path": "../cronometer-local/verification/phone-discover-20261108/diary-settings-bottom.png",
+      "sha256": "56d69e6111176bb521303e248cc9775ab1c73949d79b49b4ca1c64e5a53eb61d"
+    },
+    {
+      "path": "../cronometer-local/verification/phone-discover-20261108/diary-group-settings.png",
+      "sha256": "3ab79afa1a0cfc7b414f56e9f491c589897134f12e9d253a21127c72260961ac"
+    },
+    {
+      "path": "../cronometer-local/verification/phone-discover-20261108/diary-quick-add-preferences.png",
+      "sha256": "9030e52b1f835913c2420cfb365810aa25972c59ed131bb7e521d24cd358984c"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "server/diary-calendar-view.mjs",
+      "sha256": "2abc0f57a43e43c79d5c31d0bda4cd948ba962de7f5e9fe6f07af32204bc746b"
+    },
+    {
+      "path": "server/display-settings.mjs",
+      "sha256": "052588774fb86b70acf968e8110e70e7a2c125e80b78dcdfe0662112f06c76b4"
+    },
+    {
+      "path": "server/diary-summary.mjs",
+      "sha256": "4486853341b5909cbf0fd4faca19815805dea79020c8f5d38d147ce4ad075272"
+    },
+    {
+      "path": "public/diary.js",
+      "sha256": "f938a319d5d4f8b5eb0d343f84f79811c960bf4b6f06c0f4ad6902d531c169b4"
+    },
+    {
+      "path": "public/display.js",
+      "sha256": "3dc88cf4f0abfb4be1cfdbdbefe5b572e50cada4e6e3f82a58da86106f770488"
+    },
+    {
+      "path": "public/display.css",
+      "sha256": "21fc2604f8a9303e741b3f6150124dec60074e8a565ae53e36c018e0de98a783"
+    },
+    {
+      "path": "public/display-source/mobile-display.js",
+      "sha256": "a76b2747a16355a85af6468352f16df5a5088a674240d9fda52b7bc355e49837"
+    },
+    {
+      "path": "public/display-source/mobile-diary-settings.js",
+      "sha256": "f2d5e4eb076adcebac4df4bd5ae27879ecc0c9edfdeebcad9eca2e1c670a2e99"
+    },
+    {
+      "path": "public/photo-log.js",
+      "sha256": "2bf5bc173f5752bdf9d4150665aee1f72748e9a4cc4b7137a59a124928fd6e95"
+    },
+    {
+      "path": "public/records.js",
+      "sha256": "0133aba7c5cf274743148a5b5b806b9037915698c0c9426f8f4856ea503e3c8a"
+    },
+    {
+      "path": "public/note-photos.js",
+      "sha256": "75b9d88497068b6beee5e073f773f93600ef79665e45521d3ebe3c38b46e9ec7"
+    },
+    {
+      "path": "tests/diary-calendar-view.test.mjs",
+      "sha256": "b7f739512e195734388344abc63c3bf48539118e3a64c9e57f9bf614fd0a82c3"
+    },
+    {
+      "path": "tests/display-settings.test.mjs",
+      "sha256": "df3571c4b8de867c07dc51e6e098f63974cacf8b516929dcedca8b7aa75ce301"
+    },
+    {
+      "path": "tests/display-browser.test.mjs",
+      "sha256": "d30e47cfce21c998ed1c95d569db2d45804fd9a30ab0c09c95d9fe79894a0015"
+    },
+    {
+      "path": "tests/records-browser.test.mjs",
+      "sha256": "bb8a87ad796e18a61313257ec4eda89d1a1940ff1513b669d35007fe2f84aff5"
+    },
+    {
+      "path": "tests/photo-log-browser.test.mjs",
+      "sha256": "6e71a24a58b51338b69ee417d7fa3a35225755a6747c2051b399c6b5a3844e92"
+    },
+    {
+      "path": "scripts/diary-test-navigation.mjs",
+      "sha256": "f65a3d19500f1e50e9d9ffe49a161a203762dac5d7600d1a1ce271fbe6772f36"
+    },
+    {
+      "path": "scripts/verify-display-hosted.mjs",
+      "sha256": "20967af7beae85525fca1d4beadf70626290691818cdf09b2036acbbc95c56c7"
+    }
+  ],
+  "contracts": [
+    "GET /api/diary/calendar accepts exactly one month. The authenticated account owns records, completed days and clock; the response includes only presence markers and bounded completed dates.",
+    "Fasting markers use the canonical account time zone and end-exclusive interval. Marker preferences affect presence only.",
+    "display.save retains canonical validators and narrow patches; group.rename uses the existing canonical atomic assignment/settings update and owner-scoped receipt.",
+    "Explicit group shortcuts are passed to food, record, photo and text flows. New drafts honor valid explicit groups; edits retain original group assignments.",
+    "Diary selection commits only on OK. Month fetch failure offers retry; closing or changing month aborts old request and ignores late replies."
+  ],
+  "verification": {
+    "commands": [
+      "node --test tests/diary-calendar-view.test.mjs tests/display-settings.test.mjs tests/display-browser.test.mjs tests/more-ui-parity.test.mjs tests/records-browser.test.mjs tests/oracle-ui.test.mjs tests/charts-browser.test.mjs tests/snapshot-child-ui.test.mjs",
+      "node --test tests/photo-log-browser.test.mjs tests/note-photos.test.mjs",
+      "node scripts/verify-dashboard-local.mjs"
+    ],
+    "browser": "Current source app under production HTTP CSP; canonical transactional in-memory account fixtures, Chrome 412x915.",
+    "screenshots": [
+      ".local/display/calendar.png",
+      ".local/display/settings.png",
+      ".local/display/diary-macros.png"
+    ],
+    "hosted": "scripts/verify-display-hosted.mjs extended and syntax checked; not run by this worker.",
+    "result": "18/19 broad focused checks passed; Display rollback fixture race corrected without runtime changes, then all 6 Calendar/Display checks passed. Record, Photo, Snapshot, Chart and Oracle checks passed; production Dashboard fixture passed.",
+    "fixtureNote": "Deliberate rejected/lost saves use click rather than check: canonical rollback may occur before Playwright checkbox postcondition. Explicit HTTP, rollback, disabled and identical-retry assertions remain."
+  },
+  "limitations": [
+    "No new physical-device capture. Saved local source and phone references define this restoration.",
+    "Calendar preferences cover food, exercise, biometrics, notes and fasting; Health Connect remains removed.",
+    "Font, language and Pause Life are separate increments."
+  ]
+}

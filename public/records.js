@@ -12,7 +12,7 @@ const collections={exercise:'entries',biometric:'biometrics'},message=(key,value
 const classes=['mobile-food-editor','mobile-catalog-browser','mobile-exercise-editor','mobile-biometric'];
 /** Each open sheet owns its draft, pending command and disposable source presentation. */
 export async function mountRecordEditor(args){
- const {kind,date,show,close,content,onChange,initialSelection}=args;let record=args.record;
+ const {kind,date,show,close,content,onChange,initialSelection,initialGroup}=args;let record=args.record;
  if(kind==='note')return mountNoteEditor(args);if(!Object.hasOwn(collections,kind))return;
  if(!document.querySelector('link[data-record-style]')){const link=document.createElement('link');link.rel='stylesheet';link.href='/records.css';link.dataset.recordStyle='';document.head.append(link);}
  show('<section class="record-surface"><header class="dialog-head"><button type="button" data-record-close aria-label="Close">×</button><h2>Add '+(kind==='exercise'?'Exercise':'Biometric')+'</h2></header><div data-record-content><p class="empty" role="status">Loading…</p></div><div class="record-status" role="alert"></div></section>');
@@ -57,7 +57,7 @@ export async function mountRecordEditor(args){
   panel=new MobileExerciseBrowser({root:body,dialog:sheet,message:key=>message('exerciseBrowser.'+key),api:()=>request('/api/records/exercise-catalog',null,abort.signal),snapshot,onNavigate:next=>exerciseBrowser(next),onSelect:(activity,choices,titleKey,from)=>exerciseEditor({activity,choices,titleKey,from}),onCustom:from=>exerciseEditor({from})});
  }
  function exerciseEditor({activity,choices,titleKey,from,draft}={}){
-  const value=record??draft??{},unit=options.energyUnit,group=value.group??(options.groups.includes('Uncategorized')?'Uncategorized':options.groups[0]);
+  const value=record??draft??{},unit=options.energyUnit,group=record?record.group:value.group??(options.groups.includes(initialGroup)?initialGroup:options.groups.includes('Uncategorized')?'Uncategorized':options.groups[0]);
   const values={id:value.id,date:value.date??date,name:activity?.description??value.name??'',duration:value.duration??15,calories:value.caloriesBurned==null?'':convertEnergy(value.caloriesBurned,'kcal',unit),time:value.time??clock()};
   const markup=mobileExerciseMarkup({value:values,groupOptions:options.groups.map(g=>`<option value="${e(g)}" ${g===group?'selected':''}>${e(g)}</option>`).join(''),unit,limits:{...options.exerciseLimits,maximumEnergy:convertEnergy(options.exerciseLimits.maximumKcal,'kcal',unit)},message,edit:Boolean(record)});
   frame(record?'Edit Exercise':activity?message('exerciseBrowser.'+(titleKey??'root')):'Custom Exercise',markup);returnTo=from?()=>exerciseBrowser(from):null;
@@ -74,7 +74,7 @@ export async function mountRecordEditor(args){
   const same=(a,b)=>a&&b&&Object.keys(a).length===Object.keys(b).length&&Object.entries(a).every(([key,value])=>b[key]===value);
   const metric=selected?options.biometrics.metrics.find(row=>same(row.selection,selected.selection)):null;
   if(selected&&(!metric||selected.unit!==null&&!metric.units.includes(selected.unit)))throw Error('This measurement is no longer available.');
-  const draft=blankBiometricDraft(record?.date??date,record?.time??clock(),record?.group??null);
+  const draft=blankBiometricDraft(record?.date??date,record?.time??clock(),record?record.group:options.groups.includes(initialGroup)?initialGroup:null);
   if(record){if(!metric)throw Error('This measurement is no longer available.');draft.metric=metric.key;draft.unit=record.unit;draft.value=String(record.value);draft.name=record.type;
    if(metric.selection.kind==='catalog'&&metric.selection.id==='weight'&&record.unit==='st'){draft.value=String(Math.floor(record.value));draft.stonePounds=String(Number(((record.value-Math.floor(record.value))*14).toFixed(12)));}
    if(metric.selection.kind==='catalog'&&metric.selection.id==='sleep'&&record.unit==='h'){draft.durationHours=String(Math.floor(record.value));draft.durationMinutes=String(Math.round((record.value-Math.floor(record.value))*60));}

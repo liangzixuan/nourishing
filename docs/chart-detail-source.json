@@ -37,7 +37,7 @@
       "source": "../cronometer-local/public/mobile-diary-calendar.js",
       "target": "public/snapshot-source/mobile-diary-calendar.js",
       "sourceSha256": "ea2a0da6c2e74efa7f05e6ffffae58f75a9b99ab84b6dc771181feb2de044a26",
-      "outputSha256": "cfa2c10cb57bd7b85530e7bedf05806085ae9e7436b8d6903ab65e7f80949d17",
+      "outputSha256": "b25b9392dd02d449bc9e96aea3315a5da06786f63202d6bdb634d11f29495e0d",
       "transforms": [
         "Reuse previously adapted calendar unchanged with diary markers disabled; provenance in snapshot-ui-source.json.",
         "UTF-8 and LF output."
@@ -100,5 +100,8 @@
     "Browser evidence uses production HTTP, transactions, CSP and canonical projections with fixture data. Hosted acceptance remains the parent task.",
     "Saved mobile source defines presentation; no new live same-state Cronometer phone comparison was performed.",
     "The existing cloud shell owns navigation; this controller does not add a second bottom navigation bar."
+  ],
+  "changes": [
+    "Shared calendar now accepts account-scoped async monthly markers; this surface keeps marker-free selection and cancellation. See diary-calendar-source.json."
   ]
 }

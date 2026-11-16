@@ -1,3 +1,4 @@
+import {parseAccountEdit} from './account-edit.mjs';
 import {CSV_BODY_BYTES} from './csv-import.mjs';
 import {deletionCookie,readDeletionTicket} from './deletion-cookie.mjs';
 import {BARCODE_BODY_BYTES} from './barcode.mjs';
@@ -122,6 +123,7 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
         if(req.method==='POST'&&Object.hasOwn(methods,path))return json(200,await api[methods[path]](secret,body));
         fail(404,'Not found.');
       }
+      if(req.method==='GET'&&path==='/api/diary/calendar'){if(!secret)fail(401,'Please sign in.');if([...url.searchParams.keys()].some(key=>key!=='month')||url.searchParams.getAll('month').length!==1||!/^\d{4}-(0[1-9]|1[0-2])$/.test(url.searchParams.get('month')))fail(400,'Choose a calendar month.');return json(200,await api.diaryCalendar(secret,{month:url.searchParams.get('month')}));}
       if(req.method==='GET'&&path==='/api/display'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');return json(200,await api.display(secret));}
       const recordQueries={'/api/repeats':['date'],'/api/records/options':['date'],'/api/records/exercise-catalog':[],'/api/records/item':['collection','id'],'/api/records/exercises':['q','offset'],'/api/records/exercise-estimate':['date','code','minutes']};
       if(req.method==='GET'&&Object.hasOwn(recordQueries,path)){
@@ -213,6 +215,7 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
         return json(200,await api.updateProfile(secret,{timeZone:body.timeZone,units:body.units}));
       }
       if(req.method!=='POST')fail(404,'Not found.');
+      if(path==='/api/account/update'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid account request.');return json(200,await api.updateAccount(secret,parseAccountEdit(body)));}
       if(path==='/api/auth/register'||path==='/api/auth/login') {
         const register=path.endsWith('/register'),session=await api[register?'register':'login'](credentials(body,register));
         headers.set('Set-Cookie',sessionCookie(session));return json(200,{ok:true});

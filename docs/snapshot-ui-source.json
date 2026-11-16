@@ -17,7 +17,8 @@
     "Source snapshot facts show rounded BMI, while stored precision stays unchanged.",
     "Options navigation forwards to the mounted app navigation.",
     "Camera CSS final blank line removed; remaining copied styles are unchanged.",
-    "Copied text assets use LF line endings so working and published Git bytes match."
+    "Copied text assets use LF line endings so working and published Git bytes match.",
+    "Shared calendar now accepts account-scoped async monthly markers; this surface keeps marker-free selection and cancellation. See diary-calendar-source.json."
   ],
   "assets": [
     {
@@ -46,7 +47,7 @@
       "source": "public/mobile-diary-calendar.js",
       "output": "public/snapshot-source/mobile-diary-calendar.js",
       "sourceSha256": "ea2a0da6c2e74efa7f05e6ffffae58f75a9b99ab84b6dc771181feb2de044a26",
-      "outputSha256": "cfa2c10cb57bd7b85530e7bedf05806085ae9e7436b8d6903ab65e7f80949d17"
+      "outputSha256": "b25b9392dd02d449bc9e96aea3315a5da06786f63202d6bdb634d11f29495e0d"
     },
     {
       "sourceRoot": "../cronometer-local",

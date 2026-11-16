@@ -46,6 +46,7 @@ const fields={
  'entry.update':['id','date','time','group','amount','quantity','unit','portionId'],
  'entry.delete':['id'],
  'day.complete':['date','completed'],
+ 'group.rename':['from','to'],
  'note.add':['date','time','group','text'],
  'note.delete':['id'],
  'food.save':libraryDraftFields.food,

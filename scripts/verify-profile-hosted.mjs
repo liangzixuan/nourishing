@@ -1,3 +1,4 @@
+import {chooseDiaryDate} from './diary-test-navigation.mjs';
 // Run only after deploying the Profile summary. All writes use a disposable account.
 import assert from 'node:assert/strict';
 import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
@@ -23,7 +24,7 @@ try{
  await command('profileSettings.body',{policy:{version:2,weightMetric:{kind:'biometric',type:'Morning mass',unit:'lb'},heightMetric:{kind:'biometric',type:'Height',unit:'cm'},bodyFatMetric:{kind:'biometric',type:'Fat',unit:'%'},useForResting:false,useHeightForResting:false,useForKeto:false}});
  const initial=await profile();page=await context.newPage();const errors=[],writes=[];page.on('pageerror',error=>errors.push(error.message));await page.addInitScript(()=>{window.cspErrors=[];document.addEventListener('securitypolicyviolation',event=>window.cspErrors.push(event.violatedDirective));});
  const ready=()=>page.locator('.profile-page[aria-busy=false] .profile-card').waitFor(),row=id=>page.locator('[data-profile-row="'+id+'"]'),closed=()=>page.waitForFunction(()=>!document.querySelector('#sheet').open),save=()=>page.locator('.profile-form [type=submit]').click(),open=async()=>{await page.getByRole('button',{name:'More',exact:true}).click();await page.getByRole('button',{name:'Profile',exact:true}).click();await ready();};
- await page.goto(origin+'/diary');await page.locator('.md-summary').waitFor();if(await page.getByLabel('Diary date',{exact:true}).inputValue()!==day)await Promise.all([page.waitForResponse(response=>response.url().includes('/api/diary?date='+day)&&response.status()===200),page.getByLabel('Diary date',{exact:true}).fill(day)]);await open();
+ await page.goto(origin+'/diary');await page.locator('.md-summary').waitFor();await chooseDiaryDate(page,day);await open();
  assert.match(await row('weight').innerText(),/180 lb/);assert.match(await row('height').innerText(),/175 cm/);assert.match(await row('bodyFat').innerText(),/20%/);assert.match(await row('sex').innerText(),/Male/);await page.evaluate(()=>document.fonts.ready);await page.screenshot({path:out+'/summary.png'});
  await row('age').click();assert.equal(await page.locator('[name=birthDate]').inputValue(),resting.birthDate);await page.locator('[name=birthDate]').fill('1991-11-15');
  let drop=true;await page.route('**/api/workspace/command',async route=>{const body=route.request().postDataJSON();if(body.type!=='profileSettings.energy')return route.continue();writes.push(body);if(drop){drop=false;const response=await route.fetch();assert.equal(response.status(),200);return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Save reply interrupted'})});}return route.continue();});

@@ -1,3 +1,4 @@
+import {chooseDiaryDate} from './diary-test-navigation.mjs';
 import {searchCloudFoods} from '../server/food-search.mjs';
 import {dashboardView} from '../server/dashboard-view.mjs';
 import {barcodeAssets} from './package-barcode-assets.mjs';
@@ -39,7 +40,7 @@ for(const asset of await barcodeAssets())assets.set('/'+asset.path,asset);
 let handler;const server=createServer((req,res)=>handler(req,res));await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const origin=`http://127.0.0.1:${server.address().port}`;handler=createHandler({config:{origin},service,assets});let browser;
 try{
  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const browserContext=await browser.newContext({viewport:{width:412,height:915},isMobile:true,hasTouch:true});await browserContext.setExtraHTTPHeaders({Cookie:'__Host-nourishing_session=fixture'});const page=await browserContext.newPage();page.setDefaultTimeout(12000);const errors=[];page.on('pageerror',e=>errors.push(e.message));const failures=[];page.on('response',r=>{if(r.url().includes('/api/')&&r.status()>=400)failures.push([r.status(),new URL(r.url()).pathname]);});
- await page.goto(origin+'/diary');await page.getByLabel('Diary date').fill(date);await page.getByRole('heading',{name:'Notes',exact:true}).waitFor();
+ await page.goto(origin+'/diary');await chooseDiaryDate(page,date);await page.getByRole('heading',{name:'Notes',exact:true}).waitFor();
  const button=name=>page.getByRole('button',{name,exact:true}),field=name=>page.getByLabel(name,{exact:true}),add=async kind=>{await page.locator('#add-food').click();await button(kind).click();},saved=async label=>{await button(label).click();await page.locator('#sheet').waitFor({state:'hidden'});};
  await add('Add Note');await field('Note').fill('Integration note');await saved('Save');await page.locator('[data-record-kind=note][data-record-id]').click();await field('Note').fill('Edited note');await saved('Save');assert.equal(state.notes[0].text,'Edited note');
  await add('Add Exercise');await button('Custom exercise').click();await field('Exercise').fill('Integration walk');await field('Minutes').fill('30');await field('Calories (kcal)').fill('150');await saved('Add to diary');await page.locator('[data-action=edit-entry]').filter({hasText:'Integration walk'}).click();await field('Minutes').fill('45');await saved('Save changes');assert.equal(state.entries[0].duration,45);

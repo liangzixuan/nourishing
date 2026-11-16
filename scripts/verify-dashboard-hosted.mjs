@@ -1,3 +1,4 @@
+import {chooseDiaryDate} from './diary-test-navigation.mjs';
 // Run after the Dashboard deployment is active. Only disposable accounts are changed.
 import assert from 'node:assert/strict';
 import {readFileSync,writeFileSync} from 'node:fs';
@@ -28,7 +29,7 @@ try{
  assert.equal((await client.request.get(origin+'/api/home-widgets?ownerId='+ids[1])).status(),400);assert.equal((await client.request.get(origin+'/api/home-widgets?origin=https%3A%2F%2Fother.example')).status(),400);assert.equal((await client.request.get(origin+'/api/dashboard?date='+date+'&ownerId='+ids[1])).status(),400);
  report.checks.push('source streak advances for new logs','version 3 widget account/origin binding and values','widget session/owner/origin query guards');
  const errors=[],csp=[];page=await client.newPage();page.setDefaultTimeout(30000);page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{if(message.type()==='error'&&/Content Security Policy|Refused to/.test(message.text()))csp.push(message.text());});
- await page.goto(origin+'/diary');await page.locator('.md-summary').waitFor();await page.getByLabel('Diary date',{exact:true}).fill(date);await page.getByRole('button',{name:'Discover',exact:true}).click();await page.getByRole('button',{name:'VIEW FULL REPORT',exact:true}).waitFor();await page.waitForFunction(()=>Object.keys(window.Chart?.instances??{}).length===2);
+ await page.goto(origin+'/diary');await page.locator('.md-summary').waitFor();await chooseDiaryDate(page,date);await page.getByRole('button',{name:'Discover',exact:true}).click();await page.getByRole('button',{name:'VIEW FULL REPORT',exact:true}).waitFor();await page.waitForFunction(()=>Object.keys(window.Chart?.instances??{}).length===2);
  await page.getByRole('button',{name:'Dashboard Settings',exact:true}).click();await page.getByRole('switch',{name:'Show News',exact:true}).uncheck();await page.waitForFunction(()=>document.querySelector('[data-pref=newsVisible]')?.checked===false&&!document.querySelector('[data-pref=newsVisible]').disabled);
  await page.getByRole('button',{name:'Close',exact:true}).click();await page.getByRole('button',{name:'Newsfeed',exact:true}).click();await page.getByRole('heading',{name:'Newsfeed',exact:true}).waitFor();await page.getByRole('button',{name:'Close',exact:true}).click();
  await page.getByRole('button',{name:'Streaks',exact:true}).click();await page.getByLabel('Reset streak to',{exact:true}).fill('9');await page.getByRole('button',{name:'Reset Streak',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.dc-streak strong')?.textContent==='9');await page.getByRole('button',{name:'Close',exact:true}).click();

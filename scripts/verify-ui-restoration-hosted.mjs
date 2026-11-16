@@ -28,7 +28,7 @@ try{
  await page.addInitScript(()=>{window.cspViolations=[];document.addEventListener('securitypolicyviolation',event=>window.cspViolations.push(event.violatedDirective));});
  const button=name=>page.getByRole('button',{name,exact:true});
  const capture=async name=>{await page.evaluate(()=>Promise.all([...document.images].map(img=>img.decode())));assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${directory}/${name}.png`});};
- const diary=async()=>{const response=await context.request.get(origin+'/api/diary?date='+await page.locator('#date-picker').inputValue());assert.equal(response.status(),200);return response.json();};
+ const diary=async()=>{const response=await context.request.get(origin+'/api/diary?date='+await page.locator('#diary-date').getAttribute('data-date'));assert.equal(response.status(),200);return response.json();};
  await page.goto(origin+'/diary');await page.locator('.md-summary').waitFor();await capture('diary');
  assert.equal(await page.locator('.dc-bottom button').count(),5);assert.equal(await page.locator('.app-header').isVisible(),false);
  await button('Diary actions').click();await button('Diary Display').click();await page.getByRole('switch',{name:'Water',exact:true}).uncheck();await button('Save').click();await page.locator('#sheet').waitFor({state:'hidden'});assert.equal((await diary()).presentation.settings.showWater,false);

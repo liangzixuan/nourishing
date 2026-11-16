@@ -1,0 +1,23 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {initialState,act,prepareTargetSetup} from '../server/domain/workspace.mjs';
+import {prepareTargetPolicyCommand} from '../server/target-policy-commands.mjs';
+import {previewTargetPolicy} from '../server/target-policy-view.mjs';
+import {isTargetSetupPreview} from '../server/domain/target-setup-guidance.mjs';
+const date='2026-11-16',context={today:date},percentages={carbs:50,protein:20,fat:30};
+const apply=(state,type,payload)=>{const a=prepareTargetPolicyCommand(state,{type,payload},context);act(state,a.type,a.payload);};
+test('Guided Setup previews and applies canonical manual/adult values while preserving other target owners',()=>{
+ const state=initialState();state.settings.energyUnit='kJ';state.settings.targets.fiber=0;state.settings.macroSchedule={1:{protein:140}};state.settings.bodyComposition={version:2,weightMetric:{kind:'biometric',type:'Morning mass',unit:'kg'},bodyFatMetric:null,heightMetric:null,useForResting:false,useHeightForResting:false,useForKeto:false};state.biometrics=[{id:'weight-one',date,type:'Morning mass',unit:'kg',value:80}];state.settings.macroPolicy={mode:'ratios',ratios:{protein:20,carbohydrate:50,fat:30}};
+ state.settings.energyPolicy={version:1,resting:{mode:'custom',kcal:1600},baseline:{mode:'custom',kcal:400},activity:{mode:'manual'},thermicEffect:false,target:{mode:'fixed',includeAboveBaseline:true},display:'balance'};
+ apply(state,'targetPolicy.weightGoal',{goal:{startDate:date,startWeight:80,goalWeight:75,unit:'kg',weeklyChange:-.5},applyToEnergy:true});
+ apply(state,'targetPolicy.schedule',{change:{kind:'template-create',template:{id:'training',name:'Training',settings:{macro:{mode:'fixed',targets:{protein:160,carbohydrate:250,fat:75}},energy:{mode:'fixed',kcal:2400}}}}});
+ apply(state,'targetPolicy.schedule',{change:{kind:'weekly',from:date,days:Array(7).fill('training')}});
+ const before=structuredClone(state),input={method:'manual',calories:2000,percentages},payload={input,confirmed:true},view=previewTargetPolicy(state,{date,type:'targetPolicy.setup',payload},context);assert.deepEqual(state,before);assert.ok(isTargetSetupPreview(view.setup,input));assert.deepEqual(view.setup.targets,prepareTargetSetup(input).targets);
+ apply(state,'targetPolicy.setup',payload);assert.deepEqual(state.settings.targetSetup.targets,view.setup.targets);assert.equal(state.settings.macroPolicy,undefined);assert.equal(state.settings.energyPolicy.target.mode,'fixed');assert.deepEqual(state.settings.inactiveEnergyTarget.goal,before.settings.energyPolicy.target.goal);assert.equal(state.settings.targets.fiber,0);
+ for(const key of ['resting','baseline','activity','thermicEffect','display'])assert.deepEqual(state.settings.energyPolicy[key],before.settings.energyPolicy[key]);for(const key of ['macroPlan','macroSchedule','bodyComposition','energyUnit'])assert.deepEqual(state.settings[key],before.settings[key]);assert.deepEqual(state.biometrics,before.biometrics);assert.equal(view.view.effective.energy.target,2400);assert.equal(view.view.defaults.energy.target,2000);
+ for(const units of ['metric','imperial']){const value={method:'adult_eer',adultScope:true,age:30,height:units==='metric'?175:69,weight:units==='metric'?70:154,units,equation:'male',activity:'active',percentages},p={input:value,confirmed:true};const result=previewTargetPolicy(state,{date,type:'targetPolicy.setup',payload:p},context);apply(state,'targetPolicy.setup',p);assert.deepEqual(state.settings.targetSetup.targets,result.setup.targets);assert.deepEqual(state.settings.targetSetup.calculation,prepareTargetSetup(value).calculation);}
+});
+test('Guided Setup rejects discarded fields, invalid ranges and unconfirmed writes without mutation',()=>{
+ const state=initialState(),before=structuredClone(state),valid={method:'manual',calories:2000,percentages};for(const input of [{...valid,owner:'other'},{...valid,percentages:{...percentages,extra:0}},{...valid,percentages:{carbs:0,protein:0,fat:0}},{...valid,calories:0},{...valid,calories:null},{method:'adult_eer',adultScope:false,age:30,height:170,weight:70,units:'metric',equation:'female',activity:'active',percentages}])assert.throws(()=>previewTargetPolicy(state,{date,type:'targetPolicy.setup',payload:{input,confirmed:true}},context));assert.throws(()=>apply(state,'targetPolicy.setup',{input:valid,confirmed:false}));assert.deepEqual(state,before);
+ const plan=previewTargetPolicy(state,{date,type:'targetPolicy.setup',payload:{input:{...valid,percentages:{carbs:0,protein:0,fat:100}},confirmed:true}},context).setup;assert.equal(plan.targets.carbs,0);assert.equal(plan.targets.protein,0);assert.ok(plan.outsideReference.includes('carbs'));
+});

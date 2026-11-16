@@ -1,3 +1,4 @@
+import {chooseDiaryDate} from './diary-test-navigation.mjs';
 // Verify Macro & Energy controls with a disposable account.
 import assert from 'node:assert/strict';
 import {readFileSync,writeFileSync} from 'node:fs';
@@ -21,7 +22,7 @@ try{
  await seed('targetPolicy.schedule',{change:{kind:'weekly',from:initial.today,days:Array(7).fill('hosted-template')}});const baseline=await get(),goal=structuredClone(baseline.energyPolicy.target);
  page=await context.newPage();const errors=[],writes=[];page.on('pageerror',error=>errors.push(error.message));await page.addInitScript(()=>{window.cspErrors=[];document.addEventListener('securitypolicyviolation',event=>window.cspErrors.push(event.violatedDirective));});
  const ready=()=>page.locator('[data-mte-ready]').waitFor(),open=async()=>{await page.getByRole('button',{name:'More',exact:true}).click();await page.getByRole('button',{name:'Targets',exact:true}).click();await page.getByRole('button',{name:'Macro & Energy Targets',exact:true}).click();await ready();},form=()=>page.locator('[data-mte-form]'),save=async()=>{await page.locator('[data-mte-save]').click();await ready();};
- await page.goto(origin+'/diary');await page.locator('.md-summary').waitFor();await page.getByLabel('Diary date',{exact:true}).fill(day);await open();
+ await page.goto(origin+'/diary');await page.locator('.md-summary').waitFor();await chooseDiaryDate(page,day);await open();
  await page.locator('[data-mte-mode=ratios]').click();await form().locator('[name=protein]').fill('30');await form().locator('[name=carbohydrate]').fill('40');await save();let value=await get();assert.equal(value.macro.mode,'ratios');assert.equal(value.macro.values.protein,30);assert.equal(value.effective.energy.target,2400);assert.notEqual(value.defaults.energy.target,2400);
  await page.locator('[data-mte-advanced]').click();await page.locator('[name=macroCalculation][value=ratio]').check();await save();assert.equal((await get()).macro.basis,'kcal');await page.locator('[name=macroUnits][value=grams]').check();await save();assert.equal((await get()).macro.basis,'grams');
  await page.locator('[data-mte-mode=fixed]').click();await form().locator('[name=protein]').fill('120');await form().locator('[name=carbohydrate]').fill('180');await form().locator('[name=fat]').fill('60');await save();value=await get();assert.equal(value.macro.mode,'fixed');assert.equal(value.defaults.macroTargets.targets.protein,120);

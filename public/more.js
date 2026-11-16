@@ -6,7 +6,7 @@ import {mountBackup} from './backup.js';
 import {mountRepeats} from './repeats.js';
 import {mountProfile} from './profile-settings.js';
 import {openImports} from './imports.js';
-import {openReminders} from './reminders.js';
+import {mountReminders} from './reminders.js';
 import {openGlucose,openCycle} from './health-controls.js';
 import {openExport} from './charts.js';
 import {moreRow as row,moreLink as link,moreGroup as group,moreHomeHeader,moreBackHeader} from './more-source/menu-view.js';
@@ -41,7 +41,7 @@ export function mountMore({page,headerRoot,date,show,close,header,content,onChan
   if(screen==='home')scroll=window.scrollY;
   if(id==='account'){location.assign('/account');return;}
   if(id==='profile')return childView(id,'Profile',host=>mountProfile({...ui,page:host,headerRoot,onExit:home}));
-  if(id==='reminders')return void openReminders(ui);
+  if(id==='reminders')return childView(id,'Notifications',host=>mountReminders({root:host,...ui}));
   if(id==='glucose')return void openGlucose(ui);
   if(id==='cycle')return void openCycle(ui);
   if(id==='imports')return void openImports(ui);

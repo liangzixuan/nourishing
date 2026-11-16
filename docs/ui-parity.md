@@ -129,11 +129,11 @@ Deployment `6afabf363c43fbd91e57` (runtime `5b29b7a`) passed 488 tests, build/pu
 The main-screen restoration does not close these child workflows:
 
 - Recipe stages and reviewed library edits are deployed. Update existing uses and Preserve history choices use account-bound preview and transactional retry.
-- Targets: Macro & Energy is deployed; Scheduler/day targets are in progress. Upper Limits and Guided Setup remain.
-- Display: Theme, energy units, timestamps and summary visibility are deployed and hosted-verified. Summary Column and Group Subtotals are in the next release. Calendar controls, font and language remain.
+- Targets: Macro & Energy is deployed; Scheduler/day targets are deployed and hosted-verified. Upper Limits is deployed with a refresh-race fix pending in the next release. Guided Setup is locally verified for the next release.
+- Display: Theme, energy units, timestamps and summary visibility are deployed and hosted-verified. Summary Column and Group Subtotals are deployed and hosted-verified. Calendar and Diary settings are locally verified for the next release. Font and language remain.
 - Exercise/Biometrics: source category navigation, effort/unit/group pickers and metric-specific controls are deployed and hosted-verified. Saved-reference limits remain below.
-- Profile: captured Age, Sex, Weight, Height, BMI and Body Fat summary is implemented and locally verified for the next release. Uses `profile-reference-second-pass.png`; the earlier similarly named image shows Account confirmation.
-- Account: registration, verification, recovery, logout and deletion work. App theme/navigation alignment is locally verified for the next release. Authenticated name/email/password editing remains; MFA is a separate capability, not established by the old local placeholder.
+- Profile: captured Age, Sex, Weight, Height, BMI and Body Fat summary is deployed and hosted-verified. Uses `profile-reference-second-pass.png`; the earlier similarly named image shows Account confirmation.
+- Account: registration, verification, recovery, logout and deletion work. App theme/navigation alignment is deployed and locally verified. Authenticated name/email/password editing is in progress; MFA is a separate capability, not established by the old local placeholder.
 - CSV export: group inclusion and account energy units are deployed. Production-handler browser checks pass grouped kJ download, cancellation without a late download, report switching and close/reopen.
 - Reminders and text logging: working cloud actions still have generic forms. Restore compact controls while retaining browser permission and save/review behavior.
 - Coach: recorded-fact answers/preferences work; model-backed proposals require additional cloud capability. Restore concise onboarding separately.

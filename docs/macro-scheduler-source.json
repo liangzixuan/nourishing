@@ -26,11 +26,11 @@
     },
     {
       "target": "public/targets.js",
-      "outputSha256": "aedaf12445b407d78d47f2e9cbc1f27d51101fbf58f2dcfaf7ce472d05588950"
+      "outputSha256": "13a9bac996ad5a11a4c5db383c9641bfeaa56f9f9c71b9948b29989470bbc089"
     },
     {
       "target": "public/targets.css",
-      "outputSha256": "3a12ced2ab07ecfd2530602a484a5465994db34c8f2de1ab4543e2e0f68413ad"
+      "outputSha256": "8323d1c9772add7c5fc0ef0b9c9441c7e655cc7c84c6c70a97780257258d5d49"
     },
     {
       "target": "public/target-policies.js",
@@ -38,15 +38,15 @@
     },
     {
       "target": "public/diary.js",
-      "outputSha256": "234ceefe4338b0e8b471e49e32b642cdd4db1b80c836030a744f8808c62cd1cc"
+      "outputSha256": "f938a319d5d4f8b5eb0d343f84f79811c960bf4b6f06c0f4ad6902d531c169b4"
     },
     {
       "target": "server/target-policy-view.mjs",
-      "outputSha256": "ec59616e55f8326d384f7a4df7c24b1fa46229c17070ec2920cb9ba97c2b6916"
+      "outputSha256": "380b4343fe6edecc8dc33e9aafc6a3f17b3e619de482ba3b561c606bf0f1a2c8"
     },
     {
       "target": "tests/macro-scheduler.test.mjs",
-      "outputSha256": "876eb91117a9c339126acd143539e39af07ed14ccf798c58fc8f954ec38e8fb5"
+      "outputSha256": "7819ec4b0e42a0a4d6333ba57c1283128fb990e82c9e91f5765d7bd1747603d3"
     },
     {
       "target": "tests/macro-scheduler-browser.test.mjs",
@@ -58,11 +58,11 @@
     },
     {
       "target": "scripts/targets-browser-flow.mjs",
-      "outputSha256": "0bb8af10ab13a23cde271778c47473fa3a10c64d85476ae794408352da346d32"
+      "outputSha256": "85797ed98bdcb1d6612458eced7cf25520cfaf59eb700db0c36befa4f0af5fb8"
     },
     {
       "target": "scripts/verify-targets-local.mjs",
-      "outputSha256": "ca5268f5dacc1e8140bdc666a532f993e07e6b61660a314dfe0e149329b36282"
+      "outputSha256": "7df4c6ef620015fb7e8c682b7218bf11c80f73edaa4900797875ac2d4b8157b2"
     }
   ],
   "references": [
@@ -85,7 +85,8 @@
   "checks": [
     "node --test tests/macro-scheduler.test.mjs tests/macro-scheduler-browser.test.mjs tests/target-policy.test.mjs tests/targets-mobile.test.mjs (13 passed)",
     "node scripts/verify-targets-local.mjs (10 checks passed by Display integration worker)",
-    "node --check scripts/verify-macro-scheduler-hosted.mjs"
+    "node --check scripts/verify-macro-scheduler-hosted.mjs",
+    "node --test tests/macro-scheduler.test.mjs tests/account-deletion-ui.test.mjs tests/auth.test.mjs (15 passed; includes daily-template deletion default fallback)"
   ],
   "visual": [
     ".local/macro-scheduler/home.png",
@@ -97,7 +98,7 @@
   ],
   "hostedVerification": {
     "script": "scripts/verify-macro-scheduler-hosted.mjs",
-    "sha256": "8cdc0b4efd0b085e65ca8e052cf5acb8308d396cf70415ad43eb4468ab41ddf1",
+    "sha256": "e10631a255628fd1580b8ca4d78f37d9dbd21ebc0e2b60a60fb910cccc9e0beb",
     "status": "prepared; not run against hosted"
   }
 }

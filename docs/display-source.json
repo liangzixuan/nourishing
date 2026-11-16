@@ -1,17 +1,18 @@
 {
-  "scope": "Display units, timestamps, summary visibility, theme, Summary Column and nested Diary Settings / Group Subtotals.",
+  "scope": "Display preferences and nested Diary/Calendar Settings with canonical diary consumers.",
   "files": [
     {
       "source": "../cronometer-local/public/mobile-display.js",
       "target": "public/display-source/mobile-display.js",
       "sourceSha256": "048f47dbe6ef3014d6d1c586eee70e3282c88b65cedd58b59d674018d245186a",
-      "outputSha256": "7c5e2a8ae114b9550dbdf394ac2b002059057cfc1a6cf545479fab9356cca6f8",
+      "outputSha256": "a76b2747a16355a85af6468352f16df5a5088a674240d9fda52b7bc355e49837",
       "transforms": [
         "Retain source rows, toggles, radio choice dialogs, Cancel/Escape/outside dismissal and focus return.",
         "Expose functional cloud consumers, including Summary Column and Group Subtotals under source Diary Settings navigation.",
         "Replace navigation, default settings and transport references with account projection/callback ownership.",
         "Keep pending save controls frozen with explicit retry; do not show explanatory paragraphs.",
-        "UTF-8 LF publication."
+        "UTF-8 LF publication.",
+        "Restore Calendar Settings, show/hide groups, always-explode meals, group rename and per-group Quick Add; omit Health Connect."
       ]
     },
     {
@@ -36,20 +37,31 @@
       ],
       "sourceSha256": "916e4fc352c6201a6f38bb2b5b83ae098ec72a1b5f31b5b4aeeea3769642a409",
       "outputSha256": "8788e88a52beb2a41749eb2bfa4140e4eb0c0b18ce01100499731a155110e86c"
+    },
+    {
+      "source": "../cronometer-local/public/mobile-diary-settings.js",
+      "target": "public/display-source/mobile-diary-settings.js",
+      "transforms": [
+        "Retain grouped rows, collapsed Diary Groups and Quick Add navigation; use canonical account settings and concise English labels.",
+        "Remove Health Connect group after the user chose PWA without Health Connect.",
+        "Use explicit rename callback instead of ambient app actions."
+      ],
+      "sourceSha256": "49fec4508053c2c1b6fe39306973d0a3e53d960bc219eef4254105dd567df771",
+      "outputSha256": "f2d5e4eb076adcebac4df4bd5ae27879ecc0c9edfdeebcad9eca2e1c670a2e99"
     }
   ],
   "outputs": [
     {
       "path": "public/display.js",
-      "sha256": "2dd2e99081fa732b67bad1e59753efa596a9a6237b8d27fce9454a78cb33e1e0"
+      "sha256": "3dc88cf4f0abfb4be1cfdbdbefe5b572e50cada4e6e3f82a58da86106f770488"
     },
     {
       "path": "public/display.css",
-      "sha256": "87b6722ed8f90baadb5f9585933483ae197fe7bddeb4f7620b11e24899dd0a2a"
+      "sha256": "21fc2604f8a9303e741b3f6150124dec60074e8a565ae53e36c018e0de98a783"
     },
     {
       "path": "public/more.js",
-      "sha256": "21451860c4dd9dee4106e2b70e77136e7a5772d52ff556585fe616f474fb14b3"
+      "sha256": "62811acdf1fc4f058acdd23efc8c79a0b02a1726b2b764c1f2aeee3e86ccb576"
     },
     {
       "path": "public/more.css",
@@ -57,15 +69,15 @@
     },
     {
       "path": "server/display-settings.mjs",
-      "sha256": "8786c63df8888e49892a510a8542a21d246e20df4d53ef3bbce863bb9f35c521"
+      "sha256": "052588774fb86b70acf968e8110e70e7a2c125e80b78dcdfe0662112f06c76b4"
     },
     {
       "path": "tests/display-settings.test.mjs",
-      "sha256": "fbf33067d2719a41df75d768443b5658efbfbc0e71e95ad6fab773e1096130aa"
+      "sha256": "df3571c4b8de867c07dc51e6e098f63974cacf8b516929dcedca8b7aa75ce301"
     },
     {
       "path": "tests/display-browser.test.mjs",
-      "sha256": "6e62591e25e652066cbae1338775e45fa4a15096a723c6fdc35fa4403c9aa98c"
+      "sha256": "d30e47cfce21c998ed1c95d569db2d45804fd9a30ab0c09c95d9fe79894a0015"
     },
     {
       "path": "tests/more-ui-parity.test.mjs",
@@ -73,15 +85,39 @@
     },
     {
       "path": "scripts/verify-display-hosted.mjs",
-      "sha256": "ae2d61b1e42e3e9566e63933e0f5001196b0c87236ab897bc96ce87ca314d810"
+      "sha256": "20967af7beae85525fca1d4beadf70626290691818cdf09b2036acbbc95c56c7"
     },
     {
       "path": "public/diary.js",
-      "sha256": "234ceefe4338b0e8b471e49e32b642cdd4db1b80c836030a744f8808c62cd1cc"
+      "sha256": "f938a319d5d4f8b5eb0d343f84f79811c960bf4b6f06c0f4ad6902d531c169b4"
     },
     {
       "path": "public/diary-table-presentation.js",
       "sha256": "8788e88a52beb2a41749eb2bfa4140e4eb0c0b18ce01100499731a155110e86c"
+    },
+    {
+      "path": "public/records.js",
+      "sha256": "0133aba7c5cf274743148a5b5b806b9037915698c0c9426f8f4856ea503e3c8a"
+    },
+    {
+      "path": "public/note-photos.js",
+      "sha256": "75b9d88497068b6beee5e073f773f93600ef79665e45521d3ebe3c38b46e9ec7"
+    },
+    {
+      "path": "public/photo-log.js",
+      "sha256": "2bf5bc173f5752bdf9d4150665aee1f72748e9a4cc4b7137a59a124928fd6e95"
+    },
+    {
+      "path": "server/diary-summary.mjs",
+      "sha256": "4486853341b5909cbf0fd4faca19815805dea79020c8f5d38d147ce4ad075272"
+    },
+    {
+      "path": "tests/records-browser.test.mjs",
+      "sha256": "bb8a87ad796e18a61313257ec4eda89d1a1940ff1513b669d35007fe2f84aff5"
+    },
+    {
+      "path": "tests/photo-log-browser.test.mjs",
+      "sha256": "6e71a24a58b51338b69ee417d7fa3a35225755a6747c2051b399c6b5a3844e92"
     }
   ],
   "contracts": [
@@ -95,7 +131,7 @@
   ],
   "verification": {
     "command": "node --test tests/display-settings.test.mjs tests/display-browser.test.mjs tests/more-ui-parity.test.mjs",
-    "result": "4 passed",
+    "result": "Calendar/Display API and composition checks pass; shared Charts, Snapshots, record editors, photo and Oracle checks pass. Exact commands recorded in diary-calendar-source.json.",
     "browser": "Actual public/diary.html and diary.js, production HTTP CSP, authenticated route and transactional in-memory Appwrite fixture, Chrome 412 x 915.",
     "checks": [
       "100 kcal source renders 418 kJ without changing stored nutrients.",
@@ -106,7 +142,10 @@
       "Summary Column Cancel and Group Subtotals Escape preserve account policy. Child Back returns Display.",
       "Protein renders measured zero as 0 g, missing as an em dash and partial recipe as the recorded partial sum; inactive net carbohydrate is not zero.",
       "Exercise displays negative converted energy, and N/A for nutrient columns. Empty groups display zero.",
-      "All four subtotal modes render from canonical summary; selection does not change group subtotals; macro layout has no horizontal overflow."
+      "All four subtotal modes render from canonical summary; selection does not change group subtotals; macro layout has no horizontal overflow.",
+      "Calendar month projection, marker preferences and source picker selection/cancellation work end to end.",
+      "Show/hide groups, rename and explicit per-group Quick Add preserve canonical settings and existing record assignments.",
+      "Always Explode Meals changes future meal additions through the existing canonical command."
     ],
     "screenshot": ".local/display/settings.png",
     "fixture": "Serve current source files and barcodeAssets() from locked dependencies; no dist/client dependency. Rejected-save assertion waits for the canonical display state and the actual 400 command response.",
@@ -117,11 +156,10 @@
     "hosted": "scripts/verify-display-hosted.mjs extended and syntax checked; not run by this worker."
   },
   "limitations": [
-    "Calendar markers are not rendered by the current native date input; Calendar Settings remains absent.",
     "Font size and match-device preference require one application appearance consumer and startup projection.",
     "Language needs source locale routing across cloud labels and server-provided presentation; primary screens remain English.",
     "No new physical-device comparison. Hosted verifier is prepared and unrun by this worker.",
-    "Pause Life, Diary Settings group visibility/renaming/quick-add and always-expand controls remain outside this slice. No Health Connect control is restored."
+    "Pause Life and Dashboard preferences are not included in this Display increment. Font size and language remain separate work."
   ],
   "references": [
     {

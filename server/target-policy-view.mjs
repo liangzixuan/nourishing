@@ -1,3 +1,4 @@
+import {presentTargetSetupPreview} from './domain/target-setup-guidance.mjs';
 import {effectiveNutrientUpperLimitPolicy,projectNutrientUpperLimits,nutrientUpperLimitOptions} from './domain/nutrient-upper-limits.mjs';
 import {parseInactiveEnergyTarget,resolveWeightGoalTarget} from './domain/energy-target-state.mjs';
 import {createWeightGoalView} from './domain/weight-goal-view.mjs';
@@ -5,7 +6,7 @@ import {projectBodyComposition} from './domain/body-composition.mjs';
 import {createBiometricLibrary,biometricEntryForPair} from './domain/biometric-library.mjs';
 import {parseEnergyUnit} from './domain/energy-units.mjs';
 import {act} from './domain/workspace.mjs';
-import {prepareTargetPolicyCommand,targetPolicyCommandFields} from './target-policy-commands.mjs';
+import {prepareTargetPolicyCommand,targetPolicyCommandFields,prepareGuidedSetup} from './target-policy-commands.mjs';
 import {digest} from './data-codec.mjs';
 import {date as calendarDate} from './domain/calendar.mjs';
 import {parseMacroPolicy,KETO_PRESETS} from './domain/macro-policy.mjs';
@@ -30,7 +31,7 @@ export function previewTargetPolicy(state,input,context){
  const fail=()=>{throw Object.assign(Error('Choose a valid target change.'),{status:400,code:400,publicMessage:'Choose a valid target change.'});};
  if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).length!==3||!['date','type','payload'].every(k=>Object.hasOwn(input,k))||!Object.hasOwn(targetPolicyCommandFields,input.type))fail();
  calendarDate(input.date);const copy=structuredClone(state);
- try{const action=prepareTargetPolicyCommand(copy,{type:input.type,payload:input.payload},context);act(copy,action.type,action.payload);return {revision:digest(state),view:targetPolicyView(copy,input.date,context)};}catch(error){if([400,409].includes(error.status))Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
+ try{const action=prepareTargetPolicyCommand(copy,{type:input.type,payload:input.payload},context);act(copy,action.type,action.payload);return {revision:digest(state),view:targetPolicyView(copy,input.date,context),...(input.type==='targetPolicy.setup'?{setup:presentTargetSetupPreview(prepareGuidedSetup(input.payload.input))}:{})};}catch(error){if([400,409].includes(error.status))Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
 }
 
 /** Isolated template projection works even when the saved scheduler is disabled. */

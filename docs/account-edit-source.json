@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "scope": "Cloud Account name, email and password editing",
+  "sourceEvidence": [
+    {
+      "path": "../cronometer-local/public/mobile-more.js",
+      "sha256": "02a25ed0edb5e3ee60c6b74c56c7ce27278732fcc41e1c78d2b74cfedc9e8f97",
+      "use": "Grouped rows and Account navigation pattern only; original local screen has no credential editor."
+    },
+    {
+      "path": "../cronometer-local/verification/more-back-focus-20261111/mobile-more-account.png",
+      "sha256": "aa0acee70739034229a74b05157b7c90cf05a07ee46f38455ca4a60563198b47",
+      "use": "Saved local Account page inspected; no claim of native credential-editor pixel parity."
+    },
+    {
+      "path": "node_modules/node-appwrite/dist/services/account.d.ts",
+      "sha256": "d45ea272223804a998680314b2062a704cf03a7611dd717dcdaebd54c48babf5",
+      "use": "Installed session Account updateName/updateEmail/updatePassword contracts; email verification resets after update."
+    }
+  ],
+  "files": [
+    {
+      "target": "server/account-edit.mjs",
+      "outputSha256": "f1e90fd4c35ac28e8dead1c417d99732bf7f08314a7fc075170a9c8ecf8d52c5"
+    },
+    {
+      "target": "public/account-edit.js",
+      "outputSha256": "763c712042b0d189abd002467f82c9d8c223f473c7868aed2f4f93698f497fbf"
+    },
+    {
+      "target": "public/account.js",
+      "outputSha256": "2cbb40899bd4cb4f5268ee4fa894b715461b8951466ba19a1f8286e2288627ba"
+    },
+    {
+      "target": "public/account.css",
+      "outputSha256": "d01f22be36e15f63e0f12cb3ce43c97ccecdece3e6e41d0ce26487bd9f2ee999"
+    },
+    {
+      "target": "tests/account-edit.test.mjs",
+      "outputSha256": "cfff69a6703182136e20893fcf62ba284aa584f0a6a429994d07a4a1432a0caf"
+    },
+    {
+      "target": "tests/account-edit-browser.test.mjs",
+      "outputSha256": "6a921ada4cccd192db60ca46e7de24c1c6d88e503a1d1663bcf9aa505744f2a2"
+    }
+  ],
+  "integration": "Parent-owned POST /api/account/update validates explicit discriminator and calls session-bound updateAccount. No workspace records, mutation receipts, API keys or provider credentials are exposed or persisted. Existing lifecycle operation ownership remains unchanged.",
+  "behavior": [
+    "Compact identity rows open Save/Cancel dialogs; current password required for email and password changes.",
+    "Email verification state comes from Appwrite and existing verification action remains available.",
+    "Passwords clear on submission, mismatch, failure and dialog disposal; no automatic replay of credential updates.",
+    "Lost name/email replies reconcile the exact intended identity through authenticated GET; unresolved outcomes retain a Check account action. Unknown password saves offer sign-in/reset.",
+    "Existing settings, account deletion, sign-out and saved appearance remain available."
+  ],
+  "checks": [
+    "node --test tests/account-edit.test.mjs tests/account-edit-browser.test.mjs tests/account-appearance-browser.test.mjs (5 passed)",
+    "node --test tests/macro-scheduler.test.mjs tests/account-deletion-ui.test.mjs tests/auth.test.mjs (15 passed)",
+    "node --test tests/account-edit.test.mjs tests/account-edit-browser.test.mjs (4 passed after discriminator/encoding fixes)",
+    "node --test tests/account-appearance-browser.test.mjs tests/account-edit-browser.test.mjs tests/guided-setup.test.mjs tests/guided-setup-browser.test.mjs (5 passed on final runtime bytes)",
+    "node --check scripts/verify-account-edit-hosted.mjs"
+  ],
+  "visual": [
+    {
+      "path": ".local/account-edit/account.png",
+      "sha256": "a9a2d01a43f8d6a0094959f3b5519d2016f75a14d9d68c7f5fcccbc33c62d71e"
+    },
+    {
+      "path": ".local/account-edit/email.png",
+      "sha256": "819220fec449430cce1294c7e304f97fad62b969235d6f0c2fd9c5996060fe01"
+    }
+  ],
+  "hostedVerification": {
+    "script": "scripts/verify-account-edit-hosted.mjs",
+    "sha256": "b4da6f2e63510689785a1144cf41b86158cc3e3c35cc88b9cea315eb9bc3076b",
+    "status": "prepared; not run against hosted"
+  },
+  "limits": [
+    "Credential editor is a cloud adaptation; the saved local Account page did not support identity changes.",
+    "Real-provider credential and verification behavior still requires the prepared hosted test."
+  ]
+}

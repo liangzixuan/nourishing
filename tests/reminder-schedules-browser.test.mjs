@@ -9,7 +9,7 @@ test('schedule editor saves preferences paused and requires explicit resume, wit
  const metric={kind:'biometric',type:'Weight',unit:'kg'},data={configured:true,publicKey:Buffer.alloc(65,1).toString('base64url'),paused:true,resumedAt:null,revision:0,schedules:[],groups:['Breakfast','Lunch'],weightMetrics:[{metric,name:'Weight',unit:'kg'}],devices:[{id:'device',currentOrigin:true}],recent:[]},writes=[];
  const server=createServer(async(req,res)=>{try{
   const path=new URL(req.url,'http://localhost').pathname;
-  if(path==='/'){res.setHeader('Content-Type','text/html');return res.end(`<link rel="stylesheet" href="/reminders.css"><div id="panel"></div><script type="module">import {openReminders} from '/reminders.js';const content=document.querySelector('#panel');await openReminders({content,show:html=>content.innerHTML=html,header:title=>'<h1>'+title+'</h1>'});</script>`);}
+  if(path==='/'){res.setHeader('Content-Type','text/html');return res.end(`<link rel="stylesheet" href="/reminders.css"><div id="panel"></div><script type="module">import {mountReminders} from '/reminders.js';const content=document.querySelector('#panel');mountReminders({root:content});</script>`);}
   if(path.startsWith('/api/reminders')){
    res.setHeader('Content-Type','application/json');if(req.method==='POST'){
     let raw='';for await(const chunk of req)raw+=chunk;const input=JSON.parse(raw);writes.push({path,input});assert.equal(input.revision,data.revision);
@@ -30,6 +30,6 @@ test('schedule editor saves preferences paused and requires explicit resume, wit
   await page.getByRole('button',{name:'Edit',exact:true}).click();await page.getByLabel('Type',{exact:true}).selectOption('weight');assert.equal(await page.getByLabel('Send when').isVisible(),false);await page.getByLabel('Weight metric').selectOption(JSON.stringify(metric));await page.getByLabel('Time',{exact:true}).fill('19:15');await page.getByRole('button',{name:'Save reminder',exact:true}).click();await page.getByRole('button',{name:'Resume reminders',exact:true}).waitFor();assert.equal(data.schedules.length,1);assert.equal(data.schedules[0].id,id);assert.equal(data.schedules[0].foodCondition,null);assert.deepEqual(data.schedules[0].weightMetric,metric);
   await page.getByRole('button',{name:'Resume reminders',exact:true}).click();await page.getByRole('button',{name:'Pause reminders',exact:true}).waitFor();assert.equal(data.paused,false);
   await page.getByRole('button',{name:'Pause reminders',exact:true}).click();await page.getByRole('button',{name:'Resume reminders',exact:true}).waitFor();assert.equal(data.paused,true);
-  await page.getByRole('button',{name:'Delete',exact:true}).click();await page.getByText('Reminder deleted.',{exact:true}).waitFor();assert.equal(data.schedules.length,0);assert.deepEqual(errors,[]);
+  await page.getByRole('button',{name:'Delete',exact:true}).click();await page.getByRole('button',{name:'Delete reminder',exact:true}).click();await page.getByText('Reminder deleted.',{exact:true}).waitFor();assert.equal(data.schedules.length,0);assert.deepEqual(errors,[]);
  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
 });

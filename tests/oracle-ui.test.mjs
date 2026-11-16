@@ -1,3 +1,5 @@
+import {diaryCalendarView} from '../server/diary-calendar-view.mjs';
+import {chooseDiaryDate} from '../scripts/diary-test-navigation.mjs';
 import test from 'node:test';
 import {barcodeAssets} from '../scripts/package-barcode-assets.mjs';
 import assert from 'node:assert/strict';
@@ -26,7 +28,7 @@ test('Oracle source flow through real Foods and Diary under production CSP',asyn
  const catalog=createInsightCatalog([]),writes=[],reads=[],receipts=new Map();let origin,handler,browser,failRank=false,conflictRank=false,conflictSave=false,loseSave=false,heldContext,failContext=false;
  const fail=(code,message)=>{throw Object.assign(Error(message),{code,publicMessage:message});};
  const diary=day=>{const summary=calculateSummary(state,day);return diaryToolsPresentation(state,{date:day,revision:digest(state),theme:'dark',groups:state.settings.groups,completed:false,entries:state.entries.filter(r=>r.date===day).map(row=>({...row,facts:entryFacts(state,row)})),biometrics:[],notes:[],summary,presentation:diarySummaryPresentation(state,summary)});};
- const service={
+ const service={diaryCalendar:async(_,input)=>diaryCalendarView(state,input,{now:new Date(),timeZone:'UTC'}),
   current:async()=>({id:'oracle-fixture',name:'Oracle fixture',emailVerification:true}),readDiary:async(_,date)=>{reads.push(date);return diary(date);},library:async()=>libraryView(state),favorites:async()=>favoriteView(state),
   foodInsightOptions:async()=>{if(failContext){failContext=false;fail(503,'Refresh unavailable');}if(heldContext)await heldContext;return foodInsightOptions(state);},
   foodOracle:async(_,input)=>{if(input.limit>1&&failRank){failRank=false;fail(503,'Rankings unavailable');}if(input.limit>1&&conflictRank){conflictRank=false;fail(409,'Catalog changed');}return foodOracle(state,catalog,input);},
@@ -40,7 +42,7 @@ test('Oracle source flow through real Foods and Diary under production CSP',asyn
  try{
   browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915},isMobile:true,hasTouch:true,serviceWorkers:'block'});page.setDefaultTimeout(8000);const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.addInitScript(()=>{window.violations=[];document.addEventListener('securitypolicyviolation',event=>window.violations.push(event.violatedDirective));});
-  await page.goto(origin);await page.locator('.md-summary').waitFor();await Promise.all([page.waitForResponse(r=>r.url().includes('/api/diary?date=2026-11-14')),page.locator('#date-picker').fill('2026-11-14')]);await page.waitForFunction(()=>document.querySelector('#page')?.getAttribute('aria-busy')==='false'&&document.querySelector('#date-picker')?.value==='2026-11-14');
+  await page.goto(origin);await page.locator('.md-summary').waitFor();await chooseDiaryDate(page,'2026-11-14');
   await page.locator('#foods-tab').click();await page.locator('[data-food-insight=oracle]').click();await page.locator('[data-mo-nutrient]').waitFor();
   mkdirSync('.local/oracle-ui',{recursive:true});await page.screenshot({path:'.local/oracle-ui/home.png'});
   await page.locator('[data-mo-help]').click();await page.locator('.mo-help').waitFor();await page.mouse.click(1,1);assert.equal(await page.locator('.mo-help-dialog').count(),0);

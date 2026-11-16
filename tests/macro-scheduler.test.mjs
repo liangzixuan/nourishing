@@ -31,3 +31,9 @@ test('template preview authenticates owner, rejects query/extra fields and does 
  const body={date,settings:fixed},send=(owner,input=body,suffix='',origin='https://nourishing.test')=>handler(new Request('https://nourishing.test/api/target-policies/template-preview'+suffix,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...(owner?{Cookie:'__Host-nourishing_session='+owner}:{})},body:JSON.stringify(input)}));
  const before=structuredClone(states);assert.equal((await send(null)).status,401);assert.equal((await send('a',body,'?owner=b')).status,400);assert.equal((await send('a',body,'','https://foreign.test')).status,403);assert.equal((await send('a',{...body,owner:'b'})).status,400);assert.equal((await send('a')).status,200);assert.deepEqual(seen,['a','a']);assert.deepEqual(states,before);
 });
+
+test('deleting a daily template retains the weekly template and records an explicit daily default',()=>{
+ const state=initialState();for(const id of ['weekly','daily'])apply(state,{kind:'template-create',template:{id,name:id,settings:fixed}});
+ apply(state,{kind:'weekly',from:date,days:Array(7).fill('weekly')});apply(state,{kind:'day',date,selection:{kind:'template',id:'daily'}});const weeks=structuredClone(state.settings.macroPlan.weeks);
+ const view=apply(state,{kind:'template-delete',id:'daily'});assert.equal(view.effective.assignment.source,'daily-default');assert.deepEqual(state.settings.macroPlan.weeks,weeks);assert.deepEqual(state.settings.macroPlan.days,[{date,selection:{kind:'default'}}]);assert.equal(state.settings.macroPlan.templates[0].id,'weekly');
+});

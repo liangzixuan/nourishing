@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "scope": "Guided Target Setup source inputs, canonical review, explicit Apply and cloud receipt recovery",
+  "files": [
+    {
+      "target": "public/setup-source/target-setup.js",
+      "outputSha256": "31cbde623971a5ff2bea6184b63434a4d1de3d7826430ef662b842bd77d310a7",
+      "transforms": [
+        "Keep source manual/adult EER inputs, percentages, canonical review and explicit confirmation; adapt preview/save to existing authenticated target-policy routes and immutable receipt retries.",
+        "Collapse source guidance, shorten routine UI copy and remove inline styles for production CSP."
+      ],
+      "source": "../cronometer-local/public/target-setup.js",
+      "sourceSha256": "5cc5be39c6a42be960408e3a314e96d81c2185eb3d056873316542ead3f9db91"
+    },
+    {
+      "target": "public/setup-source/target-setup-guidance.js",
+      "outputSha256": "1ce127d0b8b8c4be188d0d43fd194c935a0ca9cec7b12d109d5ded5660d435de",
+      "transforms": [
+        "Redirect imports to published source modules; LF normalization."
+      ],
+      "source": "../cronometer-local/public/target-setup-guidance.js",
+      "sourceSha256": "2221ac1dc0806a2a60f3c58e1850f8b01c7bf55a5320e1cd80cd7aa6646f7f65"
+    },
+    {
+      "target": "public/setup-source/target-setup.css",
+      "outputSha256": "2e47efab884b19f7e69f048344a616eaad7b69d68f69891ac28332e2c0f89f0e",
+      "transforms": [
+        "Scoped source form/review styling and cloud control resets; no inline styles."
+      ]
+    },
+    {
+      "target": "public/targets.js",
+      "outputSha256": "13a9bac996ad5a11a4c5db383c9641bfeaa56f9f9c71b9948b29989470bbc089"
+    },
+    {
+      "target": "public/targets.css",
+      "outputSha256": "8323d1c9772add7c5fc0ef0b9c9441c7e655cc7c84c6c70a97780257258d5d49"
+    },
+    {
+      "target": "server/target-policy-view.mjs",
+      "outputSha256": "380b4343fe6edecc8dc33e9aafc6a3f17b3e619de482ba3b561c606bf0f1a2c8"
+    },
+    {
+      "target": "server/target-policy-commands.mjs",
+      "outputSha256": "442f43f37a7cfe500dc0ca3dc975d705d8c0f4a356ac90f2305c5351bafc7521"
+    },
+    {
+      "target": "tests/guided-setup.test.mjs",
+      "outputSha256": "0a18c89c73b7c6e9680350acd80dd5c2c32977f23a2f92aa793753e2d775bb71"
+    },
+    {
+      "target": "tests/guided-setup-browser.test.mjs",
+      "outputSha256": "26aacae24d4bdf46fb9b2808aa2ed25ed044d96c2d674782349278d2095403d9"
+    }
+  ],
+  "canonicalOwner": "prepareTargetSetup and targets.setup own validation, energy equations, macro conversion and baseline application. Adapter rejects unknown fields and adds no equations or schema. Existing target preview and workspace command routes retain account ownership and revision checks.",
+  "behavior": [
+    "Manual and adult EER values use canonical preview; energy display respects kcal/kJ. Unit changes clear ambiguous height/weight input.",
+    "Apply replaces baseline energy/carbs/protein/fat, clears calculated macro policy and fixes energy; inactive goal, expenditure/display, body measurement identity and schedules stay with their canonical owners.",
+    "Unsent edits cancel without writes; invalid previews and stale revisions reject; uncertain saves retry the identical request after leaving and reopening the child.",
+    "Inputs, review values and Apply are primary; detailed scope and source explanations remain in collapsed Details."
+  ],
+  "checks": [
+    "node --test tests/guided-setup.test.mjs tests/guided-setup-browser.test.mjs tests/target-policy.test.mjs (10 passed)",
+    "node --test tests/guided-setup.test.mjs tests/guided-setup-browser.test.mjs (3 passed after measurement/schedule preservation assertions)",
+    "node --check scripts/verify-guided-setup-hosted.mjs",
+    "node --test tests/targets-mobile.test.mjs tests/upper-limits-browser.test.mjs (3 passed)"
+  ],
+  "visual": [
+    {
+      "path": ".local/guided-setup/inputs.png",
+      "sha256": "e0ae895a062d029139443ec3930677062fcfae46ecc03bb352fbd0b69688d5aa"
+    },
+    {
+      "path": ".local/guided-setup/review.png",
+      "sha256": "11067e08aaf2e9e447b9e1dacee8bb6504372c8225fbfa0ce579cb0b144b6b7f"
+    }
+  ],
+  "limits": [
+    "Uses saved local target-setup source; no claim of a separately captured native Cronometer Guided Setup screen."
+  ],
+  "hostedVerification": {
+    "script": "scripts/verify-guided-setup-hosted.mjs",
+    "sha256": "d0cdd4484e3776de766940c86a0a88df6423b84d43ff22fef70ae9911493fd00",
+    "status": "prepared; not run against hosted"
+  }
+}

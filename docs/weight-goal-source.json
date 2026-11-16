@@ -105,23 +105,23 @@
     },
     {
       "path": "public/records.js",
-      "sha256": "8874aa7c1d673a8e6890ca5d3aaceac1fa86336495e1a633f7ed1a8c18dbf6f0"
+      "sha256": "0133aba7c5cf274743148a5b5b806b9037915698c0c9426f8f4856ea503e3c8a"
     },
     {
       "path": "public/targets.js",
-      "sha256": "aedaf12445b407d78d47f2e9cbc1f27d51101fbf58f2dcfaf7ce472d05588950"
+      "sha256": "13a9bac996ad5a11a4c5db383c9641bfeaa56f9f9c71b9948b29989470bbc089"
     },
     {
       "path": "public/targets.css",
-      "sha256": "3a12ced2ab07ecfd2530602a484a5465994db34c8f2de1ab4543e2e0f68413ad"
+      "sha256": "8323d1c9772add7c5fc0ef0b9c9441c7e655cc7c84c6c70a97780257258d5d49"
     },
     {
       "path": "server/target-policy-commands.mjs",
-      "sha256": "8c3ef4cecf5ea3dfa5dfa39336d609ed8ad93f7df08c72db0d79d3b777cff397"
+      "sha256": "442f43f37a7cfe500dc0ca3dc975d705d8c0f4a356ac90f2305c5351bafc7521"
     },
     {
       "path": "server/target-policy-view.mjs",
-      "sha256": "ec59616e55f8326d384f7a4df7c24b1fa46229c17070ec2920cb9ba97c2b6916"
+      "sha256": "380b4343fe6edecc8dc33e9aafc6a3f17b3e619de482ba3b561c606bf0f1a2c8"
     },
     {
       "path": "tests/weight-goal.test.mjs",

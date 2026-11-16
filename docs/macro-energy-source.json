@@ -101,11 +101,11 @@
     },
     {
       "path": "public/targets.js",
-      "sha256": "aedaf12445b407d78d47f2e9cbc1f27d51101fbf58f2dcfaf7ce472d05588950"
+      "sha256": "13a9bac996ad5a11a4c5db383c9641bfeaa56f9f9c71b9948b29989470bbc089"
     },
     {
       "path": "public/targets.css",
-      "sha256": "3a12ced2ab07ecfd2530602a484a5465994db34c8f2de1ab4543e2e0f68413ad"
+      "sha256": "8323d1c9772add7c5fc0ef0b9c9441c7e655cc7c84c6c70a97780257258d5d49"
     },
     {
       "path": "public/target-policies.js",
@@ -113,15 +113,15 @@
     },
     {
       "path": "public/diary.js",
-      "sha256": "234ceefe4338b0e8b471e49e32b642cdd4db1b80c836030a744f8808c62cd1cc"
+      "sha256": "f938a319d5d4f8b5eb0d343f84f79811c960bf4b6f06c0f4ad6902d531c169b4"
     },
     {
       "path": "server/target-policy-commands.mjs",
-      "sha256": "8c3ef4cecf5ea3dfa5dfa39336d609ed8ad93f7df08c72db0d79d3b777cff397"
+      "sha256": "442f43f37a7cfe500dc0ca3dc975d705d8c0f4a356ac90f2305c5351bafc7521"
     },
     {
       "path": "server/target-policy-view.mjs",
-      "sha256": "ec59616e55f8326d384f7a4df7c24b1fa46229c17070ec2920cb9ba97c2b6916"
+      "sha256": "380b4343fe6edecc8dc33e9aafc6a3f17b3e619de482ba3b561c606bf0f1a2c8"
     },
     {
       "path": "tests/macro-energy.test.mjs",
@@ -137,11 +137,11 @@
     },
     {
       "path": "scripts/targets-browser-flow.mjs",
-      "sha256": "0bb8af10ab13a23cde271778c47473fa3a10c64d85476ae794408352da346d32"
+      "sha256": "85797ed98bdcb1d6612458eced7cf25520cfaf59eb700db0c36befa4f0af5fb8"
     },
     {
       "path": "scripts/verify-targets-local.mjs",
-      "sha256": "ca5268f5dacc1e8140bdc666a532f993e07e6b61660a314dfe0e149329b36282"
+      "sha256": "7df4c6ef620015fb7e8c682b7218bf11c80f73edaa4900797875ac2d4b8157b2"
     },
     {
       "path": "public/macro-energy-source/dots-vertical.svg",
@@ -219,7 +219,7 @@
   ],
   "hostedVerification": {
     "script": "scripts/verify-macro-energy-hosted.mjs",
-    "sha256": "5d0386b56ccc05533b7e596c7b5328e7d8a8f0ac9350a6b77b2547c7dd70cbae",
+    "sha256": "06dd35e2b401de69cd403c9fa86e70e99861b56f70ee8de545f3de6faca9f4af",
     "status": "prepared; not run against hosted"
   }
 }

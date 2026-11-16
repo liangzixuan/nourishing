@@ -96,7 +96,7 @@
     },
     {
       "path": "server/workspace-commands.mjs",
-      "sha256": "f5df774b9f51112f7f0fa770e902c955767ce0ebc131e5a11b47151266f9fc3e"
+      "sha256": "6ea695118f91a7c89b1ddf641b0d97215db8b6447f8a99cdb793301e4a424cd8"
     },
     {
       "path": "tests/food-editor.test.mjs",
