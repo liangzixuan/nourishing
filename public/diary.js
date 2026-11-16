@@ -62,7 +62,7 @@ function render(){
  page.innerHTML=`${diaryCycleMarkup(diary.cycleDays)}${diaryTools.toolbar()}${diarySummaryMarkup(diary)}<div class="md-diary diary-layout">${mobileDiaryGroups({groups:display.groups.map(group=>group.name),configuredGroups:diary.groups,records,renderRow,showGroups:display.showGroups,selectBox:group=>diaryTools.groupBox(group),subtotal:group=>`<button type="button" class="diary-group-tools" data-tool-group="${e(group)}" aria-label="${e(group)} actions">⋯</button>`,icons,labels:{add:'Add food'}})}</div>`;
  summaryPanel=mountDiarySummary({root:page,diary,onAction:summaryAction});
 }
-function openInsights(mode='suggestions',day=date){return openFoodInsights({mode,date:()=>day,show,close,header,content,onAdd:(kind,id,quantity)=>edit(null,id,'food',quantity),onAddMeal:async input=>{await command(input.revision,'meal.log',{date:input.date,time:input.time,group:input.group,rows:input.rows.map(row=>({foodId:row.ref.id,...(row.unit==='servings'?{amount:row.quantity}:{quantity:row.quantity,unit:row.unit,...(row.unit==='portion'?{portionId:row.portionId}:{})})}))});await load();}});}
+function openInsights(mode='suggestions',day=date){return openFoodInsights({mode,date:()=>day,show,close,header,content,onAdd:(kind,id,quantity)=>edit(null,id,'food',quantity),onAdded:load,onPreferences:load});}
 
 document.addEventListener('change',event=>{if(diaryTools.change(event))return;if(event.target.id==='date-picker'){diaryTools.reset();date=event.target.value;load();}});
 document.addEventListener('click',async event=>{
@@ -94,7 +94,7 @@ document.addEventListener('click',async event=>{
  if(target.id==='settings-tab')return navigate('more');
  if(target.hasAttribute('data-recipe-import')){let pending;return openRecipeImport({show,close,header,content,onSave:async input=>{const signature=JSON.stringify(input);if(pending?.signature!==signature)pending={signature,body:{...input,requestId:crypto.randomUUID()}};const result=await request('/api/recipe-import/save',pending.body);pending=null;await load();await library?.reload();return result;}});}
  if(target.dataset.foodInsight)return openInsights(target.dataset.foodInsight);
- if(target.hasAttribute('data-library-repeats')){leaveView();view='repeats';selectTab('foods-tab');headerRoot.innerHTML='<div class="screen-title"><button type="button" class="icon-button" aria-label="Back">'+icons.back+'</button><span>Repeat Items</span></div>';headerRoot.querySelector('button').onclick=()=>navigate('foods');library=mountRepeats({page,show,close,header,content,date:()=>date,onChange:load});return;}
+ if(target.hasAttribute('data-library-repeats')){leaveView();view='repeats';selectTab('foods-tab');library=mountRepeats({page,headerRoot,onExit:()=>navigate('foods'),show,close,header,content,date:()=>date,onChange:load});return;}
  if(target.id==='foods-tab')return navigate('foods');
  if(target.id==='diary-tab')return navigate('diary');
 });

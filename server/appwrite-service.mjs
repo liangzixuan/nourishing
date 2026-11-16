@@ -33,7 +33,7 @@ import {validateStoredPhoto} from './domain/photo-images.mjs';
 import {stagePhotoMedia} from './photo-storage.mjs';
 import {loadCatalogIndex} from './catalog-index.mjs';
 import {searchCloudFoods} from './food-search.mjs';
-import {foodInsightOptions,foodOracle,foodSuggestions,previewFoodSuggestion,resolveFoodInsightIngredient} from './food-insights.mjs';
+import {foodInsightOptions,foodOracle,foodSuggestions,previewFoodSuggestion,previewFoodInsightIngredient,resolveFoodInsightIngredient} from './food-insights.mjs';
 import {Client,Functions,Account,Users,TablesDB,Storage,ID,Permission,Role,Query} from 'node-appwrite';
 import {createHash} from 'node:crypto';
 import {createDataRepository} from './data-repository.mjs';
@@ -179,6 +179,7 @@ export function createAppwriteService(config, key, userAgent='') {
     async foodSuggestions(secret,input){return insights(secret,input,foodSuggestions);},
     async resolveFoodInsightIngredient(secret,input){return insights(secret,input,resolveFoodInsightIngredient);},
     async previewFoodSuggestion(secret,input){return insights(secret,input,previewFoodSuggestion);},
+    async previewFoodInsightIngredient(secret,input){return insights(secret,input,previewFoodInsightIngredient);},
     async analyzePhoto(secret,input,signal){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();const state=await repository.readState();return createCloudPhotoAnalyzer().analyze(input,{owner,foods:state.foods,signal,search:(query,{limit})=>repository.search({query,limit,offset:0})});},
     async savePhoto(secret,input){
       const allowed=['requestId','revision','photo','reviewToken','date','time','group','rows','destination'];

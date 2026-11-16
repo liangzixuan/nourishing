@@ -329,3 +329,9 @@ All 468 tests and the production build passed. The Targets production-compositio
 
 
 Hosted Targets and custom-chart acceptance passed on deployment `6afab31787c32ffd19d8` (runtime `e6f623d`). Targets custom/reference values, maximums, highlights, scores and nested navigation persisted correctly. Custom chart metric/unit choices worked in an empty account; an intentionally interrupted successful save retried the same receipt without duplication. Editing retained identity, secondary-axis removal persisted, Back discarded drafts, and confirmed deletion worked. Both fixtures were removed, owner data was unchanged, and no browser/CSP errors or overflow were observed. Live captures were inspected. The initial Targets script asserted a highlight change before the asynchronous save completed; it now waits for dialog closure and the refreshed highlight, and the matching local test passed. Evidence: `.local/targets-hosted-result.json`, `.local/custom-chart-hosted-result.json`.
+
+## Foods restoration candidate, November 16, 2026
+
+Suggest Food now uses the saved source filters, impact carousel, ingredient review and preference menus. Repeat Items uses the source list and Set Repeat editor. Custom Food uses the source label fields and serving editor, then a canonical nutrition review. Food preview and save share one server-owned draft conversion; portions and nutrient edits commit together.
+
+The integrated suite passed 476 tests, the production build passed, and the final Suggest Food/Diary integration passed five checks. Saved source/output hashes accompany each restoration. Hosted acceptance and deployment are pending; the production runtime remains e6f623d until this candidate is activated. Next work is Oracle and generic chart detail, followed by the remaining target and fasting child editors.

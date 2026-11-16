@@ -7,6 +7,7 @@ import {chromium} from 'playwright-core';
 import {initialState,act} from '../server/domain/workspace.mjs';
 import {libraryView,libraryItem} from '../server/library-view.mjs';
 import {digest} from '../server/data-codec.mjs';
+import {previewLibrary} from '../server/workspace-commands.mjs';
 import {favoriteView} from '../server/library-extras.mjs';
 
 test('Foods preserves source home cards, collection navigation and item utilities without focusing search on return',async()=>{
@@ -22,7 +23,7 @@ test('Foods preserves source home cards, collection navigation and item utilitie
   if(url.pathname.startsWith('/api/')){res.setHeader('Content-Type','application/json');let body='';for await(const chunk of req)body+=chunk;const input=body?JSON.parse(body):null;
    if(url.pathname==='/api/library')return res.end(JSON.stringify(libraryView(state)));
    if(url.pathname==='/api/library/item')return res.end(JSON.stringify(libraryItem(state,url.searchParams.get('kind'),state[url.searchParams.get('kind')+'s'].find(row=>row.id===url.searchParams.get('id')))));
-   if(url.pathname==='/api/library/preview')return res.end(JSON.stringify({nutrition:{totals:{calories:130}}}));
+   if(url.pathname==='/api/library/preview')return res.end(JSON.stringify(previewLibrary(state,input)));
    if(url.pathname==='/api/library/favorites')return res.end(JSON.stringify(favoriteView(state)));
    if(url.pathname==='/api/workspace/command'){requests.push(input);assert.equal(input.type,'favorite.set');assert.equal(input.revision,digest(state));act(state,input.type,input.payload);return res.end(JSON.stringify({revision:digest(state)}));}
    throw {status:404};
@@ -36,13 +37,13 @@ test('Foods preserves source home cards, collection navigation and item utilitie
   assert.deepEqual(await page.locator('.mfh-copy strong').allTextContents(),['Custom Meals','Custom Recipes','Custom Foods','Repeat Items','Suggest Food','Oracle Nutrient Search']);assert.equal(await page.locator('.picker-tabs').count(),0);assert.equal(await page.getByRole('heading',{name:'Foods',exact:true}).count(),1);
   for(const [selector,destination] of [['[data-library-repeats]','repeats'],['[data-food-insight="suggestions"]','suggestions'],['[data-food-insight="oracle"]','oracle'],['[data-recipe-import]','recipe-import'],['[aria-label="Search foods"]','search']]){await page.locator(selector).click();assert.equal(await page.evaluate(()=>window.destination),destination);}
   mkdirSync('.local',{recursive:true});await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:'.local/foods-parity-home.png'});
-  for(const [kind,title] of [['meal','New Meal'],['recipe','New Recipe'],['food','New Custom Food']]){await page.locator('[data-action="new-'+kind+'"]').click();await page.getByRole('heading',{name:title,exact:true}).waitFor();await page.getByRole('button',{name:'Close',exact:true}).click();}
+  for(const [kind,title] of [['meal','New Meal'],['recipe','New Recipe'],['food','New Food']]){await page.locator('[data-action="new-'+kind+'"]').click();await page.getByRole('heading',{name:title,exact:true}).waitFor();await page.getByRole('button',{name:'Close',exact:true}).click();}
   await page.locator('[data-tab=foods]').click();assert.equal(await page.getByRole('heading',{name:'Custom Foods',exact:true}).count(),1);assert.equal(await page.locator('.ml-row').count(),2);assert.equal(await page.locator('.ml-tools>span').textContent(),'2 Foods');
   await page.locator('[data-action=library-options]').click();await page.getByRole('button',{name:'Alphabetical',exact:true}).click();assert.deepEqual(await page.locator('.ml-row>span').allTextContents(),['Beans','Rice <fixture>']);await page.getByRole('searchbox',{name:'Search library',exact:true}).fill('Rice');assert.equal(await page.locator('.ml-row').count(),1);assert.equal(await page.getByRole('searchbox',{name:'Search library',exact:true}).inputValue(),'Rice');
   await page.locator('[data-library-item="'+food+'"]').dispatchEvent('contextmenu');await page.getByRole('button',{name:'Add to favorites',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.ml-row')?.innerText.includes('Rice'));await page.waitForFunction(()=>!document.querySelector('.ml-sheet'));assert.equal(requests.length,1);assert.equal(state.settings.favorites[0].id,food);
   await page.locator('[data-action=library-options]').click();await page.getByRole('button',{name:'Favorites',exact:true}).click();await page.locator('[data-favorite-open="'+food+'"]').click();assert.equal(await page.evaluate(()=>window.opened),'food:'+food);await page.getByRole('button',{name:'Close',exact:true}).click();
   await page.locator('[data-action=foods-home]').click();assert.equal(await page.locator('.mfh-home').count(),1);assert.equal(await page.locator('input:focus').count(),0);
-  await page.locator('[data-tab=foods]').click();await page.locator('[data-action=library-options]').click();await page.getByRole('button',{name:'Show retired items',exact:true}).click();assert.equal(await page.locator('.ml-row>span').textContent(),'Retired food');await page.locator('[data-library-item="'+old+'"]').click();await page.getByRole('heading',{name:'Edit Custom Food',exact:true}).waitFor();
+  await page.locator('[data-tab=foods]').click();await page.locator('[data-action=library-options]').click();await page.getByRole('button',{name:'Show retired items',exact:true}).click();assert.equal(await page.locator('.ml-row>span').textContent(),'Retired food');await page.locator('[data-library-item="'+old+'"]').click();await page.getByRole('heading',{name:'Edit Food',exact:true}).waitFor();
   await page.getByRole('button',{name:'Close',exact:true}).click();await page.screenshot({path:'.local/foods-parity-collection.png'});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(errors,[]);
   await page.evaluate(()=>window.library.dispose());assert.equal(await page.locator('body.foods-home-mobile,body.mobile-library').count(),0);
  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

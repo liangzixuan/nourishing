@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "sourceRoot": "../cronometer-local/public",
+  "scope": "Repeat Items list and Set Repeat editor",
+  "files": [
+    {
+      "source": "../cronometer-local/public/mobile-repeats.js",
+      "target": "public/repeat-source/mobile-repeats.js",
+      "sourceSha256": "f6544e5fac8fa0bbec30cae25d45ee5c462fc2f39a67b6fb2c21bb65561ffd5b",
+      "outputSha256": "241be12388e7628e41b0565682a0563cbdf17e48c26292624e380d0853118263",
+      "transforms": [
+        "Rewrite escape, anchored-menu and icon imports for the cloud app. Use the authenticated reload callback instead of a full-page reload. Capture the current draft before controls are disabled for an action so Delete cancellation restores unsaved input. Normalize LF."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/mobile-repeats.css",
+      "target": "public/repeat-source/mobile-repeats.css",
+      "sourceSha256": "50519eaaba909614636449eb5f968e9729fd9961f1a0d0487ab29cffcbbd7d7d",
+      "outputSha256": "6242f5c7fbd1ad5ff4d6c1ea58f49f4be27423c2d9ca7720ed77aa09b4fa95be",
+      "transforms": [
+        "Adapt dialog and inline-error selectors to the cloud sheet host. Omit the Diary repeat prompt styles, which remain owned by Diary. Normalize LF."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/locales/mobile-repeats.js",
+      "target": "public/repeat-source/mobile-repeats-messages.js",
+      "sourceSha256": "b1cd5153bcb67e325255c86d872f9fe3fd49c4e9dfdd9bd5e5e4d8519bf097a7",
+      "outputSha256": "866206ea669c16e9d7d6716518de366da6da79dac30ac83aae47e74f5533b623",
+      "transforms": [
+        "Convert source Windows-1252 text to UTF-8 and normalize LF; messages unchanged."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/locales/repeat.js",
+      "target": "public/repeat-source/repeat-messages.js",
+      "sourceSha256": "62f3ed2912f93f5ba973b0159dd22da33fc5c82737618ed9ee4d21e12cff4495",
+      "outputSha256": "62f3ed2912f93f5ba973b0159dd22da33fc5c82737618ed9ee4d21e12cff4495",
+      "transforms": [
+        "Normalize LF; messages unchanged."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/locales/quantity.js",
+      "target": "public/repeat-source/quantity-messages.js",
+      "sourceSha256": "028fe6d35f7c6ee0794fc474750fdaff35c1b56df0a323643231c3b83b600ea2",
+      "outputSha256": "028fe6d35f7c6ee0794fc474750fdaff35c1b56df0a323643231c3b83b600ea2",
+      "transforms": [
+        "Normalize LF; messages unchanged."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/snapshot-icons/timer-off-outline.svg",
+      "target": "public/repeat-source/timer-off-outline.svg",
+      "sourceSha256": "b3888db62e278af8fffb836eba4f8dfb5855890a8dd1f1f37288af0e22736737",
+      "outputSha256": "b3888db62e278af8fffb836eba4f8dfb5855890a8dd1f1f37288af0e22736737",
+      "transforms": [
+        "Normalize LF."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/snapshot-icons/delete.svg",
+      "target": "public/repeat-source/delete.svg",
+      "sourceSha256": "4540e2a3e726df9ec25810a4cafda79b5546b848eb6462322c08adfdff9c5525",
+      "outputSha256": "4540e2a3e726df9ec25810a4cafda79b5546b848eb6462322c08adfdff9c5525",
+      "transforms": [
+        "Normalize LF."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/app.js",
+      "target": "public/repeat-source/icons.js",
+      "sourceSha256": "7885979aa41896f3058b99f181ad1c2f7700482580de8669b10826b436115447",
+      "outputSha256": "f5f2d72808f623bcb2f23f6f67923fcbcd8370145c9e04683946d9516502d06f",
+      "transforms": [
+        "Extract source back, plus, search, repeat, close and more icon paths into a scoped SVG renderer."
+      ]
+    }
+  ],
+  "adapters": [
+    "public/repeats.js owns authenticated requests, revision-bearing commands, reviewed apply, immutable retry payloads and host lifecycle.",
+    "public/repeats.css adapts the source sheet and retains the existing reviewed-apply presentation.",
+    "public/repeat-source/message-format.js composes copied source messages with the existing shared formatter.",
+    "public/more.js passes explicit header and exit callbacks; public/diary.js integration is owned by the parent task."
+  ],
+  "canonicalOwners": [
+    "server/repeat-view.mjs",
+    "server/repeat-commands.mjs",
+    "server/workspace-commands.mjs"
+  ],
+  "references": [
+    "../cronometer-local/verification/phone-reference-20261111/repeat-saved-edit.png"
+  ],
+  "verification": [
+    "node --test tests/repeats-mobile.test.mjs tests/repeat-commands.test.mjs tests/more-ui-parity.test.mjs",
+    "Production HTTP CSP browser fixture exercises search, amount, timestamp, weekdays, advanced options, cancellation, disable/enable, deletion, stale review, lost replies, creation and completed days."
+  ],
+  "limitations": [
+    "Saved source and phone images establish the reference; no new live Cronometer phone comparison was performed.",
+    "The cloud reviewed-apply flow and canonical completed-day rules remain in use. Native date and select controls follow browser rendering."
+  ]
+}

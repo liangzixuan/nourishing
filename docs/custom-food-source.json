@@ -1,0 +1,148 @@
+{
+  "sourceRoot": "../cronometer-local",
+  "controller": "public/custom-food-editor.js",
+  "sources": [
+    {
+      "path": "public/mobile-food-editor.js",
+      "sha256": "8ec7b8aac394f9409782746a2fa90bb4c39e20bad182b4c7c3af31da24de2774"
+    },
+    {
+      "path": "public/mobile-food-label.js",
+      "sha256": "82a52e315d116c78d6fb29be395b43e23800cea51bd48ba66856b364c09eda70"
+    },
+    {
+      "path": "public/mobile-food-editor.css",
+      "sha256": "ef2f21f4c05c151af66ae6f20f96f27943ff5c2ca6d363b6b8c0d6258be059b5"
+    },
+    {
+      "path": "public/food-portions.js",
+      "sha256": "83d0c81c7be3586fde3c3fa0bacca76e6f14fc573df61133e84a8dfdea5575c4"
+    },
+    {
+      "path": "server/food-label-draft.mjs",
+      "sha256": "6ef89d3e91324bb7ddaad410db64b19e6747715aae5e20c0b9930db538d13904"
+    }
+  ],
+  "files": [
+    {
+      "source": "../cronometer-local/public/food-portions.js",
+      "target": "public/custom-food-source/food-portions.js",
+      "sourceSha256": "83d0c81c7be3586fde3c3fa0bacca76e6f14fc573df61133e84a8dfdea5575c4",
+      "outputSha256": "e65480e4f6b37bdbfdd31c8d001d6d8fc9a78d14260bf1c4a6fc512e11521c16",
+      "transforms": [
+        "Resolve existing message formatter; English uses the current cloud locale convention.",
+        "Normalize UTF-8 publication text to LF."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/mobile-food-editor.css",
+      "target": "public/custom-food-source/mobile-food-editor.css",
+      "sourceSha256": "ef2f21f4c05c151af66ae6f20f96f27943ff5c2ca6d363b6b8c0d6258be059b5",
+      "outputSha256": "1c16e2add0d1d6ae602f64f5a6db78b58a6a7455159771e7470c16a31d3a5501",
+      "transforms": [
+        "Scope source selectors to cloud sheet and editor root; source cards/rows/label fields/review/footer retained.",
+        "Suppress numeric spinners inside compact label-basis input so three-digit quantities remain visible.",
+        "Normalize UTF-8 publication text to LF."
+      ]
+    },
+    {
+      "source": "../cronometer-local/server/food-label-draft.mjs",
+      "target": "server/domain/food-label-draft.mjs",
+      "sourceSha256": "6ef89d3e91324bb7ddaad410db64b19e6747715aae5e20c0b9930db538d13904",
+      "outputSha256": "99fec055541d39bc108da3e649cad141e15695a5ee8ef5d3bf6a81dbc342e1f2",
+      "transforms": [
+        "Resolve Big through installed big.js; retain authored-only conversion and provenance implementation.",
+        "Normalize UTF-8 publication text to LF."
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "path": "public/custom-food-editor.js",
+      "sha256": "f0810f553b53a77aa50721b9be721a9614ed65a3472d9018deb298892c643f96"
+    },
+    {
+      "path": "public/library.js",
+      "sha256": "5a9f4540df4c6153d21340c949d384f04fc0dbbde26466a0ec82b3f6de096369"
+    },
+    {
+      "path": "public/library.css",
+      "sha256": "454fb9f63149f629f439aae64b4b88a4b94c0c85b0bae20894cd8bd2106c113d"
+    },
+    {
+      "path": "public/custom-food-source/food-portions.js",
+      "sha256": "e65480e4f6b37bdbfdd31c8d001d6d8fc9a78d14260bf1c4a6fc512e11521c16"
+    },
+    {
+      "path": "public/custom-food-source/mobile-food-editor.css",
+      "sha256": "1c16e2add0d1d6ae602f64f5a6db78b58a6a7455159771e7470c16a31d3a5501"
+    },
+    {
+      "path": "server/domain/food-label-draft.mjs",
+      "sha256": "99fec055541d39bc108da3e649cad141e15695a5ee8ef5d3bf6a81dbc342e1f2"
+    },
+    {
+      "path": "server/food-editor.mjs",
+      "sha256": "74cceb83979d2fc92a0b2552c8c0af1ade397612691cab8f6a510bb5fd0dfa08"
+    },
+    {
+      "path": "server/library-tools.mjs",
+      "sha256": "9023ebf9c02ea1a0441a0646dc01b646c316648fd09d3212fa5c259856d8aa7a"
+    },
+    {
+      "path": "server/library-view.mjs",
+      "sha256": "fc8038c9c9e2ebb0f5a6915733aae3ccacefb257afd4ac208f3d9e89541712d3"
+    },
+    {
+      "path": "server/workspace-commands.mjs",
+      "sha256": "551c3e9d7167d49f134d4f20acb8f4315cd733196558c9fedd441a5eab74eca1"
+    },
+    {
+      "path": "tests/food-editor.test.mjs",
+      "sha256": "569e674b6e4a2aa3fcf7487fcc8aaef9b16e360c7d53dfca28a9b0207ff82d48"
+    },
+    {
+      "path": "tests/custom-food-browser.test.mjs",
+      "sha256": "111f035f2514830aa450f8001d00ba97adbb723bd10118cf81de16487ba3708e"
+    },
+    {
+      "path": "tests/foods-ui-parity.test.mjs",
+      "sha256": "d2b732b91ba1a44d75b35753e36ce6dd9986040359c88eda322440cca56b32e0"
+    },
+    {
+      "path": "tests/library-sharing-ui.test.mjs",
+      "sha256": "5a3b1bb1815f019bf9156e12d0ac15f3ca5945e8e85fb23a3500bb4c6c7f7d88"
+    }
+  ],
+  "references": [
+    {
+      "path": "../cronometer-local/verification/mobile-custom-food-20261109/label-controls-cua.png",
+      "sha256": "650580b529a7cf4ea31e30c6ab6b3fda9cc2f9eae44b2d7253fd84a46f730a4e"
+    }
+  ],
+  "behavior": [
+    "Restore source Food Details, Serving Sizes, Nutrition Details, label format selector, amount/DV cells, display basis, additional portions, and fixed Next → Review Food → Save Food flow.",
+    "Reuse FoodNutritionView for complete canonical review, including adjustable serving quantity, energy, macro targets, nutrient sections and unknown values.",
+    "Prepare preview and save through one server-owned food draft boundary. Named portions and raw ordered nutrient edits commit in the same existing workspace transaction/receipt.",
+    "Never accept client source provenance. Preserve existing source and portion translations; derive label history through projectFoodLabelDraft and existing label/quantity validators.",
+    "Keep display profile/unit/basis changes separate from authored values. Name, Barcode and Notes do not request nutrition projections.",
+    "Keep drafts transient. Dispose portions/renderers and abort pending projections on close; preserve immutable save envelopes on ambiguous transport/5xx failures.",
+    "Retain Share, Print, visibility tools, Add to diary and confirmed Delete under More Details; recipe and meal editors remain separate."
+  ],
+  "checks": [
+    "tests/food-editor.test.mjs",
+    "tests/custom-food-browser.test.mjs",
+    "tests/foods-ui-parity.test.mjs",
+    "tests/library-commands.test.mjs",
+    "tests/library-tools.test.mjs",
+    "tests/library-tools-http.test.mjs",
+    "tests/library-extras.test.mjs",
+    "tests/food-copy-browser.test.mjs",
+    "tests/library-sharing-ui.test.mjs"
+  ],
+  "limits": [
+    "The local browser fixture exercises authenticated API shapes and the real canonical preview/command owners under production CSP; hosted acceptance is a separate root check.",
+    "The reference is a saved local mobile implementation capture; this pass did not use a connected phone.",
+    "Label projections run on the server after relevant field commits. Display values never become authored edits unless the user edits them."
+  ]
+}

@@ -1554,6 +1554,15 @@
       "target": "server/domain/food-print-contract.mjs",
       "sourceSha256": "e8f94644570179c7b78ba1ded80cc065315856d951f99a2b756d195a9db98abf",
       "outputSha256": "1b907a4e108e6b2780058d3b8ba51aac788d92a65512c7f43747cc0f0e5f52e1"
+    },
+    {
+      "source": "server/food-label-draft.mjs",
+      "target": "server/domain/food-label-draft.mjs",
+      "sourceSha256": "6ef89d3e91324bb7ddaad410db64b19e6747715aae5e20c0b9930db538d13904",
+      "outputSha256": "99fec055541d39bc108da3e649cad141e15695a5ee8ef5d3bf6a81dbc342e1f2",
+      "transforms": [
+        "Resolve the existing decimal owner through the installed big.js package; source conversions and provenance are unchanged."
+      ]
     }
   ]
 }

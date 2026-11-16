@@ -1,20 +1,25 @@
+import {mobileRepeatsHeader,mobileRepeatsMarkup,MobileRepeatList,mobileRepeatForm,MobileRepeatEditor} from './repeat-source/mobile-repeats.js';
+import {icon} from './repeat-source/icons.js';
 import {request, command} from './diary-api.js';
 import {escape as e} from './html.js';
 import {mountFoodPicker} from './food-picker.js';
 import {quantityFields, quantityValue} from './quantity.js';
 
-const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const num = value => Number.isFinite(value) ? value.toLocaleString(undefined, {maximumFractionDigits: 2}) : '—';
 const quantity = row => `${num(row.quantity ?? row.amount ?? 1)} ${row.unit === 'portion' ? row.portionLabel ?? 'portions' : row.unit ?? 'servings'}`;
 const reviewQuantity = row => `${num(row.value)} ${row.label ?? row.unit ?? (row.kind === 'batch' ? 'batch' : 'servings')}`;
 
-export function mountRepeats({page, show, close, header, content, date, onChange = async () => {}}) {
-  let data, disposed = false, serial = 0, pickerCleanup;
+export function mountRepeats({page, show, close, header, content, date, headerRoot, onExit, onChange = async () => {}}) {
+  let data, disposed = false, serial = 0, pickerCleanup, list, editorController, query='';
+  const events=new AbortController();document.body.classList.add('repeats-mobile');
   const root = document.createElement('section');
   root.className = 'repeat-page';
   page.replaceChildren(root);
   const alive = () => !disposed && root.isConnected;
-  function open(html) { pickerCleanup?.(); pickerCleanup = null; show(html); }
+  function cleanupEditor(){editorController?.dispose();editorController=null;}
+  function open(html) { cleanupEditor();pickerCleanup?.(); pickerCleanup = null; show(html); }
+  const observer=new MutationObserver(()=>{if(editorController&&!editorController.root.isConnected)cleanupEditor();});observer.observe(content,{childList:true,subtree:true});
+  const sheet=content.closest('dialog');sheet?.addEventListener('cancel',event=>{if(editorController?.back()){event.preventDefault();event.stopImmediatePropagation();}},{capture:true,signal:events.signal});
   async function reload() {
     const id = ++serial;
     root.innerHTML = '<p class="empty">Loading…</p>';
@@ -22,27 +27,24 @@ export function mountRepeats({page, show, close, header, content, date, onChange
       const result = await request('/api/repeats?' + new URLSearchParams({date: date()}));
       if (!alive() || id !== serial) return;
       data = result;
-      render();
+      render();return true;
     } catch (error) {
       if (alive() && id === serial) {
         root.innerHTML = `<p class="sheet-message" role="status">${e(error.message)}</p><button type="button" class="more-results">Try again</button>`;
         root.querySelector('button').onclick = reload;
       }
+      return false;
     }
   }
   function render() {
-    root.innerHTML = `<div class="repeat-heading"><h1>Repeat Items</h1><button type="button" data-new>＋ New</button></div><p class="repeat-date">${e(data.date)}</p><p class="sheet-message repeat-status" role="status"></p>${data.items.length ? data.items.map(item => `<div class="repeat-card"><button type="button" data-edit="${e(item.id)}"><strong>${e(item.name)}</strong><small>${e(quantity(item))} · ${e(item.group)} · ${e(item.time ?? '')}</small><small>${item.days.map(day => days[day]).join(' · ')}</small></button><label class="repeat-toggle"><input type="checkbox" data-enabled="${e(item.id)}" aria-label="Enable ${e(item.name)}" ${item.enabled !== false ? 'checked' : ''}></label></div>`).join('') : '<p class="empty">No repeat items yet.</p>'}<div class="repeat-actions"><button type="button" class="primary" data-review ${!data.preview.items.length || data.completed ? 'disabled' : ''}>${data.completed ? 'Day completed' : `Review ${data.preview.items.length} due`}</button></div>${data.preview.alreadyLogged ? `<p class="repeat-date">${data.preview.alreadyLogged} already logged</p>` : ''}`;
-    root.querySelector('[data-new]').onclick = () => chooseItem();
-    root.querySelector('[data-review]').onclick = review;
-    root.querySelectorAll('[data-edit]').forEach(button => { button.onclick = () => editItem(data.items.find(item => item.id === button.dataset.edit)); });
-    root.querySelectorAll('[data-enabled]').forEach(input => { input.onchange = async () => {
-      const previous = !input.checked;
-      input.disabled = true;
-      try { await command(data.revision, 'repeat.setEnabled', {id: input.dataset.enabled, enabled: input.checked}); await reload(); }
-      catch (error) { if (alive()) { input.checked = previous; root.querySelector('[role=status]').textContent = error.message; } }
-      finally { input.disabled = false; }
-    }; });
+    list?.dispose();
+    if(headerRoot)headerRoot.innerHTML=mobileRepeatsHeader('en',icon);
+    root.innerHTML=(headerRoot?'':mobileRepeatsHeader('en',icon))+mobileRepeatsMarkup({language:'en',rows:data.items,name:row=>row.name,quantity,icon,query})+'<p class="repeat-status sheet-message" role="status"></p>';
+    list=new MobileRepeatList({root,language:'en',onQuery:value=>{query=value;}});
+    const review=root.querySelector('[data-action=apply-repeats]');if(review){review.disabled=!data.preview.items.length||data.completed;if(data.completed)review.textContent='Day completed';}
   }
+  function click(event){const button=event.target.closest('[data-action]');if(!button)return;const action=button.dataset.action;if(action==='repeat-home')onExit?.();if(action==='new-repeat')chooseItem();if(action==='edit-repeat')editItem(data.items.find(row=>row.id===button.dataset.id));if(action==='apply-repeats')review();}
+  root.addEventListener('click',click,{signal:events.signal});headerRoot?.addEventListener('click',click,{signal:events.signal});
   function chooseItem(existing, draft) {
     open(`${header('Repeat Item')}<div class="repeat-picker"></div>${existing || draft ? '<button type="button" class="more-results" data-back>Back</button>' : ''}`);
     if (existing || draft) content.querySelector('[data-back]').onclick = () => editItem(existing, draft);
@@ -62,18 +64,21 @@ export function mountRepeats({page, show, close, header, content, date, onChange
   }
   function editor(existing, draft, item) {
     const value = {startDate: data.date, days: [0, 1, 2, 3, 4, 5, 6], time: new Date().toTimeString().slice(0, 5), group: data.groups.includes('Uncategorized') ? 'Uncategorized' : data.groups[0], enabled: true, ...draft};
-    open(`${header('Repeat Item')}<form class="entry-form"><button type="button" class="more-results" data-change>${e(item.resource.name)} ↻</button>${quantityFields(item.options, value)}<label class="field-row"><span>Group</span><select name="group" aria-label="Group">${data.groups.map(group => `<option ${group === value.group ? 'selected' : ''}>${e(group)}</option>`).join('')}</select></label><label class="field-row"><span>Time</span><input type="time" name="time" aria-label="Time" value="${e(value.time ?? '')}"></label><fieldset class="repeat-weekdays"><legend>Repeat on</legend><div>${days.map((day, i) => `<label><input type="checkbox" name="day" value="${i}" ${value.days.includes(i) ? 'checked' : ''}>${day}</label>`).join('')}</div></fieldset><label class="field-row"><span>Starts</span><input type="date" name="startDate" aria-label="Starts" value="${e(value.startDate)}" required></label><label class="field-row"><span>Ends</span><input type="date" name="endDate" aria-label="Ends" value="${e(value.endDate ?? '')}"></label><p class="sheet-message" role="status"></p><footer class="entry-actions">${existing ? '<button type="button" class="danger" data-delete>Delete</button>' : ''}<button type="submit" class="primary">Save</button></footer></form>`);
-    const form = content.querySelector('form'), revision = data.revision;
-    const read = () => ({...(existing ? {id: existing.id} : {}), [item.kind + 'Id']: item.resource.id, ...quantityValue(form), group: form.elements.group.value, time: form.elements.time.value, days: [...form.querySelectorAll('[name=day]:checked')].map(input => Number(input.value)), startDate: form.elements.startDate.value, endDate: form.elements.endDate.value || null, enabled: value.enabled !== false});
-    form.querySelector('[data-change]').onclick = () => chooseItem(existing, read());
-    form.onsubmit = event => { event.preventDefault(); save(form, revision, 'repeat.save', read()); };
-    if (existing) form.querySelector('[data-delete]').onclick = () => {
-      const draft = read();
-      open(`${header('Delete Repeat Item')}<div class="repeat-delete"><p class="repeat-date">${e(item.resource.name)}</p><p class="sheet-message" role="status"></p><div class="entry-actions"><button type="button" data-back>Cancel</button><button type="button" class="danger" data-confirm>Delete</button></div></div>`);
-      const panel = content.querySelector('.repeat-delete');
-      content.querySelector('[data-back]').onclick = () => editor(existing, draft, item);
-      content.querySelector('[data-confirm]').onclick = () => save(panel, revision, 'repeat.delete', {id: existing.id});
-    };
+    const fields='<div class="quantity-fields" data-quantity-fields>'+quantityFields(item.options,value).replace('name="amount"','name="amount" aria-label="Amount"').replace('name="unit"','name="unit" data-quantity-unit')+'</div>';
+    open(mobileRepeatForm({language:'en',record:value,name:item.resource.name,reference:{[item.kind+'Id']:item.resource.id},quantity:fields,groupOptions:data.groups.map(group=>`<option value="${e(group)}" ${group===value.group?'selected':''}>${e(group)}</option>`).join(''),icon}));
+    const form=content.querySelector('form'),revision=data.revision;form.querySelector('h2').id='sheet-title';form.elements.group.setAttribute('aria-label','Group');
+    form.querySelector('.mr-footer').insertAdjacentHTML('beforebegin','<p class="repeat-status" role="status"></p>');
+    const read=()=>({... (existing?{id:existing.id}:{}),[item.kind+'Id']:item.resource.id,...quantityValue(form),group:form.elements.group.value,time:form.querySelector('[data-mr-timestamp]').checked?form.elements.time.value:'',days:[...form.querySelectorAll('[name=days]:checked')].map(input=>Number(input.value)),startDate:form.elements.startDate.value,endDate:form.elements.endDate.value||null,enabled:value.enabled!==false});
+    form.querySelector('[data-action=close-dialog]').onclick=()=>{cleanupEditor();close();};
+    editorController=new MobileRepeatEditor({root:form,language:'en',record:value,resetQuantity:()=>{},readDraft:()=>value.enabled===false?value:read(),onError:error=>{form.querySelector('[role=status]').textContent=error.message;},onAction:async(action,actionDraft)=>{
+      if(action==='delete'){
+        const draft=actionDraft;open(`${header('Delete Repeat Item')}<div class="repeat-delete"><p class="repeat-date">${e(item.resource.name)}</p><p class="sheet-message" role="status"></p><div class="entry-actions"><button type="button" data-back>Cancel</button><button type="button" class="danger" data-confirm>Delete</button></div></div>`);
+        const panel=content.querySelector('.repeat-delete');panel.querySelector('[data-back]').onclick=()=>editor(existing,draft,item);panel.querySelector('[data-confirm]').onclick=()=>save(panel,revision,'repeat.delete',{id:existing.id});return;
+      }
+      try{if(action!=='reload')await command(revision,'repeat.setEnabled',{id:existing.id,enabled:action==='enable'});await onChange();if(!await reload())throw Error('Unable to reload repeats. Try again.');if(form.isConnected){const current=data.items.find(row=>row.id===existing.id);if(current)editor(current,current,item);else close();}}
+      catch(error){error.reloadRequired=error.status===409||!(error.status>=400&&error.status<500);throw error;}
+    }});
+    form.onsubmit=event=>{event.preventDefault();if(form.checkValidity())save(form,revision,'repeat.save',read());};
   }
   function review() {
     const preview = data.preview, revision = data.revision;
@@ -86,13 +91,20 @@ export function mountRepeats({page, show, close, header, content, date, onChange
     };
   }
   async function save(panel, revision, type, payload) {
-    panel.querySelectorAll('button').forEach(button => { button.disabled = true; });
-    const status = panel.querySelector('[role=status]');
-    status.textContent = '';
-    try { await command(revision, type, payload); await onChange(); if (panel.isConnected) close(); if (alive()) await reload(); }
-    catch (error) { if (panel.isConnected) { status.textContent = error.message; if (error.status === 409) { const button = document.createElement('button'); button.type = 'button'; button.textContent = 'Reload repeats'; button.onclick = () => { close(); reload(); }; status.append(button); } } }
-    finally { panel.querySelectorAll('button').forEach(button => { button.disabled = false; }); }
+    if(panel.dataset.saving)return;panel.dataset.saving='true';
+    const controls=[...panel.querySelectorAll('input,select,button')].filter(el=>el.dataset.action!=='close-dialog');controls.forEach(el=>el.disabled=true);
+    const status=panel.querySelector('[role=status]'),captured=structuredClone(payload);let committed=false;
+    const run=async()=>{
+      status.replaceChildren();
+      try{if(!committed){await command(revision,type,captured);committed=true;}await onChange();if(panel.isConnected)close();if(alive())await reload();}
+      catch(error){if(!panel.isConnected)return;status.textContent=error.message;const button=document.createElement('button');button.type='button';
+        if(error.status===409){button.textContent='Reload repeats';button.onclick=()=>{cleanupEditor();close();reload();};}
+        else if(!(error.status>=400&&error.status<500)||committed){button.textContent='Retry';button.onclick=run;}
+        else{delete panel.dataset.saving;controls.forEach(el=>el.disabled=false);editorController?.refresh();return;}
+        status.append(button);
+      }
+    };await run();
   }
   reload();
-  return {reload, dispose() { disposed = true; serial++; pickerCleanup?.(); data = null; }};
+  return {reload,back(){return editorController?.back()??false;},dispose(){disposed=true;serial++;cleanupEditor();list?.dispose();pickerCleanup?.();observer.disconnect();events.abort();document.body.classList.remove('repeats-mobile');data=null;}};
 }

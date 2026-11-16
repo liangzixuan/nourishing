@@ -1,4 +1,5 @@
 import {validateFoodCopy,applyFoodCopy} from './food-copy.mjs';
+import {prepareFoodEditorDraft,foodEditorLabelView} from './food-editor.mjs';
 import {validateFoodMultiInput,foodMultiCatalogReferences,applyFoodMultiAdd} from './food-multi-add.mjs';
 import {parseAddMenu} from './domain/add-menu.mjs';
 import {diaryDisplayCommandFields,prepareDiaryDisplayCommand} from './diary-display-settings.mjs';
@@ -44,7 +45,7 @@ const fields={
  'day.complete':['date','completed'],
  'note.add':['date','time','group','text'],
  'note.delete':['id'],
- 'food.save':['id','name','serving','grams','milliliters','barcode','nutrients','notes'],
+ 'food.save':['id','name','serving','grams','milliliters','barcode','nutrients','notes','portions','nutrientEdits'],
  'recipe.save':['id','name','servings','ingredients','instructions','source','importReview','cookedWeightGrams','batchVolumeMl'],
  'meal.save':['id','name','items'],
  'food.delete':['id'],'recipe.delete':['id'],'meal.delete':['id']
@@ -86,6 +87,7 @@ export function applyWorkspaceCommand(state,input,context={}){
  try{if(input.type==='food.copy')return applyFoodCopy(state,input.payload,context);if(input.type==='food.multi.add')return applyFoodMultiAdd(state,input.payload,context);if(input.type==='addMenu.save')return act(state,'settings.save',{addMenu:parseAddMenu(input.payload.addMenu)});if(Object.hasOwn(diaryDisplayCommandFields,input.type)){const prepared=prepareDiaryDisplayCommand(state,input);return act(state,prepared.type,prepared.payload);}const health=applyHealthCommand(state,input);if(health.handled)return health.result;const chartDisplay=applyChartDisplayCommand(state,input);if(chartDisplay.handled)return chartDisplay.result;if(input.type==='share.import')return applySharedImport(state,input.payload);const coach=applyCoachCommand(state,input);if(coach.handled)return coach.result;if(Object.hasOwn(libraryExtrasCommandFields,input.type)){const prepared=prepareLibraryExtrasCommand(state,input);return act(state,prepared.type,prepared.payload);}const notePhoto=applyNotePhotoCommand(state,input,context);if(notePhoto.handled)return notePhoto.result;const diaryTools=applyDiaryToolsCommand(state,input);if(diaryTools.handled)return diaryTools.result;if(input.type==='barcode.log')return applyBarcodeLog(state,input.payload,context);const dashboard=applyDashboardCommand(state,input,context);if(dashboard.handled)return dashboard.result;if(Object.hasOwn(entryAdjustmentFields,input.type)){const prepared=prepareEntryAdjustmentCommand(state,input);return act(state,prepared.type,prepared.payload);}if(Object.hasOwn(libraryToolCommandFields,input.type)){const prepared=prepareLibraryToolCommand(state,input);return act(state,prepared.type,prepared.payload);}if(Object.hasOwn(profileSettingsCommandFields,input.type)){const prepared=prepareProfileSettingsCommand(state,input);return act(state,prepared.type,prepared.payload);}const snapshot=applySnapshotCommand(state,input,context);if(snapshot.handled)return snapshot.result;const fasting=applyFastingCommand(state,input,context);if(fasting.handled)return fasting.result;if(Object.hasOwn(foodInsightCommandFields,input.type)){const prepared=prepareFoodInsightCommand(state,input);return act(state,prepared.type,prepared.payload);}if(input.type==='text.log')return applyTextLog(state,input.payload);if(input.type==='meal.log')return applyMealLog(state,input.payload);if(input.type==='photo.log')return applyPhotoLog(state,input.payload,context);if(Object.hasOwn(targetPolicyCommandFields,input.type)){const prepared=prepareTargetPolicyCommand(state,input,context);return act(state,prepared.type,prepared.payload);}const record=applyRecordCommand(state,input);if(record.handled)return record.result;return act(state,input.type==='preferences.patch'?'settings.save':input.type,libraryPayload(state,input));}catch(error){if([400,404,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
 }
 function libraryPayload(state,{type,payload}){
+ if(type==='food.save')return prepareFoodEditorDraft(state,payload);
  if(!['food.save','recipe.save','meal.save'].includes(type)||!payload.id)return payload;
  const item=state[type.split('.')[0]+'s'].find(row=>row.id===payload.id);
  if(!item)invalid('This library item no longer exists.');
@@ -109,10 +111,11 @@ export function captureActionFoods(state,input,foods){
  return action;
 }
 export function validateLibraryPreview(input){
- if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(key=>!['kind','draft','date'].includes(key))||!['food','recipe','meal'].includes(input.kind))invalid('Choose a library item.');
+ if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(key=>!['kind','draft','date','quantity','labelView'].includes(key))||!['food','recipe','meal'].includes(input.kind)||input.labelView!==undefined&&input.kind!=='food')invalid('Choose a library item.');
+ if(input.labelView!==undefined&&(!input.labelView||typeof input.labelView!=='object'||Array.isArray(input.labelView)))invalid('Choose a label view.');
  return validateAction({type:input.kind+'.save',payload:input.draft});
 }
 export function previewLibrary(state,input){
  const action=validateLibraryPreview(input);
- try{return previewLibraryDraft(state,{...input,draft:libraryPayload(state,action)});}catch(error){if([400,404,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
+ try{const {labelView,...preview}=input,result=previewLibraryDraft(state,{...preview,draft:libraryPayload(state,action)});return {...result,...(labelView?{labelView:foodEditorLabelView(result.resource,labelView)}:{})};}catch(error){if([400,404,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
 }

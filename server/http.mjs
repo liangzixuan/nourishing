@@ -118,7 +118,7 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       if(path.startsWith('/api/food-insights/')){
         if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid food insight query.');
         if(req.method==='GET'&&path==='/api/food-insights/options')return json(200,await api.foodInsightOptions(secret));
-        const methods={'/api/food-insights/resolve':'resolveFoodInsightIngredient','/api/food-insights/oracle':'foodOracle','/api/food-insights/suggestions':'foodSuggestions','/api/food-insights/preview':'previewFoodSuggestion'};
+        const methods={'/api/food-insights/resolve':'resolveFoodInsightIngredient','/api/food-insights/oracle':'foodOracle','/api/food-insights/suggestions':'foodSuggestions','/api/food-insights/preview':'previewFoodSuggestion','/api/food-insights/ingredient-preview':'previewFoodInsightIngredient'};
         if(req.method==='POST'&&Object.hasOwn(methods,path))return json(200,await api[methods[path]](secret,body));
         fail(404,'Not found.');
       }

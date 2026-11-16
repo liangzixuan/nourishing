@@ -1,6 +1,8 @@
 import {catalog as nutrients} from './domain/nutrition.mjs';
 import {rankNutrient} from './domain/catalog-insights.mjs';
-import {mealSuggestionOptions,suggestMeals,previewSuggestedMeal,resolveMealIngredient,applyMealSuggestionPreference} from './domain/meal-suggestions.mjs';
+import {mealSuggestionOptions,suggestMeals,previewSuggestedMeal,previewSuggestedIngredient,resolveMealIngredient,applyMealSuggestionPreference} from './domain/meal-suggestions.mjs';
+import {libraryItem} from './library-view.mjs';
+import {availableQuantityUnits} from './domain/quantity-units.mjs';
 import {MEAL_LIBRARY} from './domain/meal-suggestion-library.mjs';
 import {catalogQuery,matchesCatalogQuery} from './domain/usda-catalog.mjs';
 import {catalogIdentity,compactFoodSource,catalogSourceAliases} from './domain/catalog-source.mjs';
@@ -56,14 +58,19 @@ export function createInsightCatalog(foods,{metadata={},sourceFactDigests={},nut
   }
  };
 }
-export function foodInsightOptions(state){return {revision:digest(state),groups:state.settings.groups,nutrients:nutrients.map(({id,name,unit,category})=>({id,name,unit,category})),suggestions:{...mealSuggestionOptions(state),templates:MEAL_LIBRARY.map(({ref,name})=>({ref,name}))}};}
+export function foodInsightOptions(state){return {revision:digest(state),groups:state.settings.groups,energyUnit:state.settings.energyUnit??'kcal',nutrients:nutrients.map(({id,name,unit,category})=>({id,name,unit,category})),suggestions:{...mealSuggestionOptions(state),templates:MEAL_LIBRARY.map(({ref,name})=>({ref,name}))}};}
 export function foodOracle(state,foodCatalog,input){
  exact(input,['nutrient','basis','query','offset','limit','categoryMode','categoryIds','includeUncategorized']);
  return rankNutrient({...input,foods:state.foods,foodCatalog});
 }
 export function foodSuggestions(state,foodCatalog,input){return suggestMeals({state,foodCatalog,input});}
 export function previewFoodSuggestion(state,foodCatalog,input){return previewSuggestedMeal({state,foodCatalog,input});}
-export function resolveFoodInsightIngredient(state,foodCatalog,input){return resolveMealIngredient({state,foodCatalog,input});}
+export function previewFoodInsightIngredient(state,foodCatalog,input){return previewSuggestedIngredient({state,foodCatalog,input});}
+export function resolveFoodInsightIngredient(state,foodCatalog,input){
+ const result=resolveMealIngredient({state,foodCatalog,input}),r=result.resource;
+ const quantityOptions=input.selection.kind==='catalog'?[['servings',r.serving??'Serving'],...availableQuantityUnits(r).map(unit=>[unit.id,unit.label]),...(r.portions??[]).map(p=>['portion:'+p.id,p.label])]:libraryItem(state,result.kind.slice(0,-1),r).options;
+ return {...result,quantityOptions};
+}
 export const foodInsightCommandFields={'foodSuggestion.preference':['action','ref','revision','tags','lessOften','excluded']};
 export function prepareFoodInsightCommand(state,action){
  if(!Object.hasOwn(foodInsightCommandFields,action.type))return action;
