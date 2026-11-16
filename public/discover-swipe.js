@@ -1,7 +1,8 @@
 const tabs=['dashboard','charts','report','snapshots'];
-const controls='a,button,input,select,textarea,label,summary,canvas,svg,.mcl-plot,.chart-canvas,.dc-chart,.report-energy-ring,[contenteditable]:not([contenteditable="false"]),[role="button"],[role="slider"],[role="tab"],[data-discover-swipe-ignore]';
+// Taps still activate cards, charts and headings; horizontal intent owns a swipe.
+const controls='input,select,textarea,[contenteditable]:not([contenteditable="false"]),[role="slider"],[data-discover-swipe-ignore]';
 
-/** A touch gesture owns navigation only after horizontal intent on plain content. */
+/** A touch gesture owns navigation only after horizontal intent within Discover. */
 export function bindDiscoverSwipe(root,{current,select,onMove=()=>{},onCancel=()=>{},isTransitioning=()=>false}){
  let gesture=null;const surface=root.ownerDocument;
  const blocked=()=>!root.isConnected||root.ownerDocument.querySelector('dialog[open],[aria-modal="true"]')!==null;

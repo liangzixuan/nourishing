@@ -91,11 +91,11 @@
     },
     {
       "target": "public/offline-session.js",
-      "outputSha256": "52818e1eb25c0a10993a6a59ffd86792056a6dced0cb463c8be287113c50a250"
+      "outputSha256": "4b840006069fcf74270cbfc7aee83e67603ca82475eb93087196edd88a33f7b7"
     },
     {
       "target": "public/offline-store.js",
-      "outputSha256": "e6de4d6187d46afa17c346dba85f8276c031202b101911a99ca1f906b3b5ce00"
+      "outputSha256": "05d0f6536a08e846b0a63dc3360e88e53859052ddd38a28b5ee9370ef8091227"
     },
     {
       "target": "public/offline-sync.js",

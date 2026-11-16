@@ -10,7 +10,7 @@ function resetResponses(active,meta,responses){responses.clear();meta.delete('re
 function sameSession(active,expected){return !!expected&&!!active.ownerId&&!active.cacheLocked&&active.ownerId===expected.ownerId&&active.epoch===expected.epoch;}
 function assertTicket(active,copy,expected,{revision=false,unlocked=true}={}){if(!expected||active.ownerId!==expected.ownerId||active.epoch!==expected.epoch||revision&&copy?.revision!==expected.revision||unlocked&&copy?.locked)throw offlineFailure('copyChanged');}
 export async function offlineCopy(){return transact(({active,copy})=>copy?{...copy,ticket:ticket(active,copy)}:null,false);}
-export async function activateOfflineAccount(ownerId){if(typeof ownerId!=='string'||!ownerId)throw offlineFailure('signInFirst');return transact(({active,meta,responses})=>{if(active.ownerId!==ownerId){active={ownerId,epoch:crypto.randomUUID()};resetResponses(active,meta,responses);}active.cacheLocked=false;meta.put(active,'active');return {...ticket(active,null),...cacheTicket(active)};});}
+export async function activateOfflineAccount(ownerId,{sessionContext=null}={}){if(typeof ownerId!=='string'||!ownerId)throw offlineFailure('signInFirst');return transact(({active,meta,responses})=>{if(active.ownerId!==ownerId){active={ownerId,epoch:crypto.randomUUID()};resetResponses(active,meta,responses);}active.cacheLocked=false;active.sessionContext=/^[a-f0-9]{64}$/.test(sessionContext??'')?sessionContext:null;meta.put(active,'active');return {...ticket(active,null),...cacheTicket(active)};});}
 export async function saveOfflineSnapshot(snapshot,expected){return transact(({active,copy,accounts,meta,responses})=>{assertTicket(active,copy,expected,{unlocked:false});if(snapshot.version!==1||snapshot.identity.ownerId!==active.ownerId)throw offlineFailure('otherSnapshot');if(copy&&copy.snapshot.identity.generation!==snapshot.identity.generation){resetResponses(active,meta,responses);meta.put(active,'active');}const pending=copy?.pending??[];for(const row of pending)if(row.command.generation!==snapshot.identity.generation){row.status='conflict';row.error='The diary was restored. Review this change.';row.messageKey='accountCloud.offlineError.restored';}const next={ownerId:active.ownerId,snapshot:structuredClone(snapshot),pending,locked:false,revision:(copy?.revision??0)+1};accounts.put(next);return {...next,ticket:ticket(active,next)};});}
 export async function changeOfflineCopy(expected,change,{strict=false}={}){return transact(({active,copy,accounts})=>{assertTicket(active,copy,expected,{revision:strict});if(!copy)throw offlineFailure('keepFirst');const next=change(structuredClone(copy));if(!next)return;next.revision=copy.revision+1;accounts.put(next);return {...next,ticket:ticket(active,next)};});}
 export async function lockOfflineAccount(expected){return transact(({active,copy,accounts,meta,responses})=>{if(expected)assertTicket(active,copy,expected,{unlocked:false});active.epoch=crypto.randomUUID();active.cacheLocked=true;resetResponses(active,meta,responses);meta.put(active,'active');if(copy)accounts.put({...copy,locked:true,revision:copy.revision+1});});}
@@ -54,4 +54,10 @@ export async function invalidatePrivateResponses(expected){
 }
 export async function currentPrivateResponseTicket(expected){
  return responseTransaction(({active,done})=>done(sameSession(active,expected)?cacheTicket(active):null));
+}
+
+// Resume only the last verified session named by the current server document.
+export async function resumePrivateResponses(context){
+ if(!/^[a-f0-9]{64}$/.test(context??''))return null;
+ return responseTransaction(({active,done})=>done(active.ownerId&&!active.cacheLocked&&active.sessionContext===context?cacheTicket(active):null));
 }

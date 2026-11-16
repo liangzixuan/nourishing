@@ -54,13 +54,18 @@ test('Discover touch swipes navigate bounded tabs while preserving scrolling, co
   await tab('dashboard');await swipe({dx:160});await tab('dashboard');
   assert.equal(await swipe({dx:3,dy:180}),false);await tab('dashboard');
   await swipe({dx:-25});await tab('dashboard');await swipe({multi:true});await tab('dashboard');await swipe({cancel:true});await tab('dashboard');
-  await swipe({selector:'[data-discover=edit-report]'});await tab('dashboard');
+  await swipe({selector:'[data-discover=edit-report]'});await tab('charts');
+  await page.locator('[data-tab=dashboard]').click();await tab('dashboard');
   await page.getByRole('button',{name:'Newsfeed',exact:true}).click();await page.locator('#sheet').getByText('Fixture News',{exact:true}).waitFor();await swipe();await tab('dashboard');await page.getByRole('button',{name:'Close',exact:true}).click();
   assert.equal(await swipe(),true);await tab('charts');await page.locator('[data-manage]').waitFor();
-  const plot=page.locator('canvas').first();await plot.waitFor();await swipe({selector:'canvas'});await tab('charts');await swipe({selector:'.mcl-plot'});await tab('charts');
+  const plot=page.locator('canvas').first();await plot.waitFor();await swipe({selector:'canvas'});await tab('report');
+  await page.locator('[data-tab=charts]').click();await tab('charts');await swipe({selector:'.mcl-plot'});await tab('report');
+  await page.locator('[data-tab=charts]').click();await tab('charts');
   await page.evaluate(()=>{const scroller=document.createElement('div');scroller.id='horizontal-gesture-fixture';scroller.innerHTML='<div>Scrollable control</div>';document.querySelector('.report-content').append(scroller);});
   await swipe({selector:'#horizontal-gesture-fixture div'});await tab('charts');
+  await page.evaluate(()=>{const input=document.createElement('input');input.id='gesture-input';document.querySelector('.report-content').append(input);});await swipe({selector:'#gesture-input'});await tab('charts');
   await swipe();await tab('report');await page.locator('.mobile-report-toolbar').waitFor();
+  await swipe({selector:'summary'});await tab('snapshots');await page.locator('[data-tab=report]').click();await tab('report');
   await page.getByRole('button',{name:'Report Settings',exact:true}).click();await page.getByRole('dialog',{name:'Report Settings',exact:true}).waitFor();await swipe();await tab('report');await page.keyboard.press('Escape');
   await swipe();await tab('snapshots');await swipe();await tab('snapshots');await swipe({dx:150});await tab('report');await page.locator('.mobile-report-toolbar').waitFor();
   await swipe({dx:150});await tab('charts');await page.locator('[data-manage]').waitFor();await swipe({dx:150});await tab('dashboard');await page.locator('.cloud-dashboard').waitFor();
@@ -70,6 +75,8 @@ test('Discover touch swipes navigate bounded tabs while preserving scrolling, co
   async function realTouch(from,to){await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:from.x,y:from.y}]});for(let i=1;i<=5;i++)await client.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:from.x+(to.x-from.x)*i/5,y:from.y+(to.y-from.y)*i/5}]});await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}
   await realTouch({x:210,y:650},{x:210,y:350});await page.waitForFunction(()=>scrollY>0);await tab('dashboard');
   await page.evaluate(()=>scrollTo(0,0));await realTouch({x:280,y:450},{x:100,y:450});await tab('charts');
+  // A swipe on an actionable card must not synthesize its tap action.
+  await page.locator('[data-tab=dashboard]').click();await tab('dashboard');const action=page.locator('[data-discover=edit-report]');await action.scrollIntoViewIfNeeded();const box=await action.boundingBox();await realTouch({x:box.x+box.width/2,y:box.y+box.height/2},{x:box.x+box.width/2-160,y:box.y+box.height/2});await tab('charts');assert.equal(await page.locator('dialog[open]').count(),0);
   // The screen follows the finger before commit; cancellation settles in place.
   await page.evaluate(()=>{
    const target=document.querySelector('.report-content'),touch=x=>new Touch({identifier:7,target,clientX:x,clientY:240});

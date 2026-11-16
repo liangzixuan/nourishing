@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto';
 const name='__Host-nourishing_session';
 const flags='Path=/; HttpOnly; Secure; SameSite=Strict';
 export function sessionCookie({secret,expire}) {
@@ -11,3 +12,6 @@ export function readSession(header='') {
   if(matches.length>1)throw Object.assign(Error('Invalid session cookie.'),{code:401});
   try{return matches.length?decodeURIComponent(matches[0].slice(name.length+1)):null;}catch{throw Object.assign(Error('Invalid session cookie.'),{code:401});}
 }
+
+// A public cache binding, never accepted as an authentication credential.
+export const sessionContext=secret=>secret?createHash('sha256').update('nourishing-device-context\0'+secret).digest('hex'):'';

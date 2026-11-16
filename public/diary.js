@@ -15,7 +15,7 @@ import {mountMore} from './more.js';
 import {diarySummaryMarkup,mountDiarySummary} from './diary-summary.js';
 import {openDiarySummaryAction} from './diary-summary-actions.js';
 import {diaryCycleMarkup} from './diary-cycle.js';
-import {rememberOfflineAccount} from './offline-session.js';
+import {openDiarySession} from './diary-startup.js';
 import {mountTextLog} from './text-log.js';
 import {notePhotoThumbnail} from './note-photos.js';
 import {createDiaryTools} from './diary-tools.js';
@@ -52,7 +52,7 @@ sheet.addEventListener('cancel',event=>{event.preventDefault();if(!pickerCleanup
 async function load({reuseUnchanged=false}={}){
  const id=++loadId;notice.textContent='';page.setAttribute('aria-busy','true');
  try{
-  if(!accountReady){account=await request('/api/account');await rememberOfflineAccount(account);accountReady=true;startDeviceSync(account.id);startPrivateImages();}
+  if(!accountReady){account=await openDiarySession();accountReady=true;startDeviceSync(account.id);startPrivateImages();}
   const result=await request('/api/diary?date='+date,undefined,undefined,{onRefresh:next=>{if(id!==loadId||document.querySelector('dialog[open]'))return;applyDiary(next);}});if(id!==loadId)return;
   // Revalidate the current in-memory snapshot without replacing live controls.
   // A pending editor keeps its captured revision; its save still uses the server guard.

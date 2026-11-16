@@ -4,7 +4,7 @@ import {deletionCookie,readDeletionTicket} from './deletion-cookie.mjs';
 import {BARCODE_BODY_BYTES} from './barcode.mjs';
 import {readCloudFoodSearchQuery} from './food-search.mjs';
 import {Readable} from 'node:stream';
-import {readSession,sessionCookie,clearSession} from './session-cookie.mjs';
+import {readSession,sessionCookie,clearSession,sessionContext} from './session-cookie.mjs';
 const fail=(code,message,errorCode)=>{throw Object.assign(Error(message),{code,publicMessage:message,...(errorCode?{errorCode}:{})});};
 function fields(value,names){if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(k=>!names.includes(k)))fail(400,'Check the form and try again.');return value;}
 function string(value,min,max){if(typeof value!=='string'||value.length<min||value.length>max)fail(400,'Check the form and try again.');return value;}
@@ -22,7 +22,7 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       if(req.method==='GET'&&path==='/healthz')return json(200,{status:'ok',service:'nourishing-cloud-accounts'});
       if(req.method==='GET'&&!path.startsWith('/api/')) {
         const asset=assets.get(path)||(['/', '/login','/register','/forgot-password','/reset-password','/verify-email','/account'].includes(path)?assets.get('/'):undefined);
-        if(!asset)fail(404,'Not found.');headers.set('Content-Type',asset.type);return new Response(asset.body,{headers});
+        if(!asset)fail(404,'Not found.');headers.set('Content-Type',asset.type);const body=path==='/diary'?String(asset.body).replace('<head>','<head><meta name="nourishing-session" content="'+sessionContext(readSession(req.headers.get('cookie')??''))+'">'):asset.body;return new Response(body,{headers});
       }
       if(!['GET','POST','PUT'].includes(req.method))fail(405,'Method not allowed.');
       if(req.method!=='GET'){
@@ -208,7 +208,7 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
         const namespace=url.searchParams.get('namespace');if(!['meal_photos','note_photos','progress_photos'].includes(namespace)||!/^([a-f0-9]{64})$/.test(id))fail(400,'Invalid image.');
         const bytes=await api.readMedia(secret,namespace,id);headers.set('Content-Type','image/jpeg');return new Response(bytes,{headers});
       }
-      if(req.method==='GET'&&path==='/api/account') {if(!secret)fail(401,'Please sign in.');return json(200,await api.current(secret));}
+      if(req.method==='GET'&&path==='/api/account') {if(!secret)fail(401,'Please sign in.');return json(200,{...await api.current(secret),sessionContext:sessionContext(secret)});}
       if(req.method==='PUT'&&path==='/api/profile') {
         fields(body,['timeZone','units']);string(body.timeZone,1,100);try{new Intl.DateTimeFormat('en',{timeZone:body.timeZone});}catch{fail(400,'Choose a valid time zone.','profile.invalidTimeZone');}
         if(!['metric','imperial'].includes(body.units))fail(400,'Choose valid units.','profile.invalidUnits');if(!secret)fail(401,'Please sign in.');

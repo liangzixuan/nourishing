@@ -37,3 +37,13 @@ test('response invalidation rejects stale requests while metadata-only LRU bound
   return {stale,current,latest,blocked,photoType:photoA.value.type,evicted,preserved,oversize,jsonSize,oldest:(await cache.readDeviceCache('/api/library?id=1')).value??null,recent:(await cache.readDeviceCache('/api/library?id=0')).value,pending:(await store.offlineCopy()).pending.length};
  });assert.deepEqual(result,{stale:false,current:false,latest:true,blocked:[false,false,false,false,false,false],photoType:'image/jpeg',evicted:true,preserved:true,oversize:false,jsonSize:false,oldest:null,recent:{i:0},pending:1});}finally{await f.close();}
 });
+
+
+test('device startup resumes only its last verified session binding and rejects locked or changed owners',async()=>{
+ const f=await fixture();try{const page=await f.page();
+  await page.evaluate(async()=>{const c=await import('/device-cache.js');const ticket=await c.initializeDeviceCache('alice',{sessionContext:'a'.repeat(64)});await c.writeDeviceCache('/api/diary',{owner:'alice'},ticket);});
+  await page.reload();assert.deepEqual(await page.evaluate(async()=>{const c=await import('/device-cache.js');const missing=await c.resumeDeviceCache(null),wrong=await c.resumeDeviceCache('b'.repeat(64)),match=await c.resumeDeviceCache('a'.repeat(64));return {missing,wrong,owner:match.ownerId,value:(await c.readDeviceCache('/api/diary')).value};}),{missing:null,wrong:null,owner:'alice',value:{owner:'alice'}});
+  await page.evaluate(async()=>{await(await import('/offline-store.js')).lockOfflineAccount();});assert.equal(await page.evaluate(async()=>(await import('/device-cache.js')).resumeDeviceCache('a'.repeat(64))),null);
+  await page.evaluate(async()=>{await(await import('/device-cache.js')).initializeDeviceCache('bob',{sessionContext:'b'.repeat(64)});});assert.equal(await page.evaluate(async()=>(await import('/device-cache.js')).resumeDeviceCache('a'.repeat(64))),null);
+ }finally{await f.close();}
+});

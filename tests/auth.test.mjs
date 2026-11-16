@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
-import { createHandler } from '../server/http.mjs';
+import { createHandler,createWebHandler } from '../server/http.mjs';
 import { readConfig } from '../server/config.mjs';
-import { sessionCookie, readSession, clearSession } from '../server/session-cookie.mjs';
+import { sessionCookie, readSession, clearSession, sessionContext } from '../server/session-cookie.mjs';
 
 const config = readConfig({APPWRITE_ENDPOINT:'https://nyc.cloud.appwrite.io/v1', APPWRITE_PROJECT_ID:'project', PUBLIC_ORIGIN:'https://candidate.example'});
 test('cloud configuration requires explicit HTTPS origins and rejects embedded credentials', () => {
@@ -52,7 +52,7 @@ test('sign-in returns only a secure cookie, not the session secret in JSON',asyn
 test('concurrent accounts use their own request session and reject supplied owner IDs',async t=>{
   const seen=[];const request=await withServer(t,{current:async secret=>{seen.push(secret);await new Promise(r=>setTimeout(r,5));return {id:secret};}});
   const results=await Promise.all(['alice','bob'].map(async id=>(await request('/api/account',{cookie:`__Host-nourishing_session=${id}`})).json()));
-  assert.deepEqual(results,[{id:'alice'},{id:'bob'}]);assert.deepEqual(seen,['alice','bob']);
+  assert.deepEqual(results,[{id:'alice',sessionContext:sessionContext('alice')},{id:'bob',sessionContext:sessionContext('bob')}]);assert.deepEqual(seen,['alice','bob']);
   const r=await request('/api/profile',{method:'PUT',cookie:'__Host-nourishing_session=alice',body:{ownerId:'bob',timeZone:'UTC',units:'metric'}});
   assert.equal(r.status,400);
 });
@@ -81,4 +81,12 @@ test('verification requires a session to send and never returns the verification
   assert.equal(r.status,200);assert.equal(sent,1);assert.doesNotMatch(await r.text(),/PRIVATE_TOKEN/);
   const v=await request('/api/auth/verify',{method:'POST',body:{userId:'user-a',secret:'TOKEN'}});
   assert.equal(v.status,200);assert.equal(confirmed,1);assert.doesNotMatch(await v.text(),/PRIVATE_TOKEN/);
+});
+
+
+test('diary shell binds saved display data to the request session without exposing credentials or authenticating from that binding',async()=>{
+ const handler=createWebHandler({config,assets:new Map([['/diary',{type:'text/html',body:'<html><head></head><body>Diary</body></html>'}]]),service:{current:denied}});
+ const get=secret=>handler(new Request(config.origin+'/diary',{headers:secret?{cookie:'__Host-nourishing_session='+secret}:{}}));
+ const first=await get('private-session'),body=await first.text();assert.match(first.headers.get('cache-control'),/no-store/);assert.ok(body.includes(sessionContext('private-session')));assert.ok(!body.includes('private-session'));assert.notEqual(await(await get('other-session')).text(),body);assert.match(await(await get()).text(),/content=""/);
+ const response=await handler(new Request(config.origin+'/api/account',{headers:{cookie:'__Host-nourishing_session='+sessionContext('private-session')}}));assert.equal(response.status,401);
 });
