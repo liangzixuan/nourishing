@@ -7,11 +7,6 @@ const input=(label,name,value,attributes='')=>`<label class="field-row"><span>${
 const selectOption=(value,label,current)=>`<option value="${e(value)}" ${value===current?'selected':''}>${e(label)}</option>`;
 const format=value=>Number.isFinite(value)?value.toLocaleString(undefined,{maximumFractionDigits:1}):'—';
 
-export function mountRecordMenu({show,header,content,onPick}){
- show(header('Add to Diary')+'<div class="record-menu">'+[['food','Food'],['photo','Photo Log'],['text','Text & Voice Log'],['barcode','Scan Barcode'],['exercise','Exercise'],['biometric','Biometric'],['note','Note']].map(([kind,label])=>`<button type="button" data-record-kind="${kind}">${label}</button>`).join('')+'</div>');
- content.querySelectorAll('[data-record-kind]').forEach(button=>button.onclick=()=>onPick(button.dataset.recordKind));
-}
-
 export async function mountRecordEditor({kind,record,date,show,close,header,content,onChange}){
  if(!Object.hasOwn(names,kind))return;
  if(kind==='note')return mountNoteEditor({record,date,show,close,header,content,onChange});

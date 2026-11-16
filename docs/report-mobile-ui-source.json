@@ -1,0 +1,39 @@
+{
+  "source": "../cronometer-local/public/mobile-nutrition-report.js",
+  "adapter": "public/report-mobile.js",
+  "styles": [
+    "public/shell-source/discover.css",
+    "public/report-mobile.css"
+  ],
+  "changes": [
+    "Use authenticated cloud nutrition-report capture and existing nutrient detail/print flows.",
+    "Move Include Today and print/refresh actions to More within Report Settings; keep latest phone primary settings.",
+    "Use canonical record dates for All Time, capped at the existing report maximum.",
+    "Newsfeed is available on every Discover tab; gear opens per-tab settings, absent on Snapshots."
+  ],
+  "files": [
+    {
+      "source": "../cronometer-local/public/report-energy-chart.js",
+      "target": "public/report-mobile-source/report-energy-chart.js",
+      "sourceSha256": "36fa9910fd41899e331897eed6b88bd6420f81e11c8ce20906ccad6f44e4d9eb",
+      "sha256": "2f6041b076c9e14d74f163973c071fc729f4b2836069180819dd61cb1e245bb6",
+      "transforms": [
+        "module imports resolve to cloud source assets; inline legend colors moved to CSP-safe stylesheet"
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/locales/mobile-report.js",
+      "target": "public/report-mobile-source/locales/mobile-report.js",
+      "sourceSha256": "31666a7594a910e28ce317b2878c8babb35043def792ff00e8ec7a84b09a2e1b",
+      "sha256": "31666a7594a910e28ce317b2878c8babb35043def792ff00e8ec7a84b09a2e1b",
+      "transforms": []
+    },
+    {
+      "source": "../cronometer-local/public/locales/energy-report.js",
+      "target": "public/report-mobile-source/locales/energy-report.js",
+      "sourceSha256": "62b31a9e1a215a2bbb6f0dff29a09195d56e658d9525c104cdcf4adedec59ac0",
+      "sha256": "62b31a9e1a215a2bbb6f0dff29a09195d56e658d9525c104cdcf4adedec59ac0",
+      "transforms": []
+    }
+  ]
+}

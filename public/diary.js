@@ -1,3 +1,4 @@
+import {AddMenu} from './add-menu-source/add-menu.js';
 import {createAppShell} from './app-shell.js';
 import {mountMore} from './more.js';
 import {diarySummaryMarkup,mountDiarySummary} from './diary-summary.js';
@@ -14,7 +15,7 @@ import {openEntryAdjustment} from './entry-adjustments.js';
 import {openRecipeImport} from './recipe-import.js';
 import {openFoodInsights} from './food-insights.js';
 import {mountPhotoLog} from './photo-log.js';
-import {mountRecordEditor,mountRecordMenu} from './records.js';
+import {mountRecordEditor} from './records.js';
 import {mountRepeats} from './repeats.js';
 import {mobileDiaryHeader,mobileDiaryGroups,mobileDiaryRecord} from './diary-view.js';
 import {escape as e} from './html.js';
@@ -30,6 +31,7 @@ const icons={check:svg('<path d="m5 12 4 4L19 6"/>'),back:svg('<path d="m15 5-7 
 const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
 const num=(v,d=1)=>Number.isFinite(v)?v.toLocaleString(undefined,{maximumFractionDigits:d}):'—';
 const headerRoot=document.querySelector('.app-header'),shell=createAppShell({headerRoot,dateBar,navigation:document.querySelector('.app-nav')});
+let addMenu=null;
 let view='diary',library=null,nutrition=null,more=null,summaryPanel=null,pickerCleanup,account;
 let accountReady=false;
 let date=today(),diary=null,loadId=0,searchId=0,group='Uncategorized';
@@ -66,7 +68,12 @@ document.addEventListener('click',async event=>{
  if(target.hasAttribute('data-reload'))return load();
  if(target.hasAttribute('data-note'))return recordEditor('note');
  if(target.dataset.recordId){const kind=target.dataset.recordKind;return recordEditor(kind,diary[kind==='note'?'notes':'biometrics'].find(r=>r.id===target.dataset.recordId));}
- if(target.id==='add-food'){return mountRecordMenu({show,header,content,onPick:kind=>kind==='food'?search():kind==='photo'?photoLog():kind==='text'?textLog():kind==='barcode'?barcode():recordEditor(kind)});}
+ if(target.id==='add-food'){
+  if(!diary)return;close();addMenu?.dispose();
+  addMenu=new AddMenu({preferences:diary.presentation?.settings?.addMenu,onSave:async value=>{await command(diary.revision,'addMenu.save',{addMenu:value});await load();},onSelect:kind=>{
+   const actions={food:search,photo:photoLog,voice:textLog,barcode:()=>barcode(),suggest:()=>openInsights(),fast:()=>navigate('discover','new-fast'),biometric:()=>recordEditor('biometric'),note:()=>recordEditor('note'),exercise:()=>recordEditor('exercise')};actions[kind]();
+  }});return;
+ }
  if(['prev-day','next-day'].includes(action)){diaryTools.reset();const d=new Date(date+'T12:00:00');d.setDate(d.getDate()+(action==='prev-day'?-1:1));date=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;return load();}
  if(action==='complete-day'){target.disabled=true;try{await command(diary.revision,'day.complete',{date,completed:!diary.completed});await load();}catch(error){notice.textContent=error.message;}finally{target.disabled=false;}return;}
  if(['add-food','group-quick-add'].includes(action)){group=target.dataset.group??(diary?.groups.includes('Uncategorized')?'Uncategorized':diary?.groups[0]);return search();}
@@ -119,7 +126,7 @@ function foodEditor({resource:food,options,kind},entry,quantity){
 }
 function photoLog(){if(!diary)return;return mountPhotoLog({show,close,header,content,date:()=>date,groups:diary.groups,save:photoSaver(()=>diary.revision),onChange:load});}
 function recordEditor(kind,record){return mountRecordEditor({kind,record,date,show,close,header,content,onChange:load});}
-window.addEventListener('pagehide',()=>{diaryTools.dispose();loadId++;leaveView();view='diary';clearPending();diary=null;close();page.replaceChildren();});
+window.addEventListener('pagehide',()=>{addMenu?.dispose();addMenu=null;diaryTools.dispose();loadId++;leaveView();view='diary';clearPending();diary=null;close();page.replaceChildren();});
 window.addEventListener('pageshow',event=>{if(event.persisted)load();});
 load();
 

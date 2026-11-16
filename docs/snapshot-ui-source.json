@@ -1,0 +1,25 @@
+{
+  "source": "cronometer-local/public/mobile-snapshots.js render/facts",
+  "adapter": "public/snapshot-view.js",
+  "changes": [
+    "cloud resource URLs and selectors",
+    "cloud BMI precision preserved"
+  ],
+  "assets": [
+    {
+      "source": "public/mobile-snapshots.css",
+      "output": "public/snapshot-source/mobile-snapshots.css",
+      "sha256": "65ad5e63539c2dd2adcc2e2becab5769b6d535f0fa9be957e0efb7ba24d22dca"
+    },
+    {
+      "source": "public/snapshot-icons/camera-outline.svg",
+      "output": "public/snapshot-source/camera-outline.svg",
+      "sha256": "1d6f16d7de3853bd2e23046c1cd9070f162f3e7c1e84dd5f2b29abe0f81de5b4"
+    },
+    {
+      "source": "public/snapshot-icons/dots-vertical.svg",
+      "output": "public/snapshot-source/dots-vertical.svg",
+      "sha256": "dc9414bb8a2eab51eec02acc3577ead1e80f33ed7f62456426cc09754de3f6f4"
+    }
+  ]
+}

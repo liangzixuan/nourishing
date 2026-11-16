@@ -1,6 +1,6 @@
 # Local-to-cloud UI parity
 
-Status: main-screen restoration validated locally; cloud rollout pending. Full parity of child editors is still incomplete. Functional verification alone does not establish visual parity.
+Status: initial shell/Diary/Foods/More restoration is live. The Add menu and Discover body/header follow-up passed local checks; rollout is in progress. Full parity of child editors is still incomplete. Functional verification alone does not establish visual parity.
 
 ## Approved restoration work
 
@@ -10,7 +10,7 @@ The user approved restoring the source interface. Keep the Appwrite service cont
 - [x] Foods: restore original home cards and collection navigation while retaining cloud editors and imports. Foods worker owns library components and their focused checks.
 - [x] More: restore searchable rows and child screens; use the cloud Account destination and keep removed native integrations absent. More worker owns its adapter and the target settings composition.
 - [x] Diary: restore canonical summary panels, water and fasting with existing domain projections. Diary worker owns the summary adapter and projection; root wires actions.
-- [ ] Integration: test navigation, date changes, sheet dismissal, edits, dark/system theme and narrow-screen overflow. Compare screenshots against the source at the same viewport and state. Run affected local checks, build, deploy and repeat hosted checks with disposable accounts.
+- [x] Initial integration: test navigation, date changes, sheet dismissal, edits, dark/system theme and narrow-screen overflow. Compare screenshots against the source at the same viewport and state. Run affected local checks, build, deploy and repeat hosted checks with disposable accounts.
 
 Preserve unrelated changes and owner data. Screens must not expose dead controls, default browser button rows or loading captures as completed output. Returning from a child screen must not focus search. Each worker reports changed files and executed checks; root owns integrated acceptance and deployment.
 
@@ -35,4 +35,27 @@ The shared shell now uses the source navigation SVGs, Karla/Lato fonts and Disco
 
 Local checks cover the complete Diary → Foods → More → Discover flow, settings persistence, system theme, Back without focusing search, report navigation, source chart rendering, strict CSP and phone-width overflow. Source assets have provenance manifests. Captures are in ignored `.local/ui-restored-*.png` and `.local/dashboard-mobile.png`. Source/local account settings differ; these screenshots validate structure and presentation, not equality of account data.
 
-Remaining visual gaps: several child editors, including Targets, Report filters, fasting details and account pages, still use cloud sheet adapters. The Diary Energy Summary/display dialogs preserve cloud actions rather than the original full page composition. Separate Notes/Biometrics sections remain in the cloud diary. These are not claimed as complete source parity.
+Remaining visual gaps: several child editors, including Targets, fasting details and account pages, still use cloud sheet adapters. The Diary Energy Summary/display dialogs preserve cloud actions rather than the original full page composition. Separate Notes/Biometrics sections remain in the cloud diary. These are not claimed as complete source parity.
+
+
+## Add menu and Discover follow-up
+
+The first release passed navigation checks but left the old Add to Diary menu and simplified Charts, Report and Snapshots bodies. The owner correctly identified these gaps. Source components now restore:
+
+- Add to Diary: four colored tiles and five actions, editable colors/order/visibility, saved account preferences, outside dismissal and cancelled-edit rollback.
+- Charts: title/chevron cards, source colors, external legends and dates, chart previews and Manage Charts switches. Newsfeed and Manage Charts are available in the header.
+- Report: consumed/expenditure rings, energy budget, grouped nutrients and Date Range/Days Displayed/Include Supplements settings. Newsfeed and Report Settings are available in the header.
+- Snapshots: horizontal empty state and source photo cards. Newsfeed remains available; the reference has no settings button on this tab.
+
+The 434-test suite passed 433 cases initially; its Coach-to-Report test expected removed date inputs. That test now checks the actual report date request and passes. Integrated navigation, Dashboard/Add menu, barcode camera decoding, record editors and snapshot upload/retry/edit/delete browser checks passed. Build and diff checks passed. These checks use desktop Chrome at phone width, not the disconnected Pixel.
+
+### Remaining gaps
+
+- Search Food: source tabs, database filters, sorting, badges and multi-add.
+- Food entry: favorite/options controls, timestamp toggle, source/nutrition sections and fixed footer.
+- Photo Log review: per-food macros, energy summary and Create menu.
+- Diary: mixed note/biometric placement within groups.
+- Detailed chart settings/CGM comparison, snapshot editors, Targets, fasting and other child tool forms still use cloud adapters.
+- Latest Cronometer Report Remaining ring and full nutrient-detail screen differ from the saved local implementation restored here.
+
+Public password recovery is deferred by the owner. Installed-phone camera/barcode, notification delivery and offline operation still need device verification. Functional browser checks do not establish complete visual or device parity.

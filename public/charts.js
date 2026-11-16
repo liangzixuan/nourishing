@@ -1,15 +1,56 @@
 import {escape as e} from './html.js';
-import {request} from './diary-api.js';
+import {request,command} from './diary-api.js';
 import {chartCardMarkup,mountChartPlots,validateChartView} from './chart-presentation.js';
+import {chartArrow,chartTitle} from './charts-source-view.js';
 import {openChartDefinition,openChartSettings} from './chart-editor.js';
-export function mountCharts({page,date,show,close,header,content,onChange}){
- const root=document.createElement('section');root.className='chart-page';page.replaceChildren(root);let data,disposed=false,serial=0,plots;
+export function mountCharts({page,date,show,close,header,content,onChange,onReady}){
+ const root=document.createElement('section');root.className='chart-page';page.replaceChildren(root);
+ let data,disposed=false,serial=0,plots,detailPlots,detailHost;
  const alive=()=>!disposed&&root.isConnected;
- const ui={show,close,header,content,onChange,afterSave:()=>alive()?load():undefined};
- async function load(){const id=++serial;root.setAttribute('aria-busy','true');try{const next=validateChartView(await request('/api/charts?'+new URLSearchParams({to:date()})));if(!alive()||id!==serial)return;data=next;render();}catch(error){if(alive()&&id===serial){plots?.dispose();root.innerHTML=`<p class="sheet-message" role="status">${e(error.message)}</p><button type="button" class="more-results" data-retry>Try again</button>`;root.querySelector('[data-retry]').onclick=load;}}finally{if(alive()&&id===serial)root.removeAttribute('aria-busy');}}
- function render(){plots?.dispose();root.innerHTML=`<div class="section-actions chart-heading"><h2>Charts</h2><button type="button" data-manage>Manage</button><button type="button" data-create>＋ Create</button></div>${data.cards.map(card=>chartCardMarkup(card)).join('')}${data.cards.length?'':'<p class="empty">No visible charts</p>'}`;root.querySelector('[data-create]').onclick=()=>openChartDefinition(null,data,ui);root.querySelector('[data-manage]').onclick=manage;root.querySelectorAll('[data-chart-open]').forEach(button=>button.onclick=()=>openChartSettings(button.dataset.chartOpen,data,ui));plots=mountChartPlots(root,data);}
- function manage(){show(`${header('Manage Charts')}<div class="entry-form">${data.catalog.map(card=>`<button type="button" class="more-results" data-manage-chart="${e(card.id)}"><span>${e(card.name)}</span><small>${card.settings.visible?'Visible':'Hidden'}${card.settings.showOnDashboard?' · Pinned':''}</small></button>`).join('')}</div>`);content.querySelectorAll('[data-manage-chart]').forEach(button=>button.onclick=()=>openChartSettings(button.dataset.manageChart,data,ui));}
- root.innerHTML='<p class="empty">Loading charts…</p>';load();return {dispose(){disposed=true;serial++;plots?.dispose();},reload:load};
+ const disposeDetail=()=>{detailPlots?.dispose();detailPlots=null;detailHost=null;};
+ const observer=new MutationObserver(()=>{if(detailHost&&!detailHost.isConnected)disposeDetail();});observer.observe(content,{childList:true});
+ const showSheet=html=>{disposeDetail();show(html);};
+ const ui={show:showSheet,close,header,content,onChange,afterSave:()=>alive()?load():undefined};
+ async function load(){
+  const id=++serial;root.setAttribute('aria-busy','true');
+  try{const next=validateChartView(await request('/api/charts?'+new URLSearchParams({to:date()})));if(!alive()||id!==serial)return;data=next;render();onReady?.();}
+  catch(error){if(alive()&&id===serial){plots?.dispose();root.innerHTML=`<p class="sheet-message" role="status">${e(error.message)}</p><button type="button" class="more-results" data-retry>Try again</button>`;root.querySelector('[data-retry]').onclick=load;}}
+  finally{if(alive()&&id===serial)root.removeAttribute('aria-busy');}
+ }
+ function render(){
+  plots?.dispose();root.innerHTML=`<div class="mcl-actions"><button type="button" data-manage>Manage Charts ${chartArrow}</button><button type="button" data-create>＋ Add Chart</button></div><div class="mcl-list">${data.cards.map(card=>chartCardMarkup(card)).join('')}</div>${data.cards.length?'':'<p class="empty">No visible charts</p>'}`;
+  root.querySelector('[data-create]').onclick=()=>openChartDefinition(null,data,ui);root.querySelector('[data-manage]').onclick=manage;
+  root.querySelectorAll('[data-chart-open]').forEach(button=>button.onclick=()=>detail(button.dataset.chartOpen));plots=mountChartPlots(root,data);
+ }
+ async function detail(id){
+  let view=data,card=view.cards.find(row=>row.id===id);
+  if(!card){
+   showSheet(`${header('Chart')}<p class="empty" role="status">Loading chart…</p>`);const pending=content.querySelector('[role=status]');
+   try{view=validateChartView(await request('/api/charts?'+new URLSearchParams({to:date(),card:id})));if(!alive()||!pending.isConnected)return;card=view.cards[0];}
+   catch(error){if(pending.isConnected)pending.textContent=error.message;return;}
+  }
+  if(!card)return;
+  await openChartSettings(id,view,{...ui,header:()=>header(chartTitle(card))});
+  const form=content.querySelector('form');if(!alive()||!form)return;
+  detailHost=document.createElement('div');detailHost.className='chart-detail';detailHost.innerHTML=chartCardMarkup(card,{detail:true});form.before(detailHost);
+  detailPlots=mountChartPlots(detailHost,view);
+ }
+ function manage(){
+  const row=card=>`<div class="mcl-row"><button type="button" class="mcl-custom-name" data-manage-chart="${e(card.id)}"><strong>${e(card.name)}</strong></button><input type="checkbox" role="switch" class="chart-visibility" aria-label="${e(card.name)}" data-chart-visible="${e(card.id)}" ${card.settings.visible?'checked':''}></div>`;
+  const custom=data.catalog.filter(card=>card.kind==='custom'),builtins=data.catalog.filter(card=>card.kind!=='custom');
+  showSheet(`${header('Manage Charts')}<div class="mcl-body" data-chart-manager><div class="mcl-group">${builtins.map(row).join('')}</div>${custom.length?`<h3>Custom Charts</h3><div class="mcl-group">${custom.map(row).join('')}</div>`:''}<button type="button" class="mcl-row" data-create-chart><strong>Create New Chart</strong>${chartArrow}</button><p class="sheet-message" role="status"></p></div>`);
+  const host=content.querySelector('[data-chart-manager]');host.querySelector('[data-create-chart]').onclick=()=>openChartDefinition(null,data,ui);
+  host.querySelectorAll('[data-manage-chart]').forEach(button=>button.onclick=()=>detail(button.dataset.manageChart));
+  host.querySelectorAll('[data-chart-visible]').forEach(input=>input.onchange=async()=>{
+   const previous=!input.checked;host.querySelectorAll('button,input').forEach(control=>control.disabled=true);
+   try{const id=input.dataset.chartVisible,custom=id.startsWith('custom:'),definition=custom?data.saved.find(chart=>chart.id===id.slice(7)):null;
+    await command(data.revision,custom?'chart.save':'chart.display',custom?{...definition,visible:input.checked}:{id,patch:{visible:input.checked}});await load();await onChange?.();if(alive()&&host.isConnected)manage();}
+   catch(error){if(host.isConnected){input.checked=previous;host.querySelector('[role=status]').textContent=error.message;}}
+   finally{host.querySelectorAll('button,input').forEach(control=>control.disabled=false);}
+  });
+ }
+ root.innerHTML='<p class="empty">Loading charts…</p>';load();
+ return {dispose(){disposed=true;serial++;plots?.dispose();disposeDetail();observer.disconnect();},reload:load,openManage(){if(alive()&&data)manage();}};
 }
 export function openExport({date,show,header,content}){
  show(`${header('Export Data')}<form class="entry-form"><label class="field-row"><span>Report</span><select name="kind" aria-label="Export report">${[['daily-nutrients','Daily nutrients'],['daily-energy','Daily energy'],['diary','Foods'],['exercises','Exercise'],['biometrics','Biometrics'],['notes','Notes']].map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></label><label class="field-row"><span>From</span><input name="from" aria-label="Export from" type="date" required value="${date()}"></label><label class="field-row"><span>To</span><input name="to" aria-label="Export to" type="date" required value="${date()}"></label><p class="sheet-message" role="status"></p><footer class="entry-actions"><button class="primary">Download CSV</button></footer></form>`);

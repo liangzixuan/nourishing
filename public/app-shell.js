@@ -19,9 +19,10 @@ export function createAppShell({headerRoot,dateBar,navigation}){
 
 export function discoverHeader({root,tab,onTab,onNews,onSettings,ready=true}){
  const tabs=[['dashboard','Dashboard'],['charts','Charts'],['report','Report'],['snapshots','Snapshots']];
- root.innerHTML=`<div class="dc-brand-row"><div class="dc-brand"><img class="nourishing-app-icon" src="/favicon.svg" alt=""><strong>Nourishing</strong></div><div class="dc-header-actions">${['dashboard','snapshots'].includes(tab)?iconButton('campaign','Newsfeed','shell-newsfeed'):''}${tab==='dashboard'?iconButton('settings','Dashboard Settings','shell-settings'):''}</div></div><nav class="dc-tabs" aria-label="Discover">${tabs.map(([id,label])=>button(e(label),'tab-'+id,tab===id?'active':'',`${tab===id?'aria-current="page"':''} data-tab="${id}"`)).join('')}</nav>`;
+ const settingsLabel={dashboard:'Dashboard Settings',charts:'Manage Charts',report:'Report Settings'}[tab];
+ root.innerHTML=`<div class="dc-brand-row"><div class="dc-brand"><img class="nourishing-app-icon" src="/favicon.svg" alt=""><strong>Nourishing</strong></div><div class="dc-header-actions">${iconButton('campaign','Newsfeed','shell-newsfeed')}${settingsLabel?iconButton('settings',settingsLabel,'shell-settings'):''}</div></div><nav class="dc-tabs" aria-label="Discover">${tabs.map(([id,label])=>button(e(label),'tab-'+id,tab===id?'active':'',`${tab===id?'aria-current="page"':''} data-tab="${id}"`)).join('')}</nav>`;
  root.querySelectorAll('[data-tab]').forEach(control=>control.onclick=()=>onTab(control.dataset.tab));
  const news=root.querySelector('[data-discover="shell-newsfeed"]'),settings=root.querySelector('[data-discover="shell-settings"]');
- if(news){news.disabled=!ready;news.onclick=onNews;}
+ if(news){news.onclick=onNews;}
  if(settings){settings.disabled=!ready;settings.onclick=onSettings;}
 }

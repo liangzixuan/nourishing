@@ -7,7 +7,7 @@ const blankRepeat = {recurrence: 'once', interval: 1, days: [], untilDate: null}
 const repeatLabel = value => !value || value.recurrence === 'once' ? 'Does Not Repeat' : `${value.interval > 1 ? `Every ${value.interval} ` : ''}${value.recurrence}${value.recurrence === 'weekly' ? ' · ' + value.days.map(day => weekdays[day]).join(', ') : ''}`;
 const checked = value => value ? 'checked' : '';
 
-export function mountFasting({page, show, close, header, content, onChange = async () => {}}) {
+export function mountFasting({page, show, close, header, content, onChange = async () => {}, initialAction}) {
   let data, stopped = false, serial = 0, received = 0, pending = false, expanded = new Set();
   const selected = new Set(), root = document.createElement('section');root.className = 'fasting-page';page.replaceChildren(root);
   const alive = () => !stopped && root.isConnected;
@@ -15,7 +15,7 @@ export function mountFasting({page, show, close, header, content, onChange = asy
   async function reload() {
     if (root.querySelector('details')) expanded = new Set([...root.querySelectorAll('details[open]')].map(node => node.dataset.section));
     const id = ++serial;root.innerHTML = '<p class="empty">Loading…</p>';
-    try {const next = await request('/api/fasting');if (!alive() || id !== serial) return;data = next;received = performance.now();selected.clear();render();}
+    try {const next = await request('/api/fasting');if (!alive() || id !== serial) return;data = next;received = performance.now();selected.clear();render();if(initialAction==='new'){initialAction=null;newMenu();}}
     catch (error) {if (alive() && id === serial) {root.innerHTML = `<p class="sheet-message" role="status">${e(error.message)}</p><button type="button" data-reload>Try again</button>`;root.querySelector('button').onclick = reload;}}
   }
   function timer() {

@@ -1,3 +1,4 @@
+import {snapshotListMarkup} from './snapshot-view.js';
 import {request,command} from './diary-api.js';
 import {escape as e} from './html.js';
 const media=row=>'/api/media?'+new URLSearchParams({namespace:'progress_photos',id:row.imageId});
@@ -10,20 +11,20 @@ const unit=(name,units,current)=>`<select aria-label="${name==='weightUnit'?'Wei
 /** Photos and upload retries stay in this mounted view; no drafts go to browser storage. */
 export function mountSnapshots({root,show,close,header,content,date,onChange=async()=>{}}){
  let disposed=false,rows=[],revision,readSerial=0,busy=false,pending=null;const abort=new AbortController();
- root.innerHTML='<section class="snapshots"><div class="snapshot-toolbar"><button type="button" class="primary" data-snapshot-add>Add photo</button></div><p class="snapshot-status" role="status"></p><div class="snapshot-list"></div><input type="file" data-snapshot-gallery accept="image/jpeg,image/png,image/webp" hidden><input type="file" data-snapshot-camera accept="image/*" capture="environment" hidden></section>';
+ root.innerHTML='<section class="snapshots ms-root"><p class="snapshot-status" role="status"></p><div class="snapshot-list"></div><input type="file" data-snapshot-gallery accept="image/jpeg,image/png,image/webp" hidden><input type="file" data-snapshot-camera accept="image/*" capture="environment" hidden></section>';
  const shell=root.querySelector('.snapshots'),list=shell.querySelector('.snapshot-list'),status=shell.querySelector('[role=status]');
  const alive=()=>!disposed&&shell.isConnected;
  const today=()=>typeof date==='function'?date():date??new Date().toLocaleDateString('en-CA');
  const message=(text,retry=false)=>{if(!alive())return;status.textContent=text;if(retry){const button=document.createElement('button');button.type='button';button.textContent='Try again';button.onclick=()=>pending?upload():load();status.append(button);}};
- function setBusy(value){busy=value;shell.querySelector('[data-snapshot-add]').disabled=value||pending!==null;list.querySelectorAll('[data-snapshot-options]').forEach(button=>button.disabled=value);}
- function facts(row){const v=row.vitals;return [['Weight',v.weight?number(v.weight.value)+' '+v.weight.unit:null],['BMI',row.bmi===undefined?null:number(row.bmi)],['Body fat',v.bodyFat===undefined?null:number(v.bodyFat)+'%'],['Age',v.age]].filter(([,value])=>value!==undefined&&value!==null).map(([label,value])=>`<span><b>${label}</b> ${e(value)}</span>`).join('');}
+ function setBusy(value){busy=value;const add=shell.querySelector('[data-snapshot-add]');if(add)add.disabled=value||pending!==null;list.querySelectorAll('[data-snapshot-options]').forEach(button=>button.disabled=value);}
+ function facts(row){const v=row.vitals;return [['Age',v.age],['Weight',v.weight?number(v.weight.value)+' '+v.weight.unit:null],['BMI',row.bmi===undefined?null:number(row.bmi)],['Body fat',v.bodyFat===undefined?null:number(v.bodyFat)+'%']].filter(([,value])=>value!==undefined&&value!==null).map(([label,value])=>`<div><dt>${label}:</dt><dd>${e(value)}</dd></div>`).join('');}
  function render(){
-  list.innerHTML=rows.length?rows.map(row=>`<article class="snapshot-card" data-snapshot-id="${e(row.id)}"><header><h2>${e(dateLabel(row.date))}</h2><button type="button" class="icon-button" data-snapshot-options="${e(row.id)}" aria-label="Snapshot options" ${busy?'disabled':''}><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="currentColor"/></svg></button></header><button type="button" class="snapshot-image" data-snapshot-view="${e(row.id)}" aria-label="View snapshot"><img loading="lazy" src="${e(media(row))}" alt="${e(row.title||'Progress photo')}" referrerpolicy="no-referrer"></button>${row.title||row.note||facts(row)?`<footer>${row.title?`<strong>${e(row.title)}</strong>`:''}${row.note?`<p>${e(row.note)}</p>`:''}<div class="snapshot-facts">${facts(row)}</div></footer>`:''}</article>`).join(''):'<div class="snapshot-empty"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="4"/></svg><p>No snapshots yet</p></div>';
+  list.innerHTML=snapshotListMarkup(rows,{busy:busy||pending!==null,media,dateLabel,facts});
   list.querySelectorAll('img').forEach(img=>img.onerror=()=>{img.replaceWith(Object.assign(document.createElement('span'),{className:'snapshot-missing',textContent:'Photo unavailable'}));});
  }
  async function load(){const serial=++readSerial;message('Loading…');try{const result=await request('/api/snapshots',undefined,abort.signal);if(!alive()||serial!==readSerial)return;rows=result.items;revision=result.revision;render();message('');}catch(error){if(alive()&&error.name!=='AbortError')message(error.message,true);}}
  function choose(camera){shell.querySelector(camera?'[data-snapshot-camera]':'[data-snapshot-gallery]').click();}
- shell.querySelector('[data-snapshot-add]').onclick=()=>{
+ function openSource(){
   if(busy)return;show(header('Add snapshot')+'<div class="snapshot-choices"><button type="button" data-snapshot-source="camera">Take photo</button><button type="button" data-snapshot-source="gallery">Choose photo</button></div>');
   content.querySelectorAll('[data-snapshot-source]').forEach(button=>button.onclick=()=>choose(button.dataset.snapshotSource==='camera'));
  };
@@ -47,6 +48,7 @@ export function mountSnapshots({root,show,close,header,content,date,onChange=asy
   finally{if(alive())setBusy(false);}
  }
  list.onclick=event=>{
+  if(event.target.closest('[data-snapshot-add]'))return openSource();
   const view=event.target.closest('[data-snapshot-view]'),options=event.target.closest('[data-snapshot-options]');
   const row=rows.find(row=>row.id===(view?.dataset.snapshotView??options?.dataset.snapshotOptions));if(!row)return;
   if(view){show(header(dateLabel(row.date))+`<div class="snapshot-viewer"><img src="${e(media(row))}" alt="${e(row.title||'Progress photo')}">${row.note?`<p>${e(row.note)}</p>`:''}</div>`);return;}
