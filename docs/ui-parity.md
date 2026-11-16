@@ -134,7 +134,7 @@ The main-screen restoration does not close these child workflows:
 - Exercise/Biometrics: functional generic forms remain. Restore category navigation, effort/unit/group pickers and metric-specific controls from saved source components.
 - Profile: restore the captured Age, Sex, Weight, Height, BMI and Body Fat summary over canonical projections. Use `profile-reference-second-pass.png`; the earlier similarly named image shows Account confirmation.
 - Account: registration, verification, recovery, logout and deletion work. App navigation/theme alignment and authenticated name/email/password editing remain; MFA is a separate capability, not established by the old local placeholder.
-- CSV export: group inclusion and account energy units are fixed locally; cancellation/status verification is in progress.
+- CSV export: group inclusion and account energy units are fixed locally. Production-handler browser checks pass grouped kJ download, cancellation without a late download, report switching and close/reopen.
 - Reminders and text logging: working cloud actions still have generic forms. Restore compact controls while retaining browser permission and save/review behavior.
 - Coach: recorded-fact answers/preferences work; model-backed proposals require additional cloud capability. Restore concise onboarding separately.
 - Library utility/import forms remain generic; reuse the restored editors before making cosmetic copies.

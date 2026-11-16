@@ -40,7 +40,12 @@
   "changes": [
     "Adapt source search to the account-scoped cloud route and preserve ingredient exclusions.",
     "Use SVG controls and a search-only translation formatter.",
-    "Main Diary picker opts into source multi-add; child ingredient, photo and text pickers retain single selection."
+    "Main Diary picker opts into source multi-add; child ingredient, photo and text pickers retain single selection.",
+    "Ingredient detail Back passes the source search snapshot through mountFoodPicker restore."
   ],
-  "backend": "Uses the existing canonical domain search against a verified public catalog artifact."
+  "backend": "Uses the existing canonical domain search against a verified public catalog artifact.",
+  "adapter": {
+    "path": "public/food-picker.js",
+    "sha256": "aae7c7c2cff033822aeaa1d17749cf29005dd9dd16f8e0f9125739850f2eb575"
+  }
 }

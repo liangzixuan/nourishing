@@ -1,6 +1,6 @@
 {
   "sourceRoot": "../cronometer-local",
-  "scope": "Meal editor and transient ingredient review only. Recipe editor remains the current cloud implementation.",
+  "scope": "Meal editor and shared ingredient review. Recipe and reviewed existing-item editing are covered by recipe-editor-source.json.",
   "sources": [
     {
       "path": "public/mobile-composite-editor.js",
@@ -28,9 +28,9 @@
       "source": "../cronometer-local/public/mobile-composite-editor.css",
       "target": "public/composite-source/mobile-composite-editor.css",
       "sourceSha256": "3020a60f5619bece891c6e68d27b74167be4da50147803b678ba706441a94e20",
-      "outputSha256": "8b001c279806f3b46f55c7bd28e63c5c0227b886b7b06424e41793483d97678a",
+      "outputSha256": "3020a60f5619bece891c6e68d27b74167be4da50147803b678ba706441a94e20",
       "transforms": [
-        "Copy shared composite stage, ingredient-row, dialog and footer styles before the recipe-serving picker section.",
+        "Copy the complete composite editor CSS, including recipe serving, weight and notes styles.",
         "Keep cloud host adaptations and review/narrow footer rules in composite-editor.css.",
         "Normalize UTF-8 text to LF."
       ]
@@ -39,47 +39,47 @@
   "outputs": [
     {
       "path": "public/composite-editor.js",
-      "sha256": "b1a5a9a5473be39d18de6de9735d050829c8ba0d9fb56004d1c10dfba98ee019"
+      "sha256": "8e9f764507eef8d6399ca77424b71d9185596cdb43942c45590c1b4cc5c9d7ba"
     },
     {
       "path": "public/composite-items.js",
-      "sha256": "d3d83d7528cd1a93fbb5d235138d59b7781f29a647c80f4652a6c365d8ac6c49"
+      "sha256": "8e2d99d4b7bdaf62164e7686c843abdffee5eac8787433c965fedeeb6549355e"
     },
     {
       "path": "public/composite-editor.css",
-      "sha256": "d7bf82c45fa2ba9002d9dee961de3c628090320b4032da08b8e2ac0dce37eedc"
+      "sha256": "d83f9bd16a34287bcf9c2b05dbfd0315439473dcf153bd8a54397f439deb837f"
     },
     {
       "path": "public/library.js",
-      "sha256": "652414d17e95c5ab10a3f4548265cd15489d7e41b57d52813a584df84f25b426"
+      "sha256": "446eb0f59b89903bdacab6013c47950cb22327132b15dfa372010f6e396d38ea"
     },
     {
       "path": "public/library.css",
-      "sha256": "1dce11fc1b3dd1682d406b9dbc2a6b4dc3a75a9d046a80a4253cf989024f319c"
+      "sha256": "3d5fdd0f634e9b086ccdbf6448f3ec0d3576c0f366ea328b773df717358e4d2f"
     },
     {
       "path": "server/library-view.mjs",
-      "sha256": "d4fdef6db65dcadd251bb673c46beb971d2d77e4caeec3ddc3eb430626b61532"
+      "sha256": "8e5ba5a634d8c1025040cf1bcd44d75b4fb097fe443689b8f5ef4080b72f3368"
     },
     {
       "path": "tests/meal-editor-browser.test.mjs",
-      "sha256": "1755a0f1cbb3a3492fa0af14762dd8e031f7ba7d0ec9051b7bf5bcfff3b8613c"
+      "sha256": "c237260d2e894892f3bdd9f19adc988c6dc30af8244fac98706bded5b6be72a4"
     },
     {
       "path": "tests/foods-ui-parity.test.mjs",
-      "sha256": "60d4039cb6e0414f63175214e51b577db0b229170ed38c3869da60935d7e1d92"
+      "sha256": "7b646cc9fb6fdef69b2511cb849957c8790fb8226a345d39ddbab1425f68f466"
     }
   ],
   "reuse": [
     "Use existing MobileIngredientDetail and FoodNutritionView for canonical quantities, nutrition/unknown coverage and explicit draft Apply.",
     "Use existing mountFoodPicker for paged catalog/library/recipe search; no meal recursion.",
-    "Use authenticated library preview and existing meal.save workspace transaction/receipt. Catalog snapshots are captured by the server on save.",
+    "Use authenticated library preview; create through meal.save and edit through shared reviewed library.edit. Server captures catalog snapshots and owns transactional receipts.",
     "Source stage order: Meal Name and Meal Items, then nutrition review; Next, Back, Save Meal and Save & Add. Save & Add opens the existing diary entry detail without logging.",
     "Shared quantity-options projection supplies existing ingredient source/portion labels without per-item requests. Missing measurement bases stay unavailable."
   ],
   "verification": {
-    "command": "node --test tests/meal-editor-browser.test.mjs tests/foods-ui-parity.test.mjs tests/custom-food-browser.test.mjs tests/library-commands.test.mjs",
-    "result": "8 passed",
+    "command": "node --test tests/recipe-editor-browser.test.mjs tests/meal-editor-browser.test.mjs tests/custom-food-browser.test.mjs tests/foods-ui-parity.test.mjs",
+    "result": "5 passed",
     "browser": "Headless Chrome, 412 x 915, production HTTP CSP; actual library/controller/quantity/preview/store receipt composition.",
     "screenshots": [
       ".local/meal-editor/items.png",
@@ -95,10 +95,8 @@
     ]
   },
   "limitations": [
-    "The saved source used-item update/preserve review is not exposed by current cloud meal.save. This UI keeps existing edit semantics: dependent records without an occurrence override read the current saved meal definition. Restore reviewed update/preserve behavior with the later recipe/backend increment.",
-    "Catalog source facts are resolved by the canonical server at preview and save; this slice does not freeze or fingerprint them across those requests.",
-    "Recipe servings/cooked-weight/notes stages remain outside this Meal-only slice.",
-    "Ingredient search returns to a fresh search after closing a new ingredient detail; no barcode capture action is added here.",
-    "Headless browser verification is not a new physical-device comparison; hosted verification is owned by the release task."
+    "Catalog source facts are captured canonically on create; reviewed edits use the server-bound source digest.",
+    "Ingredient Back restores search state; barcode capture remains outside this slice.",
+    "Headless browser verification is not a new physical-device comparison; hosted acceptance is owned by the release task."
   ]
 }

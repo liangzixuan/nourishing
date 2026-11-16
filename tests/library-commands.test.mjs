@@ -1,3 +1,4 @@
+import {previewLibraryEdit} from '../server/library-edit.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {initialState} from '../server/domain/workspace.mjs';
@@ -5,6 +6,7 @@ import {applyWorkspaceCommand,previewLibrary,captureActionFoods} from '../server
 import {entryFacts} from '../server/domain/nutrition.mjs';
 import {libraryView,libraryItem} from '../server/library-view.mjs';
 const run=(s,type,payload)=>applyWorkspaceCommand(s,{type,payload});
+const edit=(state,kind,draft)=>{const {reviewToken}=previewLibraryEdit(state,{kind,draft},{owner:'fixture'});return applyWorkspaceCommand(state,{type:'library.edit',payload:{kind,draft,reviewToken,mode:'update',confirmed:true}},{owner:'fixture'});};
 const draft={name:'Test grain',grams:100,serving:'100 g',nutrients:{calories:200,protein:10}};
 test('custom food, recipe and meal use the original source quantities in the diary',()=>{
  const s=initialState();const f=run(s,'food.save',draft);assert.ok(f.id);
@@ -22,11 +24,11 @@ test('custom food, recipe and meal use the original source quantities in the dia
 });
 test('partial edits retain saved metadata and reject read-only foods, cycles and foreign references',()=>{
  const s=initialState(),f=run(s,'food.save',draft);s.foods[0].notes='Keep this note';
- run(s,'food.save',{id:f.id,name:'Renamed'});assert.equal(s.foods[0].notes,'Keep this note');assert.equal(s.foods[0].nutrients.calories,200);
- s.foods[0].readOnly=true;assert.throws(()=>run(s,'food.save',{id:f.id,name:'Tampered'}));
+ edit(s,'food',{id:f.id,name:'Renamed'});assert.equal(s.foods[0].notes,'Keep this note');assert.equal(s.foods[0].nutrients.calories,200);
+ s.foods[0].readOnly=true;assert.throws(()=>edit(s,'food',{id:f.id,name:'Tampered'}));
  assert.throws(()=>run(s,'meal.save',{name:'Foreign',items:[{foodId:'other-account-food',amount:1}]}));
  const r=run(s,'recipe.save',{name:'Recipe',servings:2,ingredients:[{foodId:f.id,amount:1}]});
- assert.throws(()=>run(s,'recipe.save',{id:r.id,ingredients:[{recipeId:r.id,amount:1}]}));
+ assert.throws(()=>edit(s,'recipe',{id:r.id,ingredients:[{recipeId:r.id,amount:1}]}));
  for(const extra of [{ownerId:'someone'},{readOnly:false},{source:{name:'USDA'}},{photoReview:{}}])assert.throws(()=>run(s,'food.save',{...draft,...extra}));
 });
 test('library preview preserves saved data and retains unknowns',()=>{

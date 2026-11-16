@@ -1,9 +1,14 @@
 import {parseTemplateSettings,changeMacroPlan} from './domain/macro-templates.mjs';
+import {parseMacroPolicy,DEFAULT_MACRO_RATIOS} from './domain/macro-policy.mjs';
+import {parseInactiveEnergyTarget} from './domain/energy-target-state.mjs';
 import {parseWeightGoal} from './domain/weight-goal.mjs';
 import {parseEnergyPolicy,parseEnergyExpenditure} from './domain/energy-policy.mjs';
-import {parseCarbohydratePolicy,carbohydratePreferences} from './domain/carbohydrate-policy.mjs';
+import {parseCarbohydratePolicy,carbohydratePreferences,DEFAULT_CARBOHYDRATE_POLICY} from './domain/carbohydrate-policy.mjs';
 
 export const targetPolicyCommandFields={
+ 'targetPolicy.customEnergy':['enabled','kcal'],
+ 'targetPolicy.aboveBaseline':['enabled'],
+ 'targetPolicy.restoreDefaults':['section'],
  'targetPolicy.weightGoal':['goal','applyToEnergy'],
  'targetPolicy.expenditure':['expenditure'],
  'targetPolicy.macros':['macro'],
@@ -22,6 +27,19 @@ export function prepareTargetPolicyCommand(state,action,context={}){
  if(!object(p)||Object.keys(p).some(key=>!allowed.includes(key))||allowed.filter(key=>key!=='kcal').some(key=>!Object.hasOwn(p,key)))fail('Choose the required target settings only.');
  let patch;
  switch(action.type){
+  case 'targetPolicy.restoreDefaults':{
+   if(!['macro','carbohydrate'].includes(p.section))fail('Choose macro or carbohydrate defaults.');patch=p.section==='macro'?{macroPolicy:parseMacroPolicy(DEFAULT_MACRO_RATIOS)}:{carbohydratePolicy:parseCarbohydratePolicy(DEFAULT_CARBOHYDRATE_POLICY)};break;
+  }
+  case 'targetPolicy.customEnergy':{
+   if(typeof p.enabled!=='boolean'||!Object.hasOwn(p,'kcal')||p.enabled&&(!amount(p.kcal)||p.kcal===null)||!p.enabled&&p.kcal!==null)fail('Choose Custom with a valid energy amount, or turn it off.');
+   const policy=parseEnergyPolicy(state.settings.energyPolicy);
+   if(p.enabled){patch={targets:{...state.settings.targets,calories:p.kcal}};if(policy)patch.energyPolicy={...policy,target:policy.target.mode==='fixed'?policy.target:{mode:'fixed',includeAboveBaseline:false}};}
+   else{if(!policy)throw Object.assign(Error('Set up Energy Expenditure before using a calculated energy target.'),{status:409});patch={energyPolicy:{...policy,target:parseInactiveEnergyTarget(state.settings.inactiveEnergyTarget)??(policy.target.mode!=='fixed'?policy.target:{mode:'calculated',adjustmentKcal:0,includeAboveBaseline:true})}};}break;
+  }
+  case 'targetPolicy.aboveBaseline':{
+   if(typeof p.enabled!=='boolean')fail('Choose whether to add expenditure above baseline.');const policy=parseEnergyPolicy(state.settings.energyPolicy);if(!policy)throw Object.assign(Error('Set up Energy Expenditure before adding expenditure above baseline.'),{status:409});patch={energyPolicy:{...policy,target:{...policy.target,includeAboveBaseline:p.enabled}}};break;
+  }
+
   case 'targetPolicy.weightGoal':{
    const goal=parseWeightGoal(p.goal),policy=parseEnergyPolicy(state.settings.energyPolicy);if(!goal||typeof p.applyToEnergy!=='boolean')fail('Choose a weight goal and whether to apply it to energy.');
    const target={mode:'weight-goal',goal,includeAboveBaseline:policy?.target.includeAboveBaseline??true};

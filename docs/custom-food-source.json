@@ -60,15 +60,15 @@
   "outputs": [
     {
       "path": "public/custom-food-editor.js",
-      "sha256": "f0810f553b53a77aa50721b9be721a9614ed65a3472d9018deb298892c643f96"
+      "sha256": "2e2e9f01cef614f12eb4b6aa9a0e03b46440b70324e17fbca612825e1d36bd46"
     },
     {
       "path": "public/library.js",
-      "sha256": "652414d17e95c5ab10a3f4548265cd15489d7e41b57d52813a584df84f25b426"
+      "sha256": "446eb0f59b89903bdacab6013c47950cb22327132b15dfa372010f6e396d38ea"
     },
     {
       "path": "public/library.css",
-      "sha256": "1dce11fc1b3dd1682d406b9dbc2a6b4dc3a75a9d046a80a4253cf989024f319c"
+      "sha256": "3d5fdd0f634e9b086ccdbf6448f3ec0d3576c0f366ea328b773df717358e4d2f"
     },
     {
       "path": "public/custom-food-source/food-portions.js",
@@ -92,23 +92,23 @@
     },
     {
       "path": "server/library-view.mjs",
-      "sha256": "d4fdef6db65dcadd251bb673c46beb971d2d77e4caeec3ddc3eb430626b61532"
+      "sha256": "8e5ba5a634d8c1025040cf1bcd44d75b4fb097fe443689b8f5ef4080b72f3368"
     },
     {
       "path": "server/workspace-commands.mjs",
-      "sha256": "551c3e9d7167d49f134d4f20acb8f4315cd733196558c9fedd441a5eab74eca1"
+      "sha256": "e21419afb0e1108e27a24b8fd07a30a9c62ff663fbffecd7693fed0048b50ddb"
     },
     {
       "path": "tests/food-editor.test.mjs",
-      "sha256": "569e674b6e4a2aa3fcf7487fcc8aaef9b16e360c7d53dfca28a9b0207ff82d48"
+      "sha256": "79f6ff4964a7a9ca371a01f79fbacf46de5267117bdba9f4608dad80d0c48d0b"
     },
     {
       "path": "tests/custom-food-browser.test.mjs",
-      "sha256": "111f035f2514830aa450f8001d00ba97adbb723bd10118cf81de16487ba3708e"
+      "sha256": "e72fa78aee646e27e86752df1a7602e4a21c9d892fb9bcc4b243dab3d9ad52af"
     },
     {
       "path": "tests/foods-ui-parity.test.mjs",
-      "sha256": "60d4039cb6e0414f63175214e51b577db0b229170ed38c3869da60935d7e1d92"
+      "sha256": "7b646cc9fb6fdef69b2511cb849957c8790fb8226a345d39ddbab1425f68f466"
     },
     {
       "path": "tests/library-sharing-ui.test.mjs",
@@ -128,7 +128,8 @@
     "Never accept client source provenance. Preserve existing source and portion translations; derive label history through projectFoodLabelDraft and existing label/quantity validators.",
     "Keep display profile/unit/basis changes separate from authored values. Name, Barcode and Notes do not request nutrition projections.",
     "Keep drafts transient. Dispose portions/renderers and abort pending projections on close; preserve immutable save envelopes on ambiguous transport/5xx failures.",
-    "Retain Share, Print, visibility tools, Add to diary and confirmed Delete under More Details; recipe and meal editors remain separate."
+    "Retain Share, Print, visibility tools, Add to diary and confirmed Delete under More Details; recipe and meal editors remain separate.",
+    "Existing-item edits share the owner-bound Update existing uses / Keep past entries unchanged review; command receipts remain immutable across uncertain saves."
   ],
   "checks": [
     "tests/food-editor.test.mjs",

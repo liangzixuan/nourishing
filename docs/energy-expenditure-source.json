@@ -98,19 +98,19 @@
     },
     {
       "path": "public/targets.js",
-      "sha256": "811470acbdb7ca7c9fe5f97b642523a6f7264f9d34a148de25453d7c83234d59"
+      "sha256": "57ebdc946ac1c66f3d56a3e9e34a33c2f1c51a71ebd08a6f378279049c5f38f9"
     },
     {
       "path": "public/targets.css",
-      "sha256": "ca50746ffc510c118bb0a4cc4226750871706074864ccf262678d2065766eff2"
+      "sha256": "2bc81cc43ab49aad57d311506776210b9da5f564a786f96addd493b6c220fd08"
     },
     {
       "path": "server/target-policy-view.mjs",
-      "sha256": "262385fd23d79c2f57dfb7fff7dbc72c7976837d4b06610188b14a5e7af06be8"
+      "sha256": "c63953a1e1f4d8df168a021b08030060b196d1a100edd0dbd7fa38f7c785157e"
     },
     {
       "path": "server/target-policy-commands.mjs",
-      "sha256": "aa68b008093eed836929d2dd63f3d6c7c4cd1f06e6ca124495f453fafdb72fe1"
+      "sha256": "402612ee166743b2cc95052c031d8f15b428216e178d3feead0bb56e7007c026"
     },
     {
       "path": "server/http.mjs",
@@ -130,7 +130,7 @@
     },
     {
       "path": "tests/targets-mobile.test.mjs",
-      "sha256": "c01a8ea94113b3063b3c8c1cad1f6143da069c2d3b4e821173467e577d96a305"
+      "sha256": "2b8e5fa6e262f9481398440d1214234a6e208d23d706f47051c81e5252c64d3f"
     }
   ],
   "references": [
@@ -150,7 +150,8 @@
     "Remove Health Connect and activity-device controls per the PWA decision.",
     "Keep editor drafts on preview failure; closing an editor aborts pending preview before save. No write on cancellation.",
     "Validate canonical preview before immutable workspace command. Retry the same request after transport/5xx uncertainty. Reject stale revisions and reload persisted values.",
-    "Shared preview/receipt lifecycle also serves Weight Goal; expenditure parser and UI remain unchanged."
+    "Shared preview/receipt lifecycle also serves Weight Goal; expenditure parser and UI remain unchanged.",
+    "Macro & Energy source shares target routing and projections; see macro-energy-source.json."
   ],
   "checks": [
     "tests/energy-expenditure.test.mjs",
@@ -163,7 +164,7 @@
     ".local/expenditure/activity.png"
   ],
   "limits": [
-    "Macro & Energy, Scheduler, Upper Limits and Guided Setup are separate remaining child restorations.",
+    "Scheduler, Upper Limits and Guided Setup are separate remaining child restorations.",
     "Saved phone and local-source captures were used; no new phone inspection in this slice.",
     "Hosted acceptance is performed separately by the release owner."
   ]

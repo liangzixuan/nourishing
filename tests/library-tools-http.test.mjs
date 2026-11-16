@@ -15,7 +15,7 @@ test('library commands authenticate before body access and retain strict route l
   const req=request({},undefined,headers);assert.equal((await handle({url:req.url,method:req.method,headers:req.headers,get body(){throw Error('Body read before authentication');}})).status,status);
  }assert.equal(calls,0);
  const authorized=createWebHandler({config:{origin},service:{current:async()=>({}),workspaceCommand:async()=>{calls++;return {};}}});
- assert.equal((await authorized(request({type:'food.save'}))).status,400);
+ assert.equal((await authorized(request({type:'entry.add'}))).status,400);
  assert.equal((await authorized(request({type:'library.portions'},'/api/library/command?owner=other'))).status,400);
  const req=request({});assert.equal((await authorized({url:req.url,method:req.method,headers:req.headers,body:(async function*(){yield Buffer.alloc(4*1024*1024+1);})()})).status,413);assert.equal(calls,0);
 });

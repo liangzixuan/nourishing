@@ -1,3 +1,4 @@
+import {LibraryEditorSave} from './library-editor-save.js';
 import {request} from './diary-api.js';
 import {escape as e} from './html.js';
 import {FoodNutritionView} from './food-entry-source/food-nutrition-view.js';
@@ -9,20 +10,21 @@ const identity=row=>(row.recipeId?'recipe:':'food:')+(row.recipeId??row.foodId);
 export function mountMealEditor({saved,data,draft,show,close,content,date,onSaved,onAction,onReload,openEntry}){
  const resource=saved?.resource,values=structuredClone(draft??{name:resource?.name??'',items:resource?.items??[]}),names=new Map((saved?.ingredients??[]).map(row=>[identity(row),{name:row.name,source:row.options?(row.source?.name??(row.recipeId?'Recipe':'Custom Food')):'',options:row.options}]));
  show('<section class="meal-editor"></section>');const root=content.querySelector('.meal-editor'),sheet=content.closest('dialog'),abort=new AbortController();sheet.classList.add('mobile-composite-editor');
- let stage=0,ordering=false,disposed=false,busy=false,pending=null,ready=false,generation=0,previewRequest,footerSize,child,menu,nutrition,conflict=false,error='';
+ let stage=0,ordering=false,disposed=false,busy=false,saveAdd=false,ready=false,generation=0,previewRequest,footerSize,child,menu,nutrition,conflict=false,error='';
  const alive=()=>!disposed&&root.isConnected,read=()=>({...values,...(resource?{id:resource.id}:{})});
+ const saver=new LibraryEditorSave({kind:'meal',revision:data.revision,host:()=>root.querySelector('[data-meal-preview]'),onChange:()=>{if(alive())controls();}});
  function cleanupPreview(){++generation;previewRequest?.abort();nutrition?.dispose();nutrition=null;}
  function render(){
-  if(!alive())return;cleanupPreview();footerSize?.disconnect();ready=false;
+  if(!alive())return;saver.clearReview();cleanupPreview();footerSize?.disconnect();ready=false;
   const rows=values.items.map((row,index)=>{const label=names.get(identity(row)),unit=row.unit==='portion'?label?.options?.find(([id])=>id==='portion:'+row.portionId)?.[1]??'portion':row.unit??'servings';return `<div class="composite-item-row"><button type="button" data-meal-item="${index}" data-mci-edit><span class="mci-item-name">${e(label?.name??'Meal item')}</span><span class="mci-item-quantity">${e(row.quantity??row.amount)} ${e(unit)}</span><span class="mci-item-source">${e(label?.source??'')}</span></button><button type="button" data-meal-remove="${index}" data-composite-remove aria-label="Remove item ${index+1}">×</button>${ordering?`<div class="composite-reorder"><button type="button" data-meal-move="${index}" data-direction="-1" aria-label="Move item ${index+1} up" ${index===0?'disabled':''}>↑</button><button type="button" data-meal-move="${index}" data-direction="1" aria-label="Move item ${index+1} down" ${index===values.items.length-1?'disabled':''}>↓</button></div>`:''}</div>`;}).join('');
-  root.innerHTML=`<header class="sheet-header"><button type="button" class="icon-button" data-meal-close aria-label="Close">×</button><h2>${resource?'Edit':'Create'} Meal</h2><button type="button" data-meal-menu aria-label="Meal options">⋮</button></header><form data-form="meal"><p class="meal-status" role="alert">${e(error)}${conflict?'<button type="button" data-meal-reload>Reload latest</button>':''}</p><section class="mce-stage" data-mce-stage="ingredients" ${stage?'hidden':''}><label class="mce-name"><span>Meal Name</span><input name="name" aria-label="Meal Name" value="${e(values.name)}" required maxlength="300"></label><div class="mci-list"><h3>Meal Items</h3><div class="composite-items-editor">${rows}<div class="composite-items-heading"><button type="button" data-composite-add>＋ Add Meal Item</button></div></div></div></section><section class="mce-stage mce-review mfe-review" data-mce-stage="review" ${stage?'':'hidden'}><h2>${e(values.name)}</h2><div class="mf-preview" data-meal-preview></div></section><footer class="mce-footer" ${stage?'data-review':'data-first-step'}><div class="mce-navigation"><button type="button" data-meal-back data-mce-back ${stage?'':'hidden'}>Back</button><button type="submit" data-meal-next data-mce-next>${pending?'Try again':ordering?'Done':stage?'Save Meal':'Next'}</button></div><button type="submit" data-mce-add ${stage?'':'hidden'}>Save &amp; Add</button><div class="mce-progress" ${stage?'':'hidden'}><span class="${stage?'':'current'}"></span><span class="${stage?'current':''}"></span></div></footer></form>`;
-  root.querySelector('input[name=name]').addEventListener('input',event=>{values.name=event.target.value;});
+  root.innerHTML=`<header class="sheet-header"><button type="button" class="icon-button" data-meal-close aria-label="Close">×</button><h2>${resource?'Edit':'Create'} Meal</h2><button type="button" data-meal-menu aria-label="Meal options">⋮</button></header><form data-form="meal"><p class="meal-status" role="alert">${e(error)}${conflict?'<button type="button" data-meal-reload>Reload latest</button>':''}</p><section class="mce-stage" data-mce-stage="ingredients" ${stage?'hidden':''}><label class="mce-name"><span>Meal Name</span><input name="name" aria-label="Meal Name" value="${e(values.name)}" required maxlength="300"></label><div class="mci-list"><h3>Meal Items</h3><div class="composite-items-editor">${rows}<div class="composite-items-heading"><button type="button" data-composite-add>＋ Add Meal Item</button></div></div></div></section><section class="mce-stage mce-review mfe-review" data-mce-stage="review" ${stage?'':'hidden'}><h2>${e(values.name)}</h2><div class="mf-preview" data-meal-preview></div></section><footer class="mce-footer" ${stage?'data-review':'data-first-step'}><div class="mce-navigation"><button type="button" data-meal-back data-mce-back ${stage?'':'hidden'}>Back</button><button type="submit" data-meal-next data-mce-next>${saver.locked?'Try again':ordering?'Done':stage?'Save Meal':'Next'}</button></div><button type="submit" data-mce-add ${stage?'':'hidden'}>Save &amp; Add</button><div class="mce-progress" ${stage?'':'hidden'}><span class="${stage?'':'current'}"></span><span class="${stage?'current':''}"></span></div></footer></form>`;
+  root.querySelector('input[name=name]').addEventListener('input',event=>{values.name=event.target.value;saver.clearReview();});
   footerSize=new ResizeObserver(()=>{const form=root.querySelector('form');form.style.setProperty('--mce-footer-height',root.querySelector('.mce-footer').getBoundingClientRect().height+'px');form.style.setProperty('--mce-header-height',root.querySelector('.sheet-header').getBoundingClientRect().height+'px');});footerSize.observe(root.querySelector('.mce-footer'));footerSize.observe(root.querySelector('.sheet-header'));
-  controls();if(stage&&!pending&&!conflict)void preview();
+  controls();if(stage&&!saver.locked&&!conflict)void preview();
  }
  function controls(){
-  root.querySelector('[data-meal-next]').textContent=pending?'Try again':ordering?'Done':stage?'Save Meal':'Next';root.querySelector('.meal-status').innerHTML=e(error)+(conflict?'<button type="button" data-meal-reload>Reload latest</button>':'');
-  for(const el of root.querySelectorAll('button,input')){if(el.hasAttribute('data-meal-close')){el.disabled=busy;continue;}if(el.hasAttribute('data-meal-next')){el.disabled=busy||conflict||stage&&!ready&&!pending;continue;}if(el.hasAttribute('data-meal-reload')){el.disabled=busy;continue;}el.disabled=busy||!!pending||conflict||el.hasAttribute('data-mce-add')&&!ready||el.hasAttribute('data-meal-move')&&(Number(el.dataset.mealMove)+(Number(el.dataset.direction))<0||Number(el.dataset.mealMove)+Number(el.dataset.direction)>=values.items.length);}
+  root.querySelector('[data-meal-next]').textContent=saver.locked?'Try again':ordering?'Done':stage?'Save Meal':'Next';root.querySelector('.meal-status').innerHTML=e(error)+(conflict?'<button type="button" data-meal-reload>Reload latest</button>':'');
+  for(const el of root.querySelectorAll('button,input')){if(el.hasAttribute('data-meal-close')){el.disabled=busy;continue;}if(el.hasAttribute('data-meal-next')){el.disabled=busy||conflict||stage&&!ready&&!saver.locked;continue;}if(el.hasAttribute('data-meal-reload')){el.disabled=busy;continue;}el.disabled=busy||!!saver.locked||conflict||el.hasAttribute('data-mce-add')&&!ready||el.hasAttribute('data-meal-move')&&(Number(el.dataset.mealMove)+(Number(el.dataset.direction))<0||Number(el.dataset.mealMove)+Number(el.dataset.direction)>=values.items.length);}
   root.dataset.mealBusy=String(busy);root.dataset.mealStage=stage?'review':'ingredients';
  }
  async function preview(){
@@ -32,20 +34,21 @@ export function mountMealEditor({saved,data,draft,show,close,content,date,onSave
   finally{if(alive()&&current===generation)target.removeAttribute('aria-busy');}
  }
  async function save(add){
-  if(busy||conflict)return;if(!pending){if(!ready)return;pending={body:{requestId:crypto.randomUUID(),revision:data.revision,type:'meal.save',payload:read()},add,saved:null};}
+  if(busy||conflict||!ready&&!saver.locked)return;if(!saver.locked)saveAdd=add;
   busy=true;error='';controls();
-  try{if(!pending.saved){const result=await request('/api/workspace/command',pending.body);if(result.ok!==true||!result.item?.id)throw Error('Unable to confirm the save. Try again.');pending.saved=result;}await onSaved();if(!alive())return;const id=pending.saved.item.id,add=pending.add;pending=null;dispose();close();if(add)openEntry('meal',id);}
-  catch(failure){if(!alive())return;error=failure.message;if(failure.status>=400&&failure.status<500){pending=null;conflict=failure.status===409;}}
+  try{const result=await saver.save(read());if(!result||!alive())return;await onSaved();if(!alive())return;const id=result.item.id,add=saveAdd;dispose();close();if(add)openEntry('meal',id);}
+  catch(failure){if(!alive())return;error=failure.message;conflict=failure.status===409;}
   finally{busy=false;if(alive())controls();}
  }
+
  function editItem(index){child?.close();child=openCompositeIngredient({date:date(),items:values.items,index,nutrients:data.nutrients,energyUnit:data.energyUnit,onApply:(row,label)=>{if(index===undefined)values.items.push(row);else values.items[index]=row;names.set(identity(row),label);error='';render();},onClose:()=>child=null});}
- function back(){if(child){child.back();return;}if(menu){menu.close();return;}if(busy)return;if(stage&&!pending&&!conflict){stage=0;render();}else{dispose();close();}}
- function dispose(){if(disposed)return;disposed=true;cleanupPreview();footerSize?.disconnect();abort.abort();child?.close();menu?.close(false);observer.disconnect();sheet.classList.remove('mobile-composite-editor');}
+ function back(){if(child){child.back();return;}if(menu){menu.close();return;}if(busy)return;if(stage&&!saver.locked&&!conflict){stage=0;render();}else{dispose();close();}}
+ function dispose(){if(disposed)return;disposed=true;saver.dispose();cleanupPreview();footerSize?.disconnect();abort.abort();child?.close();menu?.close(false);observer.disconnect();sheet.classList.remove('mobile-composite-editor');}
  root.addEventListener('submit',event=>{event.preventDefault();if(busy)return;if(ordering){ordering=false;render();return;}if(stage)void save(event.submitter?.hasAttribute('data-mce-add'));else{if(!values.items.length){error='Add a meal item.';render();return;}error='';stage=1;render();}},{signal:abort.signal});
  root.addEventListener('click',event=>{
   const b=event.target.closest('button');if(!b)return;
   if(b.hasAttribute('data-meal-close')){if(!busy){dispose();close();}return;}if(b.hasAttribute('data-meal-reload'))return onReload();
-  if(busy||pending||conflict)return;
+  if(busy||saver.locked||conflict)return;
   if(b.hasAttribute('data-meal-back'))return back();if(b.hasAttribute('data-meal-preview-retry')){cleanupPreview();void preview();return;}
   if(b.hasAttribute('data-composite-add'))return editItem();
   if(b.dataset.mealItem!==undefined)return editItem(Number(b.dataset.mealItem));

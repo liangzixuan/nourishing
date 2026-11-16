@@ -1,3 +1,4 @@
+import {mountTargetsSheet} from './targets.js';
 import {mountFoodCopy} from './food-copy.js';
 import {mountFoodEntry} from './food-entry.js';
 import {AddMenu} from './add-menu-source/add-menu.js';
@@ -106,9 +107,10 @@ function navigate(next,initialTab='dashboard',reportDate){
  if(next==='more'){selectTab('settings-tab');more=mountMore({...common,identity:account?.name||'My workspace',onFoods:()=>navigate('foods'),onDiscover:tab=>navigate('discover',tab)});return;}
  selectTab('discover-tab');nutrition=mountNutrition({...common,mode:'discover',initialTab,reportDate,onSuggest:day=>{date=day;return openInsights('suggestions',day);}});
 }
+function sourceTargets(){pickerCleanup=mountTargetsSheet({date:()=>date,show,close,header,content,onChange:load});}
 async function summaryAction(input){
  if(input.action==='open-fasting')return navigate('discover','fasting');
- if(input.action==='edit-day-targets')return openTargetPolicies({date:()=>date,show,close,header,content,onChange:load});
+ if(input.action==='edit-day-targets')return openTargetPolicies({date:()=>date,show,close,header,content,onChange:load,initialScreen:'day',onSource:sourceTargets});
  if(input.action==='all-nutrients')return navigate('discover','report',date);
  if(input.action==='water'){try{await command(diary.revision,'water.add',{date,time:new Date().toTimeString().slice(0,5),amount:input.amount});await load();}catch(error){notice.textContent=error.message;}return;}
  if(input.action==='water-custom'){
@@ -116,7 +118,7 @@ async function summaryAction(input){
   const form=content.querySelector('form');form.onsubmit=async event=>{event.preventDefault();const button=form.querySelector('button');button.disabled=true;try{await command(diary.revision,'water.add',{date,time:new Date().toTimeString().slice(0,5),amount:Number(form.elements.amount.value)});await load();if(form.isConnected)close();}catch(error){if(form.isConnected)form.querySelector('[role=status]').textContent=error.message;}finally{button.disabled=false;}};return;
  }
  if(input.action==='nutrient-contributors')return openNutrientDetail({nutrient:input.id,date,show,header,content});
- openDiarySummaryAction({...input,diary,date,show,close,header,content,onChange:load,onTargets:()=>openTargetPolicies({date:()=>date,show,close,header,content,onChange:load}),onReport:day=>navigate('discover','report',day)});
+ openDiarySummaryAction({...input,diary,date,show,close,header,content,onChange:load,onTargets:sourceTargets,onReport:day=>navigate('discover','report',day)});
 }
 async function search(restore=null,{applied,selected}={}){
  if(!diary)return;

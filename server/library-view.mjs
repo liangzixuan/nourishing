@@ -1,3 +1,5 @@
+import {foodCategories,foodTags} from './domain/food-taxonomy.mjs';
+import {resolveRecipeQuantity} from './domain/recipe-quantity.mjs';
 import {catalog,entryFacts} from './domain/nutrition.mjs';
 import {recipeWeight} from './domain/recipe-weight.mjs';
 import {availableQuantityUnits} from './domain/quantity-units.mjs';
@@ -7,7 +9,7 @@ import {digest} from './data-codec.mjs';
 import {invalid} from './request-errors.mjs';
 export const libraryKinds=['food','recipe','meal'];
 export function libraryView(state){
- return {revision:digest(state),energyUnit:state.settings.energyUnit??'kcal',nutrients:catalog.map(({id,name,unit,group,category})=>({id,name,unit,group,category})),items:libraryKinds.flatMap(kind=>state[kind+'s'].filter(row=>!row.readOnly).map(({id,name,retired})=>({id,name,kind,retired:!!retired,favorite:(state.settings.favorites??[]).some(ref=>ref.kind===kind&&ref.id===id)})))};
+ return {revision:digest(state),taxonomy:{categories:foodCategories,tags:foodTags},energyUnit:state.settings.energyUnit??'kcal',nutrients:catalog.map(({id,name,unit,group,category})=>({id,name,unit,group,category})),items:libraryKinds.flatMap(kind=>state[kind+'s'].filter(row=>!row.readOnly).map(({id,name,retired})=>({id,name,kind,retired:!!retired,favorite:(state.settings.favorites??[]).some(ref=>ref.kind===kind&&ref.id===id)})))};
 }
 export function libraryItem(state,kind,resource,entry){
  if(!libraryKinds.includes(kind)||!resource)invalid('This library item no longer exists.');
@@ -18,8 +20,15 @@ export function libraryItem(state,kind,resource,entry){
  return {kind,resource,options,ingredients,nutrients:catalog.map(({id,name,unit,category})=>({id,name,unit,category})),energyUnit:state.settings.energyUnit??'kcal',facts:entryFacts(state,{[kind+'Id']:resource.id,amount:1,...(entry??{})})};
 }
 
-function libraryQuantityOptions(state,kind,item){
+export function libraryQuantityOptions(state,kind,item){
  const grams=kind==='recipe'?recipeWeight(item,state).grams:kind==='food'?item.grams:null;
  const volume=kind==='recipe'?item.batchVolumeMl:kind==='food'?item.milliliters:null;
  return [['servings',kind==='meal'?'meal':item.serving??'serving'],...availableQuantityUnits({grams,milliliters:volume}).map(unit=>[unit.id,unit.label]),...(kind==='recipe'?[['batch','Full recipe']]:[]),...(item.portions??[]).map(p=>['portion:'+p.id,p.label])];
+}
+
+export function recipePreview(state,resource,quantity={amount:1}){
+ const weight=recipeWeight(resource,state),originalWeight=recipeWeight({...resource,cookedWeightGrams:null},state);
+ // Adapt a serving multiplier to the canonical full-recipe quantity resolver.
+ const resolved=resolveRecipeQuantity(resource,quantity.quantity===undefined?{quantity:(quantity.amount??1)/resource.servings,unit:'batch'}:quantity,state);
+ return {weight,originalWeight,options:libraryQuantityOptions(state,'recipe',resource),quantity:{grams:resolved.grams??null,milliliters:resolved.milliliters??null,amount:quantity.quantity===undefined?(quantity.amount??1):resolved.amount}};
 }

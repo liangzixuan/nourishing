@@ -1,3 +1,4 @@
+import {MobileMacroEnergy} from './macro-energy-source/mobile-macro-energy.js';
 import {mountRecordEditor} from './records.js';
 import {MobileWeightGoal} from './weight-goal-source/mobile-weight-goal.js';
 import {MobileEnergyExpenditure} from './expenditure-source/mobile-energy-expenditure.js';
@@ -16,13 +17,13 @@ const tools=['diary','display','references','body','weekday'];
 const m=key=>formatMessage('en','mobileTargets.'+key);
 
 /** Source Targets navigation; account commands and calculations stay server owned. */
-export function mountTargets({page,headerRoot,date,show,close,header,content,onChange=async()=>{},onExit}){
+export function mountTargets({page,headerRoot,date,show,close,header,content,onChange=async()=>{},onExit,initialScreen='home'}){
  const root=document.createElement('section');root.className='targets-page';page.replaceChildren(root);
  const events=new AbortController();let child=null,menu=null,disposed=false,screen='home',revision,operation=0;
  document.body.classList.add('targets-mobile');
  const alive=()=>!disposed&&root.isConnected;
  const day=()=>typeof date==='function'?date():date;
- const expenditureSession={pending:null,listener:null},weightSession={pending:null,listener:null};
+ const expenditureSession={pending:null,listener:null},weightSession={pending:null,listener:null},macroSession={pending:null,listener:null};
  const ui={date,show,close,header,content,onChange:async()=>{await onChange();if(alive()&&child)await child.load();}};
  function heading(title){headerRoot.innerHTML=`<div class="mm-child-header"><button type="button" data-mt-back aria-label="Back">${moreIcon('chevron-left')}</button><h1>${e(title)}</h1><button type="button" data-mt-menu aria-label="${e(m('tools'))}" aria-haspopup="menu" aria-expanded="false">⋮</button></div>`;}
  function reset(){operation++;menu?.close(false);menu=null;child?.dispose();child=null;}
@@ -34,6 +35,10 @@ export function mountTargets({page,headerRoot,date,show,close,header,content,onC
  }
  function open(id){
   menu?.close();
+  if(id==='macros'){
+   reset();screen='macros';heading(m('macros'));root.innerHTML='<div class="mt-section"><div id="mobile-macro-energy-root"></div></div>';window.scrollTo(0,0);
+   child=new MobileMacroEnergy({root:root.querySelector('#mobile-macro-energy-root'),date:day(),language:'en',energyUnit:'kcal',session:macroSession,onSaved:onChange,onNavigate:open});return;
+  }
   if(id==='weight'){
    reset();screen='weight';heading(m('weight'));root.innerHTML='<div class="mt-section"><div id="mobile-weight-goal-root"></div></div>';window.scrollTo(0,0);
    child=new MobileWeightGoal({root:root.querySelector('#mobile-weight-goal-root'),header:headerRoot,date:day(),language:'en',energyUnit:'kcal',session:weightSession,onSaved:onChange,onNavigate:open,onRecordWeight:initialSelection=>mountRecordEditor({...ui,kind:'biometric',date:day(),initialSelection:initialSelection??{selection:{kind:'catalog',id:'weight'},unit:null}})});return;
@@ -50,8 +55,8 @@ export function mountTargets({page,headerRoot,date,show,close,header,content,onC
   }
   if(id==='scores'||id==='diary'){void summary(id==='scores'?'choose-scores':'configure-diary-display');return;}
   if(id==='references'||id==='body'){void openProfileSettings({...ui,initialScreen:id});return;}
-  const initialScreen={macros:'macros',scheduler:'schedule',weekday:'weekdays'}[id];
-  if(initialScreen)void openTargetPolicies({...ui,initialScreen});
+  const initialScreen={scheduler:'schedule',weekday:'weekdays'}[id];
+  if(initialScreen)void openTargetPolicies({...ui,initialScreen,onSource:()=>{close();open('macros');}});
  }
  function back(){if(menu){menu.close();return true;}if(child?.back())return true;if(screen!=='home'){home();return true;}return false;}
  headerRoot.addEventListener('click',event=>{
@@ -62,5 +67,13 @@ export function mountTargets({page,headerRoot,date,show,close,header,content,onC
   }
  },{signal:events.signal});
  root.addEventListener('click',event=>{const button=event.target.closest('[data-mt-open]');if(button)open(button.dataset.mtOpen);},{signal:events.signal});
- home();return {back,dispose(){disposed=true;reset();events.abort();document.body.classList.remove('targets-mobile');}};
+ if(initialScreen==='home')home();else open(initialScreen);return {back,dispose(){disposed=true;reset();events.abort();document.body.classList.remove('targets-mobile');}};
+}
+
+/** Reuses the same source target child for Diary settings, with the selected date intact. */
+export function mountTargetsSheet({date,show,close,header,content,onChange,initialScreen='macros'}){
+ show('<section class="targets-sheet"><header class="targets-sheet-header"></header><div class="targets-sheet-page"></div></section>');
+ const host=content.querySelector('.targets-sheet'),alreadyMobile=document.body.classList.contains('targets-mobile');
+ const panel=mountTargets({page:host.querySelector('.targets-sheet-page'),headerRoot:host.querySelector('.targets-sheet-header'),date,show,close,header,content,onChange,initialScreen,onExit:close});
+ return ()=>{panel.dispose();if(alreadyMobile)document.body.classList.add('targets-mobile');};
 }

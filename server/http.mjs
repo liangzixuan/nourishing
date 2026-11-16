@@ -69,15 +69,15 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       if(recipeRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid recipe request.');}
       const backupRequest=req.method==='POST'&&['/api/backup/inspect','/api/backup/media','/api/backup/restore','/api/backup/recovery/inspect'].includes(path);
       if(backupRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid backup request.');}
-      const libraryCommand=req.method==='POST'&&path==='/api/library/command',ingredientRequest=req.method==='POST'&&['/api/diary/ingredients/preview','/api/diary/ingredients/save'].includes(path);
-      if(libraryCommand||ingredientRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid editor request.');}
+      const libraryCommand=req.method==='POST'&&path==='/api/library/command',libraryPreview=req.method==='POST'&&['/api/library/preview','/api/library/edit-preview'].includes(path),ingredientRequest=req.method==='POST'&&['/api/diary/ingredients/preview','/api/diary/ingredients/save'].includes(path);
+      if(libraryCommand||libraryPreview||ingredientRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid editor request.');}
       const barcodeRequest=req.method==='POST'&&['/api/barcode/lookup','/api/barcode/preview','/api/barcode/save','/api/branded/search'].includes(path);
       if(barcodeRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid barcode request.');}
       const printRequest=req.method==='POST'&&path==='/api/print-report/preview';
       if(printRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid report query.');}
       const diaryToolsRequest=req.method==='POST'&&['/api/diary/tools/review','/api/diary/tools/save'].includes(path),nutrientRequest=req.method==='POST'&&['/api/nutrient-detail','/api/nutrition-report/nutrient'].includes(path);
       if(diaryToolsRequest||nutrientRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid diary query.');}
-      const body=req.method==='GET'?null:await readBody(req,(sharingRequest||cycleRequest)?20_000_000:offlineRequest?601_000:textRequest?60_100:csvRequest?CSV_BODY_BYTES:barcodeRequest?BARCODE_BODY_BYTES:(libraryCommand||ingredientRequest||printRequest||diaryToolsRequest||path==='/api/nutrient-detail')?4*1024*1024:backupRequest?(path==='/api/backup/inspect'?20_000_000:path.endsWith('/media')?5*1024*1024:16384):photoRequest?((path.endsWith('/analyze')||path.endsWith('/prepare'))?12:5)*1024*1024:recipeRequest&&path!=='/api/recipe-import'?16*1024*1024:16384);
+      const body=req.method==='GET'?null:await readBody(req,(sharingRequest||cycleRequest)?20_000_000:offlineRequest?601_000:textRequest?60_100:csvRequest?CSV_BODY_BYTES:barcodeRequest?BARCODE_BODY_BYTES:(libraryCommand||libraryPreview||ingredientRequest||printRequest||diaryToolsRequest||path==='/api/nutrient-detail')?4*1024*1024:backupRequest?(path==='/api/backup/inspect'?20_000_000:path.endsWith('/media')?5*1024*1024:16384):photoRequest?((path.endsWith('/analyze')||path.endsWith('/prepare'))?12:5)*1024*1024:recipeRequest&&path!=='/api/recipe-import'?16*1024*1024:16384);
       if(cycleRequest){
         if(path.endsWith('/preview'))return json(200,await api.cycleImportPreview(secret,body));
         if(path.endsWith('/removal-preview'))return json(200,await api.cycleRemovalPreview(secret,body));
@@ -100,7 +100,7 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       if(printRequest)return json(200,await api.previewPrintReport(secret,body));
       if(req.method==='GET'&&path==='/api/print-report/options'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid report query.');return json(200,await api.printReportOptions(secret));}
       if(barcodeRequest)return json(200,await api[{'/api/barcode/lookup':'barcodeLookup','/api/barcode/preview':'barcodePreview','/api/barcode/save':'barcodeSave','/api/branded/search':'brandedSearch'}[path]](secret,body));
-      if(libraryCommand){if(!['library.portions','library.retirement'].includes(body?.type))fail(400,'Choose a library action.');return json(200,await api.workspaceCommand(secret,body));}
+      if(libraryCommand){if(!['library.portions','library.retirement','food.save','recipe.save','meal.save','library.edit'].includes(body?.type))fail(400,'Choose a library action.');return json(200,await api.workspaceCommand(secret,body));}
       if(ingredientRequest){if(path.endsWith('/preview'))return json(200,await api.previewEntryAdjustment(secret,body));if(body?.type!=='entry.ingredients.adjust')fail(400,'Choose an ingredient action.');return json(200,await api.workspaceCommand(secret,body));}
       if(req.method==='GET'&&path==='/api/diary/ingredients'){if(!secret)fail(401,'Please sign in.');const keys=['kind','date','id'];if([...url.searchParams.keys()].some(k=>!keys.includes(k)||url.searchParams.getAll(k).length!==1)||keys.some(k=>!url.searchParams.has(k)))fail(400,'Choose a diary item.');return json(200,await api.entryAdjustment(secret,Object.fromEntries(url.searchParams)));}
       if(backupRequest){const method=path==='/api/backup/recovery/inspect'?'inspectRecovery':path.endsWith('/inspect')?'inspectBackup':path.endsWith('/media')?'uploadBackupMedia':'restoreBackup';return json(200,await api[method](secret,body));}
@@ -158,6 +158,7 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       }
       if(req.method==='POST'&&path==='/api/workspace/command'){if(!secret)fail(401,'Please sign in.');return json(200,await api.workspaceCommand(secret,body));}
       if(req.method==='POST'&&path==='/api/target-policies/preview'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');return json(200,await api.previewTargetPolicy(secret,body));}
+      if(req.method==='POST'&&path==='/api/library/edit-preview')return json(200,await api.previewLibraryEdit(secret,body));
       if(req.method==='POST'&&path==='/api/library/preview'){if(!secret)fail(401,'Please sign in.');return json(200,await api.previewLibrary(secret,body));}
       if(req.method==='GET'&&path==='/api/library'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');return json(200,await api.library(secret));}
       if(req.method==='GET'&&path==='/api/library/share'){

@@ -1,0 +1,37 @@
+{
+  "scope": "CSV export group option, account energy-unit default, preparation status and cancellation",
+  "reference": {
+    "source": "../cronometer-local/public/csv-export-panel.js",
+    "sha256": "9447273ae8df56a626d797e844160779b8b628f2f63b67d0897ae9fc25fc5972"
+  },
+  "approach": "Restore the source panel behavior through the existing authenticated JSON export API. The source file is a reference, not a byte-for-byte copy. Account energy-unit default is resolved once by the server export adapter.",
+  "files": [
+    {
+      "target": "public/charts.js",
+      "outputSha256": "50a3761e457367a4e9925c1b226e4f69dd849493eb9e6da613cb5dd0035324df"
+    },
+    {
+      "target": "server/chart-view.mjs",
+      "outputSha256": "43ef1409d4799f4fe43765a2547dde34e855d72232d8f2f4ea79310f4d980f0e"
+    },
+    {
+      "target": "tests/charts.test.mjs",
+      "outputSha256": "74aaed354e3683328e6f7b1c51b035c4fdc712d54df526757a38444e039d2ae5"
+    },
+    {
+      "target": "tests/csv-export-browser.test.mjs",
+      "outputSha256": "45b6ee34ec8ec0ce2fcddfba2523991a19fa2df6c664ce0128fd02000196da26"
+    }
+  ],
+  "verification": {
+    "command": "node --test tests/charts.test.mjs tests/csv-export-browser.test.mjs",
+    "result": "4 passed",
+    "coverage": [
+      "Grouped kJ download through production HTTP handler",
+      "Explicit energy unit retained",
+      "Unsupported group/report combination rejected",
+      "Cancel aborts pending download; close/reopen disposes the old request",
+      "No browser/CSP errors or horizontal overflow"
+    ]
+  }
+}

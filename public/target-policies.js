@@ -32,11 +32,11 @@ function readMacro(form){
 }
 
 /** Opens the account's target controls in the app's existing dismissible sheet. */
-export async function openTargetPolicies({date,show,close,header,content,onChange,initialScreen}){
+export async function openTargetPolicies({date,show,close,header,content,onChange,initialScreen,onSource}){
  const selectedDate=typeof date==='function'?date():date;let data;
  show(`${header('Macro & Energy Targets')}<p class="empty">Loading…</p>`);const loading=content.firstElementChild;
  async function read(){data=await request('/api/target-policies?date='+selectedDate);}
- try{await read();if(!loading.isConnected)return;({macros:macroEditor,energy:energyEditor,carbohydrate:carbohydrateEditor,weekdays:weekdayEditor,schedule:scheduleEditor}[initialScreen]??menu)();}catch(error){if(loading.isConnected)content.innerHTML=header('Macro & Energy Targets')+`<p class="sheet-message">${e(error.message)}</p>`;}
+ try{await read();if(!loading.isConnected)return;({weekdays:weekdayEditor,schedule:scheduleEditor,day:()=>templateEditor(null,selectedDate)}[initialScreen]??menu)();}catch(error){if(loading.isConnected)content.innerHTML=header('Macro & Energy Targets')+`<p class="sheet-message">${e(error.message)}</p>`;}
  function editor(title,html,submit){
   show(`${header(title)}<form class="entry-form target-policy-form">${html}<p class="sheet-message" role="status"></p><footer class="entry-actions"><button type="button" data-back>Back</button><button class="primary" type="submit">Save</button></footer></form>`);
   const form=content.querySelector('form');form.querySelector('[data-back]').onclick=menu;
@@ -50,33 +50,8 @@ export async function openTargetPolicies({date,show,close,header,content,onChang
  }
  function menu(){
   const labels={default:'Default targets',weekly:'Weekly template','daily-template':'Daily template','daily-custom':'Daily custom targets','daily-default':'Default targets'};
-  show(`${header('Macro & Energy Targets')}<section class="policy-summary"><strong>${n(data.effective.energy.target)} kcal</strong><span>${e(selectedDate)} · ${e(labels[data.effective.assignment.source]??data.effective.assignment.source)}</span></section><div class="policy-menu">${[['macros','Macro targets'],['energy','Energy target & expenditure'],['carbohydrate','Carbohydrate tracking'],['weekdays','Weekday overrides'],['schedule','Macro scheduler']].map(([id,label])=>`<button type="button" data-policy="${id}" aria-label="${label}">${label}<span>›</span></button>`).join('')}</div>`);
-  for(const button of content.querySelectorAll('[data-policy]'))button.onclick=()=>({macros:macroEditor,energy:energyEditor,carbohydrate:carbohydrateEditor,weekdays:weekdayEditor,schedule:scheduleEditor})[button.dataset.policy]();
- }
- function macroEditor(){const form=editor('Macro targets',macroFields(data.macro),form=>({type:'targetPolicy.macros',payload:{macro:readMacro(form)}}));bindMacro(form,data.ketoPresets);}
- function carbohydrateEditor(){
-  editor('Carbohydrate tracking',select('mode','Track carbohydrate',[['total','Total'],['net','Net']],data.carbohydrate.mode)+`<fieldset class="policy-fields"><legend>Net carbohydrate exclusions</legend>${[['fiber','Fiber'],['sugarAlcohol','Sugar alcohols'],['allulose','Allulose'],['fructose','Fructose']].map(([id,label])=>check(id,label,data.carbohydrate.netExcluded?.includes(id))).join('')}</fieldset>`,form=>{const mode=form.elements.mode.value,excluded=['fiber','sugarAlcohol','allulose','fructose'].filter(id=>form.elements[id].checked);return {type:'targetPolicy.carbohydrate',payload:{policy:{mode,netExcluded:mode==='total'&&data.carbohydrate.netExcluded===null&&excluded.length===0?null:excluded}}};});
- }
- function energyEditor(){
-  const p=data.energyPolicy,resting=p?.resting??{mode:'custom',kcal:null},baseline=p?.baseline??{mode:'multiplier',factor:0.2},target=p?.target??{mode:'fixed',includeAboveBaseline:false},goal=target.mode==='weight-goal'?target.goal:{startDate:data.today,startWeight:null,goalWeight:null,unit:'kg',weeklyChange:null};
-  const form=editor('Energy target & expenditure',
-   select('restingMode','Resting energy',[['none','Not configured'],['custom','Custom'],['mifflin-st-jeor','Mifflin-St Jeor (age)'],['mifflin-st-jeor-birthday','Mifflin-St Jeor (birth date)']],p?resting.mode:'none')+
-   `<div data-resting="custom">${input('restingKcal','Resting energy (kcal)',resting.kcal)}</div><div data-resting="equation">${check('adultScope','Adult equation (19+)',resting.adultScope??false)}${select('sex','Equation',[['male','Male'],['female','Female']],resting.sex??'male')}<div data-age>${input('age','Age',resting.age,{min:'19'})}</div><div data-birth>${input('birthDate','Birth date',resting.birthDate,{type:'date'})}</div>${input('heightCm','Height (cm)',resting.heightCm)}${input('weightKg','Weight (kg)',resting.weightKg)}</div>`+
-   `<div data-expenditure>${select('baselineMode','Baseline activity',[['multiplier','Activity level'],['custom','Custom calories']],baseline.mode)}<div data-baseline-factor>${select('baselineFactor','Activity level',[['0','None'],['0.2','Sedentary'],['0.375','Lightly active'],['0.5','Moderately active'],['0.9','Very active']],baseline.factor??0.2)}</div><div data-baseline-kcal>${input('baselineKcal','Baseline activity (kcal)',baseline.kcal)}</div><div class="field-row"><span>Activity source</span><span>Recorded exercise</span></div>${check('thermicEffect','Thermic effect of food',p?.thermicEffect??false)}</div>`+
-   select('targetMode','Energy target',[['fixed','Fixed calories'],['calculated','Calculated'],['weight-goal','Weight goal']],target.mode)+
-   `<div data-target="fixed">${input('kcal','Calorie target',data.calories)}</div><div data-target="calculated">${input('adjustment','Daily adjustment (kcal)',target.adjustmentKcal??0,{min:'-1000000'})}</div><div data-target="weight-goal">${input('startDate','Start date',goal.startDate,{type:'date'})}${select('goalUnit','Weight unit',[['kg','kg'],['lb','lb']],goal.unit)}${input('startWeight','Starting weight',goal.startWeight)}${input('goalWeight','Goal weight',goal.goalWeight)}${input('weeklyChange','Weekly change',goal.weeklyChange,{min:'-1000000'})}</div>`+
-   `<div data-expenditure>${check('includeAboveBaseline','Add expenditure above baseline',target.includeAboveBaseline)}${select('display','Energy display',[['remaining','Remaining'],['balance','Balance']],p?.display??'remaining')}</div>`,form=>{
-    const mode=form.elements.restingMode.value;if(mode==='none')return {type:'targetPolicy.energy',payload:{policy:null,kcal:numeric(form,'kcal')}};
-    const resting=mode==='custom'?{mode,kcal:numeric(form,'restingKcal')}:{mode,adultScope:form.elements.adultScope.checked,sex:form.elements.sex.value,...(mode==='mifflin-st-jeor'?{age:numeric(form,'age')}:{birthDate:form.elements.birthDate.value}),heightCm:numeric(form,'heightCm'),weightKg:numeric(form,'weightKg')};
-    const baseline=form.elements.baselineMode.value==='custom'?{mode:'custom',kcal:numeric(form,'baselineKcal')}:{mode:'multiplier',factor:Number(form.elements.baselineFactor.value)};
-    const activity={mode:'manual'};
-    const target={mode:form.elements.targetMode.value,includeAboveBaseline:form.elements.includeAboveBaseline.checked};
-    if(target.mode==='calculated')target.adjustmentKcal=numeric(form,'adjustment');
-    if(target.mode==='weight-goal')target.goal={startDate:form.elements.startDate.value,startWeight:numeric(form,'startWeight'),goalWeight:numeric(form,'goalWeight'),unit:form.elements.goalUnit.value,weeklyChange:numeric(form,'weeklyChange')};
-    return {type:'targetPolicy.energy',payload:{policy:{version:1,resting,baseline,activity,thermicEffect:form.elements.thermicEffect.checked,target,display:form.elements.display.value},...(target.mode==='fixed'?{kcal:numeric(form,'kcal')}:{})}};
-   });
-  const toggle=()=>{const mode=form.elements.restingMode.value,configured=mode!=='none';if(!configured)form.elements.targetMode.value='fixed';form.elements.targetMode.disabled=!configured;form.querySelector('[data-resting=custom]').hidden=mode!=='custom';form.querySelector('[data-resting=equation]').hidden=!mode.startsWith('mifflin');form.querySelector('[data-age]').hidden=mode!=='mifflin-st-jeor';form.querySelector('[data-birth]').hidden=mode!=='mifflin-st-jeor-birthday';form.querySelectorAll('[data-expenditure]').forEach(row=>row.hidden=!configured);form.querySelector('[data-baseline-factor]').hidden=form.elements.baselineMode.value!=='multiplier';form.querySelector('[data-baseline-kcal]').hidden=form.elements.baselineMode.value!=='custom';form.querySelectorAll('[data-target]').forEach(row=>row.hidden=row.dataset.target!==form.elements.targetMode.value);};
-  form.querySelectorAll('select').forEach(select=>select.addEventListener('change',toggle));toggle();
+  show(`${header('Macro & Energy Targets')}<section class="policy-summary"><strong>${n(data.effective.energy.target)} kcal</strong><span>${e(selectedDate)} · ${e(labels[data.effective.assignment.source]??data.effective.assignment.source)}</span></section><div class="policy-menu">${[['macros','Macro & Energy Targets'],['weekdays','Weekday overrides'],['schedule','Macro scheduler']].map(([id,label])=>`<button type="button" data-policy="${id}" aria-label="${label}">${label}<span>›</span></button>`).join('')}</div>`);
+  for(const button of content.querySelectorAll('[data-policy]'))button.onclick=()=>({macros:onSource,weekdays:weekdayEditor,schedule:scheduleEditor})[button.dataset.policy]();
  }
  function weekdayEditor(day=new Date(selectedDate+'T12:00:00Z').getUTCDay()){
   const values=data.weekday[day]??{},carb=data.carbohydrateId;

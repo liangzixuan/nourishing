@@ -21,7 +21,7 @@ test('targets and reports enforce account and filter contracts',async()=>{
  assert.equal((await handle(req('/api/nutrition-report?'+query.replace('includeToday=true','includeToday=no')))).status,400);
 });
 test('library reads and previews require session, reject owner overrides and keep responses private',async()=>{
- let calls=0;const handle=createWebHandler({config,service:{library:async()=>{calls++;return {items:[]};},libraryItem:async(s,kind,id)=>({kind,id}),previewLibrary:async()=>{calls++;return {};}}});
+ let calls=0;const handle=createWebHandler({config,service:{current:async()=>({}),library:async()=>{calls++;return {items:[]};},libraryItem:async(s,kind,id)=>({kind,id}),previewLibrary:async()=>{calls++;return {};}}});
  assert.equal((await handle(req('/api/library',false))).status,401);
  assert.equal((await handle(req('/api/library?ownerId=another'))).status,400);
  assert.equal((await handle(req('/api/library/item?kind=recipe&id=x&ownerId=another'))).status,400);
