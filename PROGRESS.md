@@ -8,6 +8,10 @@ The domain switch, Appwrite migration and PWA installation are complete. The own
 
 ## Current checkpoint
 
+### Installed-app update correction
+
+The owner reported that both installed apps still showed the old screens. The connected Pixel confirmed an activated old worker, an installed waiting worker and cached More code without the embedded Account. Hosted asset checks alone did not validate the installed update path. A network-loaded update control now probes the waiting worker, activates it on Reload, and reloads only the accepting window. The old-cache browser regression retains private IndexedDB data and drafts in other windows. Fourteen affected checks and the production build pass. Publication and physical-device activation follow.
+
 ### More and Discover follow-up (November 16)
 
 Production runtime `5766ef8`, deployment `6afb4917d3e0886d7252`, is active. This release embeds Account in More, caches its display fields per account, and returns to More without focusing Search. Profile uses direct Birthday, Sex, Weight, Height and Body Fat dialogs based on the saved and live Cronometer references. Narrow profile commands preserve unrelated target policies. Discover follows the finger and uses a bounded slide transition with reduced-motion support. Repeat Items launched from More now has a generic Back label.

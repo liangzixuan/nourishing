@@ -111,7 +111,7 @@
     },
     {
       "target": "public/pwa.js",
-      "outputSha256": "188a97d0876cad4127a2ce1a227e8cb23566204f9df211a9f59f9ff571f1090a"
+      "outputSha256": "dfdc606262da47e9e517712a6c7d1d7ac2f319b3ec94a019d3bc33f8ef122cd5"
     },
     {
       "target": "public/reminder-schedules.js",
@@ -155,7 +155,7 @@
     },
     {
       "target": "public/sw.js",
-      "outputSha256": "0e5a024e7269201d5bc710dc69626168182c193b7acb69154ecce4427e0d9158"
+      "outputSha256": "2acbcf95b9bbd5d07a336c602138d9165dbba56d1d94a201438b1468f174d92d"
     },
     {
       "target": "server/reminder-payload.mjs",

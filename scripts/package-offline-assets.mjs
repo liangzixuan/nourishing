@@ -28,7 +28,7 @@ export async function buildOfflineAssets(){
   for(const row of await readdir(new URL('.'+prefix+'/',publicRoot),{withFileTypes:true})){
    const path=prefix+'/'+row.name;
    if(row.isDirectory()){await inventory(path);continue;}
-   if(['/sw.js','/offline-assets.js'].includes(path)||! /\.(?:m?js|css|svg|png|jpg|webp|woff2?|wasm)$/.test(path))continue;
+   if(['/sw.js','/offline-assets.js','/pwa-update.js','/pwa-update.css'].includes(path)||! /\.(?:m?js|css|svg|png|jpg|webp|woff2?|wasm)$/.test(path))continue;
    if(!contents.has(path))contents.set(path,await readFile(new URL(path.slice(1),publicRoot)));
   }
  }

@@ -10,7 +10,7 @@ import {createWorkspaceStore} from '../server/workspace-store.mjs';
 import {diaryStoreFixture} from './fixtures/diary-store.mjs';
 import {buildOfflineAssets} from '../scripts/package-offline-assets.mjs';
 test('installed shell restarts offline, keeps immutable queued edits, syncs and isolates accounts',async()=>{
- await buildOfflineAssets();const state=initialState();state.foods=[];const food=act(state,'food.save',{name:'Rice',serving:'100 g',grams:100,nutrients:{calories:130}});act(state,'entry.add',{foodId:food.id,date:'2026-11-15',group:'Lunch',amount:1});
+ const manifest=await buildOfflineAssets();assert.equal(manifest.files.includes('/pwa-update.js'),false);assert.equal(manifest.files.includes('/pwa-update.css'),false);const state=initialState();state.foods=[];const food=act(state,'food.save',{name:'Rice',serving:'100 g',grams:100,nutrients:{calories:130}});act(state,'entry.add',{foodId:food.id,date:'2026-11-15',group:'Lunch',amount:1});
  const f=diaryStoreFixture(state),store=createWorkspaceStore(f.db,'fixture');let owner='fixture',expired=false,lose=false,browser;const sent=[];
  const publicRoot=resolve('public'),server=createServer(async(req,res)=>{try{const path=new URL(req.url,'http://localhost').pathname;
   if(path==='/'){res.setHeader('Content-Type','text/html');return res.end('<script src="/setup.js"></script><a href="/offline.html">Offline</a>');}

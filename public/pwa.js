@@ -10,8 +10,5 @@ document.addEventListener('click',async event=>{
  const prompt=installPrompt;installPrompt=null;refresh();
  try{await prompt.prompt();await prompt.userChoice;}catch{/* Browser installation remains available from its menu. */}
 });
-if('serviceWorker' in navigator&&window.isSecureContext){
- window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js',{scope:'/',updateViaCache:'none'}).catch(()=>{});},{once:true});
-}
 export function installButton(){return `<button type="button" class="secondary" data-install-app hidden>${m("install.title")}</button>`;}
 export function refreshInstallButton(){refresh();}

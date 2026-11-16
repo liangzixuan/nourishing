@@ -47,6 +47,8 @@ self.addEventListener('notificationclick',event=>{
 });
 
 self.addEventListener('message',event=>{
+ if(event.data?.type==='CHECK_UPDATE'){event.ports?.[0]?.postMessage({ready:true});return;}
+ if(event.data?.type==='ACTIVATE_UPDATE'){event.waitUntil(self.skipWaiting());return;}
  if(event.data?.type!=='PREPARE_OFFLINE'||!event.ports?.[0])return;
  event.waitUntil((async()=>{try{
   const cache=await caches.open(CACHE);
