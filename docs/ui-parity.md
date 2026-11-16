@@ -55,7 +55,8 @@ The 434-test suite passed 433 cases initially; its Coach-to-Report test expected
 - Food entry: Edit a copy, favorite/options controls, timestamp toggle, source/nutrition sections and fixed footer are restored.
 - Photo Log review: Create Meal/Recipe, per-food macros and Energy Summary are restored.
 - Diary: mixed notes/biometrics/foods now share source groups and typed record actions.
-- Generic/custom chart editors, Targets, fasting and other child tool forms still use cloud adapters. CGM comparison/detail and Snapshot child screens are restored.
+- Create/Edit Custom Chart and Targets/Nutrient Targets are restored in the current candidate. Generic chart detail, other Targets children, fasting and other child tool forms still use cloud adapters. CGM comparison/detail and Snapshot child screens are restored.
+- Suggest Food, Nutrient Oracle, Repeat Items and custom-food editors still need source UI restoration; saved references are sufficient.
 - Report Remaining ring and nutrient-detail hierarchy are restored; exact native multi-day nutrient popup behavior and dynamic Remaining ring colors remain unverified.
 
 Public password recovery is deferred by the owner. Installed-phone camera/barcode, notification delivery and offline operation still need device verification. Functional browser checks do not establish complete visual or device parity.

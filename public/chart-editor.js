@@ -1,5 +1,6 @@
 import {escape as e} from './html.js';
 import {request,command} from './diary-api.js';
+import {mountCustomChartEditor} from './custom-chart-editor.js';
 const field=(label,control)=>`<label class="field-row"><span>${label}</span>${control}</label>`;
 const toggle=(name,label,value)=>field(label,`<input type="checkbox" name="${name}" ${value?'checked':''}>`);
 const select=(name,label,value,choices)=>field(label,`<select name="${name}" aria-label="${label}">${choices.map(([id,text])=>`<option value="${e(id)}" ${String(value)===String(id)?'selected':''}>${e(text)}</option>`).join('')}</select>`);
@@ -13,11 +14,17 @@ function bindSave({form,revision,onChange,close,afterSave}){
  return async(type,payload)=>{form.querySelectorAll('button').forEach(b=>b.disabled=true);try{await command(revision,type,payload);if(form.isConnected)close();await onChange?.();await afterSave?.();}catch(error){if(form.isConnected)form.querySelector('[role=status]').textContent=error.message;}finally{form.querySelectorAll('button').forEach(b=>b.disabled=false);}};
 }
 export function openChartDefinition(chart,data,ui){
- const {show,header,content}=ui;
- show(`${header(chart?'Edit Chart':'Create Chart')}<form class="entry-form"><label class="field-row"><span>Name</span><input name="name" aria-label="Chart name" required maxlength="200" value="${e(chart?.name??'')}"></label>${metricSelect('primary','Primary metric',chart?.primary??{kind:'nutrient',id:'calories'},data.options)}${metricSelect('secondary','Secondary metric',chart?.secondary,data.options,true)}${field('Days',`<input type="number" name="days" aria-label="Chart days" min="1" max="366" value="${chart?.days??28}" required>`)}${toggle('visible','Show in Charts',chart?.visible!==false)}${toggle('cycleOverlay','Show cycle',chart?.cycleOverlay===true)}<p class="sheet-message" role="status"></p><footer class="entry-actions">${chart?'<button type="button" class="danger" data-delete>Delete</button>':''}<button class="primary">Save</button></footer></form>`);
- const form=content.querySelector('form'),save=bindSave({form,revision:data.revision,...ui});
- form.onsubmit=event=>{event.preventDefault();const values=Object.fromEntries(new FormData(form));save('chart.save',{version:2,...(chart?{id:chart.id}:{}),name:values.name,primary:JSON.parse(values.primary),secondary:values.secondary?JSON.parse(values.secondary):null,days:Number(values.days),visible:form.elements.visible.checked,cycleOverlay:form.elements.cycleOverlay.checked});};
- if(chart)form.querySelector('[data-delete]').onclick=()=>save('chart.delete',{id:chart.id});
+ return mountCustomChartEditor(chart,data,ui);
+}
+function confirmChartDelete(chart,form,save){
+ const popup=document.createElement('dialog');popup.className='mce-metric-picker';popup.setAttribute('aria-label','Delete Chart');
+ popup.innerHTML=`<h2>Delete Chart</h2><p>Delete ${e(chart.name)}?</p><footer><button type="button" data-cancel>Cancel</button><button type="button" data-confirm>Delete Chart</button></footer>`;
+ const observer=new MutationObserver(()=>{if(!form.isConnected)close();});
+ function close(){observer.disconnect();popup.close();popup.remove();}
+ popup.querySelector('[data-cancel]').onclick=close;popup.querySelector('[data-confirm]').onclick=()=>{close();save('chart.delete',{id:chart.id});};
+ popup.addEventListener('cancel',event=>{event.preventDefault();event.stopPropagation();close();});
+ popup.addEventListener('click',event=>{if(event.target===popup){const box=popup.getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)close();}});
+ observer.observe(form.parentElement,{childList:true});document.body.append(popup);popup.showModal();popup.querySelector('[data-cancel]').focus();
 }
 export async function openChartSettings(id,data,ui){
  const {show,header,content}=ui;
@@ -29,7 +36,8 @@ export async function openChartSettings(id,data,ui){
  const unitFields=['primary','secondary'].filter(axis=>card.unitChoices?.[axis]?.length>1).map(axis=>select(axis+'Unit',axis==='primary'?'Primary unit':'Secondary unit',s[axis+'Unit']??card.axisUnits?.find(row=>row.key===axis+'Unit')?.unit??card.series.find(series=>series.id===axis)?.unit??card.series.find(series=>series.axis===(axis==='primary'?'left':'right'))?.unit??card.unitChoices[axis][0],card.unitChoices[axis].map(unit=>[unit,unit]))).join('');
  show(`${header(card.name)}<form class="entry-form">${custom?'<button type="button" data-definition>Edit name and metrics</button>':''}${toggle('showOnDashboard','Pin to Dashboard',s.showOnDashboard)}${custom?'':toggle('visible','Show in Charts',s.visible)}${select('range','Date range',s.range,ranges)+`<div data-custom-dates ${s.range==='custom'?'':'hidden'}>${dates('from','From',s.from??card.range.from)}${dates('to','To',s.to??card.range.to)}</div>`+select('dayFilter','Days',s.dayFilter,[['all','All days'],['nonempty','Non-empty days'],['complete','Completed days']])+toggle('includeToday','Include today',s.includeToday)+toggle('zoom','Zoom to data',s.zoom)+toggle('targetLine','Show target',s.targetLine)}${axes.map(axis=>metricSelect(axis,axis==='primary'?'Primary metric':'Secondary metric',s[axis]??card.series.find(series=>series.id===axis)?.metric,filterOptions(axis))).join('')}${unitFields}${card.id==='nutrient'?select('grouping','Group by',s.grouping,[['day','Day'],['hour','Hour'],['minute','Minute']]):''}${toggle('showFasting','Show fasting',s.showFasting)}${custom?'':toggle('showCycle','Show cycle',s.showCycle)}<p class="sheet-message" role="status"></p><footer class="entry-actions"><button class="primary">Save</button></footer></form>`);
  const form=content.querySelector('form'),save=bindSave({form,revision:data.revision,...ui});
- if(custom)form.querySelector('[data-definition]').onclick=()=>openChartDefinition(card.definition,data,ui);
+ if(custom)form.querySelector('[data-definition]').onclick=()=>openChartDefinition(card.definition,data,{...ui,onBack:()=>ui.openDetail?ui.openDetail(id):ui.close()});
+ if(custom){const button=document.createElement('button');button.type='button';button.textContent='Delete Chart';button.className='more-results';button.onclick=()=>confirmChartDelete(card.definition,form,save);form.append(button);}
  if(form.elements.range)form.elements.range.onchange=()=>{form.querySelector('[data-custom-dates]').hidden=form.elements.range.value!=='custom';};
  // Changing a metric must not submit the old source's unit override.
  for(const axis of axes)form.elements[axis].onchange=()=>{const units=form.elements[axis+'Unit'];if(units)units.disabled=true;};

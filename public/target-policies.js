@@ -32,11 +32,11 @@ function readMacro(form){
 }
 
 /** Opens the account's target controls in the app's existing dismissible sheet. */
-export async function openTargetPolicies({date,show,close,header,content,onChange}){
+export async function openTargetPolicies({date,show,close,header,content,onChange,initialScreen}){
  const selectedDate=typeof date==='function'?date():date;let data;
  show(`${header('Macro & Energy Targets')}<p class="empty">Loading…</p>`);const loading=content.firstElementChild;
  async function read(){data=await request('/api/target-policies?date='+selectedDate);}
- try{await read();if(!loading.isConnected)return;menu();}catch(error){if(loading.isConnected)content.innerHTML=header('Macro & Energy Targets')+`<p class="sheet-message">${e(error.message)}</p>`;}
+ try{await read();if(!loading.isConnected)return;({macros:macroEditor,energy:energyEditor,carbohydrate:carbohydrateEditor,weekdays:weekdayEditor,schedule:scheduleEditor}[initialScreen]??menu)();}catch(error){if(loading.isConnected)content.innerHTML=header('Macro & Energy Targets')+`<p class="sheet-message">${e(error.message)}</p>`;}
  function editor(title,html,submit){
   show(`${header(title)}<form class="entry-form target-policy-form">${html}<p class="sheet-message" role="status"></p><footer class="entry-actions"><button type="button" data-back>Back</button><button class="primary" type="submit">Save</button></footer></form>`);
   const form=content.querySelector('form');form.querySelector('[data-back]').onclick=menu;

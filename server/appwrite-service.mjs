@@ -41,7 +41,7 @@ import {createWorkspaceStore} from './workspace-store.mjs';
 import {previewDiaryItem,captureCatalogFood} from './domain/workspace.mjs';
 import {validateAction,validateLibraryPreview,previewLibrary,readActionFoods,captureActionFoods} from './workspace-commands.mjs';
 import {libraryView,libraryItem} from './library-view.mjs';
-import {targetView,reportView} from './nutrition-views.mjs';
+import {nutrientTargetsView,targetView,reportView} from './nutrition-views.mjs';
 import {csvReport} from './chart-view.mjs';
 import {chartSurfaceView} from './dashboard-pinned-charts.mjs';
 import {repeatView} from './repeat-view.mjs';
@@ -195,6 +195,7 @@ export function createAppwriteService(config, key, userAgent='') {
     async exerciseEstimate(secret,input){return readView(secret,state=>exerciseEstimateView(state,input));},
     async charts(secret,input){const {owner}=await data(secret),calendar=await calendarContext(secret,owner);return readView(secret,state=>chartSurfaceView(state,input,{now:new Date(calendar.asOf),timeZone:calendar.timeZone}));},
     async exportReport(secret,input){return readView(secret,state=>csvReport(state,input));},
+    async nutrientTargets(secret,date){return readView(secret,state=>nutrientTargetsView(state,date));},
     async targets(secret,date){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();return targetView(await repository.readState(),date);},
     async nutritionReport(secret,options){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();const account=await new Account(session(secret)).get(),profile=await ensureProfile(secret,account);return reportView(await repository.readState(),options,{timeZone:profile.timeZone});},
     async readDiary(secret,date){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();const calendar=await calendarContext(secret,owner);return repository.diary(date,{now:new Date(calendar.asOf),timeZone:calendar.timeZone});},

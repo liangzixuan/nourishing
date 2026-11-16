@@ -1,0 +1,9 @@
+@import url('./targets-source/mobile-targets.css');
+@import url('./targets-source/mobile-nutrient-targets.css');
+.targets-page{padding:0;min-width:0}.targets-mobile .mm-child-header [hidden]{display:none}
+.targets-mobile .mnt-help-dialog .dialog-head{display:flex;align-items:center;justify-content:space-between;padding:16px;gap:16px;border-bottom:1px solid var(--line)}
+.targets-mobile .mnt-help-dialog .dialog-head h2{font-size:1.1rem;margin:0}.targets-mobile .mnt-help-dialog .dialog-head button{background:none;border:0;color:var(--ink);font-size:1.5rem;min-width:44px;min-height:44px}
+.targets-mobile .mnt-help-dialog .dialog-body{padding:16px}.targets-mobile .mnt-help-dialog p{line-height:1.5}
+.targets-mobile .anchored-menu{position:fixed;inset:auto;margin:0;max-height:70dvh;overflow:auto;box-shadow:0 6px 30px #0005}.targets-mobile .anchored-menu button{display:block;width:100%;border:0;background:none;text-align:left;color:inherit;font:inherit}
+.targets-mobile .mnt-toggle .dc-switch{appearance:none;width:50px;height:28px;border:0;border-radius:20px;background:var(--muted);position:relative;margin:0;padding:0;cursor:pointer}
+.targets-mobile .mnt-toggle .dc-switch:before{content:'';position:absolute;width:22px;height:22px;left:3px;top:3px;border-radius:50%;background:#f5f6ff}.targets-mobile .mnt-toggle .dc-switch:checked{background:var(--green)}.targets-mobile .mnt-toggle .dc-switch:checked:before{left:25px}.targets-mobile .mnt-toggle .dc-switch:disabled{opacity:.45}

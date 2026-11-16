@@ -1,7 +1,7 @@
 import {escape as e} from './html.js';
 import {request,command} from './diary-api.js';
 import {applyTheme} from './appearance.js';
-import {mountNutrition} from './nutrition.js';
+import {mountTargets} from './targets.js';
 import {mountFasting} from './fasting.js';
 import {mountBackup} from './backup.js';
 import {mountRepeats} from './repeats.js';
@@ -58,7 +58,7 @@ export function mountMore({page,headerRoot,date,show,close,header,content,onChan
   if(id==='cycle')return void openCycle(ui);
   if(id==='imports')return void openImports(ui);
   if(id==='export')return void openExport(ui);
-  if(id==='targets')return childView(id,'Targets',host=>mountNutrition({...ui,page:host,mode:'targets'}));
+  if(id==='targets')return childView(id,'Targets',host=>mountTargets({...ui,page:host,headerRoot,onExit:home}));
   if(id==='fasting')return childView(id,'Fasting',host=>mountFasting({...ui,page:host}));
   if(id==='backup')return childView(id,'Backup & Restore',host=>mountBackup({...ui,root:host}));
   if(id==='repeats')return childView(id,'Repeat Items',host=>mountRepeats({...ui,page:host}));
@@ -72,5 +72,5 @@ export function mountMore({page,headerRoot,date,show,close,header,content,onChan
  const click=event=>{const button=event.target.closest('[data-more-open]');if(button){event.preventDefault();open(button.dataset.moreOpen);}else if(event.target.closest('[data-more-back]')){event.preventDefault();home();}};
  headerRoot.addEventListener('click',click,{signal});root.addEventListener('click',click,{signal});
  headerRoot.addEventListener('input',event=>{if(event.target.matches('[data-more-search]')){query=event.target.value;scroll=0;filter();}},{signal});
- home();return {back(){if(screen==='home')return false;home();return true;},dispose(){disposed=true;reset();events.abort();document.body.classList.remove('more-mobile','more-destination');}};
+ home();return {back(){if(screen==='home')return false;if(child?.back?.())return true;home();return true;},dispose(){disposed=true;reset();events.abort();document.body.classList.remove('more-mobile','more-destination');}};
 }

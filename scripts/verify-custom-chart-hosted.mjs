@@ -1,0 +1,34 @@
+// Exercise the deployed source chart editor against real account-scoped commands.
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {randomUUID} from 'node:crypto';
+import {chromium} from 'playwright-core';
+import {ID,Query} from 'node-appwrite';
+import {fixtureOperator} from './fixture-operator.mjs';
+import {allRows,databaseId} from './operator.mjs';
+const origin='https://nourishing.app',{users,db}=fixtureOperator(),id=ID.unique(),email=`chart-${id}@example.com`,password=randomUUID()+'Aa1!';
+const owner=JSON.parse(readFileSync('.local/migration-destination.json')).accountId,before=await db.getRow({databaseId,tableId:'workspace_heads',rowId:owner});
+const report={at:new Date().toISOString(),checks:[],fixtureRemoved:false};let browser,page,created=false;
+try{
+ await users.create({userId:id,email,password,name:'Custom chart hosted fixture'});created=true;
+ browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const context=await browser.newContext({viewport:{width:412,height:915},isMobile:true,hasTouch:true});context.setDefaultTimeout(60000);
+ assert.equal((await context.request.post(origin+'/api/auth/login',{headers:{Origin:origin},data:{email,password}})).status(),200);
+ const day=new Date().toLocaleDateString('en-CA'),charts=async()=>{const response=await context.request.get(origin+'/api/charts?to='+day);assert.equal(response.status(),200);return response.json();};
+ page=await context.newPage();const errors=[],writes=[];page.on('pageerror',error=>errors.push(error.message));await page.addInitScript(()=>{window.cspErrors=[];document.addEventListener('securitypolicyviolation',event=>window.cspErrors.push(event.violatedDirective));});
+ await page.goto(origin+'/diary');await page.locator('.md-summary').waitFor();await page.getByRole('button',{name:'Discover',exact:true}).click();await page.locator('.dc-dashboard').waitFor();await page.getByRole('button',{name:'Charts',exact:true}).click();await page.locator('[data-create]').click();
+ assert.equal(await page.getByLabel('Chart Name',{exact:true}).inputValue(),'Weight');
+ const axis=id=>page.locator('[data-mce-axis='+id+']'),pick=(id,field)=>axis(id).locator('[data-mce-pick='+field+']').click(),choose=name=>page.locator('.mce-picker-choices').getByRole('button',{name,exact:true}).click();
+ await pick('primary','unit');await choose('lbs');await page.getByRole('button',{name:'Add Right Y-Axis',exact:true}).click();await axis('secondary').getByRole('button',{name:'Nutrient',exact:true}).click();await pick('secondary','metric');await page.getByRole('searchbox',{name:'Search',exact:true}).fill('Protein');await choose('Protein');await page.getByLabel('Chart Name',{exact:true}).fill('Fixture comparison');await page.screenshot({path:'.local/custom-chart-hosted.png'});
+ let drop=true;await page.route('**/api/workspace/command',async route=>{const body=route.request().postDataJSON();if(body.type!=='chart.save')return route.continue();writes.push(body);if(drop){drop=false;const response=await route.fetch();assert.equal(response.status(),200);return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Save reply interrupted. Try again.'})});}return route.continue();});
+ await page.getByRole('button',{name:'Save Chart',exact:true}).click();await page.getByRole('button',{name:'Try again',exact:true}).waitFor();assert.equal((await charts()).saved.length,1);await page.getByRole('button',{name:'Try again',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('#sheet').open);assert.deepEqual(writes[0],writes[1]);await page.unroute('**/api/workspace/command');
+ let saved=(await charts()).saved;assert.equal(saved.length,1);const chart=saved[0];assert.deepEqual(chart.primary,{kind:'biometric',type:'weight',unit:'lbs'});assert.deepEqual(chart.secondary,{kind:'nutrient',id:'protein'});assert.equal(chart.days,7);
+ report.checks.push('new account can select supported metrics and units before logging','two-axis chart saves once after a committed request returns 503; retry reuses its receipt');
+ await page.locator('[data-chart-open="custom:'+chart.id+'"]').click();await page.getByRole('button',{name:'Edit name and metrics',exact:true}).click();await page.getByLabel('Chart Name',{exact:true}).fill('Edited comparison');await page.getByRole('button',{name:'Remove right axis',exact:true}).click();await page.getByRole('button',{name:'Save Chart',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('#sheet').open);saved=(await charts()).saved;assert.equal(saved.length,1);assert.equal(saved[0].id,chart.id);assert.equal(saved[0].name,'Edited comparison');assert.equal(saved[0].secondary,null);
+ await page.locator('[data-create]').click();await page.getByLabel('Chart Name',{exact:true}).fill('Discard this');await page.getByRole('button',{name:'Back',exact:true}).click();assert.equal((await charts()).saved.length,1);
+ await page.locator('[data-chart-open="custom:'+chart.id+'"]').click();await page.getByRole('button',{name:'Delete Chart',exact:true}).click();await page.getByRole('button',{name:'Cancel',exact:true}).click();assert.equal((await charts()).saved.length,1);await page.getByRole('button',{name:'Delete Chart',exact:true}).click();await page.getByRole('dialog',{name:'Delete Chart',exact:true}).getByRole('button',{name:'Delete Chart',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('#sheet').open);assert.equal((await charts()).saved.length,0);
+ report.checks.push('edit preserves chart identity; secondary axis removal persists; Back discards new draft; confirmed delete removes the chart');
+ const after=await db.getRow({databaseId,tableId:'workspace_heads',rowId:owner});assert.equal(after.digest,before.digest);assert.equal(after.$updatedAt,before.$updatedAt);assert.deepEqual(errors,[]);assert.deepEqual(await page.evaluate(()=>window.cspErrors),[]);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));report.checks.push('owner unchanged; no browser/CSP errors or horizontal overflow');report.status='passed';
+}catch(error){await page?.screenshot({path:'.local/custom-chart-hosted-failure.png'}).catch(()=>{});throw error;}finally{
+ await browser?.close();for(const tableId of ['command_receipts','workspace_records','workspace_media'])for(const row of await allRows(db,tableId,[Query.equal('ownerId',id)]))await db.deleteRow({databaseId,tableId,rowId:row.$id});for(const tableId of ['workspace_heads','profiles'])try{await db.deleteRow({databaseId,tableId,rowId:id});}catch(error){if(error.code!==404)throw error;}if(created)await users.delete({userId:id});
+}
+report.fixtureRemoved=true;writeFileSync('.local/custom-chart-hosted-result.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));

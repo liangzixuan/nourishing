@@ -6,12 +6,12 @@ import {chartArrow,chartTitle} from './charts-source-view.js';
 import {openChartDefinition,openChartSettings} from './chart-editor.js';
 export function mountCharts({page,date,show,close,header,content,onChange,onReady}){
  const root=document.createElement('section');root.className='chart-page';page.replaceChildren(root);
- let data,disposed=false,serial=0,plots,detailPlots,detailHost,cgmDetail;
+ let data,disposed=false,serial=0,plots,detailPlots,detailHost,cgmDetail,customEditor;
  const alive=()=>!disposed&&root.isConnected;
- const disposeDetail=()=>{cgmDetail?.dispose();cgmDetail=null;detailPlots?.dispose();detailPlots=null;detailHost=null;};
+ const disposeDetail=()=>{customEditor?.dispose();customEditor=null;cgmDetail?.dispose();cgmDetail=null;detailPlots?.dispose();detailPlots=null;detailHost=null;};
  const observer=new MutationObserver(()=>{if(detailHost&&!detailHost.isConnected)disposeDetail();});observer.observe(content,{childList:true});
  const showSheet=html=>{disposeDetail();show(html);};
- const ui={show:showSheet,close,header,content,onChange,afterSave:()=>alive()?load():undefined};
+ const ui={show:showSheet,close,header,content,onChange,afterSave:()=>alive()?load():undefined,openDetail:detail,onEditor:editor=>{customEditor=editor;detailHost=editor.element;}};
  async function load(){
   const id=++serial;root.setAttribute('aria-busy','true');
   try{const next=validateChartView(await request('/api/charts?'+new URLSearchParams({to:date()})));if(!alive()||id!==serial)return;data=next;render();onReady?.();}
@@ -41,7 +41,7 @@ export function mountCharts({page,date,show,close,header,content,onChange,onRead
   const row=card=>`<div class="mcl-row"><button type="button" class="mcl-custom-name" data-manage-chart="${e(card.id)}"><strong>${e(card.name)}</strong></button><input type="checkbox" role="switch" class="chart-visibility" aria-label="${e(card.name)}" data-chart-visible="${e(card.id)}" ${card.settings.visible?'checked':''}></div>`;
   const custom=data.catalog.filter(card=>card.kind==='custom'),builtins=data.catalog.filter(card=>card.kind!=='custom');
   showSheet(`${header('Manage Charts')}<div class="mcl-body" data-chart-manager><div class="mcl-group">${builtins.map(row).join('')}</div>${custom.length?`<h3>Custom Charts</h3><div class="mcl-group">${custom.map(row).join('')}</div>`:''}<button type="button" class="mcl-row" data-create-chart><strong>Create New Chart</strong>${chartArrow}</button><p class="sheet-message" role="status"></p></div>`);
-  const host=content.querySelector('[data-chart-manager]');host.querySelector('[data-create-chart]').onclick=()=>openChartDefinition(null,data,ui);
+  const host=content.querySelector('[data-chart-manager]');host.querySelector('[data-create-chart]').onclick=()=>openChartDefinition(null,data,{...ui,onBack:manage});
   host.querySelectorAll('[data-manage-chart]').forEach(button=>button.onclick=()=>detail(button.dataset.manageChart));
   host.querySelectorAll('[data-chart-visible]').forEach(input=>input.onchange=async()=>{
    const previous=!input.checked;host.querySelectorAll('button,input').forEach(control=>control.disabled=true);

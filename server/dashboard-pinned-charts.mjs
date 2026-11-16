@@ -2,7 +2,7 @@ import {createMobileChartView} from './domain/mobile-chart-view.mjs';
 import {parseMobileChartSettings,mobileChartTemplates} from './domain/mobile-chart-settings.mjs';
 import {mobileChartUnitChoices} from './domain/mobile-chart-metrics.mjs';
 import {chartDisplayUnits} from './domain/chart-display-units.mjs';
-import {metricOptions} from './domain/chart-metrics.mjs';
+import {chartMetricOptions} from './chart-options.mjs';
 import {act} from './domain/workspace.mjs';
 import {digest} from './data-codec.mjs';
 const fail=message=>{throw Object.assign(Error(message),{status:400,code:400,publicMessage:message});};
@@ -10,7 +10,7 @@ const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value)
 
 export function chartSurfaceView(state,input,clock){
  const view=createMobileChartView(state,input,clock);
- return {...view,revision:digest(state),options:metricOptions(state),saved:state.charts,cards:view.cards.map(card=>({...card,unitChoices:Object.fromEntries(['primary','secondary'].map(axis=>[axis,card.kind==='custom'?(card.definition[axis]?chartDisplayUnits(card.definition[axis]):[]):mobileChartUnitChoices(state,card.id,axis,card.settings)]))}))};
+ return {...view,revision:digest(state),options:chartMetricOptions(state),saved:state.charts,cards:view.cards.map(card=>({...card,unitChoices:Object.fromEntries(['primary','secondary'].map(axis=>[axis,card.kind==='custom'?(card.definition[axis]?chartDisplayUnits(card.definition[axis]):[]):mobileChartUnitChoices(state,card.id,axis,card.settings)]))}))};
 }
 export function dashboardPinnedCharts(state,to,clock){return chartSurfaceView(state,{to,surface:'dashboard'},clock);}
 export const chartDisplayCommandFields={'chart.display':['id','patch'],'chart.cycle-overlay':['id','enabled']};

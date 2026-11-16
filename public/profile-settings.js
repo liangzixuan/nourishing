@@ -8,11 +8,11 @@ const check=(name,label,value)=>`<label class="field-row"><span>${e(label)}</spa
 const number=(form,name)=>form.elements[name].value===''?null:Number(form.elements[name].value);
 const display=value=>value===null||value===undefined?'Not set':Number(value).toLocaleString(undefined,{maximumFractionDigits:1});
 
-export async function openProfileSettings({date,show,close,header,content,onChange=async()=>{}}){
+export async function openProfileSettings({date,show,close,header,content,onChange=async()=>{},initialScreen}){
  const selectedDate=typeof date==='function'?date():date;let data;
  const read=async()=>{data=await request('/api/profile-settings?date='+encodeURIComponent(selectedDate));};
  show(`${header('Profile & Body')}<p class="empty">Loading…</p>`);const loading=content.lastElementChild;
- try{await read();if(loading.isConnected)menu();}catch(error){if(loading.isConnected)loading.textContent=error.message;}
+ try{await read();if(loading.isConnected)({energy:energyEditor,references:referenceEditor,body:bodyEditor}[initialScreen]??menu)();}catch(error){if(loading.isConnected)loading.textContent=error.message;}
  function menu(){
   show(`${header('Profile & Body')}<section class="profile-summary"><strong>${display(data.effectiveEnergy.components.resting)}${data.effectiveEnergy.components.resting===null?'':' kcal'}</strong><span>Resting energy</span></section><div class="profile-menu">${[['energy','Body & activity'],['references','Nutrient references'],['body','Use recorded measurements']].map(([key,label])=>`<button type="button" data-profile="${key}">${label}<span>›</span></button>`).join('')}</div>`);
   content.querySelectorAll('[data-profile]').forEach(button=>button.onclick=()=>({energy:energyEditor,references:referenceEditor,body:bodyEditor})[button.dataset.profile]());

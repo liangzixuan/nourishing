@@ -143,13 +143,14 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       }
       if(req.method==='GET'&&path==='/api/coach/preferences'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');return json(200,await api.coachPreferences(secret));}
       if(req.method==='POST'&&path==='/api/coach/answer'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');fields(body,['date','question','preferencesRevision']);return json(200,await api.coachAnswer(secret,body));}
-      if(req.method==='GET'&&['/api/dashboard','/api/targets','/api/target-policies','/api/profile-settings','/api/nutrition-report'].includes(path)){
+      if(req.method==='GET'&&['/api/dashboard','/api/targets','/api/nutrient-targets','/api/target-policies','/api/profile-settings','/api/nutrition-report'].includes(path)){
         if(!secret)fail(401,'Please sign in.');
         const allowed=path!=='/api/nutrition-report'?['date']:['from','to','dayFilter','includeToday','includeSupplements'];
         if([...url.searchParams.keys()].some(k=>!allowed.includes(k)||url.searchParams.getAll(k).length!==1)||allowed.some(k=>!url.searchParams.has(k)))fail(400,'Invalid query.');
         const input=Object.fromEntries(url.searchParams);
         if(path==='/api/dashboard')return json(200,await api.dashboard(secret,input.date));
         if(path==='/api/profile-settings')return json(200,await api.profileSettings(secret,input.date));
+        if(path==='/api/nutrient-targets')return json(200,await api.nutrientTargets(secret,input.date));
         if(path==='/api/targets')return json(200,await api.targets(secret,input.date));
         if(path==='/api/target-policies')return json(200,await api.targetPolicies(secret,input.date));
         for(const key of ['includeToday','includeSupplements']){if(!['true','false'].includes(input[key]))fail(400,'Invalid report filter.');input[key]=input[key]==='true';}
