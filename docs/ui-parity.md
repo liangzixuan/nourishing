@@ -55,7 +55,7 @@ The 434-test suite passed 433 cases initially; its Coach-to-Report test expected
 - Food entry: Edit a copy, favorite/options controls, timestamp toggle, source/nutrition sections and fixed footer are restored.
 - Photo Log review: Create Meal/Recipe, per-food macros and Energy Summary are restored.
 - Diary: mixed notes/biometrics/foods now share source groups and typed record actions.
-- Create/Edit Custom Chart and Targets/Nutrient Targets are restored in the current candidate. Generic chart detail, other Targets children, fasting and other child tool forms still use cloud adapters. CGM comparison/detail and Snapshot child screens are restored.
+- Create/Edit Custom Chart and Targets/Nutrient Targets are deployed and verified. Generic chart detail, other Targets children, fasting and other child tool forms still use cloud adapters. CGM comparison/detail and Snapshot child screens are restored.
 - Suggest Food, Nutrient Oracle, Repeat Items and custom-food editors still need source UI restoration; saved references are sufficient.
 - Report Remaining ring and nutrient-detail hierarchy are restored; exact native multi-day nutrient popup behavior and dynamic Remaining ring colors remain unverified.
 
@@ -100,3 +100,8 @@ Deployment `6afaabce06903083a7a1` (runtime `a4dd7f5`) passed 461 tests, build/pu
 ## Discover child-screen hosted acceptance
 
 Deployment `6afaaf75b8d285c39483`, runtime `1b1b4aa`, passed 463 tests, the build and publication checks. Hosted Report/CGM verification passed the Remaining ring, canonical nutrient sources/mean, comparison data and shared bounds, persistent settings, nested navigation and plot disposal. Hosted Snapshot verification passed automatic upload/receipt retry, metadata-preserving caption/date edits, cancel/outside/Back/navigation, full-screen viewer and deletion/media-access removal. Both fixtures were removed and owner data was unchanged. Live screenshots were inspected; physical camera behavior remains a device-only check. Source-specific reference limitations are in the feature manifests.
+
+
+## Targets and custom chart acceptance
+
+Deployment `6afab31787c32ffd19d8` (runtime `e6f623d`) passed 468 tests, build/publication checks and hosted Targets/custom-chart verification. Canonical target modes, limits and highlights persist. Custom charts support source metric tabs, unit search, a second axis and one-save receipt retry after an ambiguous 503. Edit/cancel/delete and navigation checks passed; owner data was unchanged and fixtures were removed. Live screenshots were inspected. Other Targets child editors and generic chart details remain separate gaps.
