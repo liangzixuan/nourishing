@@ -16,9 +16,10 @@
       "source": "../cronometer-local/public/report-energy-chart.js",
       "target": "public/report-mobile-source/report-energy-chart.js",
       "sourceSha256": "36fa9910fd41899e331897eed6b88bd6420f81e11c8ce20906ccad6f44e4d9eb",
-      "sha256": "2f6041b076c9e14d74f163973c071fc729f4b2836069180819dd61cb1e245bb6",
+      "sha256": "eecf12d9034322c1bf996dbf082210beaa59575c91b97cdeebbfd12afc3e1ef2",
       "transforms": [
-        "module imports resolve to cloud source assets; inline legend colors moved to CSP-safe stylesheet"
+        "module imports resolve to cloud source assets; inline legend colors moved to CSP-safe stylesheet",
+        "publication line endings normalized to LF"
       ]
     },
     {
