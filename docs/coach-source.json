@@ -49,7 +49,7 @@
       "tests/coach-http.test.mjs"
     ],
     "hostedVerifier": "scripts/verify-coach-hosted.mjs",
-    "hostedStatus": "Prepared; not yet run for this candidate."
+    "hostedStatus": "Passed on production deployment 6afadad318f427a6c5ff (runtime d8ac865), November 16, 2026. Fixture removed and owner unchanged."
   },
   "limits": [
     "Current answers are deterministic recorded diary facts, not personalized model advice. Saved preferences do not change computations or targets.",

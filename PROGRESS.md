@@ -1,15 +1,28 @@
-# Active goal — revised November 16, 2026
+# Active goal: finish the production PWA
 
-Finish Nourishing as an Appwrite-hosted, installable PWA at https://nourishing.app. Preserve the current account and diary data, support public signup with private account data, and remove dependence on the PC server, Tailscale, APK distribution, Health Connect and native Firebase setup. Restore the saved local/Cronometer UI through working cloud adapters, validate each complete flow, deploy it, and continue through the remaining gap list.
+Revised November 16, 2026 after the user resumed the goal.
 
-Acceptance:
-- Source-based main screens and child workflows are implemented; discrepancies are recorded and resolved using the latest saved screenshots before manuals.
-- Food search, food entry, Photo Log, barcode, diary editing, charts/reports, settings and account flows work against Appwrite.
-- Account isolation, existing data reconciliation, backup/restore, reminders and offline behavior retain their verified guarantees after relevant changes.
-- Each deployed increment has appropriate automated and live-browser verification with disposable fixtures; owner data remains unchanged.
-- Device-only checks and deferred password-recovery email checks are explicitly identified and requested only when they become the remaining blocker.
+Deliver Nourishing at https://nourishing.app as an Appwrite-hosted, installable PWA. Preserve the migrated account and diary data, public signup, private account access and verified backups. Finish the source UI restoration and validate complete user flows on the production domain.
 
-Completed increments: rich food search, source food-entry layout, compact Photo Log nutrition review, multi-add with recipe creation and safe retry, Food entry Edit a copy, and Photo Log Create Meal/Recipe, deployed and verified on November 16. Mixed Diary records are also deployed and verified. CGM detail/comparison, Report nutrient detail and Snapshot child editors are deployed and verified. Targets/Nutrient Targets and Create/Edit Custom Chart are now deployed and verified. Suggest Food, Repeat Items and Custom Food are also deployed and verified. Oracle, generic Chart detail and Energy Expenditure are also deployed and verified. Meal editor, Weight Goal and fasting are now deployed and hosted-verified. Recipe, reviewed library edits, Macro & Energy and CSV export options are also deployed and hosted-verified. Display and Exercise/Biometric editors are deployed and hosted-verified. Scheduler/day targets, Profile, Diary summary columns/group subtotals are deployed and hosted-verified. Calendar/Diary settings, Upper Limits, Guided Setup, Reminders, Text Log and Account editing are deployed and hosted-verified. Font Size, Pause Life, source Recipe Import and selected-food Diary summaries are deployed and hosted-verified. Next: consolidate Nutrition Label entry, restore direct Retire/Restore controls, and restore concise Coach preferences/results; language and final device checks remain in docs/ui-parity.md. The platform goal remains active; its older APK objective text is superseded by this user-approved PWA scope because the available goal API cannot edit objective text.
+The domain switch, Appwrite migration and PWA installation are complete. The owner confirmed that the installed Pixel app loads the diary. APK delivery, native Health Connect and native Firebase setup are removed from this goal. The app must work with the PC server stopped; the approved T7 backup job still needs the PC and drive.
+
+## Current checkpoint
+
+Production runtime `d8ac865`, deployment `6afadad318f427a6c5ff`, was activated on November 16 at 10:33 UTC. All 551 tests, the production build and publication checks passed. Nutrition Label, shared-library import, Coach and Retire/Restore passed their production browser checks. All disposable fixtures were removed and owner data was unchanged. Earlier restored screens and child editors have hosted acceptance recorded below and in `docs/ui-parity.md`.
+
+## Remaining work, in order
+
+1. Current release acceptance is complete: direct Retire/Restore, Nutrition Label, shared-library import and Coach passed hosted checks; fixtures were removed and live captures inspected. Preserve this checkpoint while closing the remaining defects.
+2. Close the remaining UI gaps. Connect the four existing language catalogs through one account language setting, including cloud-only labels, errors, formatting, offline views and print. Fix the default browser Back button seen in the shared-import capture. Compare affected screens with saved references; screenshots take precedence over manuals.
+3. Measure repeated tab changes, then remove demonstrated redundant loading while preserving current account, revision and dismissal behavior. This remains lower priority than functional correctness.
+4. Complete installed-PWA acceptance: camera/photo selection, barcode, notifications, offline restart and queued sync. Complete the password-recovery email flow when the owner is ready. Browser simulations do not replace these checks.
+5. Run the final affected regression and data-integrity checks, deploy any remaining fixes, record the actual release and close the goal only when the acceptance items pass or the user explicitly changes scope.
+
+Completion requires working source-based screens and child flows, account isolation, unchanged migrated data, verified backup/restore, and explicit device results. Do not repeat unrelated successful checks without a relevant change. Continue independent work without requesting routine approval.
+
+Separate capability limits: Coach currently returns recorded diary facts, not model-generated personalized advice. MFA is not implemented. Spanish and separate UK-English catalogs are absent from the source. These must not be presented as completed capabilities; they are outside this migration/UI-restoration completion criterion.
+
+The platform goal remains active. Its old APK wording cannot be edited by the available goal API; this record is the current user-approved scope. Do not falsely mark the old objective complete to replace its text.
 
 ---
 
@@ -392,3 +405,10 @@ The Account verifier now declares exact expected name/email transitions before t
 ## Font, import and selected-summary acceptance — November 16, 2026
 
 Deployment `6afad5b67a3acf4b61c5` (runtime `f22460b`) is active at nourishing.app. All 547 tests, the production build and publication checks passed. Hosted Font Size, Pause Life, Recipe Import, selected-food Diary summaries and Reminders checks passed. These exercised 75/100/200 percent text at 320 px, account/reload persistence, interrupted-write retries, cancellation, canonical quantities and selected nutrition, and unchanged full-day targets. Fixtures were removed and owner data stayed unchanged. Live captures were inspected. The Font hosted verifier initially expected a collection selector on the Foods home screen; it now waits for the actual home card and its complete rerun passed. Physical-device acceptance remains separate.
+
+
+## Library and Coach acceptance, November 16
+
+Production deployment `6afadad318f427a6c5ff` (runtime `d8ac865`) passed all 551 tests, the production build and publication checks. Four production browser workflows passed: consolidated Nutrition Label entry, direct Retire/Restore, shared-library import and Coach preferences/recorded facts. Checks cover authored versus derived nutrient values, unsaved editor drafts, exact retry receipts, stale-review recovery, original library records, unchanged logged nutrition and owner isolation. All disposable fixtures were removed. Live captures were inspected. The shared-import Back button still uses browser-default styling and remains an open UI defect.
+
+Initial verifier failures were corrected without runtime changes: wait for the completed save response; open More Details before editor actions; wait for fresh retirement review data; and allow library-derived suggestions/rankings to change after import while checking all recorded nutrition and targets. Private reports are retained in `.local`. These browser checks do not establish installed-device acceptance.

@@ -1,6 +1,6 @@
 # Local-to-cloud UI parity
 
-Current production: `6afad5b67a3acf4b61c5`, runtime `f22460b`. The Remaining workflow audit below is the current gap list; earlier dated release notes describe historical gaps.
+Current production: `6afadad318f427a6c5ff`, runtime `d8ac865`. The Remaining workflow audit below is the current gap list; earlier dated release notes describe historical gaps.
 
 Status: initial shell/Diary/Foods/More restoration is live. The Add menu and Discover body/header follow-up is live and passed hosted checks. Full parity of child editors is still incomplete. Functional verification alone does not establish visual parity.
 
@@ -40,7 +40,7 @@ Local checks cover the complete Diary → Foods → More → Discover flow, sett
 Remaining visual gaps: several child editors, including Targets, fasting details and account pages, still use cloud sheet adapters. The Diary Energy Summary/display dialogs preserve cloud actions rather than the original full page composition. These are not claimed as complete source parity.
 
 
-## Add menu and Discover follow-up
+## Add menu and Discover follow-up (historical checkpoint)
 
 The first release passed navigation checks but left the old Add to Diary menu and simplified Charts, Report and Snapshots bodies. The owner correctly identified these gaps. Source components now restore:
 
@@ -51,7 +51,7 @@ The first release passed navigation checks but left the old Add to Diary menu an
 
 The 434-test suite passed 433 cases initially; its Coach-to-Report test expected removed date inputs. That test now checks the actual report date request and passes. Integrated navigation, Dashboard/Add menu, barcode camera decoding, record editors and snapshot upload/retry/edit/delete browser checks passed. Build and diff checks passed. These checks use desktop Chrome at phone width, not the disconnected Pixel.
 
-### Remaining gaps
+### Gaps at that checkpoint
 
 - Search Food: multi-add, tabs, database filters, sorting and badges are restored in the November 16 releases.
 - Food entry: Edit a copy, favorite/options controls, timestamp toggle, source/nutrition sections and fixed footer are restored.
@@ -138,8 +138,8 @@ The main-screen restoration does not close these child workflows:
 - Account: registration, verification, recovery, logout and deletion work. App theme/navigation alignment is deployed and locally verified. Authenticated name/email/password editing is deployed and hosted-verified; MFA is a separate capability, not established by the old local placeholder.
 - CSV export: group inclusion and account energy units are deployed. Production-handler browser checks pass grouped kJ download, cancellation without a late download, report switching and close/reopen.
 - Reminders and Text Log: compact controls are deployed and hosted-verified, including interrupted-write recovery. Physical notification delivery and microphone behavior remain device checks.
-- Coach: recorded-fact answers/preferences work; model-backed proposals require additional cloud capability. Restore concise onboarding separately.
-- Recipe Import is deployed and hosted-verified. Nutrition Label and Retire/Restore still need consolidation into the restored editors; shared-item import needs a focused presentation/retry audit.
+- Coach: concise preferences and recorded diary facts are deployed and hosted-verified. Model-backed personalized advice remains a separate unimplemented capability.
+- Recipe Import and consolidated Nutrition Label entry are deployed and hosted-verified. Direct Retire/Restore is deployed and hosted-verified. Shared-item import passed cancellation, exact retry, stale reload and data-preservation checks. Its Back button still needs the source styling.
 
 Saved-reference limits: some exercise category/effort mappings were local choices; Hematocrit units are unknown; notification capture only shows the disabled state. Native health/Firebase features are excluded. Installed PWA camera/barcode, notification delivery, offline behavior and the deferred emailed password recovery check remain separate device/user acceptance items.
 
@@ -158,3 +158,24 @@ Cloud components still pin English in several adapters, and cloud-only account, 
 ## Font, import and selected-summary acceptance
 
 Runtime `f22460b` passed 547 tests, build and publication checks. Five hosted flows passed: Font Size, Pause Life, Recipe Import, selected-food Diary summaries and Reminders. The checks cover persisted scale/browser text mode, 320 px layouts at 200 percent, unsaved import review and atomic recipe save, exact retries, selected nutrient details and preserved daily targets. Fixtures were removed; owner data was unchanged. Live captures were inspected. Installed-device checks remain separate.
+
+## Next language and navigation work
+
+The language audit found 29 top-level adapters with English defaults or fixed English labels. The canonical owner is `server/domain/app-language.mjs`; it supports `en`, `fr`, `de` and `pt-BR`. Existing source catalogs have 8,021 keys for each locale. Expose this existing setting through Display only after the complete flow works.
+
+Implementation order:
+1. Add one presentation-language owner and a cloud message catalog. Reuse source keys and the installed formatter. Use supported browser language before sign-in, otherwise English; saved account language takes precedence after sign-in.
+2. Connect screen adapters, accessibility labels, expected errors and locale formatting. Use stable error codes and parameters; do not parse or replace English sentences. Preserve user text, food names, stored values and source provenance.
+3. Keep offline snapshots and print captures bound to their saved language. Translate generic notification text without adding personal data to the push envelope.
+4. Validate all four languages through navigation, editors, exact retries, account flows, offline refresh and print before enabling the Language control. Check key/interpolation parity and narrow layouts at normal and 200 percent text.
+
+Spanish and separate UK English have no source catalogs. No paid translation API or database schema is needed for the four supported locales.
+
+The user's earlier tab-switching concern also remains open. The current shell disposes screens on navigation and repeats some reads. Measure cold and repeated tab switches before selecting a cache or retained-view design; preserve account isolation, revision invalidation and dismissal behavior. This is lower priority than functional completion.
+
+
+## Library and Coach acceptance, November 16
+
+Production deployment `6afadad318f427a6c5ff` (runtime `d8ac865`) passed all 551 tests, the production build and publication checks. Four production browser workflows passed: consolidated Nutrition Label entry, direct Retire/Restore, shared-library import and Coach preferences/recorded facts. Checks cover authored versus derived nutrient values, unsaved editor drafts, exact retry receipts, stale-review recovery, original library records, unchanged logged nutrition and owner isolation. All disposable fixtures were removed. Live captures were inspected. The shared-import Back button still uses browser-default styling and remains an open UI defect.
+
+Initial verifier failures were corrected without runtime changes: wait for the completed save response; open More Details before editor actions; wait for fresh retirement review data; and allow library-derived suggestions/rankings to change after import while checking all recorded nutrition and targets. Private reports are retained in `.local`. These browser checks do not establish installed-device acceptance.

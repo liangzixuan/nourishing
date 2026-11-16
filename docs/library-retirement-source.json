@@ -67,7 +67,7 @@
     },
     {
       "target": "scripts/verify-library-tools-hosted.mjs",
-      "outputSha256": "1166fc810ce19733cb4b4f099279150ea79ee4a53f1c416311fd806d9ca895f2"
+      "outputSha256": "8925932966060888385070ec93cd08e8f4aed529222b20a523920396086d5a26"
     }
   ],
   "transforms": [
@@ -97,8 +97,9 @@
   },
   "hosted": {
     "script": "scripts/verify-library-tools-hosted.mjs",
-    "status": "Prepared and syntax checked; release parent executes after deployment",
-    "checks": "Actual Foods editor and collection; draft/focus; 503 immutable retry after reopening; stale fresh counts; retained diary/history/portions; owner unchanged and fixture cleanup"
+    "status": "Passed on production deployment 6afadad318f427a6c5ff (runtime d8ac865), November 16, 2026. Fixture removed and owner unchanged.",
+    "checks": "Actual Foods editor and collection; draft/focus; 503 immutable retry after reopening; stale fresh counts; retained diary/history/portions; owner unchanged and fixture cleanup",
+    "report": ".local/library-tools-hosted-verification.json"
   },
   "limitations": [
     "Source-derived child review, not a new native screenshot comparison.",

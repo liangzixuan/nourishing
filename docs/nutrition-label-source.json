@@ -70,7 +70,7 @@
     },
     {
       "path": "scripts/verify-nutrition-label-hosted.mjs",
-      "sha256": "8f803c404b58fa0aca136f2655b04c2f1a0ddc1a225f42c16a0d34012c4b9705"
+      "sha256": "f4685cccfa277cc45a27257b33bd4f9ed63d39c6db0aa5d979583d6719c83cf0"
     }
   ],
   "behavior": [
@@ -93,7 +93,14 @@
   ],
   "hostedVerifier": "scripts/verify-nutrition-label-hosted.mjs",
   "limits": [
-    "The form disclosure is a cloud adapter over the saved source editor and canonical label capabilities; there is no captured native known-form disclosure to reproduce.",
-    "Hosted verification is prepared for the next deployment and is not claimed by the local browser checks."
-  ]
+    "The form disclosure is a cloud adapter over the saved source editor and canonical label capabilities; there is no captured native known-form disclosure to reproduce."
+  ],
+  "hosted": {
+    "status": "passed",
+    "deployment": "6afadad318f427a6c5ff",
+    "runtime": "d8ac865",
+    "report": ".local/nutrition-label-hosted/result.json",
+    "at": "2026-11-16T10:36:02.159Z",
+    "fixtureRemoved": true
+  }
 }
