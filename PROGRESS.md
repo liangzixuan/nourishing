@@ -9,7 +9,7 @@ Acceptance:
 - Each deployed increment has appropriate automated and live-browser verification with disposable fixtures; owner data remains unchanged.
 - Device-only checks and deferred password-recovery email checks are explicitly identified and requested only when they become the remaining blocker.
 
-Current increment: rich food search, source food-entry layout, compact Photo Log nutrition review. Next: multi-add and remaining child editors listed in docs/ui-parity.md. The platform goal remains active; its older APK objective text is superseded by this user-approved PWA scope because the available goal API cannot edit objective text.
+Completed increment: rich food search, source food-entry layout, compact Photo Log nutrition review, deployed and verified on November 16. Next: multi-add and remaining child editors listed in docs/ui-parity.md. The platform goal remains active; its older APK objective text is superseded by this user-approved PWA scope because the available goal API cannot edit objective text.
 
 ---
 
@@ -285,3 +285,12 @@ Build, affected local browser flows and all 434 test cases passed (433 in the fu
 The Pixel disconnected before its original stay-awake setting could be restored. The user was told that Stay awake while charging remained enabled and can be disabled in Developer options. No further phone connection is needed for current source-based work.
 
 Remaining UI and device checks are tracked in `docs/ui-parity.md`, including food search/entry, Photo Log review details, mixed Diary records and child editor layouts. Full visual parity is still incomplete.
+
+
+## Food logging release — November 16, 2026
+
+Deployment `6afaa0a216b486d21e89` is active at https://nourishing.app, runtime revision `33ac52db4584ad5ed336d2f5840ce3d674a8f3e2`. All 442 tests passed, the build passed, source asset hashes matched staged bytes, and the publication audit passed. Focused local browser tests cover the Photo Log summary, quantities, preview errors/retry and discard-on-close.
+
+Hosted food checks passed category search (1,875 beverage matches), favorites, preview, add/reload/edit/delete, day completion, notes, dismissal, sign-out and phone-width overflow. Main-screen checks passed with no browser, HTTP or CSP errors. The owner workspace head remained unchanged; both disposable accounts and their records were removed. Food Search and entry screenshots were visually inspected. Evidence is retained in ignored `.local/diary-browser-verification.json`, `.local/ui-restoration-hosted/result.json` and their captures. These are desktop Chrome checks at phone width, not installed-Pixel verification.
+
+Next increment: restore source multi-add for mixed foods, recipes and meals. Use a canonical preview plus one existing workspace transaction for all rows and the receipt. Keep catalog identity and quantities explicit, preserve account-scoped retry after uncertain saves, and enable multi-add only in the main Diary picker. Ingredient/Photo/Text pickers stay single-select. The original `food-multi-add.js` and `food-multi-add.mjs` provide the reference; no new schema, credential or phone is needed.

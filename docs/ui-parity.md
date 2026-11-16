@@ -51,9 +51,9 @@ The 434-test suite passed 433 cases initially; its Coach-to-Report test expected
 
 ### Remaining gaps
 
-- Search Food: source tabs, database filters, sorting, badges and multi-add.
-- Food entry: favorite/options controls, timestamp toggle, source/nutrition sections and fixed footer.
-- Photo Log review: per-food macros, energy summary and Create menu.
+- Search Food: multi-add remains; tabs, database filters, sorting and badges are restored in the November 16 release.
+- Food entry: Edit a copy remains; favorite/options controls, timestamp toggle, source/nutrition sections and fixed footer are restored.
+- Photo Log review: Create menu remains; per-food macros and Energy Summary are restored.
 - Diary: mixed note/biometric placement within groups.
 - Detailed chart settings/CGM comparison, snapshot editors, Targets, fasting and other child tool forms still use cloud adapters.
 - Latest Cronometer Report Remaining ring and full nutrient-detail screen differ from the saved local implementation restored here.
@@ -74,4 +74,4 @@ Candidate changes restore source Food Search categories, database filters, sort 
 
 The public catalog artifact now includes the category metadata already present in the imported SQLite compact records. All 34,885 rows were published with categories, and the downloaded artifact passed digest validation. Owner records were not changed by that publication.
 
-Remaining food-flow gaps are multi-add, Edit a copy, and Photo Log Create. Deployment and hosted acceptance for this candidate are pending.
+Remaining food-flow gaps are multi-add, Edit a copy, and Photo Log Create. Deployment `6afaa0a216b486d21e89` is live at nourishing.app. All 442 tests, build and publication checks passed. Hosted checks passed food search, favorites, preview, add/reload/edit/delete, day completion, notes, outside dismissal and sign-out, with no phone-width overflow. The live indexed Beverages category returned 1,875 matches. The main-screen acceptance also passed with no browser/HTTP/CSP errors and no owner workspace change. Both fixture accounts were removed. Live Search and entry captures were visually inspected. Photo Log changes were exercised locally; installed-device checks remain pending.
