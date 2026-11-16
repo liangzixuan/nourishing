@@ -1,0 +1,90 @@
+{
+  "at": "2026-11-16T18:22:44.256Z",
+  "commit": "5766ef8",
+  "deploymentId": "6afb4917d3e0886d7252",
+  "assets": [
+    {
+      "file": "account-screen.js",
+      "status": 200,
+      "matches": true
+    },
+    {
+      "file": "account-surface.css",
+      "status": 200,
+      "matches": true
+    },
+    {
+      "file": "more.js",
+      "status": 200,
+      "matches": true
+    },
+    {
+      "file": "profile-editor.js",
+      "status": 200,
+      "matches": true
+    },
+    {
+      "file": "profile-settings.js",
+      "status": 200,
+      "matches": true
+    },
+    {
+      "file": "profile-settings.css",
+      "status": 200,
+      "matches": true
+    },
+    {
+      "file": "discover-motion.js",
+      "status": 200,
+      "matches": true
+    },
+    {
+      "file": "discover-motion.css",
+      "status": 200,
+      "matches": true
+    },
+    {
+      "file": "discover-swipe.js",
+      "status": 200,
+      "matches": true
+    },
+    {
+      "file": "nutrition.js",
+      "status": 200,
+      "matches": true
+    }
+  ],
+  "protectedPaths": [
+    {
+      "path": "/api/account",
+      "status": 401
+    },
+    {
+      "path": "/api/profile-settings?date=2026-11-16",
+      "status": 401
+    }
+  ],
+  "login": {
+    "visible": true,
+    "noOverflow": true,
+    "pageErrors": 0
+  },
+  "physicalPostRelease": "deferred; phone released to user",
+  "validation": {
+    "fullSuite": {
+      "tests": 586,
+      "passed": 586,
+      "failed": 0
+    },
+    "productionBuild": "passed",
+    "publicationAudit": "passed",
+    "phoneBeforeRelease": "More child navigation and Cronometer Profile reference inspected; no owner data edits",
+    "phoneAfterRelease": "not performed; phone released to user",
+    "iosHardware": "not tested",
+    "cleanup": {
+      "wakeSettingRestored": 0,
+      "taskXmlRemoved": true,
+      "usbForwardRemoved": true
+    }
+  }
+}
