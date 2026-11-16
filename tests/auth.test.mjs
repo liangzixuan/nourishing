@@ -89,4 +89,6 @@ test('diary shell binds saved display data to the request session without exposi
  const get=secret=>handler(new Request(config.origin+'/diary',{headers:secret?{cookie:'__Host-nourishing_session='+secret}:{}}));
  const first=await get('private-session'),body=await first.text();assert.match(first.headers.get('cache-control'),/no-store/);assert.ok(body.includes(sessionContext('private-session')));assert.ok(!body.includes('private-session'));assert.notEqual(await(await get('other-session')).text(),body);assert.match(await(await get()).text(),/content=""/);
  const response=await handler(new Request(config.origin+'/api/account',{headers:{cookie:'__Host-nourishing_session='+sessionContext('private-session')}}));assert.equal(response.status,401);
+ const context=await handler(new Request(config.origin+'/api/account/session-context',{headers:{cookie:'__Host-nourishing_session=private-session'}}));assert.equal(context.headers.get('cache-control'),'no-store');assert.deepEqual(await context.json(),{sessionContext:sessionContext('private-session')});
+ assert.deepEqual(await(await handler(new Request(config.origin+'/api/account/session-context'))).json(),{sessionContext:''});
 });

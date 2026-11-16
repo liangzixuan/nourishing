@@ -20,6 +20,8 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
     try {
       const url=new URL(req.url,config.origin);path=url.pathname;
       if(req.method==='GET'&&path==='/healthz')return json(200,{status:'ok',service:'nourishing-cloud-accounts'});
+      // App launches may omit Strict cookies on navigation; same-origin fetch includes them.
+      if(req.method==='GET'&&path==='/api/account/session-context')return json(200,{sessionContext:sessionContext(readSession(req.headers.get('cookie')??''))});
       if(req.method==='GET'&&!path.startsWith('/api/')) {
         const asset=assets.get(path)||(['/', '/login','/register','/forgot-password','/reset-password','/verify-email','/account'].includes(path)?assets.get('/'):undefined);
         if(!asset)fail(404,'Not found.');headers.set('Content-Type',asset.type);const body=path==='/diary'?String(asset.body).replace('<head>','<head><meta name="nourishing-session" content="'+sessionContext(readSession(req.headers.get('cookie')??''))+'">'):asset.body;return new Response(body,{headers});

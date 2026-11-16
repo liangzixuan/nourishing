@@ -3,9 +3,14 @@ import {resumeDeviceCache,hasCurrentDeviceCache} from './device-cache.js';
 import {rememberOfflineAccount,lockCurrentOffline} from './offline-session.js';
 
 export async function openDiarySession(){
- const context=document.querySelector('meta[name="nourishing-session"]')?.content;
+ const signal=AbortSignal.timeout(15000);
+ let context=document.querySelector('meta[name="nourishing-session"]')?.content;
+ if(!context){
+  // External PWA launches omit Strict cookies until the first same-origin fetch.
+  try{context=(await request('/api/account/session-context',undefined,signal)).sessionContext;}catch{/* Fall through to the ordinary sign-in check. */}
+ }
  const ticket=await resumeDeviceCache(context).catch(()=>null);
- const verify=()=>request('/api/account',undefined,AbortSignal.timeout(15000));
+ const verify=()=>request('/api/account',undefined,signal);
  if(ticket){
   // Saved display data can render now. Every server operation still authenticates.
   void verify().then(async account=>{
