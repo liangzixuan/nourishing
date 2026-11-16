@@ -8,11 +8,11 @@ The domain switch, Appwrite migration and PWA installation are complete. The own
 
 ## Current checkpoint
 
-Production runtime `af2c8ff`, site deployment `6afb333e8656d88913f3`, is active as of November 16 at 16:48:42 UTC. All 583 tests, the production build, staged publication audit and hosted language/navigation/data-integrity checks passed. Public cache, swipe, Report and service-worker files match the deployed source. Disposable verification accounts were removed and the owner's data was unchanged.
+Production runtime `23b660f`, site deployment `6afb3e2b606915b3d407`, is active as of November 16 at 17:35:21 UTC. This follow-up fixes swipes across the blank area of empty Discover screens; three focused browser tests, the production build, publication audit and physical Pixel reverse swipe passed. The preceding cache/photo release was `af2c8ff`. For that preceding release, all 583 tests, the production build, staged publication audit and hosted language/navigation/data-integrity checks passed. Public cache, swipe, Report and service-worker files match the deployed source. Disposable verification accounts were removed and the owner's data was unchanged.
 
 The app now caches account-specific screen responses and saved photos in IndexedDB, warms the main views, refreshes older reads in the background, and automatically keeps the full offline diary snapshot. Writes, account changes, logout, expiry and restored generations invalidate the relevant cache authority. Existing offline queues and server revision guards remain. See `docs/device-caching.md` for cache bounds and behavior.
 
-Live repeat navigation measured Dashboard 57�63 ms, Charts 62�63 ms, Report 62�63 ms and Diary 44�49 ms, with no GET requests during those repeat visits. First uncached Dashboard/Report visits still took several seconds; a real-photo verification ran concurrently during those initial measurements. These are desktop Chrome mobile-viewport measurements, not physical Pixel timings. All samples are in `docs/tab-navigation-performance.json`.
+Live repeat navigation measured Dashboard 57–63 ms, Charts 62–63 ms, Report 62–63 ms and Diary 44–49 ms, with no GET requests during those repeat visits. First uncached Dashboard/Report visits still took several seconds; a real-photo verification ran concurrently during those initial measurements. These are desktop Chrome mobile-viewport measurements, not physical Pixel timings. All samples are in `docs/tab-navigation-performance.json`.
 
 Discover supports left/right touch swipes through Dashboard, Charts, Report and Snapshots. Real Chromium touch tests verified horizontal navigation, vertical scrolling, no wrap, chart/control/dialog exemptions and listener cleanup.
 
@@ -22,7 +22,7 @@ Private evidence: `.local/cache-release-tests.log`, `.local/cache-release-build.
 
 ## Remaining work, in order
 
-1. Complete installed-PWA acceptance: new camera photo, existing-photo selection, closing Photo Log without a draft, barcode, notification delivery, offline restart and one-time queued sync. The previous Photo Log failure is fixed and verified through the live API; physical camera/gallery retesting is still pending. The reminder/offline checks were deferred by the owner; no USB or Tailscale connection is needed. Browser simulations do not replace these checks.
+1. Installed Pixel checks now pass for gallery selection, camera capture, automatic photo recognition, X discarding Photo Log, matching barcode, notification delivery, Discover swipes and cached navigation. Warm Discover visits took 78–118 ms with no data requests during repeat visits. Gallery recognition returned three foods in about 19 seconds. Camera recognition returned a sausage bun but needed manual database matching. Offline reload and one-time water sync passed with per-target CDP network emulation on the actual Pixel; a full process-stop restart in airplane mode remains untested. The temporary 1 mL water record was removed and workspace state matched the baseline. Test files were removed and the original wake setting restored. Evidence: `docs/pixel-pwa-acceptance-20261116.json`; private screenshots and logs in `.local/pixel-cache-check/`.
 2. Complete the password-recovery email flow when the owner is ready. This was explicitly deferred; do not reset the owner's password or treat the email flow as tested.
 3. Fix any failures those checks reveal, run the affected regressions, deploy and record the actual result. Close the goal only when the remaining acceptance items pass or the user explicitly changes scope.
 
@@ -60,7 +60,7 @@ The next stage must preserve the existing food provenance and nutrition calculat
 
 2026-11-14: Prepared a private, consistent source baseline using SQLite online backup and the existing application's backup validator and nutrition calculations. Eight focused migration tests pass. The source check preserves committed WAL data, rejects missing food references and unmapped tables, records image/record hashes, and keeps auxiliary replay content out of the comparison manifest. Validation adds only absent chart-display defaults in the current source; daily nutrition results are unchanged. These checks establish a local baseline, not an Appwrite import or restore. The operator script and tests currently live with the source app because they use its domain modules. The recovery file can contain PC notification credentials and must remain local. No personal data was uploaded.
 
-## Storage stage — November 14, 2026
+## Storage stage â€” November 14, 2026
 
 This stage supersedes the earlier account-only and no-import status above.
 
@@ -76,7 +76,7 @@ Reports and destination identity remain in ignored local files. The preview stil
 
 Next: connect the mobile interface, implement account-scoped writes and new-account initialization, then migrate offline/Android sessions and background jobs. Before cutover, reconcile the latest PC data and repeat comparison and PC-off device checks. See `MIGRATION.md` for the remaining scope.
 
-## Writable diary stage — November 14, 2026
+## Writable diary stage â€” November 14, 2026
 
 This stage supersedes the read-only preview status above.
 
@@ -91,7 +91,7 @@ Local tests and the Astro build passed. Detailed reports, credentials, fixture s
 
 Remaining: the other app screens and mutations, cloud AI/background jobs, account-aware Android/offline behavior, reminders, exports/deletion/restore, password-recovery completion, and final domain/device cutover. Large multi-year workspaces and transaction operation limits have not been load-tested. No production domain or Android address changed.
 
-## Foods library stage — November 14, 2026
+## Foods library stage â€” November 14, 2026
 
 - Added private custom foods, recipes and meals to the Foods tab. Editors support basic fields, nutrient values, measured ingredients, recipe yield, cooked weight and volume. Fields outside these editors remain preserved. Existing named portions can be used for logging but cannot yet be edited here.
 - Added shared catalog/private food/recipe/meal selection to diary logging. Recipe and meal entries now support quantity edits and nutrition previews. Ingredient catalog records are fetched and captured on the server; client-supplied source or nutrient fields cannot replace them.
@@ -104,7 +104,7 @@ Deployment `6af88506c12e0645c778` is active on the preview. Final hosted verific
 
 Recipe URL import, library sharing/retirement/portion editors, diary ingredient adjustments, repeat items, food suggestions, and the other migration work remain outside this increment. The PC, Android address and production domain remain unchanged. Next: migrate targets/settings and the Discover dashboard/report views, followed by AI/background work and Android account integration.
 
-## Targets and nutrition reports — November 14, 2026
+## Targets and nutrition reports â€” November 14, 2026
 
 Preview deployment `6af93042af0771918a99` adds Settings and Discover navigation. Settings supports daily nutrient targets, maximums, visibility, and dark/light/device themes. Discover shows a nutrition summary and a full nutrient report with date range, logged/completed/all-day selection, today and supplement filters. Common nutrients appear first; additional fields are collapsed. View full report opens the Report tab.
 
@@ -115,7 +115,7 @@ Validation: all 36 unit/HTTP tests passed, including target preservation, schedu
 This is the first cloud Discover/settings increment. Advanced target setup and schedules, the other Discover widgets/charts/snapshots, and remaining feature migrations are still pending. The PC, Android address and production domain are unchanged. Continue with exercise/biometric editing and advanced target settings before AI/background jobs and Android account integration.
 
 
-## Continuous cloud migration — November 14, 2026
+## Continuous cloud migration â€” November 14, 2026
 
 Preview deployment `6af9460c1efe27ee53d4` adds exercise/biometric/note editors, advanced macro and energy policies, repeat-item review, Charts, Snapshots, fasting controls, recipe import, local food suggestions, the Nutrient Oracle, Gemini photo logging, Health Connect transfer and CSV export. This supersedes the pending-feature lists in earlier entries; `MIGRATION.md` tracks remaining scope.
 
@@ -134,7 +134,7 @@ Source provenance checks now validate both working files and staged Git blobs fo
 Backup/restore and direct profile settings are the next integration batch. The PC server, production domain and installed Android URL remain unchanged. Final cutover still needs current-data reconciliation, the remaining native/background work, recovery checks and PC-off device validation.
 
 
-## Recovery and profile validation — November 15, 2026
+## Recovery and profile validation â€” November 15, 2026
 
 Active preview: `6af9497ab5698c4c4cdb`. Backup and profile hosted browser checks passed, with all disposable resources removed and migrated-owner data unchanged. Backup validation preserves an omitted optional snapshots field in the actual imported workspace. Read-only export of that workspace passed with 76 array records and three referenced photos; its generation, digest and update time stayed unchanged.
 
@@ -142,7 +142,7 @@ The navigation regression passed on the deployed code. A full-width Fasting butt
 
 The next local candidate includes named library portions, retirement/restoration and diary ingredient adjustments. All 140 local tests pass. These features still need hosted validation. A shared error helper was moved out of the command registry so read projections do not depend on command registration. UTF-8 source/document validation catches Windows encoding drift. The production domain, PC data and installed Android app are unchanged.
 
-## Dashboard, library and retained recovery — November 15, 2026
+## Dashboard, library and retained recovery â€” November 15, 2026
 
 Active preview: `6af9538e4a5e7241e9ac`. Hosted library checks passed for named portions, retirement/restoration, draft retention, large saves, replay and request limits. Diary ingredient edits passed occurrence isolation and stale-revision checks. A real public recipe URL fetched and parsed successfully without writing account data.
 
@@ -155,7 +155,7 @@ Health Connect export lineage, draft and policy metadata now have strict cloud r
 Validation: 172 tests pass, the production build and built HTTP/body/recipe-worker checks pass, and Android source compiles with 30 focused tests passing. The publication audit covers 715 files and 221 copied domain modules, plus Dashboard source assets. Known credentials, owner identity and private artifacts are absent from staged content. The candidate Android background-import and widget implementation is not installed. Native export/reconciliation, Wear/reminders, account deletion/orphan cleanup, remaining product screens, current-data reconciliation and PC-off device testing remain before production cutover. No production domain or installed Android origin change was made.
 
 
-## Health Connect exports and atomic reconciliation — November 15, 2026
+## Health Connect exports and atomic reconciliation â€” November 15, 2026
 
 Preview deployment `6af95e7dd4305dedd2a5` is active. It provides biometric/intake export options, previews and verification, plus reconciliation previews, confirmed application and exact receipt lookup. The existing domain projections and record identities are preserved. Reviews bind to the authenticated account, workspace namespace and restore scope.
 
@@ -173,20 +173,20 @@ Validation completed:
 Production `nourishing.app`, the installed Android connection and background services remain unchanged. Phone reconciliation integration and correction recovery are still pending; the native export candidate needs a physical-device check. PC/cloud edits remain separate until final reconciliation and cutover.
 
 
-## Barcode, captured reports and Android reconciliation — November 15, 2026
+## Barcode, captured reports and Android reconciliation â€” November 15, 2026
 
-Preview deployment `6af9658a387768d8cdce` is active and adds the original camera/manual barcode scanner and Open Food Facts product search. Provider facts are signed for the account and expire; server commands save the custom food, diary entry, streak and retry receipt together. Known values, absent nutrients and source provenance remain distinct. The review uses the account’s kcal/kJ preference. The shared provider budget persists across runtime restarts. Decoder assets and licenses are packaged from pinned dependencies during the build.
+Preview deployment `6af9658a387768d8cdce` is active and adds the original camera/manual barcode scanner and Open Food Facts product search. Provider facts are signed for the account and expire; server commands save the custom food, diary entry, streak and retry receipt together. Known values, absent nutrients and source provenance remain distinct. The review uses the accountâ€™s kcal/kJ preference. The shared provider budget persists across runtime restarts. Decoder assets and licenses are packaged from pinned dependencies during the build.
 
-Discover → Report includes captured nutrition reports and Print / Save PDF. The source renderer and localized CSS retain provenance. The cloud copy emits external styles at the rendering boundary, preserving strict CSP and original SVG chart colors. The report screen separates options from the captured preview. Closing, changing options or changing accounts clears the capture. Food/recipe printouts and report-only chart editing remain pending.
+Discover â†’ Report includes captured nutrition reports and Print / Save PDF. The source renderer and localized CSS retain provenance. The cloud copy emits external styles at the rendering boundary, preserving strict CSP and original SVG chart colors. The report screen separates options from the captured preview. Closing, changing options or changing accounts clears the capture. Food/recipe printouts and report-only chart editing remain pending.
 
-Android foreground reconciliation reuses the source cursor/outbox owner inside an origin/account/namespace envelope. It checks permissions after capture, requires removal consent and resolves exact receipts after a lost response or logout. The existing print bridge carries the captured account ID and loaded report CSS into a private offline print WebView. Account checks run before rendering and opening Android’s print dialog. Neither feature has been installed or tested on a physical phone.
+Android foreground reconciliation reuses the source cursor/outbox owner inside an origin/account/namespace envelope. It checks permissions after capture, requires removal consent and resolves exact receipts after a lost response or logout. The existing print bridge carries the captured account ID and loaded report CSS into a private offline print WebView. Account checks run before rendering and opening Androidâ€™s print dialog. Neither feature has been installed or tested on a physical phone.
 
 Local validation: 212 server/browser tests passed, along with the production build and 20 built-server request checks. The real scanner WASM decoded a generated EAN13 under production CSP; camera cleanup, manual entry, branded search, save-only, diary save and lost-reply retries passed. The report browser test covered loaded CSS, English/French, kJ, immutable captures, saved charts, escaping and account changes. Android source and instrumentation code compile; 64 focused unit tests and the browser print handoff pass. Recovery history now exposes the snapshot number from Health Connect removal receipts.
 
 Hosted verification passed for real Open Food Facts product lookup and search, atomic saves, exact retries, cross-account denial, captured nutrient calculations, deployed decoder/report assets and the mobile report flow. Health Connect export/reconciliation checks passed again, including snapshot numbers in recovery history. Disposable accounts and records were removed; the real owner workspace was unchanged. The publication audit passed for 1,084 files, 237 domain source modules and all report/barcode source and asset hashes. The implementation is saved in commit `c9fe64e` on `codex/appwrite-migration`. The production domain, installed APK and enabled background services remain unchanged.
 
 
-## Diary tools, nutrient contributors and note photos — November 15, 2026
+## Diary tools, nutrient contributors and note photos â€” November 15, 2026
 
 Preview `6af9696692007f0a68be` is active. Diary actions now include selection, copy/paste, clear amounts, group/time changes, deletion, reusable meals and entry ordering. Selection controls appear only when requested. Copied records retain source quantities and lineage; source validators reject stale selections and completed-day changes. Diary energy follows the account kcal/kJ setting.
 
@@ -197,7 +197,7 @@ Validation: all 236 tests, the production build and 27 actual built-server reque
 Publication audit covered 1,109 files and 241 domain source modules, with matching source hashes and no known credentials or owner identity. Production `nourishing.app`, the installed Android origin and background services remain unchanged. No new APK was built or installed in this increment.
 
 
-## Account deletion and independent backup — November 15, 2026
+## Account deletion and independent backup â€” November 15, 2026
 
 Preview `6af9e66a8dd8246c822b` is active. Account deletion requires a fresh password and explicit confirmation. A private receipt tracks the job after sessions are revoked. The server blocks new account work, waits for active operations, removes owned rows and photos across generations, checks for remaining data, and deletes Auth last. Account identity includes its original creation timestamp. Unknown write outcomes stay unresolved for inspection rather than expiring on a timer. Profiles now use server-owned writes and owner-only reads.
 
@@ -210,13 +210,13 @@ Validation passed: 285 tests, production build, 48 built-server boundary checks,
 Only owner lifecycle metadata and profile permissions changed. Owner health data and catalog data were preserved. Production `nourishing.app`, the installed Android origin and APK remain unchanged. Final PC/cloud reconciliation and native-device checks are still required before cutover. Operational details are in `docs/account-lifecycle.md`.
 
 
-## Automatic T7 backup activated — November 15, 2026
+## Automatic T7 backup activated â€” November 15, 2026
 
 The supplied durable key was encrypted for the current Windows user and used to save a fresh verified cloud archive with three photos. The scheduled task is installed at limited privilege, daily at 09:00 Central and at logon with a 30-second delay. Missed starts run when available; overlapping runs are ignored. A real Task Scheduler invocation completed with exit code 0, current-archive verification and no warnings. The next run is November 16 at 09:00 Central. Retention is 14 verified daily copies. This supersedes the earlier pending-credential status.
 
 The task requires the PC, signed-in Windows account and approved T7; it does not require the local app server. The credential, task configuration and verification report remain ignored local files. The supplied plaintext Downloads file was left unchanged. No app deployment or health-data mutation was required.
 
-## PWA preview release — November 15, 2026
+## PWA preview release â€” November 15, 2026
 
 Commit `13a7e4f` is pushed to `codex/appwrite-migration`. Preview deployment `6afa3a48afec3e43fad4` is active. The user selected PWA delivery and removed Health Connect; native APK, Wear and native health integration are no longer release requirements. Previously imported records remain intact.
 
@@ -224,12 +224,12 @@ This release adds installation metadata and generated icons, a public offline sc
 
 Validation passed 336 local tests, production build, built-server boundary checks, mobile Chrome installation/cache/offline checks and hosted CSV/label/favorites/account-isolation checks. Hosted fixtures were removed and the owner workspace was unchanged. No production-domain switch has occurred.
 
-Private fasting deployment `6afa37f29551f8a3afb1` passed an actual delayed-execution test: one fast at the canonical start, no duplicate on replay, and no remaining fixture. Function metadata remains disabled with interval zero and no public execute permissions. Its configured false flag requires a new deployment to replace the tested runtime’s captured true value; no real-owner dispatch is staged.
+Private fasting deployment `6afa37f29551f8a3afb1` passed an actual delayed-execution test: one fast at the canonical start, no duplicate on replay, and no remaining fixture. Function metadata remains disabled with interval zero and no public execute permissions. Its configured false flag requires a new deployment to replace the tested runtimeâ€™s captured true value; no real-owner dispatch is staged.
 
-Remaining work follows MIGRATION.md: scheduled browser reminders, account-scoped offline edits, remaining source UI/features, data reconciliation, password-recovery/device checks and production cutover. Previous versions retain the source app’s indefinite retention policy; separate T7 archive rotation remains 14 days.
+Remaining work follows MIGRATION.md: scheduled browser reminders, account-scoped offline edits, remaining source UI/features, data reconciliation, password-recovery/device checks and production cutover. Previous versions retain the source appâ€™s indefinite retention policy; separate T7 archive rotation remains 14 days.
 
 
-## PWA reminders and offline edits — 2026-11-15
+## PWA reminders and offline edits â€” 2026-11-15
 
 - Scheduled Web Push preferences and editor are implemented. Diary writes, restores, CSV imports and device changes stage reminder intents atomically. Delivery uses private delayed executions and durable receipts; uncertain sends are not repeated automatically. New preferences remain paused until the user resumes them.
 - The installable app has an optional account-specific offline diary. Saved-food additions and quantity edits, notes, water, exercise and measurement edits use a durable local queue. Replay checks the account and workspace generation, keeps original operation IDs and review revisions, and reports conflicts. Sign-out offers sync or explicit discard. Service-worker caching contains only public assets.
@@ -238,7 +238,7 @@ Remaining work follows MIGRATION.md: scheduled browser reminders, account-scoped
 - Approved-baseline, current-PC and cloud reminder comparisons each found zero schedules. No schedule migration was needed, and no PC notification keys or subscriptions were copied.
 - Private reminder deployment `6afa3e3dddf46933b225` is ready with interval zero. Live delayed-execution verification is still in progress; visible device delivery is unverified. Production domain cutover remains pending.
 
-## PWA completion validation — November 15, 2026
+## PWA completion validation â€” November 15, 2026
 
 Preview deployment `6afa4087d9d1935e01e1` is active and supersedes the earlier undeployed status for offline edits and scheduled reminders. Hosted verification passed CSV/label/favorites, immutable offline replay, account/generation isolation, offline restart and queued water sync, public-only caches and mobile layout. Fixtures were removed and the owner workspace was unchanged.
 
@@ -250,7 +250,7 @@ The next local release adds the source local Coach, glucose/cycle Dashboard card
 
 The cleanup index is pending: Appwrite accepts table-read delegation but rejects index-write delegation. A short-lived operator key with table-read and index-read/write scopes has been requested. The production domain remains unchanged. Remaining scope is listed at the top of MIGRATION.md; PWA delivery replaces the former APK requirement.
 
-## Hosted feature release and calendar correction — November 15, 2026
+## Hosted feature release and calendar correction â€” November 15, 2026
 
 Commit `a5b4b5b` is pushed. Preview `6afa496b200ae36f3d8d`, cleanup worker `6afa49bc882bbc7e4048` and reminder worker `6afa49c40ac8b80ce83e` are active. The supplied schema key created the `push_deliveries.created` index without changing table permissions. Both workers retain private execution permissions and hourly repair.
 
@@ -270,7 +270,7 @@ Preview `6afa50a18ff6012acd52` (commit `bee76cb`) is active. Its production buil
 
 Next source UI work: connect glucose source policy and timeline, detailed CGM target ranges/comparison/food markers/statistics, and reviewed cycle import/removal. Existing canonical modules already supply these projections and validations. The cloud calendar adapter must pass `{now: new Date(calendar.asOf), timeZone: calendar.timeZone}` to their captures. Cycle imports should use the existing owner-scoped command transaction and receipt with its workspace revision and source review token; the generic workspace codec already preserves `cycleRecords`. Physical PWA/email checks, final reconciliation and domain cutover remain afterward. Firebase is not required for browser push.
 
-## Glucose and cycle controls — November 15, 2026
+## Glucose and cycle controls â€” November 15, 2026
 
 Implemented account-scoped glucose source/unit policy and the existing timeline renderer; CGM comparison, custom target ranges, food markers and source statistics; reviewed cycle import/removal with workspace revisions and retry receipts; and cycle diary visibility. Cycle phases remain restricted to recorded past dates, with source identities retained. Health Connect stays removed. Static source hashes are in `docs/health-ui-source.json`.
 
@@ -286,7 +286,7 @@ The PWA hosted check passed with the owned PC startup task disabled and port 428
 
 Appwrite now contains the external domain `nourishing.app` under the current organization, its active-site proxy rule, and the `nourishing-production` Auth web platform. The rule is unverified because public DNS still points to the parked address. Name.com supports ANAME at the apex; Appwrite's DNS metadata specifies `appwrite.network` and CAA `0 issue "certainly.com"`. Keep the Name.com nameservers and preserve unrelated records when applying the change. Site/reminder callback origins still use the preview and must change with the domain cutover. No registrar transfer, purchase or billing change occurred. README now describes the PWA scope and offline storage, replacing stale native/Health Connect instructions.
 
-## Production domain and phone installation — November 15, 2026
+## Production domain and phone installation â€” November 15, 2026
 
 The user saved a Name.com root ANAME to `appwrite.network`, TTL 300. DNS resolves to Appwrite, the domain rule is verified, and HTTPS was issued at 02:12 UTC on November 16 (November 15 Central). Correction to the earlier DNS note: CAA is optional when neither the domain nor its parent has a CAA record; Name.com's editor does not offer this type. No CAA or nameserver change was needed.
 
@@ -308,7 +308,7 @@ The Pixel disconnected before its original stay-awake setting could be restored.
 Remaining UI and device checks are tracked in `docs/ui-parity.md`, including food search/entry, Photo Log review details, mixed Diary records and child editor layouts. Full visual parity is still incomplete.
 
 
-## Food logging release — November 16, 2026
+## Food logging release â€” November 16, 2026
 
 Deployment `6afaa0a216b486d21e89` is active at https://nourishing.app, runtime revision `33ac52db4584ad5ed336d2f5840ce3d674a8f3e2`. All 442 tests passed, the build passed, source asset hashes matched staged bytes, and the publication audit passed. Focused local browser tests cover the Photo Log summary, quantities, preview errors/retry and discard-on-close.
 
@@ -342,7 +342,7 @@ All 463 tests and the build passed. An offline browser assertion was corrected t
 Hosted Report/CGM checked the Remaining ring, canonical nutrient mean/source/help, real protein comparison values with shared glucose bounds, hour/target persistence, nested Back and plot disposal. Snapshot checked upload lost-response replay, metadata-preserving caption/date updates, cancel/outside/Back/navigation, and delete/media-access removal. Both checks recorded no browser/CSP errors or overflow, preserved the owner workspace and removed fixtures. Evidence: `.local/discover-details-hosted-result.json`, `.local/snapshot-child-hosted/result.json`. Live captures were inspected; Snapshot computed styles and rendered fonts match the source (Lato body and Karla headers); no typography correction was needed. Targets/Nutrient Targets and Create/Edit Custom Chart restoration are the next active increments.
 
 
-## Targets and custom chart candidate — November 16
+## Targets and custom chart candidate â€” November 16
 
 Restored the source Targets home and Nutrient Targets categories/cards/highlights, with canonical custom/reference modes and account-scoped writes. Other Targets destinations still reuse working cloud child editors. Restored Create/Edit Custom Chart with source metric tabs, search, units, optional second axis, fixed Save footer and transient drafts. Empty accounts now receive supported biometric choices. Existing chart identity, visibility, cycle state and date span are preserved. Ambiguous 5xx replies keep the same save request for retry.
 
@@ -364,14 +364,14 @@ Foods release `b70c0fc`, deployment `6afab6f5328fe200f7b0`, is active. All three
 Source Oracle, shared non-CGM chart detail and Energy Expenditure are implemented. The suite passes all 480 tests and the production build passes. Chart detail now fetches the current canonical card before enabling edits, fixing a reproduced stale-revision failure when reopening immediately after a save. Oracle separates committed writes from failed context refreshes. Publication checks passed 100 UI hashes, 260 domain files and the private-data scan. Deployment and hosted checks follow.
 
 
-## Oracle, chart detail and expenditure acceptance — November 16
+## Oracle, chart detail and expenditure acceptance â€” November 16
 
 Deployment `6afabac7c4f4f02ce8c9`, runtime `9c483b1`, passed 480 local tests and the build. Hosted Oracle, Chart detail, Custom Chart and Energy Expenditure checks passed. Oracle preserves ranking quantities through diary save; Charts and Dashboard share current detail data; expenditure edits retain unrelated targets and schedules. Interrupted committed responses replayed identical receipts without duplicate writes. Owner workspace digests and timestamps were unchanged, temporary accounts were removed, and no browser/CSP errors or horizontal overflow occurred. Live screenshots were inspected. The custom-food Add Serving Size style reset is present in the live stylesheet.
 
 Initial hosted failures were verifier defects: an ambiguous search label, missing required biometric fields/chart version, use of a command response instead of the canonical chart read, an incorrect Oracle density-column expectation, and a checkbox assertion that retried during a save redraw. Corrected checks passed without runtime changes. Evidence: ignored `.local/oracle-hosted-result.json`, `.local/chart-detail-hosted-result.json`, `.local/custom-chart-hosted-result.json`, `.local/expenditure-hosted-result.json` and their screenshots.
 
 
-## Meal, Weight Goal and fasting acceptance — November 16
+## Meal, Weight Goal and fasting acceptance â€” November 16
 
 Deployment `6afabf363c43fbd91e57` (runtime `5b29b7a`) is active. All 488 tests, the production build and publication audit passed before deployment. Three hosted flows passed with disposable accounts: mixed Meal ingredients/reorder/cancel/review/Save & Add, inactive and active Weight Goal with the selected kg measurement, and fasting settings/schedules/history/repeat/delete. Interrupted committed replies retried identical requests without duplicate records. Owner workspace digests and timestamps stayed unchanged; fixtures were removed. No browser/CSP errors or horizontal overflow occurred. Live screenshots were inspected.
 
@@ -380,7 +380,7 @@ The hosted scripts needed navigation/fixture corrections: Meal Back returns thro
 Evidence: ignored `.local/meal-editor-hosted-result.json`, `.local/weight-goal-hosted-result.json`, `.local/fasting-hosted-result.json` and associated PNG captures. Recipe editing/reviewed library edits and Macro & Energy are in the next working increment. Installed-phone and deferred recovery-email checks remain open.
 
 
-## Recipe, reviewed edits, Macro & Energy and CSV acceptance — November 16
+## Recipe, reviewed edits, Macro & Energy and CSV acceptance â€” November 16
 
 Deployment `6afac36c92eec897ff8e` (runtime `9377eb1`) is active. The full suite passed 506 tests; build, staged publication audit and 698 source-output hash checks passed. Hosted Recipe, Meal, Custom Food and Macro/export checks all passed. Recipe cooked weight, servings, named portions, measured volume, translated labels, category and notes persist. Preserve keeps existing diary entries on the old recipe. Save & Add opens the entry detail without adding it automatically. Ambiguous committed responses replay the same request without duplicate saves. Macro defaults, scheduled targets, inactive Weight Goal and expenditure retain their intended separation; net-carb settings and grouped CSV export work.
 
@@ -388,7 +388,7 @@ All four accounts and their records were removed; owner digests/timestamps remai
 
 Evidence: ignored `.local/recipe-editor-hosted-result.json`, `.local/meal-editor-hosted-result.json`, `.local/custom-food-hosted-result.json`, `.local/macro-energy-hosted-result.json`, associated captures, and the recorded fixture cleanup proofs. Scheduler/day targets, Display, and Exercise/Biometric source adapters are the next working increment.
 
-## Scheduler, Display and record editors — November 16
+## Scheduler, Display and record editors â€” November 16
 
 Runtime `b486126`, deployment `6afac83fb3f38beba195`, passed 516 tests, build and publication checks. Hosted Display and record flows passed, including canonical units, exact selected measurements, compound inputs, corrections/deletion and immutable save retries. Owner records stayed unchanged. One Records cleanup hit a provider timeout; verified fixture identity was used to remove the remaining records/account, and the complete rerun passed with cleanup.
 
@@ -410,7 +410,7 @@ Deployment `6afad01cad154ce9c7c7` (runtime `8f87107`) is active. All six hosted 
 
 The Account verifier now declares exact expected name/email transitions before testing them. Eight ownership checks verify cleanup accepts only the original or expected identity with the same immutable ID/creation timestamp. The runtime suite passed 535 tests before publication. Installed-device checks and emailed password recovery remain deferred.
 
-## Font, import and selected-summary acceptance — November 16, 2026
+## Font, import and selected-summary acceptance â€” November 16, 2026
 
 Deployment `6afad5b67a3acf4b61c5` (runtime `f22460b`) is active at nourishing.app. All 547 tests, the production build and publication checks passed. Hosted Font Size, Pause Life, Recipe Import, selected-food Diary summaries and Reminders checks passed. These exercised 75/100/200 percent text at 320 px, account/reload persistence, interrupted-write retries, cancellation, canonical quantities and selected nutrition, and unchanged full-day targets. Fixtures were removed and owner data stayed unchanged. Live captures were inspected. The Font hosted verifier initially expected a collection selector on the Foods home screen; it now waits for the actual home card and its complete rerun passed. Physical-device acceptance remains separate.
 
@@ -422,14 +422,14 @@ Production deployment `6afadad318f427a6c5ff` (runtime `d8ac865`) passed all 551 
 Initial verifier failures were corrected without runtime changes: wait for the completed save response; open More Details before editor actions; wait for fresh retirement review data; and allow library-derived suggestions/rankings to change after import while checking all recorded nutrition and targets. Private reports are retained in `.local`. These browser checks do not establish installed-device acceptance.
 
 
-## Account language acceptance — November 16, 2026
+## Account language acceptance â€” November 16, 2026
 
 Runtime `dc73921` is active in site `6afae86cd143c9745487` and reminder worker `6afae86e686773fefa0c`. The worker retains its prior execution permissions, schedule, enablement and settings. The four existing source catalogs and explicit cloud messages share one language owner. Browser language is used before account loading; the saved account setting takes precedence. User text, food/source names, stable commands, record quantities and receipt identities remain unchanged. Offline and print language remain attached to their captures. Generic push messages carry only a supported locale and generic notification metadata.
 
 All 572 tests and the final build passed. The publication audit verified 1,854 staged files; 1,163 manifest output hashes matched. Production checks passed French, German and Brazilian Portuguese Diary/Add/Discover headers, Display cancellation, persistence and exact retry after a committed save response was lost. Recorded nutrition and owner data stayed unchanged; the temporary account was removed. Hosted screenshots were inspected. Physical notification delivery, camera/barcode, offline restart/sync and the user's deferred password-recovery email remain acceptance items. Device questions were sent while independent work continues.
 
 
-## Discover loading acceptance — November 16, 2026
+## Discover loading acceptance â€” November 16, 2026
 
 Site `6afaea1a505d92cb59c1`, runtime `af9ab2b`, loads the full Report only when its tab is opened. Dashboard and Charts no longer wait for that read. Leaving an unfinished Report cancels its request; retry after failure and all header actions still work. Twelve affected tests and the production build passed. Hosted language/navigation, exact retries and owner integrity passed again; the fixture was removed.
 
@@ -438,7 +438,7 @@ Three comparable production mobile-viewport samples measured Dashboard click-to-
 The next candidate reuses the loaded Diary for immediate tab return while refreshing it. It follows the local app's in-memory snapshot pattern, with no added persistent cache. Unchanged data keeps live controls; an open editor retains its captured revision. A changed authoritative response replaces the snapshot when no editor is open. Fasting display time advances from the snapshot's monotonic receipt time. Focused checks pass; full regression and production timing remain in progress.
 
 
-## Diary return and final browser acceptance — November 16, 2026
+## Diary return and final browser acceptance â€” November 16, 2026
 
 Runtime `51e509b`, deployment `6afaec0c3732a31301a1`, is active. All 574 tests, the production build and publication audit passed. Hosted navigation/language verification passed with exact retry, unchanged recorded nutrition and owner data, no browser/CSP errors and complete fixture cleanup. Shared-import verification also passed and its Back control capture was inspected.
 
@@ -447,7 +447,7 @@ The Diary uses its current in-memory response on tab return and performs a fresh
 Three production browser samples measured Diary return at 30/25/33 ms versus 1,834/1,850/1,850 ms in the previous release. The final Dashboard samples were 2,384/2,888/2,868 ms with one API request, compared with the original 3,900/3,370/5,972 ms with two. Report now loads when first opened. The full sample record and limitations are in `docs/tab-navigation-performance.json`. Installed-device results and the deferred recovery email remain pending, so the goal remains active.
 
 
-## Completion audit — November 16, 2026, after `51e509b`
+## Completion audit â€” November 16, 2026, after `51e509b`
 
 The previous goal turn made progress: it deployed the language and navigation changes, passed 574 tests and hosted acceptance, and preserved owner data. This audit inspected the saved evidence and current backup/device state rather than repeating unrelated tests.
 
