@@ -1,6 +1,6 @@
 # Local-to-cloud UI parity
 
-Status: initial shell/Diary/Foods/More restoration is live. The Add menu and Discover body/header follow-up passed local checks; rollout is in progress. Full parity of child editors is still incomplete. Functional verification alone does not establish visual parity.
+Status: initial shell/Diary/Foods/More restoration is live. The Add menu and Discover body/header follow-up is live and passed hosted checks. Full parity of child editors is still incomplete. Functional verification alone does not establish visual parity.
 
 ## Approved restoration work
 
@@ -59,3 +59,10 @@ The 434-test suite passed 433 cases initially; its Coach-to-Report test expected
 - Latest Cronometer Report Remaining ring and full nutrient-detail screen differ from the saved local implementation restored here.
 
 Public password recovery is deferred by the owner. Installed-phone camera/barcode, notification delivery and offline operation still need device verification. Functional browser checks do not establish complete visual or device parity.
+
+
+## Hosted acceptance
+
+Deployment `6afa9a8c6e1c5f3b0cca`, revision `0e2a837a7bda90efe184c77e06d0e5af5d5a090d`, is active at https://nourishing.app. The production browser check passed at phone width with no browser, HTTP or CSP errors. It checked saved Add menu preferences, cancelled edits, outside dismissal, Search Food and New Fast destinations, Diary display/water, Foods/More navigation, system theme, Back focus and account access. Report and Charts header actions opened their actual settings and Newsfeed. Snapshots used the restored empty state and Add Snapshot action.
+
+The temporary account and its records were removed. The owner's workspace head remained unchanged. Live Report, Charts, Snapshots and Add menu screenshots were captured; Report and Charts were visually inspected after deployment. Evidence: ignored `.local/ui-restoration-hosted/result.json` and PNG captures. Source asset hashes were verified against published LF-normalized bytes. This does not replace installed-Pixel verification or close the child-screen gaps above.

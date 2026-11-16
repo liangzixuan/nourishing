@@ -259,3 +259,14 @@ Site deployment `6afa66c178da0bd2af92` and reminder deployment `6afa66c9a0124814
 All three production-domain verification scripts passed: registration/private sessions/profile/login/logout/direct-write denial; PWA labels/CSV/favorites/account-generation isolation/offline restart/queued-water sync/install assets/public-only caching; and cycle/glucose/CGM controls with concurrent Dashboard/Charts reads. Disposable accounts and records were removed. Read-only reconciliation verified the baseline, all three photo files and nutrition totals on all three recorded dates; owner data was unchanged.
 
 The owner confirmed Pixel PWA installation and diary access, but reported that the interface differs from the local app. Visual parity is incomplete: the cloud frontend retained some renderers but rebuilt the shell, Foods and Settings surfaces. This is an open migration gap, not a PWA platform limitation. A direct comparison of both apps is in progress. Password recovery is deferred by the user; installed-phone camera/barcode, notifications and offline checks remain pending.
+
+
+## Cloud UI restoration follow-up
+
+Initial source shell, Diary summary, Foods and More restoration shipped in revisions `25222f1` and `03c16d8`. The owner found remaining Add menu and Discover layout gaps. Revision `6c7a952` restores the colored Add to Diary sheet and saved menu preferences, Charts cards/manager/detail previews, Report rings/grouped nutrients/settings and Snapshots main cards. Revision `0e2a837` normalizes provenance hashes. Active Appwrite deployment: `6afa9a8c6e1c5f3b0cca` at https://nourishing.app.
+
+Build, affected local browser flows and all 434 test cases passed (433 in the full run, then the corrected Coach Report selector test independently). Hosted acceptance passed with a temporary account, zero browser/HTTP/CSP errors and unchanged owner workspace; fixture cleanup completed. Header Newsfeed/settings actions were checked on Charts and Report. Phone inspection ended before deployment; final installed-Pixel verification is not claimed.
+
+The Pixel disconnected before its original stay-awake setting could be restored. The user was told that Stay awake while charging remained enabled and can be disabled in Developer options. No further phone connection is needed for current source-based work.
+
+Remaining UI and device checks are tracked in `docs/ui-parity.md`, including food search/entry, Photo Log review details, mixed Diary records and child editor layouts. Full visual parity is still incomplete.
