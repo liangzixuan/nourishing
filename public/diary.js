@@ -1,3 +1,4 @@
+import {sameDiarySnapshot,presentDiarySnapshot} from './diary-snapshot.js';
 import {uiLanguage,applyAppLanguage,t} from './app-language.js';
 import {coreText} from './core-cloud-messages.js';
 import {applyFontPreferences} from './font-presentation.js';
@@ -38,7 +39,7 @@ const num=(v,d=1)=>Number.isFinite(v)?v.toLocaleString(uiLanguage(),{maximumFrac
 const headerRoot=document.querySelector('.app-header'),shell=createAppShell({headerRoot,dateBar,navigation:document.querySelector('.app-nav')});
 let addMenu=null,diaryCalendar=null;
 let view='diary',library=null,nutrition=null,more=null,summaryPanel=null,pickerCleanup,account;
-let accountReady=false,pendingNavigation=null;
+let accountReady=false,pendingNavigation=null,diaryReceivedAt=0;
 let date=today(),diary=null,loadId=0,searchId=0,group='Uncategorized';
 function show(html){pickerCleanup?.();pickerCleanup=null;searchId++;content.innerHTML=html;if(!sheet.open)sheet.showModal();sheet.scrollTop=0;}
 function close(){pickerCleanup?.();pickerCleanup=null;searchId++;sheet.close();content.replaceChildren();}
@@ -46,10 +47,26 @@ const header=title=>`<header class="sheet-header"><button type="button" class="i
 const diaryTools=createDiaryTools({diary:()=>diary,date:()=>date,show,close,header,content,render,onChange:load,onDisplay:()=>summaryAction({action:'configure-diary-display'}),onScores:()=>summaryAction({action:'choose-scores'})});
 sheet.addEventListener('click',event=>{if(event.target===sheet){const r=sheet.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)close();}if(event.target.closest('[data-close]'))close();});
 sheet.addEventListener('cancel',event=>{event.preventDefault();if(!pickerCleanup?.back?.())close();});
-async function load(){const id=++loadId;notice.textContent='';page.setAttribute('aria-busy','true');try{if(!accountReady){account=await request('/api/account');await rememberOfflineAccount(account);accountReady=true;}const result=await request('/api/diary?date='+date);if(id!==loadId)return;diary=result;const languageChanged=uiLanguage()!==(result.presentation?.settings?.appLanguage??'en');applyAppLanguage(result.presentation?.settings?.appLanguage??'en');shell.refreshLanguage();if(languageChanged)more?.refreshLanguage();applyTheme(result.theme);applyFontPreferences(result.presentation?.settings);if(view==='diary')render();if(pendingNavigation){const pending=pendingNavigation;pendingNavigation=null;navigate(...pending);}}catch(error){if(id===loadId){notice.textContent=error.message;if(view==='diary')page.innerHTML=`<p class="empty"><button type="button" data-reload>${e(coreText('retry'))}</button><a href="/offline.html">${e(t('nav.offline'))}</a></p>`;}}finally{if(id===loadId)page.setAttribute('aria-busy','false');}}
+async function load({reuseUnchanged=false}={}){
+ const id=++loadId;notice.textContent='';page.setAttribute('aria-busy','true');
+ try{
+  if(!accountReady){account=await request('/api/account');await rememberOfflineAccount(account);accountReady=true;}
+  const result=await request('/api/diary?date='+date);if(id!==loadId)return;
+  // Revalidate the current in-memory snapshot without replacing live controls.
+  // A pending editor keeps its captured revision; its save still uses the server guard.
+  if(reuseUnchanged&&(sameDiarySnapshot(diary,result)||document.querySelector('dialog[open]')))return;
+  diary=result;diaryReceivedAt=performance.now();const languageChanged=uiLanguage()!==(result.presentation?.settings?.appLanguage??'en');
+  applyAppLanguage(result.presentation?.settings?.appLanguage??'en');shell.refreshLanguage();if(languageChanged)more?.refreshLanguage();applyTheme(result.theme);applyFontPreferences(result.presentation?.settings);
+  if(view==='diary')render();
+  if(pendingNavigation){const pending=pendingNavigation;pendingNavigation=null;navigate(...pending);}
+ }catch(error){
+  if(id===loadId){notice.textContent=error.message;if(view==='diary'&&!reuseUnchanged)page.innerHTML=`<p class="empty"><button type="button" data-reload>${e(coreText('retry'))}</button><a href="/offline.html">${e(t('nav.offline'))}</a></p>`;}
+ }finally{if(id===loadId)page.setAttribute('aria-busy','false');}
+}
 function selectTab(id){shell.select(id);}
 function leaveView(){diaryCalendar?.close();diaryTools.reset();summaryPanel?.dispose();summaryPanel=null;library?.dispose();library=null;nutrition?.dispose();nutrition=null;more?.dispose();more=null;headerRoot.replaceChildren();}
 function render(){
+ const displayedDiary=presentDiarySnapshot(diary,performance.now()-diaryReceivedAt);
  summaryPanel?.dispose();
  selectTab('diary-tab');
  dateBar.dataset.date=date;dateBar.hidden=false;document.querySelector('#diary-tab').setAttribute('aria-current','page');document.querySelector('#foods-tab').removeAttribute('aria-current');
@@ -63,8 +80,8 @@ function render(){
   if(collection==='entries')return mobileDiaryRecord({id:row.id,collection,name:row.facts?.name??row.name,meta:e([time,row.kind==='exercise'?`${num(row.duration)} min`:row.quantity!==undefined?`${num(row.quantity)} ${row.unit==='portion'?(row.facts?.portionLabel??coreText('diary.portions')):row.unit}`:coreText('diary.servings',{amount:num(row.amount)})].filter(Boolean).join(' · ')),amount:diaryEntryAmount(row,s.diaryTable,{energyUnit,language:uiLanguage()}),icon:diarySymbol(row.kind==='exercise'?'fitness_center':row.recipeId||row.mealId?'restaurant':'nutrition'),selectBox:diaryTools.selectBox(collection,row),action:'edit-entry'});
   const note=collection==='notes';return mobileDiaryRecord({id:row.id,collection,name:note?row.text:row.type,meta:e(time),amount:note?'':`${num(row.value,20)} ${e(row.unit)}`,icon:diarySymbol(note?'description':'monitor_heart'),selectBox:diaryTools.selectBox(collection,row),action:note?'edit-note':'edit-biometric',extra:note&&notePhotoThumbnail(row)?`<button type="button" class="icon-button" data-action="edit-note" aria-label="${e(coreText('diary.notePhoto'))}">${notePhotoThumbnail(row)}</button>`:''});
  };
- page.innerHTML=`${diaryCycleMarkup(diary.cycleDays)}${diaryTools.toolbar()}${diarySummaryMarkup(diary,diaryTools.selection())}<div class="md-diary diary-layout">${mobileDiaryGroups({groups:display.groups.map(group=>group.name),configuredGroups:diary.groups,records,renderRow,showGroups:display.showGroups,selectBox:group=>diaryTools.groupBox(group),subtotal:group=>diaryGroupSubtotal(s.diaryTable,group,{energyUnit,language:uiLanguage()})+`<button type="button" class="diary-group-tools" data-tool-group="${e(group)}" aria-label="${e(coreText('diary.groupActions',{group}))}">⋯</button>`,icons,labels:{add:t('diary.addFood')}})}</div>`;
- summaryPanel=mountDiarySummary({root:page,diary,onAction:summaryAction,selection:diaryTools.selection(),onReload:load});
+ page.innerHTML=`${diaryCycleMarkup(diary.cycleDays)}${diaryTools.toolbar()}${diarySummaryMarkup(displayedDiary,diaryTools.selection())}<div class="md-diary diary-layout">${mobileDiaryGroups({groups:display.groups.map(group=>group.name),configuredGroups:diary.groups,records,renderRow,showGroups:display.showGroups,selectBox:group=>diaryTools.groupBox(group),subtotal:group=>diaryGroupSubtotal(s.diaryTable,group,{energyUnit,language:uiLanguage()})+`<button type="button" class="diary-group-tools" data-tool-group="${e(group)}" aria-label="${e(coreText('diary.groupActions',{group}))}">⋯</button>`,icons,labels:{add:t('diary.addFood')}})}</div>`;
+ summaryPanel=mountDiarySummary({root:page,diary:displayedDiary,onAction:summaryAction,selection:diaryTools.selection(),onReload:load});
 }
 function runAddAction(kind,initialGroup){
  group=initialGroup??(diary.groups.includes('Uncategorized')?'Uncategorized':diary.groups[0]);
@@ -106,7 +123,7 @@ function navigate(next,initialTab='dashboard',reportDate){
  if(!diary){pendingNavigation=[next,initialTab,reportDate];return;}
  leaveView();view=next;window.scrollTo(0,0);
  const common={page,headerRoot,date:()=>date,show,close,header,content,onChange:load,onDiary:nextDate=>{date=nextDate;return navigate('diary');}};
- if(next==='diary'){selectTab('diary-tab');return load();}
+ if(next==='diary'){selectTab('diary-tab');const reuseUnchanged=diary?.date===date;if(reuseUnchanged)render();return load({reuseUnchanged});}
  if(next==='foods'){selectTab('foods-tab');library=mountLibrary({...common,openEntry:(kind,id)=>edit(null,id,kind)});return;}
  if(next==='more'){selectTab('settings-tab');more=mountMore({...common,identity:account?.name||coreText('more.workspace'),onFoods:()=>navigate('foods'),onDiscover:tab=>navigate('discover',tab)});return;}
  selectTab('discover-tab');nutrition=mountNutrition({...common,mode:'discover',initialTab,reportDate,onSuggest:day=>{date=day;return openInsights('suggestions',day);}});

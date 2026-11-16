@@ -139,6 +139,10 @@
       "outputSha256": "1929347ee87a2aae46bb264abae3d3af9b1af5929561c1a98b0b407bdf56cf48"
     },
     {
+      "output": "public/diary-snapshot.js",
+      "outputSha256": "1573d8fc4012a4e74c0f4d1686be929525c4ed67be329ba04f1dae42d114b20a"
+    },
+    {
       "output": "public/diary-summary-actions.js",
       "outputSha256": "f307dd7718df13600a5299df70071468eeb602542767c4e18be6248c1ec34f6a"
     },
@@ -164,7 +168,7 @@
     },
     {
       "output": "public/diary.js",
-      "outputSha256": "ddc4f7f3e7dfffee8237d504c2a47293a6c0e6f5e772b1ccc16ffecf9353c027"
+      "outputSha256": "f058c170ba9226925081d54d3934acbe9f4ee74b2f920fdfe1871fce7d917af0"
     },
     {
       "output": "public/discover-cloud-messages.js",
