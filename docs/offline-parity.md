@@ -15,17 +15,20 @@ Source provenance is recorded in `offline-source-manifest.json` and `domain-sour
 - Authentication expiry locks retained data until the same account is verified. Account switches cannot select another account's copy. Logout checks pending changes across all account partitions and clears all copies after sync or explicit discard. Owner/epoch checks reject delayed writes after logout.
 - Cross-tab logout, lock or account switch closes the offline editor and removes the previous account's visible records.
 
-## Remaining PC UI differences
+## Offline controls and nutrition
 
-- The PC pending list supports JSON export and manual retry/discard for each row. This version has conflict discard and a Sync action that retries pending or uncertain commands. It does not yet have export or per-row retry controls.
-- The PC exercise form supports kcal and kJ. This form currently accepts kcal.
-- The source biometric contracts support new custom definitions. This form currently exposes catalog measurements and retained/custom metrics, but does not create a new custom definition.
-- This compact offline view shows calories and three macro totals. The PC offline view also shows the full nutrient summary and translated labels.
+- Pending changes can be exported as the source `nourish-offline-pending` JSON format, retried after a conflict, or discarded individually. Retry preserves the complete saved command, including its ID and revisions. Commands from an earlier restore cannot be retried. Discard changes only this device's outbox.
+- Exercise entry and correction accept kcal and kJ through the source decimal conversion. The saved value remains kcal. Changing the selector keeps the entered number, as in the PC form.
+- The measurement picker creates new custom definitions through the source `biometric.log` command. The reviewed definition and readings sync together. Catalog measurements, paired blood pressure and retained custom metrics use the same source library.
+- Nutrition details show source nutrient values, targets, measurement coverage and upper limits. Hidden nutrients, macro visibility, consumed/remaining mode and energy units follow the saved settings. Missing measurements remain unknown. Groups start collapsed to keep the diary compact.
+- English, French, German and Brazilian Portuguese labels use the source language catalogs. Nutrient labels use source nutrient identity translations. The open copy uses its saved application language; the initial page has a language selector. User-entered record names are preserved.
+
+The standalone layout remains smaller than the PC offline dashboard. The PC also has temporary food/group selection, score cards, completeness cards and nutrient-balance cards. Those dashboard panels are not part of this compact diary view. Server validation errors without a source localization key retain their supplied message.
 
 Offline photo recognition, AI requests and remote food-catalog search remain online features. Cached records with imported provenance remain subject to the source editability rules.
 
 ## Verification
 
-`node --test tests/offline*.test.mjs` passed 13 tests on 2026-11-15. Coverage includes source validation, atomic store rollback, receipt replay, account/generation rejection, record revisions, HTTP authentication, session clearing and real Chrome service-worker behavior. The Chrome test covers cold direct entry, offline navigation/restart, food and water additions, food correction, exercise and weight logging, reconnect after a lost response, expiry locking, account isolation and public-cache contents.
+`node --test tests/offline*.test.mjs` covers source validation, atomic store rollback, receipt replay, account/generation rejection, record revisions, HTTP authentication, session clearing and real Chrome service-worker behavior. The Chrome test covers cold direct entry, offline navigation/restart, food and water additions, food correction, kJ exercise entry, weight and custom measurement logging, pending JSON export, unchanged-command conflict retry, discard, French rendering, reconnect after a lost response, expiry locking, account isolation and public-cache contents. Nutrition tests cover source visibility, unknown measurements, unit conversion, saved settings and all four supported label languages.
 
 These checks ran against local fixtures and production modules. They do not establish a deployed Appwrite or physical-phone offline check.

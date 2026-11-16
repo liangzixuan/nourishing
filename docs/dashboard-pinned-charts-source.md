@@ -1,0 +1,13 @@
+# Charts and Dashboard pins
+
+The cloud app uses the PC application's `server/mobile-chart-view.mjs` to select and calculate built-in and custom chart cards. Its exact dependency copies and hashes are in `domain-source-manifest.json`. The adapter in `server/dashboard-pinned-charts.mjs` adds the workspace revision and editor choices. It does not recalculate health values.
+
+`settings.mobileCharts.charts[id].showOnDashboard` and `settings.mobileCharts.custom[id].showOnDashboard` own pins. Visibility in Charts is separate: a hidden, pinned chart remains on Dashboard. Deleting a custom chart removes its display settings through the original workspace command. Per-card ranges, day filters, inclusion of today, units, targets, fasting intervals, and cycle observations come from the same capture on both surfaces.
+
+`chart.display` applies a narrow patch through the canonical settings parser and `settings.save` action. A changed built-in source clears its old display-unit override. Custom definition edits use `chart.save`, which owns the same rule. Unsupported fields, units and missing chart identities are rejected before mutation.
+
+The UI uses the installed Chart.js bundle. `public/chart-rendering-source.js` and `public/chart-cgm-source.js` are exact copies of the PC `public/mobile-chart-rendering.js` and `public/mobile-cgm-plot.js`. `chart-presentation.js` adapts the source drawing and cycle-band rules to the cloud shell. It keeps missing values as gaps, independent axes, daily target steps, recorded fasting positions across DST, separate cycle source lanes, stacked energy/sleep series, and glucose threshold colours. It does not create readings for empty charts.
+
+The editor supports custom name/metrics/days/visibility/cycle settings; per-card pin, dates, day filters, zoom, units, target and fasting switches; built-in source choices; nutrient grouping; and CGM hours/insulin/comparison visibility. Dedicated CGM source configuration, comparison selection, target-range editing, food-marker popups and detailed statistics remain separate work. Dashboard summaries do not show the separate comparison plot in the PC UI either.
+
+Validation: focused Node tests cover hidden pins, units, custom periods, filters, source attribution, missing data, deletion and invalid patches. A real Chrome mobile-width fixture exercises pin, edit, show and unpin through the production command adapter and renders the installed Chart.js bundle. A separate plot-config check covers null gaps, axes, targets, DST fasting positions and separate cycle lanes. No cloud user data was changed by these checks.

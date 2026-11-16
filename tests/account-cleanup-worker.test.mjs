@@ -64,3 +64,24 @@ test('wall-time budget stops between bounded steps and does not remove pending j
  const f=accountFixture();for(const id of ['a','b'])f.put('account_deletions',id,job(id,'pending'));let time=now,steps=0;
  await runAccountCleanup({db:f.db,enabled:true,budgetMs:25,clock:()=>{time+=10;return time;},deletion:{async step(){steps++;return {status:'pending',phase:'files',counts:{files:1,rows:0}};}}});assert.equal(steps,1);assert.equal(f.table('account_deletions').size,2);
 });
+
+test('hourly cleanup finds paused reminder owners, bounds removals and respects deletion lifecycle',async()=>{
+ const f=accountFixture(),lifecycle=createAccountLifecycle({db:f.db,now:()=>now}),cutoff=now-90*86400000;
+ for(const owner of ['active','deleting'])await lifecycle.initialize(owner);
+ await lifecycle.claim('deleting','delete-fixture');
+ f.put('push_accounts','active',{ownerId:'active',version:0,payload:JSON.stringify({paused:true,devices:[],schedules:[]}),$permissions:[]});
+ for(let i=0;i<28;i++)f.put('push_deliveries','old-'+i,{ownerId:'active',createdAt:new Date(cutoff-1000-i).toISOString(),outcome:i%2?'unknown':'sending',$permissions:[]});
+ f.put('push_deliveries','deleting',{ownerId:'deleting',createdAt:new Date(cutoff-2000).toISOString(),outcome:'unknown',$permissions:[]});
+ f.put('push_deliveries','boundary',{ownerId:'active',createdAt:new Date(cutoff).toISOString(),outcome:'unknown',$permissions:[]});
+ const operations=[],run=lifecycle.run;lifecycle.run=async(owner,kind,work)=>{operations.push({owner,kind});return run(owner,kind,work);};
+ const options={db:f.db,lifecycle,enabled:true,clock:()=>now,deletion:{step(){throw Error('No deletion jobs');}}};
+ const first=await runAccountCleanup(options);assert.equal(first.reminderReceiptsPruned,25);assert.equal(first.reminderOwnersSkipped,1);assert.equal(first.failed,0);assert.equal(operations.filter(row=>row.owner==='active').length,1);assert.ok(operations.every(row=>row.kind==='reminders.prune'));
+ const second=await runAccountCleanup(options);assert.equal(second.reminderReceiptsPruned,3);assert.equal(second.reminderOwnersSkipped,1);assert.deepEqual([...f.table('push_deliveries').keys()].sort(),['boundary','deleting']);assert.equal(f.table('account_operations').size,0);assert.equal(JSON.parse(f.table('push_accounts').get('active').payload).paused,true);
+});
+
+test('receipt cleanup stops deleting when the shared wall-time budget expires',async()=>{
+ const f=accountFixture(),lifecycle=createAccountLifecycle({db:f.db,now:()=>now});await lifecycle.initialize('owner');
+ for(let i=0;i<4;i++)f.put('push_deliveries','old-'+i,{ownerId:'owner',createdAt:new Date(now-91*86400000).toISOString(),outcome:'unknown',$permissions:[]});
+ let time=now;const remove=f.db.deleteRow;f.db.deleteRow=async input=>{const result=await remove(input);if(input.tableId==='push_deliveries')time+=45000;return result;};
+ const result=await runAccountCleanup({db:f.db,lifecycle,enabled:true,clock:()=>time,deletion:{step(){throw Error('No deletion jobs');}}});assert.equal(result.reminderReceiptsPruned,1);assert.equal(f.table('push_deliveries').size,3);
+});

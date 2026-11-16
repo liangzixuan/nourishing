@@ -1500,6 +1500,60 @@
       "target": "server/domain/biometric-logging.mjs",
       "sourceSha256": "16cc34bb3319428b0cfaa9fd5d016c648c3299f4666dfb0c8e69afd025832a93",
       "outputSha256": "af0f13b4c91936a6f15d9f67c537fbd081b3497bb311d0289d9d6e6270c44934"
+    },
+    {
+      "source": "public/local-coach-intent.js",
+      "target": "server/domain/public/local-coach-intent.js",
+      "sourceSha256": "9e10eb9d18fd8e87bd3922feb72901068321536f16fd6827490e933e63b120fe",
+      "outputSha256": "9e10eb9d18fd8e87bd3922feb72901068321536f16fd6827490e933e63b120fe"
+    },
+    {
+      "source": "public/locales/coach.js",
+      "target": "server/domain/public/locales/coach.js",
+      "sourceSha256": "0842323511d20b8ba84845916dcfcce3273334b5d54d53c7c5fcca185589d3ce",
+      "outputSha256": "15dd3fd09eac23ff33faa39755d380a98a228a76a5af88ea344774c9c2e8e9fc"
+    },
+    {
+      "source": "server/mobile-chart-view.mjs",
+      "target": "server/domain/mobile-chart-view.mjs",
+      "sourceSha256": "de67b0deb43dc6f8d8944a5da2af8cb6b17ff5696d169570d579c95d5beab184",
+      "outputSha256": "1c575edd3d6cf50e0970d620d5e180737a8f4796fb65b537e5370f320b238d20"
+    },
+    {
+      "source": "server/mobile-cycle-overlay.mjs",
+      "target": "server/domain/mobile-cycle-overlay.mjs",
+      "sourceSha256": "cff29ce6d84c1eac2f4955a0a4abea724a20828401c54cd1db06be61c7fcc0c2",
+      "outputSha256": "cff29ce6d84c1eac2f4955a0a4abea724a20828401c54cd1db06be61c7fcc0c2"
+    },
+    {
+      "source": "server/lipid-chart.mjs",
+      "target": "server/domain/lipid-chart.mjs",
+      "sourceSha256": "f41a1bf5d3c411b75f149df0fff1981f943cab922329194ff5080a9b067752d2",
+      "outputSha256": "eae1ad88d359554330e87981166de3aceab3e715f9dc96b634a32a5dfd00e9ef"
+    },
+    {
+      "source": "server/calcium-chart.mjs",
+      "target": "server/domain/calcium-chart.mjs",
+      "sourceSha256": "952ade9cfda3ba1dfb36502719d7a9c6ddbb910677b6cdc9300c86c274407e6e",
+      "outputSha256": "952ade9cfda3ba1dfb36502719d7a9c6ddbb910677b6cdc9300c86c274407e6e"
+    },
+    {
+      "source": "server/nutrient-chart.mjs",
+      "target": "server/domain/nutrient-chart.mjs",
+      "sourceSha256": "0099f6c0428aedd1ff840cdeae7cf112d8fd879eb90b21749b702bf06bc9e018",
+      "outputSha256": "0099f6c0428aedd1ff840cdeae7cf112d8fd879eb90b21749b702bf06bc9e018"
+    },
+    {
+      "source": "server/food-print.mjs",
+      "target": "server/domain/food-print.mjs",
+      "sourceSha256": "38f96a63957616adeff7d0c384a0a1f1bb814c46ce4af609ab53990c0c25e509",
+      "outputSha256": "1d81023741fc8cd38e5c77546543274cb5ba9276c8ddb154866efb03f1e03c2b"
+    },
+    {
+      "source": "server/food-print-contract.mjs",
+      "target": "server/domain/food-print-contract.mjs",
+      "sourceSha256": "e8f94644570179c7b78ba1ded80cc065315856d951f99a2b756d195a9db98abf",
+      "outputSha256": "1b907a4e108e6b2780058d3b8ba51aac788d92a65512c7f43747cc0f0e5f52e1"
     }
   ]
 }

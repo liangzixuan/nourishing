@@ -30,3 +30,10 @@ test('account, restore, completed days and malformed commands reject without mut
  const {state,foodId,snapshot}=fixture(),input=command('entry.add',{foodId,amount:1,date:'2026-11-15',group:'Lunch'},{foodVersion:snapshot().foodVersions[foodId]});for(const patch of [{ownerId:'account-b'},{generation:'old-generation'}])assert.throws(()=>applyOfflineCommand(state,{...input,...patch},identity),{status:409});
  for(const patch of [{operationId:'bad'},{payload:{...input.payload,photo:{}}},{type:'photo.log'},{payload:{...input.payload,amount:NaN}}])assert.throws(()=>parseOfflineCommand({...input,...patch}),{status:400});state.settings.completedDays=['2026-11-15'];const before=structuredClone(state);assert.throws(()=>applyOfflineCommand(state,input,identity));assert.deepEqual(state,before);
 });
+
+
+test('source validation errors retain their actionable HTTP code and do not change state',()=>{
+ const state=initialState(),before=structuredClone(state);
+ assert.throws(()=>applyOfflineCommand(state,{ownerId:'fixture',generation:'current',operationId:'f1f3073b-9800-4dbf-9a52-7f59bac0f750',type:'note.add',payload:{date:'2026-11-15',time:'12:00',group:'Missing group',text:'Fixture'}},{ownerId:'fixture',generation:'current'}),{code:400,status:400,publicMessage:'Choose an existing diary group, or no group.'});
+ assert.deepEqual(state,before);
+});

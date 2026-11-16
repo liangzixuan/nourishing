@@ -16,6 +16,8 @@ import {printReportOptions,previewPrintReport} from './print-report.mjs';
 import {lookupBarcode,searchBranded,previewBarcode,validateBarcodeLookup,validateBrandedSearch} from './barcode.mjs';
 import {takeBrandedBudget} from './provider-budget.mjs';
 import {entryAdjustmentView,previewEntryAdjustment} from './entry-adjustments.mjs';
+import {exportLibraryItem,previewSharedImport,previewFoodPrint} from './library-sharing.mjs';
+import {coachView,coachAnswer} from './coach-view.mjs';
 import {dashboardView} from './dashboard-view.mjs';
 import {libraryToolsView} from './library-tools.mjs';
 import {createBackupStore} from './backup-store.mjs';
@@ -36,7 +38,8 @@ import {previewDiaryItem,captureCatalogFood} from './domain/workspace.mjs';
 import {validateAction,validateLibraryPreview,previewLibrary,readActionFoods,captureActionFoods} from './workspace-commands.mjs';
 import {libraryView,libraryItem} from './library-view.mjs';
 import {targetView,reportView} from './nutrition-views.mjs';
-import {chartView,csvReport} from './chart-view.mjs';
+import {csvReport} from './chart-view.mjs';
+import {chartSurfaceView} from './dashboard-pinned-charts.mjs';
 import {repeatView} from './repeat-view.mjs';
 import {recordOptions,recordView,exerciseSearch,exerciseEstimateView} from './record-views.mjs';
 import {targetPolicyView} from './target-policy-view.mjs';
@@ -104,6 +107,11 @@ export function createAppwriteService(config, key, userAgent='') {
     async brandedSearch(secret,input){const {owner}=await data(secret);validateBrandedSearch(input);await takeBrandedBudget(new TablesDB(elevated()),{database:config.database,owner,operation:'search'});return searchBranded(input);},
     async barcodePreview(secret,input){const {owner}=await data(secret);return readView(secret,state=>previewBarcode(state,input,{owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET}));},
     async barcodeSave(secret,input){const {owner,repository}=await data(secret);if(input?.type!=='barcode.log')throw Object.assign(Error('Choose a barcode action.'),{code:400});return createWorkspaceStore(new TablesDB(elevated()),owner).command(input,catalogReader(repository),{owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET});},
+    async libraryShare(secret,input){return readView(secret,state=>exportLibraryItem(state,input));},
+    async librarySharePreview(secret,input){return readView(secret,state=>previewSharedImport(state,input));},
+    async libraryFoodPrint(secret,input){const {owner}=await data(secret);return readView(secret,state=>({...previewFoodPrint(state,input),accountId:owner}));},
+    async coachPreferences(secret){return readView(secret,coachView);},
+    async coachAnswer(secret,input){return readView(secret,state=>coachAnswer(state,input));},
     async dashboard(secret,date){const {owner}=await data(secret),context=await calendarContext(secret,owner);return readView(secret,state=>dashboardView(state,{date},context));},
     async offlineSnapshot(secret){const {owner}=await data(secret),store=createWorkspaceStore(new TablesDB(elevated()),owner);await store.create();return store.offlineSnapshot();},
     async offlineCommand(secret,input){const {owner}=await data(secret),calendar=await calendarContext(secret,owner);return createWorkspaceStore(new TablesDB(elevated()),owner).offlineCommand(input,calendar);},
@@ -177,7 +185,7 @@ export function createAppwriteService(config, key, userAgent='') {
     async recordItem(secret,input){return readView(secret,state=>recordView(state,input));},
     async exercises(secret,input){await data(secret);return exerciseSearch(input);},
     async exerciseEstimate(secret,input){return readView(secret,state=>exerciseEstimateView(state,input));},
-    async charts(secret,range){return readView(secret,state=>chartView(state,range));},
+    async charts(secret,input){const {owner}=await data(secret),context=await calendarContext(secret,owner);return readView(secret,state=>chartSurfaceView(state,input,context));},
     async exportReport(secret,input){return readView(secret,state=>csvReport(state,input));},
     async targets(secret,date){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();return targetView(await repository.readState(),date);},
     async nutritionReport(secret,options){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();const account=await new Account(session(secret)).get(),profile=await ensureProfile(secret,account);return reportView(await repository.readState(),options,{timeZone:profile.timeZone});},

@@ -1,9 +1,11 @@
+import {pruneExpiredReminderReceipts} from './expired-reminder-receipts.mjs';
+import {createAccountLifecycle} from './account-lifecycle.mjs';
 import {Query} from 'node-appwrite';
 import {pruneExpiredBackupReviews} from './expired-backup-reviews.mjs';
 const eligible=(row,now)=>['prepared','complete'].includes(row.state)&&Number.isFinite(Date.parse(row.expiresAt))&&Date.parse(row.expiresAt)<=now&&(row.state!=='complete'||row.ownerId==='');
 /** Private worker only. Pending deletion jobs and unresolved operations never expire here. */
-export async function runAccountCleanup({db,deletion,database='nourishing',enabled=false,jobId,clock=()=>Date.now(),maxJobs=5,maxStepsPerJob=4,maxPrune=25,budgetMs=45000}={}){
- const result={enabled:enabled===true,examined:0,steps:0,deleted:0,needsAttention:0,failed:0,pruned:0,reviewsPruned:0,reviewsSkipped:0};if(enabled!==true)return result;
+export async function runAccountCleanup({db,deletion,lifecycle,database='nourishing',enabled=false,jobId,clock=()=>Date.now(),maxJobs=5,maxStepsPerJob=4,maxPrune=25,budgetMs=45000}={}){
+ const result={enabled:enabled===true,examined:0,steps:0,deleted:0,needsAttention:0,failed:0,pruned:0,reviewsPruned:0,reviewsSkipped:0,reminderReceiptsPruned:0,reminderOwnersSkipped:0};if(enabled!==true)return result;
  if(!db||typeof deletion?.step!=='function'||typeof clock!=='function'||![maxJobs,maxStepsPerJob,maxPrune].every(value=>Number.isInteger(value)&&value>0&&value<=25)||!Number.isFinite(budgetMs)||budgetMs<=0||budgetMs>45000)throw Error('Invalid account cleanup limits.');
  if(jobId!==undefined&&(typeof jobId!=='string'||!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(jobId)))throw Error('Invalid cleanup job.');
  const started=Number(clock());if(!Number.isFinite(started))throw Error('Cleanup clock is unavailable.');const timeLeft=()=>Number(clock())-started<budgetMs,args=id=>({databaseId:database,tableId:'account_deletions',rowId:id});
@@ -36,6 +38,10 @@ export async function runAccountCleanup({db,deletion,database='nourishing',enabl
  }
  if(timeLeft()){
   try{const reviews=await pruneExpiredBackupReviews({db,database,now:started,limit:maxPrune,timeLeft});result.reviewsPruned=reviews.pruned;result.reviewsSkipped=reviews.skipped;result.failed+=reviews.failed;}
+  catch{result.failed++;}
+ }
+ if(timeLeft()){
+  try{const receipts=await pruneExpiredReminderReceipts({db,lifecycle:lifecycle??createAccountLifecycle({db,database,now:clock}),database,now:started,limit:maxPrune,timeLeft});result.reminderReceiptsPruned=receipts.pruned;result.reminderOwnersSkipped=receipts.skipped;result.failed+=receipts.failed;}
   catch{result.failed++;}
  }
  return result;

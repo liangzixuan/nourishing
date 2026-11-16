@@ -48,7 +48,7 @@ function offlineState(state){
  copy.entries=state.entries.map(row=>canonicalFoodQuantityEntry({...pick(row,['id','date','time','group','name','kind','foodId','recipeId','mealId','amount','quantity','unit','portionId','portionLabel','grams','nutrients','carbohydrateBasis','source','duration','caloriesBurned','exerciseCalories','calories']),...recipeEntryFields(row),...(row.mealItems!==undefined?{mealItems:parseCompositeSources(row.mealItems)}:{})}));
  copy.notes=state.notes.map(row=>pick(row,['id','date','time','group','text']));
  copy.biometrics=state.biometrics.map(row=>pick(row,['id','date','time','group','type','unit','value','source','copiedFrom']));
- copy.settings=pick(state.settings,['groups','customBiometrics','theme','energyUnit','targets','macroSchedule','diaryGroups','diarySort','diaryGroupOrder','diaryDisplay','diaryTable','carbohydratePolicy','energyPolicy','macroPolicy','macroPlan','bodyComposition','nutrientReferences','nutrientUpperLimits','nutrientDisplay','nutrientBalances','scoreSelection','showScores','completedDays']);
+ copy.settings=pick(state.settings,['groups','customBiometrics','appLanguage','fontScale','matchDeviceFontSize','showEnergy','showMacros','nutrientTargetModes','theme','energyUnit','targets','macroSchedule','diaryGroups','diarySort','diaryGroupOrder','diaryDisplay','diaryTable','carbohydratePolicy','energyPolicy','macroPolicy','macroPlan','bodyComposition','nutrientReferences','nutrientUpperLimits','nutrientDisplay','nutrientBalances','scoreSelection','showScores','completedDays']);
  return copy;
 }
 export function offlineSnapshot(state,{ownerId,generation,now=new Date()}){
@@ -58,6 +58,7 @@ export function offlineSnapshot(state,{ownerId,generation,now=new Date()}){
 const recordReview=(state,collection,id)=>{const {revision,editable,reason}=readDiaryRecordCorrection(state,{collection,id});return {revision,editable,reason};};
 /** The cloud store owns account authentication, receipt replay and atomic persistence. */
 export function applyOfflineCommand(state,raw,identity){
+ try{
  const command=parseOfflineCommand(raw);assertOfflineIdentity(command,identity);const candidate=structuredClone(state),collection=collections[command.type],foodEditing=['entry.quantity','entry.details'].includes(command.type),recordEditing=command.type.endsWith('.correct'),editing=foodEditing||recordEditing;
  if(!editing&&candidate[collection].some(row=>row.id===command.operationId))fail('This operation already exists without a matching receipt.',409);
  if(command.type==='entry.add'){const food=candidate.foods.find(row=>row.id===command.payload.foodId);if(!food||digest(offlineFoodVersionFacts(food))!==command.foodVersion)fail('This saved food changed. Review the pending entry.',409);}
@@ -69,4 +70,5 @@ export function applyOfflineCommand(state,raw,identity){
   result={operationId:command.operationId,record:{collection,value:structuredClone(value)},replayed:false,...(foodEditing?{quantityReview:{revision:readDiaryQuantity(candidate,{date:value.date,id:value.id}).revision}}:{}),...(command.type==='exercise.correct'||command.type==='exercise.add'?{exerciseReview:recordReview(candidate,'entries',value.id)}:{}),...(['notes','biometrics'].includes(collection)?{[collection==='notes'?'noteReview':'biometricReview']:recordReview(candidate,collection,value.id)}:{})};
  }
  Object.assign(state,candidate);return result;
+ }catch(error){if([400,404,409,507].includes(error.status))fail(error.message,error.status);throw error;}
 }

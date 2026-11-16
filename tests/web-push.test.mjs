@@ -10,9 +10,11 @@ const vapid=pair(),subscription=(id='device')=>({endpoint:'https://fcm.googleapi
 function fixture({send=async()=>({statusCode:201})}={}){
  const tables=new Map(),transactions=new Map();let clock=Date.parse('2026-11-15T14:00:00Z'),lost=false,failReceipt=false;
  const table=name=>{if(!tables.has(name))tables.set(name,new Map());return tables.get(name);};
- function apply(operation,input){const rows=table(input.tableId),old=rows.get(input.rowId);if(operation==='create'&&old)throw {code:409};if(operation==='update'&&!old)throw {code:404};rows.set(input.rowId,{...old,...structuredClone(input.data),$id:input.rowId,...(input.permissions?{$permissions:input.permissions}:{})});}
+ function apply(operation,input){const rows=table(input.tableId),old=rows.get(input.rowId);if(operation==='delete'){rows.delete(input.rowId);return;}if(operation==='create'&&old)throw {code:409};if(operation==='update'&&!old)throw {code:404};rows.set(input.rowId,{...old,...structuredClone(input.data),$id:input.rowId,...(input.permissions?{$permissions:input.permissions}:{})});}
  const db={
   async getRow({tableId,rowId}){const value=table(tableId).get(rowId);if(!value)throw {code:404};return structuredClone(value);},
+  async listRows({tableId,queries=[]}){let rows=[...table(tableId).values()],offset=0,limit=100;const parsed=queries.map(q=>JSON.parse(q));for(const q of parsed){if(q.method==='equal')rows=rows.filter(row=>q.values.includes(row[q.attribute]));if(q.method==='lessThan')rows=rows.filter(row=>row[q.attribute]<q.values[0]);if(q.method==='offset')offset=q.values[0];if(q.method==='limit')limit=q.values[0];}for(const q of parsed.filter(q=>['orderAsc','orderDesc'].includes(q.method)).reverse())rows.sort((a,b)=>String(a[q.attribute]).localeCompare(String(b[q.attribute]))*(q.method==='orderDesc'?-1:1));return {rows:structuredClone(rows.slice(offset,offset+limit))};},
+  async deleteRow(input){if(input.transactionId)transactions.get(input.transactionId).push(['delete',input]);else apply('delete',input);},
   async createTransaction(){const $id=randomUUID();transactions.set($id,[]);return {$id};},
   async createRow(input){if(input.transactionId)transactions.get(input.transactionId).push(['create',input]);else apply('create',input);},
   async updateRow(input){if(input.tableId==='push_deliveries'&&failReceipt){failReceipt=false;throw Error('Lost receipt update');}if(input.transactionId)transactions.get(input.transactionId).push(['update',input]);else apply('update',input);},

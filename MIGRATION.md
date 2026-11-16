@@ -8,17 +8,17 @@ The earlier Nourishing project was reviewed for account lifecycle, secure sessio
 
 Before production cutover:
 
-- Restore text/voice logging and account-scoped offline queued edits. Barcode scanning and packaged-food search are available in the cloud preview; hosted verification is recorded below.
-- Verify the deployed CSV import, nutrition-label entry and favorites. Diary selection, copy/paste, group ordering, reusable-meal creation and note photos are now implemented; deployment checks are recorded below.
-- Restore food/recipe printouts and report-only chart editing. Captured nutrition reports, PDF/print preview and nutrient-contributor details are now implemented; deployment checks are recorded below.
-- Port Coach, glucose/cycle cards, pinned charts, streak image sharing, library sharing and remaining diary tools. Dashboard news/settings, nutrition, energy/weight, streaks, sleep and fasting are implemented. Existing imported records and metadata remain preserved.
-- Activate and verify scheduled fasting in Appwrite. Repeat items retain the source app’s reviewed, manual logging flow. The fasting worker stays disabled until its integrated deployment checks pass.
-- Complete PWA installation, offline edits and Web Push reminders. Remove Health Connect entry points and native-only controls. APK, Wear and native health integrations are outside the new delivery scope.
+- Publish and verify the next release: Coach, glucose/cycle cards, source chart settings and Dashboard pins, library JSON sharing, food printing and expanded offline controls. These pass local browser/API tests; hosted verification is pending. The source has no separate recipe-print feature.
+- Complete the remaining source UI: detailed CGM controls, streak image sharing, glucose source/timeline and cycle import controls, plus offline selection and score/completeness/balance panels. See the feature provenance documents for exact gaps.
+- Scheduled fasting and browser reminders are deployed as private Functions with hourly repair. Disposable delayed-execution checks passed. Bootstrap the real owner's fasting dispatch and verify installed-device notification delivery. Repeat items retain the source app's reviewed, manual logging flow.
+- Deploy notification receipt retention after adding the required private index. The CLI cannot delegate index-write access; a scoped operator key is requested. Existing source limits are 90 days and 20,000 receipts per account.
+- Complete installed-PWA checks. The hosted preview already passed CSV/label/favorites, offline restart/queued writes, account isolation, install assets and cache checks. Health Connect entry points and native widget links are removed; APK, Wear and native health integrations are outside the new delivery scope.
 - Account deletion now removes owned rows and media across generations, including orphan media, through a durable private job. Previous versions retain the source app’s indefinite retention policy; only temporary backup reviews expire. Snapshot deletion removes its reference; private recovery retention remains in effect.
 - Independent T7 backups are installed and verified: daily at 09:00 Central and after Windows sign-in, with 14 daily copies. The PC, signed-in Windows account and approved T7 must be available. A real archive and isolated restore have passed.
-- Reconcile PC changes since the baseline and repeat record, photo, and nutrient comparisons.
+- Repeat final reconciliation immediately before cutover. The November 15 comparison passed: PC data matches the approved baseline, all three photo files match, and nutrition totals match for all three recorded dates. Cloud-only differences are the previously migrated health-import metadata.
 - Complete the emailed password-recovery check.
 - Verify the installed PWA with the PC server stopped.
+- Switch nourishing.app and application callback origins after the remaining checks pass.
 
 The preview uses a separate domain. Personal data was imported only into the confirmed owner's account and verified against the source. All 34,885 catalog rows retain normalized foods, original source JSON, and dataset provenance. No production domain switch or Android address change has been performed. No billing settings were changed.
 

@@ -43,6 +43,10 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       if(req.method==='GET'&&path==='/api/reminders'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid notification request.');return json(200,await api.reminders(secret));}
       const pushRequest=req.method==='POST'&&['/api/reminders/subscribe','/api/reminders/unsubscribe','/api/reminders/test','/api/reminders/schedule','/api/reminders/schedule/delete','/api/reminders/settings'].includes(path);
       if(pushRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid notification request.');}
+      const sharingRequest=req.method==='POST'&&['/api/library/share/preview','/api/library/share/import','/api/library/food-print'].includes(path);
+      if(sharingRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid library request.');}
+      const coachRequest=req.method==='POST'&&path==='/api/coach/answer';
+      if(coachRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid Coach request.');}
       const textRequest=req.method==='POST'&&path==='/api/text-log/parse';
       if(textRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid text log request.');}
       const csvRequest=req.method==='POST'&&['/api/imports/csv/preview','/api/imports/csv/import'].includes(path);
@@ -63,7 +67,12 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       if(printRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid report query.');}
       const diaryToolsRequest=req.method==='POST'&&['/api/diary/tools/review','/api/diary/tools/save'].includes(path),nutrientRequest=req.method==='POST'&&['/api/nutrient-detail','/api/nutrition-report/nutrient'].includes(path);
       if(diaryToolsRequest||nutrientRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid diary query.');}
-      const body=req.method==='GET'?null:await readBody(req,offlineRequest?601_000:textRequest?60_100:csvRequest?CSV_BODY_BYTES:barcodeRequest?BARCODE_BODY_BYTES:(libraryCommand||ingredientRequest||printRequest||diaryToolsRequest||path==='/api/nutrient-detail')?4*1024*1024:backupRequest?(path==='/api/backup/inspect'?20_000_000:path.endsWith('/media')?5*1024*1024:16384):photoRequest?((path.endsWith('/analyze')||path.endsWith('/prepare'))?12:5)*1024*1024:recipeRequest&&path!=='/api/recipe-import'?16*1024*1024:16384);
+      const body=req.method==='GET'?null:await readBody(req,sharingRequest?20_000_000:offlineRequest?601_000:textRequest?60_100:csvRequest?CSV_BODY_BYTES:barcodeRequest?BARCODE_BODY_BYTES:(libraryCommand||ingredientRequest||printRequest||diaryToolsRequest||path==='/api/nutrient-detail')?4*1024*1024:backupRequest?(path==='/api/backup/inspect'?20_000_000:path.endsWith('/media')?5*1024*1024:16384):photoRequest?((path.endsWith('/analyze')||path.endsWith('/prepare'))?12:5)*1024*1024:recipeRequest&&path!=='/api/recipe-import'?16*1024*1024:16384);
+      if(sharingRequest){
+        if(path.endsWith('/preview'))return json(200,await api.librarySharePreview(secret,body));
+        if(path.endsWith('/food-print')){fields(body,['id','includeNotes']);return json(200,await api.libraryFoodPrint(secret,body));}
+        if(body?.type!=='share.import')fail(400,'Choose a shared library item.');return json(200,await api.workspaceCommand(secret,body));
+      }
       if(offlineRequest)return json(200,await api.offlineCommand(secret,body));
       if(textRequest)return json(200,await api.parseTextLog(secret,body));
       if(pushRequest)return json(200,await api[{'/api/reminders/subscribe':'subscribePush','/api/reminders/unsubscribe':'unsubscribePush','/api/reminders/test':'testPush','/api/reminders/schedule':'saveReminder','/api/reminders/schedule/delete':'deleteReminder','/api/reminders/settings':'reminderSettings'}[path]](secret,body));
@@ -113,9 +122,11 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       if(req.method==='POST'&&path==='/api/reports/export'){if(!secret)fail(401,'Please sign in.');return json(200,await api.exportReport(secret,body));}
       if(req.method==='GET'&&path==='/api/charts'){
         if(!secret)fail(401,'Please sign in.');
-        if([...url.searchParams.keys()].some(k=>!['from','to'].includes(k)||url.searchParams.getAll(k).length!==1)||!url.searchParams.has('from')||!url.searchParams.has('to'))fail(400,'Choose chart dates.');
+        if([...url.searchParams.keys()].some(k=>!['to','card'].includes(k)||url.searchParams.getAll(k).length!==1)||!url.searchParams.has('to'))fail(400,'Choose chart dates.');
         return json(200,await api.charts(secret,Object.fromEntries(url.searchParams)));
       }
+      if(req.method==='GET'&&path==='/api/coach/preferences'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');return json(200,await api.coachPreferences(secret));}
+      if(req.method==='POST'&&path==='/api/coach/answer'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');fields(body,['date','question','preferencesRevision']);return json(200,await api.coachAnswer(secret,body));}
       if(req.method==='GET'&&['/api/dashboard','/api/targets','/api/target-policies','/api/profile-settings','/api/nutrition-report'].includes(path)){
         if(!secret)fail(401,'Please sign in.');
         const allowed=path!=='/api/nutrition-report'?['date']:['from','to','dayFilter','includeToday','includeSupplements'];
@@ -131,6 +142,11 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       if(req.method==='POST'&&path==='/api/workspace/command'){if(!secret)fail(401,'Please sign in.');return json(200,await api.workspaceCommand(secret,body));}
       if(req.method==='POST'&&path==='/api/library/preview'){if(!secret)fail(401,'Please sign in.');return json(200,await api.previewLibrary(secret,body));}
       if(req.method==='GET'&&path==='/api/library'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');return json(200,await api.library(secret));}
+      if(req.method==='GET'&&path==='/api/library/share'){
+        if(!secret)fail(401,'Please sign in.');
+        if([...url.searchParams.keys()].some(k=>!['kind','id'].includes(k)||url.searchParams.getAll(k).length!==1)||!url.searchParams.has('kind')||!url.searchParams.has('id'))fail(400,'Choose a library item.');
+        return json(200,await api.libraryShare(secret,Object.fromEntries(url.searchParams)));
+      }
       if(req.method==='GET'&&path==='/api/library/tools'){
         if(!secret)fail(401,'Please sign in.');
         if([...url.searchParams.keys()].some(k=>!['kind','id'].includes(k)||url.searchParams.getAll(k).length!==1)||!url.searchParams.has('kind')||!url.searchParams.has('id'))fail(400,'Choose a library item.');
@@ -173,7 +189,7 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       if(path==='/api/auth/verify') {fields(body,['userId','secret']);await api.verifyEmail({userId:string(body.userId,1,36),secret:string(body.secret,1,4096)});return json(200,{ok:true});}
       fail(404,'Not found.');
     }catch(error){
-      const status=[400,401,403,404,405,409,413,415,429,499,502,503,504].includes(error.code)?error.code:503;
+      const status=[400,401,403,404,405,409,413,415,429,499,502,503,504,507].includes(error.code)?error.code:503;
       const messages={400:'Check your details or request a new link.',401:'Please sign in. Check your email and password.',403:'This action is not available.',404:'Not found.',409:'An account with these details already exists. Try signing in.',429:'Too many attempts. Try again later.',503:'Unable to connect. Please try again.'};
       return json(status,{error:error.publicMessage??messages[status]??'Request failed.'});
     }

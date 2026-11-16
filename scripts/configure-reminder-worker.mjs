@@ -16,7 +16,7 @@ try{
  if(existing){writeFileSync('.local/reminders-function-before.json',JSON.stringify({functionId,deploymentId:existing.deploymentId,enabled:existing.enabled,interval:existing.interval,execute:existing.execute,events:existing.events},null,2));await functions.update(metadata);}else await functions.create(metadata);
  const variables=(await functions.listVariables({functionId})).variables;
  for(const [key,value,secret] of [['PUBLIC_ORIGIN',origin,false],['WEB_PUSH_PUBLIC_KEY',pair.publicKey,false],['WEB_PUSH_PRIVATE_KEY',pair.privateKey,true],['REMINDERS_ENABLED','true',false]]){
-  const previous=variables.find(row=>row.key===key),input={functionId,variableId:previous?.$id??ID.unique(),key,value,secret};await functions[previous?'updateVariable':'createVariable'](input);
+  const previous=variables.find(row=>row.key===key),input={functionId,variableId:previous?.$id??ID.unique(),key,value,secret:secret||previous?.secret||false};await functions[previous?'updateVariable':'createVariable'](input);
  }
  const archive=resolve('.local/reminders-worker.tar.gz');execFileSync('tar',['-czf',archive,'-C',stage.destination,'.'],{stdio:'pipe'});
  const deployment=await functions.createDeployment({functionId,code:InputFile.fromPath(archive),activate:true,entrypoint:stage.entrypoint,commands:stage.commands});

@@ -1,3 +1,4 @@
+import {pruneReminderReceipts,stageReminderReceiptCapacity} from './reminder-receipt-retention.mjs';
 import {rowId,digest} from './data-codec.mjs';
 import {parsePushSubscription,parseVapid,createWebPushTransport,pushFields,pushFail,PUSH_DEVICE_LIMIT} from './web-push.mjs';
 import {readReminderWorkspace} from './reminder-schedules-workspace.mjs';
@@ -71,10 +72,12 @@ export function createWebPushStore({db,ownerId:owner,origin,vapid,now=()=>Date.n
   const config=parseVapid(vapid,origin),account=await load(),device=account?.state.devices.find(device=>device.id===input.deviceId&&device.origin===origin);
   if(!device)pushFail('Connect this browser first.',404);const at=stamp();
   if(device.lastTestAt&&Date.parse(at)-Date.parse(device.lastTestAt)<60000)pushFail('Wait one minute before another test.',429);
+  await pruneReminderReceipts({db,owner,now:new Date(at)});
   const claim={ownerId:owner,fingerprint,outcome:'sending',statusCode:0,createdAt:at,completedAt:''};
   try{
    await update(account,async(state,transactionId)=>{
     state.devices.find(row=>row.id===device.id).lastTestAt=at;
+    await stageReminderReceiptCapacity({db,owner,transactionId});
     await db.createRow({...receiptArgs,data:claim,permissions:[],transactionId});
    });
   }catch(error){const saved=await readReceipt();if(saved)return publicReceipt(saved);throw error;}

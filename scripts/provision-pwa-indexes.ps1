@@ -9,7 +9,8 @@ function Invoke-Schema($arguments) {
 }
 $changes=@(
  @{table='backup_reviews';key='expiry';columns=@('expiresAt')},
- @{table='push_deliveries';key='owner_created';columns=@('ownerId','createdAt')}
+ @{table='push_deliveries';key='owner_created';columns=@('ownerId','createdAt')},
+ @{table='push_deliveries';key='created';columns=@('createdAt')}
 )
 foreach($change in $changes){
  $table=Invoke-Schema @('tablesdb','get-table','--database-id','nourishing','--table-id',$change.table)

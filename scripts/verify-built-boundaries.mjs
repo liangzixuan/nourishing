@@ -84,6 +84,12 @@ try {
   await post('/api/offline/commands',601_000,413,{message:'Request too large.'});
   await post('/api/offline/commands',601_000,401,{signed:false});
   await post('/api/offline/commands',601_000,403,{requestOrigin:'https://other.fixture.invalid'});
+  for(const path of ['/api/coach/answer','/api/library/share/preview','/api/library/share/import','/api/library/food-print']){
+    await post(path,20_000,401,{signed:false});
+    await post(path,20_000,403,{requestOrigin:'https://other.fixture.invalid'});
+  }
+  await post('/api/coach/answer',20_000,413,{message:'Request too large.'});
+  await post('/api/library/share/import',20_000_000,413,{message:'Request too large.'});
   const deletionReceipt='__Host-nourishing_deletion=11111111-1111-4111-8111-111111111111.'+'a'.repeat(64);
   for(const operation of ['prepare','confirm','status']){
     const path='/api/account/deletion/'+operation;

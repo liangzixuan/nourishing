@@ -1,3 +1,4 @@
+import {pruneReminderReceipts,stageReminderReceiptCapacity} from './reminder-receipt-retention.mjs';
 import {digest,rowId} from './data-codec.mjs';
 import {readReminderWorkspace} from './reminder-schedules-workspace.mjs';
 import {parsePushSubscription,parseVapid,createWebPushTransport,pushFields,pushFail} from './web-push.mjs';
@@ -61,8 +62,9 @@ export function createReminderScheduleStore({db,ownerId:owner,origin,vapid,now=(
   if(saved.preferences.paused&&!input.paused)saved.preferences.resumedAt=clock().toISOString();saved.preferences.paused=input.paused;
   await persist(saved,await readReminderWorkspace(db,owner));return status();
  }
- async function reconcile({after=false}={}){const saved=await account();if(!saved.row)return;await persist(saved,await readReminderWorkspace(db,owner),{after});}
+ async function reconcile({after=false}={}){await pruneReminderReceipts({db,owner,now:clock()});const saved=await account();if(!saved.row)return;await persist(saved,await readReminderWorkspace(db,owner),{after});}
  async function tick(){
+  await pruneReminderReceipts({db,owner,now:clock()});
   const initial=await account();if(!initial.row||initial.preferences.paused)return {attempted:0};
   const workspace=await readReminderWorkspace(db,owner),jobs=[];
   for(const schedule of initial.preferences.schedules){const event=eligibleReminderEvent(schedule,workspace.state,initial.preferences,clock());if(event)for(const device of initial.preferences.devices)if(device.origin===origin&&event.due>=Date.parse(device.createdAt))jobs.push({scheduleId:schedule.id,deviceId:device.id,event});}
@@ -78,7 +80,7 @@ export function createReminderScheduleStore({db,ownerId:owner,origin,vapid,now=(
    if(!schedule||!device)continue;
    const event=eligibleReminderEvent(schedule,current.state,saved.preferences,clock());if(!event||event.key!==job.event.key||event.due!==job.event.due||event.due<Date.parse(device.createdAt))continue;
    const subscription=parsePushSubscription(device.subscription),config=parseVapid(vapid,origin),stamp=clock().toISOString(),claim={ownerId:owner,fingerprint:digest({kind:'scheduled',scheduleId:job.scheduleId,deviceId:job.deviceId,event:job.event.key}),outcome:'sending',statusCode:0,createdAt:stamp,completedAt:''};
-   try{await persist(saved,current,{extra:transactionId=>db.createRow({...receiptArgs,data:claim,permissions:[],transactionId})});}
+   try{await persist(saved,current,{extra:async transactionId=>{await stageReminderReceiptCapacity({db,owner,transactionId});await db.createRow({...receiptArgs,data:claim,permissions:[],transactionId});}});}
    catch(error){if(await optional(()=>db.getRow(receiptArgs)))continue;throw error;}
    attempted++;let outcome='unknown',statusCode=0;
    if(subscription.expirationTime!==null&&subscription.expirationTime<=+clock())outcome='expired';

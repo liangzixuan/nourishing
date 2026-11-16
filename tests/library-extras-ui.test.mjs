@@ -36,7 +36,7 @@ test('mobile label entry and favorites use concise source-derived forms, preserv
    }
    throw {status:404,message:'Missing route.'};
   }
-  const file=resolve(publicRoot,'.'+path);if(!file.startsWith(publicRoot+'\\')&&!file.startsWith(publicRoot+'/'))throw {status:404};if(!existsSync(file))throw {status:404};res.setHeader('Content-Type',extname(file)==='.js'?'text/javascript':'text/css');res.end(readFileSync(file));
+  const file=resolve(publicRoot,'.'+path);if(!file.startsWith(publicRoot+'\\')&&!file.startsWith(publicRoot+'/'))throw {status:404};const mime={'.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.woff2':'font/woff2'}[extname(file)];if(!mime||!existsSync(file))throw {status:404};res.setHeader('Content-Type',mime);res.end(readFileSync(file));
  }catch(error){res.statusCode=error.code??error.status??500;res.setHeader('Content-Type','application/json');res.end(JSON.stringify({error:error.message??'Request failed.'}));}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const origin='http://127.0.0.1:'+server.address().port;
  try{

@@ -12,8 +12,8 @@ const owner=JSON.parse(readFileSync('.local/migration-destination.json','utf8').
 const before=await db.getRow(args('workspace_heads',owner));let browser,primaryError;
 const remember=()=>writeFileSync('.local/pwa-cloud-fixtures.json',JSON.stringify({created,failures}));
 async function clean(id){
- for(const tableId of ['workspace_records','workspace_media','workspace_recoveries','command_receipts','backup_reviews'])for(const row of await allRows(db,tableId,[Query.equal('ownerId',id)]))await db.deleteRow(args(tableId,row.$id));
- for(const tableId of ['fasting_dispatch','workspace_heads','profiles'])try{await db.deleteRow(args(tableId,id));}catch(error){if(error.code!==404)throw error;}
+ for(const tableId of ['workspace_records','workspace_media','workspace_recoveries','command_receipts','backup_reviews','push_deliveries','account_operations'])for(const row of await allRows(db,tableId,[Query.equal('ownerId',id)]))await db.deleteRow(args(tableId,row.$id));
+ for(const tableId of ['reminder_dispatch','push_accounts','fasting_dispatch','workspace_heads','profiles','account_lifecycle'])try{await db.deleteRow(args(tableId,id));}catch(error){if(error.code!==404)throw error;}
  await users.delete({userId:id});
 }
 try{
@@ -44,6 +44,14 @@ try{
  const foreign=await other.request.post(origin+'/api/imports/csv/import',{headers:{Origin:origin},data:request});assert.ok([400,409].includes(foreign.status()));
  assert.equal((await get('/api/library/favorites')).items.length,1);
  report.checks.push('CSV preview and atomic import','exact retry','foreign review rejected','favorites preserved across generation swap');
+ const snapshot=await get('/api/offline'),offlineCommand={...snapshot.identity,operationId:randomUUID(),type:'note.add',payload:{date:'2026-11-15',time:'12:00',group:snapshot.state.settings.groups[0],text:'Offline cloud fixture'}};
+ const offlineSaved=await post('/api/offline/commands',offlineCommand),offlineReplay=await post('/api/offline/commands',offlineCommand);assert.equal(offlineReplay.replayed,true);assert.equal(offlineReplay.operationId,offlineSaved.operationId);
+ assert.equal((await get('/api/diary?date=2026-11-15')).notes.filter(row=>row.id===offlineCommand.operationId).length,1);
+ for(const [session,input]of [[other,offlineCommand],[context,{...offlineCommand,generation:'previous-generation'}]]){const response=await session.request.post(origin+'/api/offline/commands',{headers:{Origin:origin},data:input});assert.equal(response.status(),409);}
+ const reminder=await get('/api/reminders');assert.equal(reminder.paused,true);assert.equal(reminder.schedules.length,0);
+ await post('/api/reminders/schedule',{revision:reminder.revision,schedule:{creationId:randomUUID(),kind:'daily',label:'Fixture reminder',time:'12:00',days:[0,1,2,3,4,5,6],timeZone:'UTC',enabled:true}});
+ assert.equal((await get('/api/reminders')).schedules.length,1);assert.equal((await get('/api/reminders',other)).schedules.length,0);
+ report.checks.push('offline immutable replay','offline account and generation isolation','paused reminder settings and isolation');
  const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
  await page.goto(origin+'/diary');await page.locator('.calorie-summary').waitFor();await page.evaluate(()=>navigator.serviceWorker.ready);await page.waitForFunction(()=>navigator.serviceWorker.controller);
  assert.equal(await page.locator('link[rel=manifest]').getAttribute('href'),'/manifest.webmanifest');
@@ -52,8 +60,13 @@ try{
  const cached=await page.evaluate(async()=>{const result=[];for(const name of await caches.keys())for(const request of await(await caches.open(name)).keys())result.push(new URL(request.url).pathname);return result.sort();});
  const assetManifest=await page.evaluate(()=>fetch('/offline-assets.js').then(r=>r.text()).then(text=>JSON.parse(text.slice(text.indexOf('=')+1).replace(/;\s*$/,''))));
  assert.deepEqual(cached,assetManifest.files.slice().sort());assert.ok(cached.every(path=>!path.startsWith('/api/')&&!['/diary','/account','/login'].includes(path)));
+ await page.goto(origin+'/offline.html');await page.getByRole('button',{name:'Keep diary on this device'}).click();await page.getByRole('button',{name:'Refresh copy'}).waitFor();
+ const biometricsBefore=(await get('/api/offline')).state.biometrics.length;
  await context.setOffline(true);await page.goto(origin+'/diary');await page.getByRole('heading',{name:'Offline diary'}).waitFor();
- await context.setOffline(false);await page.getByRole('link',{name:'Open online diary'}).click();await page.locator('.calorie-summary').waitFor();
+ await page.getByRole('button',{name:'Water',exact:true}).click();await page.getByLabel('Water (mL)').fill('250');await page.getByRole('button',{name:'Save pending'}).click();await page.getByRole('button',{name:'Sync 1 pending'}).waitFor();await page.reload();await page.getByRole('button',{name:'Sync 1 pending'}).waitFor();
+ await context.setOffline(false);await page.getByRole('button',{name:'Refresh copy'}).waitFor({timeout:90000});assert.equal((await get('/api/offline')).state.biometrics.length,biometricsBefore+1);
+ await page.getByRole('link',{name:'Open online diary'}).click();await page.locator('.calorie-summary').waitFor();
+ report.checks.push('hosted offline restart, queued water entry, and automatic sync');
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(errors,[]);
  report.checks.push('hosted service worker','install manifest and icons','public-only offline cache','offline/online recovery','mobile layout');
  for(const path of ['/api/home-widgets','/api/health-connect/export/intake/options'])assert.equal((await context.request.get(origin+path)).status(),404);

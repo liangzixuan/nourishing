@@ -201,3 +201,15 @@ Remaining work follows MIGRATION.md: scheduled browser reminders, account-scoped
 - Private schema additions are available: reminder dispatch, recent push history index and expired restore-review index. Cleanup deployment `6afa3d61f15fb8dccf67` passed disposable account deletion and expired-review live checks. Real owner records stayed unchanged; fixtures were removed.
 - Approved-baseline, current-PC and cloud reminder comparisons each found zero schedules. No schedule migration was needed, and no PC notification keys or subscriptions were copied.
 - Private reminder deployment `6afa3e3dddf46933b225` is ready with interval zero. Live delayed-execution verification is still in progress; visible device delivery is unverified. Production domain cutover remains pending.
+
+## PWA completion validation — November 15, 2026
+
+Preview deployment `6afa4087d9d1935e01e1` is active and supersedes the earlier undeployed status for offline edits and scheduled reminders. Hosted verification passed CSV/label/favorites, immutable offline replay, account/generation isolation, offline restart and queued water sync, public-only caches and mobile layout. Fixtures were removed and the owner workspace was unchanged.
+
+Private reminder deployment `6afa3e3dddf46933b225` passed a delayed execution using an expired synthetic subscription; no real push was sent. It started 0.914 seconds after its scheduled time and completed in 11.23 seconds. Fasting deployment `6afa40f5cd8663f8ffd2` passed its stale-owner callback check. Both have private execution permissions and hourly repair enabled. Real-owner fasting dispatch and physical notification checks remain pending.
+
+Read-only reconciliation verified the approved baseline digest, unchanged current PC state, all three cloud photo files and owner permissions, and matching nutrition totals for all three recorded dates. The cloud-only changes are the previously migrated historical import metadata. No owner data was overwritten.
+
+The next local release adds the source local Coach, glucose/cycle Dashboard cards, chart settings and Dashboard pins, library JSON sharing, food printing and expanded offline controls. All 411 tests, production build, 62 built-server boundary checks and local Chrome PWA checks passed. The browser fixture now serves imported `.mjs` files with the correct JavaScript content type. Receipt-retention and cleanup changes passed 17 focused tests after removing the unnecessary push-transport dependency. The cleanup package now checks its entry imports before deployment. New features and receipt retention are not yet deployed at this checkpoint.
+
+The cleanup index is pending: Appwrite accepts table-read delegation but rejects index-write delegation. A short-lived operator key with table-read and index-read/write scopes has been requested. The production domain remains unchanged. Remaining scope is listed at the top of MIGRATION.md; PWA delivery replaces the former APK requirement.

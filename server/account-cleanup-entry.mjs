@@ -1,4 +1,5 @@
-import {Client,TablesDB,Storage,Users} from 'node-appwrite';
+import {AccountOperationClient} from './account-operation-context.mjs';
+import {TablesDB,Storage,Users} from 'node-appwrite';
 import {createAccountLifecycle} from './account-lifecycle.mjs';
 import {createAccountDeletion} from './account-deletion.mjs';
 import {runAccountCleanup} from './account-cleanup-worker.mjs';
@@ -19,8 +20,8 @@ export default async function accountCleanupEntry({req,res,log=()=>{},error=()=>
  try{
   const endpoint=process.env.APPWRITE_FUNCTION_API_ENDPOINT,project=process.env.APPWRITE_FUNCTION_PROJECT_ID,key=req?.headers?.['x-appwrite-key'];
   if(!endpoint||!project||typeof key!=='string'||!key)throw Error('Cleanup credentials unavailable.');
-  const client=new Client().setEndpoint(endpoint).setProject(project).setKey(key),db=new TablesDB(client),storage=new Storage(client),users=new Users(client),database=process.env.APPWRITE_DATABASE_ID||'nourishing';
+  const client=new AccountOperationClient().setEndpoint(endpoint).setProject(project).setKey(key),db=new TablesDB(client),storage=new Storage(client),users=new Users(client),database=process.env.APPWRITE_DATABASE_ID||'nourishing';
   const lifecycle=createAccountLifecycle({db,database}),deletion=createAccountDeletion({db,storage,users,lifecycle,database});
-  const result=await runAccountCleanup({db,deletion,database,enabled:true,...selection});log(JSON.stringify(result));return res.json({ok:result.failed===0,...result},result.failed?500:200);
+  const result=await runAccountCleanup({db,deletion,lifecycle,database,enabled:true,...selection});log(JSON.stringify(result));return res.json({ok:result.failed===0,...result},result.failed?500:200);
  }catch{error('Account cleanup could not complete.');return res.json({ok:false,error:'Account cleanup could not complete.'},500);}
 }

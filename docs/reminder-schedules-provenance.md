@@ -31,7 +31,7 @@ The focused tests use synthetic records and an in-memory Appwrite boundary. They
 - Package entrypoint `server/reminder-schedules-entry.mjs` as private function `nourishing-reminders`; scopes are `rows.read`, `rows.write`, `executions.read`, `executions.write`. Use the existing server secrets and `PUBLIC_ORIGIN`. `REMINDERS_ENABLED` defaults off. Its interval is hourly repair; individual deliveries use delayed executions.
 - Import only schedule JSON from the approved local baseline. Preserve IDs and preferences, set `paused:true` and `resumedAt:null`, and retain the existing cloud device registrations. Local private keys and subscriptions must not be copied.
 
-Historical receipt pruning is not implemented in this slice. Existing receipts remain private and continue to suppress repeated sends; the source local service's 90-day cleanup requires a separate bounded cloud maintenance path.
+Historical receipt pruning was added after the first worker validation below. The retention section describes its local verification and remaining deployment work.
 
 ## Private worker package and cloud check
 
@@ -39,8 +39,29 @@ Historical receipt pruning is not implemented in this slice. Existing receipts r
 
 Set function variables `PUBLIC_ORIGIN`, `WEB_PUSH_PUBLIC_KEY`, `WEB_PUSH_PRIVATE_KEY` (secret), and `REMINDERS_ENABLED`. Reuse the site's existing VAPID pair; do not generate another pair. For the isolated check, enable the function and set `REMINDERS_ENABLED=true`, keeping interval zero and execute permissions empty. Wait for the intended deployment to become active.
 
+`scripts/configure-reminder-worker.mjs` applies this metadata and uploads the staged package. It accepts the existing pair only through the child environment variable `NOURISHING_REMINDERS_VAPID_JSON`, validates it, and removes the variable before packaging. Its output and deployment record contain no signing key. Set `NOURISHING_REMINDERS_ORIGIN` to the site's current origin; domain cutover requires updating and redeploying the worker too.
+
 Set `NOURISHING_EXPECTED_REMINDERS_DEPLOYMENT` to that deployment ID and `NOURISHING_REMINDERS_ORIGIN` to its exact `PUBLIC_ORIGIN`. Then run `node scripts/verify-reminders-cloud.mjs` with the existing temporary fixture operator credentials. The operator needs account fixture, row, function-read, and execution-read/write access. The script checks deployment identity and variables before creating its disposable account. It stores a synthetic browser subscription whose expiration is already in the past, queues a real delayed execution, and checks its private expired receipt, removed device, cleared intent, and stale replay. This proves the real worker path without sending a push notification. It does not verify visible notification delivery.
 
 The verifier records the fixture identity and cleanup status in `.local/reminders-cloud-fixture.json`, and its results in `.local/reminders-cloud-verification.json`. Cleanup first blocks new account operations and waits for an existing operation to finish. If that wait or cleanup fails, it retains the account and reports the remaining resources. Individual sleep calls are at most five seconds. A normal delayed check takes approximately three to four minutes.
 
+Appwrite's scheduled asynchronous execution response has no retained response body. The verifier checks its completion status, HTTP status, and persisted receipt/device/intent effects. The synchronous stale-callback check also checks its returned body.
+
 After the isolated check and source schedule migration pass, hourly repair can be enabled with interval 60. The PWA still requires explicit user resume; migration preserves paused state.
+
+## Cloud validation on 2026-11-15
+
+The isolated check passed against reminder deployment `6afa3e3dddf46933b225`. Appwrite scheduled execution `6afa3f99abbce0821590` for 23:30:00 UTC, created its running execution at 23:30:00.914, and completed at 23:30:12.145 (11.23 seconds). The fixture produced one private expired receipt with provider status zero, removed its synthetic subscription and dispatch intent, and rejected a duplicate callback as stale. Fixture cleanup completed. This validates one real delayed execution without notification transport; it does not establish visible device delivery or a timing guarantee.
+
+The fasting worker was then replaced by deployment `6afa40f5cd8663f8ffd2`, with `REMINDERS_ENABLED=true` captured before build. A private callback for a confirmed nonexistent account returned enabled and stale. Both workers were read back as enabled, with interval 60, no public execute permissions, no event triggers, and only row/execution read/write scopes. No real-owner dispatch bootstrap was performed during these checks. The reminder worker's origin remains `https://nourishing-cloud.appwrite.network`; domain takeover requires a matching origin update.
+
+
+## Receipt retention
+
+`server/reminder-receipt-retention.mjs` adapts the PC service's `HISTORY_MS = 90 days` and `MAX_DELIVERIES = 20000`. Source `cronometer-local/server/reminders.mjs` SHA-256 on 2026-11-15: `03741a25812bda272716cc9d5557cd9fe22642ce7d0680c9ab9b8d4ce2a829c6`.
+
+Each owner retains receipts for at most 90 days and at most 20,000 records. At capacity, the oldest receipt is removed in the same guarded transaction that reserves a new send. This includes old uncertain outcomes, as in the source. Recent sending/unknown claims keep their identity and prevent repeated sends. The cloud presents an unfinished sending claim as unknown; it does not retry it.
+
+Tick, reconcile and explicit tests prune old records in bounded pages. The exported `pruneReminderReceipts({db, owner, now: Date, limit: 100})` returns `{removed, more}`. The private account cleanup worker also selects the oldest expired receipts, deduplicates their owners, and runs pruning under the existing owner lifecycle operation. It respects the cleanup limit and time budget. This covers paused accounts without a dispatch intent; the next hourly run selects any remaining expired rows. Targeted account deletion requests do not run this global scan. The entrypoint uses AccountOperationClient so an uncertain mutation retains its lifecycle operation. A pre-existing oversized history must be reduced before a new claim can commit. The global scan needs a `created` key index on `push_deliveries.createdAt`; the existing owner/createdAt index remains. No new public permission is needed.
+
+The combined retention, scheduled-reminder, Web Push and account-cleanup suite passed 36 tests. Coverage includes the exact 90-day boundary, private owner checks, bounded pages, transactional rollback, capacity during both test and scheduled sends, uncertain replay, paused accounts, deletion lifecycle exclusion, and the shared wall-time budget. This retention change has not been deployed or checked against live Appwrite by this agent.

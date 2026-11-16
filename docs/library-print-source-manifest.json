@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "source": "../cronometer-local",
+  "files": [
+    {
+      "source": "public/food-print-document.js",
+      "target": "public/library-print-source/public/food-print-document.js",
+      "sourceSha256": "f1de1dc57ec19db854af6b36638309f8aedad84d5e698dda89cf7590d250ea4f",
+      "outputSha256": "066d9a280a9c45d6b60859d63aa60cbe872a5c245a1787f7a4088113c15bef5d",
+      "transforms": [
+        "Normalize line endings to LF",
+        "Resolve static imports to owned food print sources or verified existing report sources",
+        "Export source localized CSS as an external self-only stylesheet"
+      ]
+    },
+    {
+      "source": "server/food-print-contract.mjs",
+      "target": "public/library-print-source/server/food-print-contract.mjs",
+      "sourceSha256": "e8f94644570179c7b78ba1ded80cc065315856d951f99a2b756d195a9db98abf",
+      "outputSha256": "79f6f634257986cc6067754814bbfc624f458cea94de041cf9e3147e8d2c8c02",
+      "transforms": [
+        "Normalize line endings to LF",
+        "Resolve static imports to owned food print sources or verified existing report sources"
+      ]
+    }
+  ],
+  "reused": [
+    {
+      "source": "public/message-format.js",
+      "target": "public/report-source/public/message-format.js",
+      "sourceSha256": "f5f4ebe4c014f4bb10cde0100a61ea54effe1dfada6066cb18e89d298ca3e273",
+      "outputSha256": "f5f4ebe4c014f4bb10cde0100a61ea54effe1dfada6066cb18e89d298ca3e273",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "public/nutrient-language.js",
+      "target": "public/report-source/public/nutrient-language.js",
+      "sourceSha256": "5d108ce0d26737e8e1bbf0bd10e0825157fc819a3462f5a3d785e60faac443ac",
+      "outputSha256": "5d108ce0d26737e8e1bbf0bd10e0825157fc819a3462f5a3d785e60faac443ac",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "server/nutrient-catalog.mjs",
+      "target": "public/report-source/server/nutrient-catalog.mjs",
+      "sourceSha256": "de826a4f65e73f241e46f69d102acd6fd9b85bb5be3a06f507f44cc6ac3013e9",
+      "outputSha256": "644904e3327884e14b22e3064755062d321488c8bc28940d7249bd919ac9570c",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "public/energy-display.js",
+      "target": "public/report-source/public/energy-display.js",
+      "sourceSha256": "1b27941b870f444be0bb2145030010457a134891146bed94854c1dd725defaee",
+      "outputSha256": "c829fee1d1c9c4f21a073f25a0b018a8e756e2f5ce83c1e52919e2a9f89dc6b7",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "server/energy-units.mjs",
+      "target": "public/report-source/server/energy-units.mjs",
+      "sourceSha256": "71b331eddbada89f6798505bb5da8bb152d7eaac4aa7e1fcd2fecd724156f8a4",
+      "outputSha256": "8960db757d79ea996d6a53c967a6e082ec597d9e00f398db6bcd8b6e56e9f188",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    },
+    {
+      "source": "public/captured-print-frame.js",
+      "target": "public/report-source/public/captured-print-frame.js",
+      "sourceSha256": "64c73cc74bf180bd93cac2a146c1c4d826da62920d524c6c2dc6220c4edd1eb4",
+      "outputSha256": "d2cc3276d91e1573a2a7d78b28486dfaf32c85a13fb57bef19823dbe433af3bd",
+      "transforms": [
+        "CRLF and lone CR to LF; one final newline",
+        "Resolve static imports within report-source"
+      ]
+    }
+  ],
+  "styles": [
+    {
+      "target": "public/library-print-source/food-en.css",
+      "sha256": "d27e3041505786d3e063d87351218d9058c07674f7ed918c35ba2b75838a556f"
+    },
+    {
+      "target": "public/library-print-source/food-fr.css",
+      "sha256": "f79b4fa3eb260021e7244504d218de2c3c87143c02f977e1fb96927ff3cff18a"
+    },
+    {
+      "target": "public/library-print-source/food-de.css",
+      "sha256": "31fb5cf2d75db89a53f1706f27b93ea5a06e431d241af1bed8b94d7106287e70"
+    },
+    {
+      "target": "public/library-print-source/food-pt-BR.css",
+      "sha256": "72ec44d5f6bdcb7da00a22077f59ee27200429f4c6831c192fed5b62a045c419"
+    }
+  ]
+}

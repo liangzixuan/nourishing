@@ -1,3 +1,4 @@
+import {openCoach} from './coach.js';
 import {openReminders} from './reminders.js';
 import {mountDashboard} from './dashboard.js';
 import {mountRecordEditor} from './records.js';
@@ -21,7 +22,7 @@ const ordered=rows=>[...rows].sort((a,b)=>rank(a)-rank(b)||a.name.localeCompare(
 const owners={scheduler:'Macro schedule',weekday:'Weekday schedule',macros:'Macro policy',expenditure:'Calculated energy',references:'Reference targets'};
 const offset=(date,days)=>{const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10);};
 const option=(value,label,current)=>`<option value="${e(value)}" ${value===current?'selected':''}>${e(label)}</option>`;
-export function mountNutrition({page,mode,date,show,close,header,content,onChange,initialTab='dashboard'}){
+export function mountNutrition({page,mode,date,show,close,header,content,onChange,onDiary,onSuggest,initialTab='dashboard'}){
  let dashboard=null,backup=null,snapshots=null,charts=null,fasting=null,disposed=false,serial=0,data,tab=initialTab,query='',reportOptions={from:offset(date(),-6),to:date(),dayFilter:'nonempty',includeToday:true,includeSupplements:true};
  const root=document.createElement('section');root.className='nutrition-page';page.replaceChildren(root);
  const alive=()=>!disposed&&root.isConnected;
@@ -61,7 +62,7 @@ export function mountNutrition({page,mode,date,show,close,header,content,onChang
   if(tab==='fasting'){fasting=mountFasting({page:panel,show,close,header,content,onChange});return;}
   if(tab==='charts'){charts=mountCharts({page:panel,date,show,close,header,content,onChange});return;}
   if(tab==='dashboard'){
-   dashboard=mountDashboard({root:panel,date,show,close,header,content,onChange,onReport:()=>{tab='report';discover();},onFasting:()=>{tab='fasting';discover();},onWeight:()=>mountRecordEditor({kind:'biometric',date:date(),show,close,header,content,onChange:async()=>{await onChange();await dashboard?.reload();}})});return;
+   dashboard=mountDashboard({root:panel,date,show,close,header,content,onChange,onDiary,onCoach:()=>openCoach({date,show,close,header,content,onChange,onReport:day=>{reportOptions={...reportOptions,from:day,to:day,dayFilter:'all'};tab='report';load();},onSuggest}),onReport:()=>{tab='report';discover();},onFasting:()=>{tab='fasting';discover();},onWeight:()=>mountRecordEditor({kind:'biometric',date:date(),show,close,header,content,onChange:async()=>{await onChange();await dashboard?.reload();}})});return;
   }
   panel.innerHTML=`<form class="report-filters"><div class="report-dates"><label>From<input aria-label="From" name="from" type="date" required value="${reportOptions.from}"></label><label>To<input aria-label="To" name="to" type="date" required value="${reportOptions.to}"></label></div><label class="field-row"><span>Days</span><select name="dayFilter" aria-label="Days">${[['nonempty','Logged days'],['complete','Completed days'],['all','All days']].map(([v,l])=>option(v,l,reportOptions.dayFilter)).join('')}</select></label><label class="field-row"><span>Include today</span><input type="checkbox" name="includeToday" ${reportOptions.includeToday?'checked':''}></label><label class="field-row"><span>Include supplements</span><input type="checkbox" name="includeSupplements" ${reportOptions.includeSupplements?'checked':''}></label><button class="primary">Update report</button></form><section class="nutrition-card"><h2>Daily averages</h2><p class="report-period">${report.counts.eligibleDays} of ${report.counts.requestedDays} days</p><div class="report-macros">${metric(data.energyUnit==='kJ'?'Energy':'Calories',calories.mean,calories.unit)}${metric('Target',calories.meanTarget,calories.unit)}</div></section><section class="nutrition-card"><h2>Nutrients</h2>${ordered(reportNutrients).filter(r=>r.visible&&(commonIds.includes(r.id)||r.mean!==null)).map(nutrientRow).join('')}<details class=additional-nutrients><summary>More nutrients</summary>${ordered(reportNutrients).filter(r=>r.visible&&!commonIds.includes(r.id)&&r.mean===null).map(nutrientRow).join('')}</details></section>`;
   panel.querySelectorAll('[data-report-nutrient]').forEach(button=>button.onclick=()=>openNutrientDetail({nutrient:button.dataset.reportNutrient,options:structuredClone(report.options),show,header,content}));
