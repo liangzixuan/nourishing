@@ -1,6 +1,6 @@
 # Nourishing
 
-Nourishing is an installable PWA hosted on Appwrite, with public registration and private account data. It includes a diary, Foods library, nutrition reports, charts, snapshots, targets, fasting, repeat-item review, food suggestions and nutrient search. Photo recognition uses Gemini; recipes can be imported from public URLs. New accounts start empty. The preview is live while production-domain and installed-phone checks remain pending. PC and cloud edits are separate.
+Nourishing is an installable PWA hosted at [nourishing.app](https://nourishing.app) on Appwrite, with public registration and private account data. It includes a diary, Foods library, nutrition reports, charts, snapshots, targets, fasting, repeat-item review, food suggestions and nutrient search. Photo recognition uses Gemini; recipes can be imported from public URLs. New accounts start empty. Production-domain checks passed, and the owner confirmed installation and diary access on a Pixel. Visual parity with the local app is incomplete; emailed password recovery and remaining phone camera/notification/offline checks are pending. PC and cloud edits are separate.
 
 ## Run
 

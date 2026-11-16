@@ -6,8 +6,9 @@ import {ID,Query} from 'node-appwrite';
 import {fixtureOperator} from './fixture-operator.mjs';
 import {allRows,databaseId} from './operator.mjs';
 
-const origin='https://nourishing-cloud.appwrite.network',{users,db}=fixtureOperator(),created=[],failures=[];
-const report={at:new Date().toISOString(),checks:[]},args=(tableId,rowId)=>({databaseId,tableId,rowId});
+const origin=process.env.VERIFY_ORIGIN||'https://nourishing-cloud.appwrite.network',{users,db}=fixtureOperator(),created=[],failures=[];
+assert.ok(['https://nourishing-cloud.appwrite.network','https://nourishing.app'].includes(origin));
+const report={at:new Date().toISOString(),origin,checks:[]},args=(tableId,rowId)=>({databaseId,tableId,rowId});
 const owner=JSON.parse(readFileSync('.local/migration-destination.json','utf8').replace(/^\uFEFF/,'')).accountId;
 const before=await db.getRow(args('workspace_heads',owner));let browser,primaryError;
 const remember=()=>writeFileSync('.local/pwa-cloud-fixtures.json',JSON.stringify({created,failures}));

@@ -7,10 +7,11 @@ import {request} from 'playwright-core';
 import {operator,allRows,databaseId,maybeGet} from './operator.mjs';
 import {readSession} from '../server/session-cookie.mjs';
 
-const origin='https://nourishing-cloud.appwrite.network',{config,db,users}=operator();
+const origin=process.env.VERIFY_ORIGIN||'https://nourishing-cloud.appwrite.network',{config,db,users}=operator();
+assert.ok(['https://nourishing-cloud.appwrite.network','https://nourishing.app'].includes(origin));
 const email=`registration-${randomUUID()}@example.com`,name='Hosted registration fixture',password=`Aa1!${randomUUID()}${randomUUID()}`;
 const ledger={email,name,startedAt:new Date().toISOString(),preflightAbsent:false,registrationStarted:false,identity:null,cleaned:false};
-const report={passed:0,phase:0,registered:0,lifecycleInitialized:0,privateSession:0,profileUpdated:0,directWriteDenied:0,logoutVerified:0,loginVerified:0,realOwnerUnchanged:0,cleanupComplete:0,cleanupFailures:0};
+const report={origin,at:new Date().toISOString(),passed:0,phase:0,registered:0,lifecycleInitialized:0,privateSession:0,profileUpdated:0,directWriteDenied:0,logoutVerified:0,loginVerified:0,realOwnerUnchanged:0,cleanupComplete:0,cleanupFailures:0};
 mkdirSync('.local',{recursive:true});
 const remember=()=>writeFileSync('.local/account-registration-hosted-fixture.json',JSON.stringify(ledger,null,2));remember();
 const args=(tableId,rowId)=>({databaseId,tableId,rowId});

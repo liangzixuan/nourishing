@@ -6,7 +6,8 @@ import {ID,Query} from 'node-appwrite';
 import {chromium} from 'playwright-core';
 import {fixtureOperator} from './fixture-operator.mjs';
 import {allRows} from './operator.mjs';
-const origin='https://nourishing-cloud.appwrite.network',{users,db}=fixtureOperator(),created=[],failures=[],checks=[];
+const origin=process.env.VERIFY_ORIGIN||'https://nourishing-cloud.appwrite.network',{users,db}=fixtureOperator(),created=[],failures=[],checks=[];
+assert.ok(['https://nourishing-cloud.appwrite.network','https://nourishing.app'].includes(origin));
 const owner=JSON.parse(readFileSync('.local/migration-destination.json')).accountId,args={databaseId:'nourishing',tableId:'workspace_heads',rowId:owner},before=await db.getRow(args);
 let browser,page,primaryError;
 const ledger=()=>writeFileSync('.local/health-control-fixtures.json',JSON.stringify({created,failures}));
@@ -51,4 +52,4 @@ try{
  checks.push('reviewed removal and exact retry');assert.equal((await db.getRow(args)).digest,before.digest);
 }catch(error){primaryError=error;if(page&&!page.isClosed()){await page.screenshot({path:'.local/health-controls-failure.png'}).catch(()=>{});writeFileSync('.local/health-controls-failure.txt',(await page.locator('body').innerText().catch(()=>'')));}}finally{await browser?.close();for(const id of created)try{await clean(id);}catch{failures.push(id);}ledger();if(failures.length)primaryError??=Error('Fixture cleanup incomplete; see local ledger.');}
 if(primaryError)throw primaryError;
-const report={at:new Date().toISOString(),ok:true,checks,fixturesRemoved:true,ownerWorkspaceUnchanged:true};writeFileSync('.local/health-controls-cloud-verification.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+const report={at:new Date().toISOString(),origin,ok:true,checks,fixturesRemoved:true,ownerWorkspaceUnchanged:true};writeFileSync('.local/health-controls-cloud-verification.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));
