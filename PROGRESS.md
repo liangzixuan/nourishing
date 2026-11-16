@@ -9,7 +9,7 @@ Acceptance:
 - Each deployed increment has appropriate automated and live-browser verification with disposable fixtures; owner data remains unchanged.
 - Device-only checks and deferred password-recovery email checks are explicitly identified and requested only when they become the remaining blocker.
 
-Completed increments: rich food search, source food-entry layout, compact Photo Log nutrition review, multi-add with recipe creation and safe retry, Food entry Edit a copy, and Photo Log Create Meal/Recipe, deployed and verified on November 16. Next: mixed Diary records within meal groups, then the remaining child editors listed in docs/ui-parity.md. The platform goal remains active; its older APK objective text is superseded by this user-approved PWA scope because the available goal API cannot edit objective text.
+Completed increments: rich food search, source food-entry layout, compact Photo Log nutrition review, multi-add with recipe creation and safe retry, Food entry Edit a copy, and Photo Log Create Meal/Recipe, deployed and verified on November 16. Mixed Diary records are also deployed and verified. Next: CGM detail/comparison, Report nutrient detail and Snapshot child editors, followed by the remaining child editors listed in docs/ui-parity.md. The platform goal remains active; its older APK objective text is superseded by this user-approved PWA scope because the available goal API cannot edit objective text.
 
 ---
 
@@ -301,3 +301,12 @@ Next increment: restore source multi-add for mixed foods, recipes and meals. Use
 Deployment `6afaa8bf3b6de9aec0ec`, revision `8f4f01cd5052d9f9ed5caf5c6f366c83932a2cb7`, is active. All 458 tests and the build passed; publication checks found no private artifacts or credentials and confirmed source hashes. Hosted copy checks passed cancellation with restored input, new custom-food creation, preserved source provenance/portions, original-food integrity, and no diary writes. Hosted Photo Log Create checks passed canonical meal/recipe quantities and yield, unknown nutrients, private source-photo access with second-account denial, and exact retry after a lost successful response. Recognition was replaced with signed synthetic evidence for this check; no Gemini call was made.
 
 Both reports confirm unchanged owner data, no browser/CSP errors or horizontal overflow, and full fixture cleanup. Screenshots were inspected. The copy Cancel button still uses a default style in this deployed revision; a small CSS correction is staged for the next Diary release. Evidence: `.local/food-copy-hosted-result.json`, `.local/photo-create-hosted-result.json`. The previous main-screen release check also passed all navigation/header/settings checks after multi-add.
+
+
+## Mixed Diary release, November 16
+
+Deployment `6afaabce06903083a7a1`, runtime `a4dd7f57981e2480366e198e86880008c5f8634f`, is active. Notes, biometrics and foods share their display groups in the saved source order. Typed collection/id references keep selection and menus correct when record IDs coincide. Ungrouped records display in Uncategorized without rewriting stored groups. Source collapse state now has one owner and survives redraws. The food-copy Cancel button also uses the app styling.
+
+All 461 tests, the build and the publication audit passed. The first full run exposed a Report test that used Playwright uncheck while deliberately causing a server error and immediate rollback; it now clicks and asserts rollback explicitly. Production Diary browser acceptance passed correct editors, Uncategorized selection, collapse persistence and unchanged totals; no browser/CSP errors or horizontal overflow. The live screenshot was inspected, the owner workspace was unchanged and the disposable fixture was removed. Evidence: `.local/mixed-diary-hosted-result.json`. This restores saved-source behavior; a same-state native mixed-record fixture was not captured.
+
+The main production navigation regression also passed on this deployment: Diary summary/display/water, Add menu preferences and dismissal, Foods collections, More/system theme/Back focus/Account, and Discover headers, Newsfeed, Report, Charts and Snapshots. No browser, HTTP or CSP errors occurred; owner data was unchanged and the fixture was removed. Evidence: `.local/ui-restoration-hosted/result.json` at 07:10:58 UTC.
