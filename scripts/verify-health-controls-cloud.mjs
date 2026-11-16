@@ -2,13 +2,21 @@
 import assert from 'node:assert/strict';
 import {readFileSync,writeFileSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
-import {ID} from 'node-appwrite';
+import {ID,Query} from 'node-appwrite';
 import {chromium} from 'playwright-core';
 import {fixtureOperator} from './fixture-operator.mjs';
+import {allRows} from './operator.mjs';
 const origin='https://nourishing-cloud.appwrite.network',{users,db}=fixtureOperator(),created=[],failures=[],checks=[];
 const owner=JSON.parse(readFileSync('.local/migration-destination.json')).accountId,args={databaseId:'nourishing',tableId:'workspace_heads',rowId:owner},before=await db.getRow(args);
 let browser,page,primaryError;
 const ledger=()=>writeFileSync('.local/health-control-fixtures.json',JSON.stringify({created,failures}));
+async function clean(id){
+ assert.ok(created.includes(id)&&id!==owner);
+ assert.equal((await allRows(db,'workspace_media',[Query.equal('ownerId',id)])).length,0,'This fixture must not own files.');
+ for(const tableId of ['workspace_records','command_receipts'])for(const row of await allRows(db,tableId,[Query.equal('ownerId',id)])){assert.equal(row.ownerId,id);await db.deleteRow({databaseId:'nourishing',tableId,rowId:row.$id});}
+ for(const tableId of ['workspace_heads','profiles','reminder_dispatch','fasting_dispatch'])try{await db.deleteRow({databaseId:'nourishing',tableId,rowId:id});}catch(error){if(error.code!==404)throw error;}
+ await users.delete({userId:id});
+}
 try{
  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const contexts=[];
  for(let index=0;index<2;index++){
@@ -41,6 +49,6 @@ try{
  checks.push('hosted mobile cycle review, glucose timeline and CGM statistics render without script errors');
  const removal=await post('/api/cycle/removal-preview',{ids}),remove={requestId:randomUUID(),revision:removal.revision,type:'cycle.remove',payload:{ids,reviewToken:removal.reviewToken,confirmed:true}};const removed=await post('/api/cycle/remove',remove);assert.deepEqual(await post('/api/cycle/remove',remove),removed);assert.equal((await get('/api/cycle'+range)).view.records.length,0);
  checks.push('reviewed removal and exact retry');assert.equal((await db.getRow(args)).digest,before.digest);
-}catch(error){primaryError=error;if(page&&!page.isClosed()){await page.screenshot({path:'.local/health-controls-failure.png'}).catch(()=>{});writeFileSync('.local/health-controls-failure.txt',(await page.locator('body').innerText().catch(()=>'')));}}finally{await browser?.close();for(const id of created)try{await users.delete({userId:id});}catch{failures.push(id);}ledger();if(failures.length)primaryError??=Error('Fixture cleanup incomplete; see local ledger.');}
+}catch(error){primaryError=error;if(page&&!page.isClosed()){await page.screenshot({path:'.local/health-controls-failure.png'}).catch(()=>{});writeFileSync('.local/health-controls-failure.txt',(await page.locator('body').innerText().catch(()=>'')));}}finally{await browser?.close();for(const id of created)try{await clean(id);}catch{failures.push(id);}ledger();if(failures.length)primaryError??=Error('Fixture cleanup incomplete; see local ledger.');}
 if(primaryError)throw primaryError;
 const report={at:new Date().toISOString(),ok:true,checks,fixturesRemoved:true,ownerWorkspaceUnchanged:true};writeFileSync('.local/health-controls-cloud-verification.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));
