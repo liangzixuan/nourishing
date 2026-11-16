@@ -5,7 +5,7 @@ import {dateTimeParts,pickerValue,dateWindow,compactWallTime} from './mobile-dat
 
 // Native scroll snapping owns touch momentum. Selection is the row at the center,
 // read synchronously on Save so a pending scroll event cannot save an older row.
-class WheelColumn{
+export class WheelColumn{
  constructor({root,key,label,items,value,onChange,onSettled}){
   Object.assign(this,{root,key,onChange,onSettled});root.setAttribute('role','listbox');root.setAttribute('tabindex','0');root.setAttribute('aria-label',label);root.dataset.timeWheel=key;
   root.addEventListener('scroll',()=>{this.read();clearTimeout(this.timer);this.timer=setTimeout(()=>{if(!this.disposed)this.onSettled?.()},160)});

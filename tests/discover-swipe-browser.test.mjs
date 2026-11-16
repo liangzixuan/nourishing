@@ -41,7 +41,7 @@ test('Discover touch swipes navigate bounded tabs while preserving scrolling, co
   const page=await browser.newPage({viewport:{width:412,height:915},hasTouch:true,isMobile:true}),errors=[];
   page.on('pageerror',error=>errors.push(error.message));page.setDefaultTimeout(10000);
   await page.goto(`http://127.0.0.1:${server.address().port}`);await page.locator('.cloud-dashboard').waitFor();
-  const tab=async name=>assert.equal(await page.locator(`[data-tab=${name}]`).getAttribute('aria-current'),'page');
+  const tab=async name=>{await page.waitForFunction(()=>!document.documentElement.classList.contains('discover-transition'));assert.equal(await page.locator(`[data-tab=${name}]`).getAttribute('aria-current'),'page');};
   async function swipe({selector='.report-content',dx=-150,dy=2,cancel=false,multi=false}={}){
    return page.evaluate(({selector,dx,dy,cancel,multi})=>{
     const target=document.querySelector(selector),points=[new Touch({identifier:1,target,clientX:230,clientY:240}),...(multi?[new Touch({identifier:2,target,clientX:250,clientY:240})]:[])];
@@ -70,13 +70,42 @@ test('Discover touch swipes navigate bounded tabs while preserving scrolling, co
   async function realTouch(from,to){await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:from.x,y:from.y}]});for(let i=1;i<=5;i++)await client.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:from.x+(to.x-from.x)*i/5,y:from.y+(to.y-from.y)*i/5}]});await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}
   await realTouch({x:210,y:650},{x:210,y:350});await page.waitForFunction(()=>scrollY>0);await tab('dashboard');
   await page.evaluate(()=>scrollTo(0,0));await realTouch({x:280,y:450},{x:100,y:450});await tab('charts');
+  // The screen follows the finger before commit; cancellation settles in place.
+  await page.evaluate(()=>{
+   const target=document.querySelector('.report-content'),touch=x=>new Touch({identifier:7,target,clientX:x,clientY:240});
+   target.dispatchEvent(new TouchEvent('touchstart',{bubbles:true,touches:[touch(280)],changedTouches:[touch(280)]}));
+   target.dispatchEvent(new TouchEvent('touchmove',{bubbles:true,cancelable:true,touches:[touch(200)],changedTouches:[touch(200)]}));
+  });
+  assert.equal(await page.locator('.nutrition-page').evaluate(el=>new DOMMatrix(getComputedStyle(el).transform).m41),-80);
+  await page.evaluate(()=>document.querySelector('.report-content').dispatchEvent(new TouchEvent('touchcancel',{bubbles:true,touches:[],changedTouches:[]})));
+  await page.waitForFunction(()=>getComputedStyle(document.querySelector('.nutrition-page')).transform==='none');await tab('charts');
   // Empty tabs must own the blank viewport below their short content too.
   await page.evaluate(()=>{const shell=document.createElement('div');shell.className='app-shell';document.body.prepend(shell);shell.append(document.querySelector('#header'),document.querySelector('main'));document.querySelector('main').id='page';});
-  await page.locator('[data-tab=snapshots]').click();await page.locator('.snapshot-list [data-snapshot-add]').waitFor();
+  await page.locator('[data-tab=snapshots]').click();await page.locator('.snapshot-list [data-snapshot-add]').waitFor();await tab('snapshots');
   await page.evaluate(()=>scrollTo(0,0));
   assert.equal(await page.evaluate(()=>document.elementFromPoint(120,650)?.closest('.nutrition-page')!==null),true);
   await realTouch({x:120,y:650},{x:300,y:650});await tab('report');await page.locator('.mobile-report-toolbar').waitFor();
+  // Native snapshots animate only after the destination rendered, in the
+  // requested direction. No duplicate DOM/canvas snapshots are retained.
+  await page.locator('[data-tab=charts]').click();
+  await page.waitForFunction(()=>document.getAnimations().some(a=>a.effect?.pseudoElement==='::view-transition-new(discover-content)'));
+  assert.equal(await page.locator('[data-manage]').count(),1);
+  const animation=await page.evaluate(()=>{const a=document.getAnimations().find(a=>a.effect?.pseudoElement==='::view-transition-new(discover-content)');return {duration:a.effect.getTiming().duration,first:a.effect.getKeyframes()[0].transform,last:a.effect.getKeyframes().at(-1).transform};});
+  assert.equal(animation.duration,230);assert.match(animation.first,/translateX\(-/);assert.equal(animation.last,'translateX(0px)');await tab('charts');
+  await page.emulateMedia({reducedMotion:'reduce'});await page.locator('[data-tab=report]').click();await page.locator('.mobile-report-toolbar').waitFor();
+  assert.equal(await page.evaluate(()=>document.documentElement.classList.contains('discover-transition')),false);await tab('report');
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  let releaseSlow;const slow=new Promise(resolve=>{releaseSlow=resolve;});
+  await page.route('**/api/charts?*',async route=>{await slow;await route.continue();},{times:1});
+  await page.locator('[data-tab=charts]').click();await tab('charts');
+  assert.equal(await page.locator('[data-manage]').count(),0);
+  assert.equal(await page.evaluate(()=>document.getAnimations().filter(a=>a.effect?.pseudoElement?.includes('discover-content')).length),0);
+  await page.locator('[data-tab=dashboard]').click();await page.locator('.cloud-dashboard').waitFor();await tab('dashboard');releaseSlow();
+  await page.evaluate(()=>{window.nativeTransition=document.startViewTransition;document.startViewTransition=undefined;});
+  await page.locator('[data-tab=report]').click();await page.locator('.mobile-report-toolbar').waitFor();await tab('report');
+  await page.evaluate(()=>{document.startViewTransition=window.nativeTransition;delete window.nativeTransition;});
   await page.locator('[data-tab=charts]').click();await page.locator('[data-manage]').waitFor();
-  await page.evaluate(()=>window.panel.dispose());await swipe();await tab('charts');assert.deepEqual(errors,[]);
+  await page.evaluate(()=>window.panel.dispose());await swipe();await tab('charts');
+  assert.equal(await page.evaluate(()=>document.getAnimations().filter(a=>a.effect?.pseudoElement?.includes('discover-content')).length),0);assert.deepEqual(errors,[]);
  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
 });

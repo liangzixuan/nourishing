@@ -172,7 +172,7 @@
   "adapters": [
     {
       "output": "public/snapshots.js",
-      "sha256": "db2fc0a2d84a15cdbbcbae3c068682c8ca9fc4739e04fe14c969aa0f0f0d6096"
+      "sha256": "9bcc5590793aca0d6e7539b7730a66065bcf04bccf1bb738941a1b619eb1dbf1"
     },
     {
       "output": "public/snapshots.css",

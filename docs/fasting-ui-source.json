@@ -43,7 +43,7 @@
       "source": "../cronometer-local/public/mobile-datetime-picker.js",
       "output": "public/fasting-source/mobile-datetime-picker.js",
       "sourceSha256": "4c6516ee872cd0b2a4b8138726d8fa1a3e20053d5177179610cec59219135c03",
-      "outputSha256": "87494cf1cd30c5be947116dd9652ccdda7af90c78c86d8cfe05bc385a0f17c62"
+      "outputSha256": "4caa1b0fe81d975ebc31ddaed2e802cfbcfdf9130f850db947fa9472f3f1f595"
     },
     {
       "source": "../cronometer-local/public/mobile-datetime-picker.css",

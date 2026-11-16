@@ -1,0 +1,11 @@
+.discover-home #page{overflow-x:clip}
+.discover-transition .nutrition-page{view-transition-name:discover-content}
+.discover-transition::view-transition{pointer-events:none}
+.discover-transition::view-transition-group(*){animation:none}
+.discover-transition::view-transition-old(root){display:none}
+.discover-transition::view-transition-new(root),
+.discover-transition::view-transition-old(discover-content),
+.discover-transition::view-transition-new(discover-content){animation:none;mix-blend-mode:normal}
+.discover-transition::view-transition-image-pair(discover-content){isolation:isolate;overflow:clip}
+.discover-transition::view-transition-old(discover-content),
+.discover-transition::view-transition-new(discover-content){height:100%;object-fit:none;object-position:left top}

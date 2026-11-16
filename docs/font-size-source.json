@@ -49,7 +49,7 @@
     },
     {
       "output": "public/account.js",
-      "outputSha256": "70ba65ea8adc573d30a38530b1c6a27903055fe323155367aab335dbd7ef41f5"
+      "outputSha256": "d2ffb7fc098c99a41b7a24a88a451c0d51e309e8f1172b668b063af719cf23c7"
     },
     {
       "output": "public/diary.js",
@@ -61,11 +61,11 @@
     },
     {
       "output": "public/account.css",
-      "outputSha256": "f33b46e88308ac23b49143cfb4f8c9877def62c0f5a9d7d9c918c5a3143c23d7"
+      "outputSha256": "8722e3b069ba2650c9c326b7a5f7ec0d8957cd192cfd836c1552661f3e799709"
     },
     {
       "output": "public/app-shell.css",
-      "outputSha256": "99fddd9fbd5c5760bf7cbf162d8b2894c997a6a792cfce6a4898ea030bd7281f"
+      "outputSha256": "8d5ea63edbe539af5aee35c12b1bfbabe1505d05400326d83e7117722aa67c77"
     },
     {
       "output": "public/backup.css",
@@ -93,7 +93,7 @@
     },
     {
       "output": "public/profile-settings.css",
-      "outputSha256": "743d8bcf205443e3f4902855bcbc241bff0ea7ca6c0af04fdff8cf619b6c0531"
+      "outputSha256": "6feecd15d5e15546bc9f857d2f41724a42536c9133e9e65bc82eecf98402820e"
     },
     {
       "output": "public/reminders.css",

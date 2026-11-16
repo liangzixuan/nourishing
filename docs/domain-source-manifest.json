@@ -5,7 +5,7 @@
       "source": "server/workspace.mjs",
       "target": "server/domain/workspace.mjs",
       "sourceSha256": "a57a9f5a01a67394e4bcf54c58c964a0a5060e52f431d21e15923b4b56a9f1b0",
-      "outputSha256": "76f2b6e38c751a6821f61952510c0aca8000a9a470a432b11c8afba57de8c584"
+      "outputSha256": "4384865b733e277c82ebebf0bf13dbb98939153b76073cbb4326b28ecca7bc17"
     },
     {
       "source": "server/score-display-controls.mjs",

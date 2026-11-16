@@ -1,3 +1,4 @@
+import {mountAccount} from './account-screen.js';
 import {t} from './app-language.js';
 import {coreText} from './core-cloud-messages.js';
 import {escape as e} from './html.js';
@@ -41,7 +42,7 @@ export function mountMore({page,headerRoot,date,show,close,header,content,onChan
  function section(id,title,markup){reset();screen=id;heading(title);root.innerHTML=markup;window.scrollTo(0,0);}
  function open(id){
   if(screen==='home')scroll=window.scrollY;
-  if(id==='account'){location.assign('/account');return;}
+  if(id==='account')return childView(id,t('mobileMore.account'),host=>mountAccount({root:host,embedded:true}));
   if(id==='profile')return childView(id,t('mobileMore.profile'),host=>mountProfile({...ui,page:host,headerRoot,onExit:home}));
   if(id==='reminders')return childView(id,t('nav.reminders'),host=>mountReminders({root:host,...ui}));
   if(id==='glucose')return void openGlucose(ui);
@@ -51,7 +52,7 @@ export function mountMore({page,headerRoot,date,show,close,header,content,onChan
   if(id==='targets')return childView(id,t('mobileMore.targets'),host=>mountTargets({...ui,page:host,headerRoot,onExit:home}));
   if(id==='fasting')return childView(id,t('mobileMore.fasting'),host=>mountFasting({...ui,page:host,headerRoot,onBack:home}));
   if(id==='backup')return childView(id,coreText('more.backup'),host=>mountBackup({...ui,root:host}));
-  if(id==='repeats')return childView(id,t('mobileRepeat.title'),host=>mountRepeats({...ui,page:host,headerRoot,onExit:home}));
+  if(id==='repeats')return childView(id,t('mobileRepeat.title'),host=>mountRepeats({...ui,page:host,headerRoot,backLabel:t('discover.back'),onExit:home}));
   if(id==='display')return childView(id,t('mobileMore.display'),host=>mountDisplay({root:host,headerRoot,onChange}));
   if(id==='foods')return onFoods?.();
   if(id==='reports')return onDiscover?.('report');

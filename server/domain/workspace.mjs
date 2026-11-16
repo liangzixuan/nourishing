@@ -1,3 +1,4 @@
+import {parseProfileDemographics} from './profile-demographics.mjs';
 import {scoreDisplayPatch} from './score-display-controls.mjs';
 import {prepareSharedItemGraph} from './shared-item-graph.mjs';
 import {reconcileInactiveEnergyTarget} from './energy-target-state.mjs';
@@ -880,6 +881,7 @@ export function act(s,type,p={},context={}) {
       if(Object.hasOwn(p,'nutrientBalances')){const policy=parseNutrientBalancePolicy(p.nutrientBalances);if(policy===null)delete next.nutrientBalances;else next.nutrientBalances=policy;}
       if(Object.hasOwn(p,'diaryTable')){const policy=parseDiaryTablePolicy(p.diaryTable);if(policy===null)delete next.diaryTable;else next.diaryTable=policy;}
       if(Object.hasOwn(p,'diaryDisplay')){const policy=parseDiaryDisplayPolicy(p.diaryDisplay);if(policy===null)delete next.diaryDisplay;else next.diaryDisplay=policy;}
+      if(Object.hasOwn(p,'profileDemographics')){const value=parseProfileDemographics(p.profileDemographics);if(value===null)delete next.profileDemographics;else next.profileDemographics=value;}
       if(Object.hasOwn(p,'bodyComposition')){const policy=parseBodyCompositionPolicy(p.bodyComposition);if(policy===null)delete next.bodyComposition;else next.bodyComposition=policy;}
       if(Object.hasOwn(p,'macroPlan')){if(p.macroPlan===null)delete next.macroPlan;else next.macroPlan=parseMacroPlan(p.macroPlan);}
       if(Object.hasOwn(p,'macroPolicy')){const policy=parseMacroPolicy(p.macroPolicy);if(policy===null)delete next.macroPolicy;else next.macroPolicy=policy;}

@@ -18,7 +18,7 @@ export function mountCharts({page,date,show,close,header,content,onChange,onRead
  async function load(){
   const id=++serial;root.setAttribute('aria-busy','true');
   try{const apply=next=>{if(!alive()||id!==serial)return;data=validateChartView(next);render();onReady?.();};const next=await request('/api/charts?'+new URLSearchParams({to:date()}),undefined,undefined,{onRefresh:next=>{if(!document.querySelector('dialog[open]'))apply(next);}});apply(next);}
-  catch(error){if(alive()&&id===serial){plots?.dispose();root.innerHTML=`<p class="sheet-message" role="status">${e(error.message)}</p><button type="button" class="more-results" data-retry>${t('mobileSuggest.retry')}</button>`;root.querySelector('[data-retry]').onclick=load;}}
+  catch(error){if(alive()&&id===serial){plots?.dispose();root.innerHTML=`<p class="sheet-message" role="status">${e(error.message)}</p><button type="button" class="more-results" data-retry>${t('mobileSuggest.retry')}</button>`;root.querySelector('[data-retry]').onclick=load;onReady?.(false);}}
   finally{if(alive()&&id===serial)root.removeAttribute('aria-busy');}
  }
  function render(){

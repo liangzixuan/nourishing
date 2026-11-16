@@ -18,7 +18,7 @@ const metadata=row=>Object.fromEntries(['date','time','title','note','vitals'].f
 const fileData=file=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error(dc('photoRead')));reader.readAsDataURL(file);});
 
 /** Source snapshot dialogs; the cloud contract owns normalization, private media and writes. */
-export function mountSnapshots({root,date,onChange=async()=>{}}){
+export function mountSnapshots({root,date,onChange=async()=>{},onReady}){
  let disposed=false,rows=[],revision,readSerial=0,busy=false,pending=null,pendingMutation=null,dialog=null,camera=null,calendar=null,focus=null;
  const abort=new AbortController();
  root.innerHTML='<section class="snapshots ms-root"><p class="snapshot-status" role="status"></p><div class="snapshot-list"></div><input type="file" data-snapshot-gallery accept="image/jpeg,image/png,image/webp" hidden></section>';
@@ -29,7 +29,7 @@ export function mountSnapshots({root,date,onChange=async()=>{}}){
  function setBusy(value){busy=value;const add=shell.querySelector('[data-snapshot-add]');if(add)add.disabled=value||pending!==null;list.querySelectorAll('[data-snapshot-options]').forEach(button=>button.disabled=value);}
  function facts(row){const v=row.vitals;return [[t('printDocument.stored.age'),v.age],[t('measurementCatalog.metric.weight'),v.weight?number(v.weight.value)+' '+(v.weight.unit==='lb'?'lbs':v.weight.unit):null],[t('printDocument.profile.bmi'),row.bmi===undefined?null:Number(row.bmi).toLocaleString(uiLanguage(),{maximumFractionDigits:0})],[t('bodyPanel.bodyFat'),v.bodyFat===undefined?null:number(v.bodyFat)+'%']].filter(([,value])=>value!==undefined&&value!==null).map(([label,value])=>`<div><dt>${label}:</dt><dd>${e(value)}</dd></div>`).join('');}
  function render(){list.innerHTML=snapshotListMarkup(rows,{busy:busy||pending!==null,media,dateLabel,facts});list.querySelectorAll('img').forEach(img=>img.onerror=()=>img.replaceWith(Object.assign(document.createElement('span'),{className:'snapshot-missing',textContent:dc('photoUnavailable')})));}
- async function load(){const serial=++readSerial;message(m('loading'));try{const apply=result=>{if(!alive()||serial!==readSerial)return;rows=result.items;revision=result.revision;render();message('');};apply(await request('/api/snapshots',undefined,abort.signal,{onRefresh:result=>{if(!document.querySelector('dialog[open]'))apply(result);}}));}catch(error){if(alive()&&error.name!=='AbortError')message(error.message,true);}}
+ async function load(){const serial=++readSerial;message(m('loading'));try{const apply=result=>{if(!alive()||serial!==readSerial)return;rows=result.items;revision=result.revision;render();message('');onReady?.();};apply(await request('/api/snapshots',undefined,abort.signal,{onRefresh:result=>{if(!document.querySelector('dialog[open]'))apply(result);}}));}catch(error){if(alive()&&serial===readSerial&&error.name!=='AbortError'){message(error.message,true);onReady?.(false);}}}
  function back(){if(calendar){calendar.close();return true;}camera?.dispose();camera=null;if(!dialog)return false;dialog.close();dialog.remove();dialog=null;if(focus?.isConnected)focus.focus({preventScroll:true});return true;}
  function popup(label,markup,kind=''){
   back();focus=document.activeElement;const owner=document.createElement('dialog');owner.className='ms-dialog '+kind;owner.setAttribute('aria-label',label);owner.innerHTML=markup;dialog=owner;

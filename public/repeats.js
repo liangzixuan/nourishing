@@ -11,7 +11,7 @@ const num = value => Number.isFinite(value) ? value.toLocaleString(uiLanguage(),
 const quantity = row => `${num(row.quantity ?? row.amount ?? 1)} ${row.unit === 'portion' ? row.portionLabel ?? foodQuantityUnit('portions') : foodQuantityUnit(row.unit ?? 'servings')}`;
 const reviewQuantity = row => `${num(row.value)} ${row.label ?? foodQuantityUnit(row.unit ?? (row.kind === 'batch' ? 'batch' : 'servings'))}`;
 
-export function mountRepeats({page, show, close, header, content, date, headerRoot, onExit, onChange = async () => {}}) {
+export function mountRepeats({page, show, close, header, content, date, headerRoot, backLabel, onExit, onChange = async () => {}}) {
   let data, disposed = false, serial = 0, pickerCleanup, list, editorController, query='';
   const events=new AbortController();document.body.classList.add('repeats-mobile');
   const root = document.createElement('section');
@@ -40,7 +40,7 @@ export function mountRepeats({page, show, close, header, content, date, headerRo
   }
   function render() {
     list?.dispose();
-    if(headerRoot)headerRoot.innerHTML=mobileRepeatsHeader(uiLanguage(),icon);
+    if(headerRoot){headerRoot.innerHTML=mobileRepeatsHeader(uiLanguage(),icon);if(backLabel)headerRoot.querySelector('[data-action=repeat-home]').setAttribute('aria-label',backLabel);}
     root.innerHTML=(headerRoot?'':mobileRepeatsHeader(uiLanguage(),icon))+mobileRepeatsMarkup({language:uiLanguage(),rows:data.items,name:row=>row.name,quantity,icon,query})+'<p class="repeat-status sheet-message" role="status"></p>';
     list=new MobileRepeatList({root,language:uiLanguage(),onQuery:value=>{query=value;}});
     const review=root.querySelector('[data-action=apply-repeats]');if(review){review.disabled=!data.preview.items.length||data.completed;if(data.completed)review.textContent=fc("dayCompleted");}

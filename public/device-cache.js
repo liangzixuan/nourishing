@@ -3,7 +3,12 @@ import {activateOfflineAccount,readPrivateResponse,writePrivateResponse,invalida
 let verified=null,initialization=0;
 const miss=()=>({value:undefined,savedAt:null,ticket:null});
 const same=(a,b)=>!!a&&!!b&&a.ownerId===b.ownerId&&a.epoch===b.epoch;
-const allowed=path=>typeof path==='string'&&path.startsWith('/api/')&&!path.startsWith('//')&&!/[\\#]/.test(path)&&!/^\/api\/(?:auth|account|backup|recovery|offline)(?:[/?]|$)/.test(path)&&!/(?:^|\/)(?:share|export|review)(?:[/?]|$)/.test(path);
+function allowed(path){
+ // This exact key contains only the Account renderer's display projection.
+ // The authentication endpoint and all credential/recovery reads stay blocked.
+ if(path==='/api/account?view=display')return true;
+ return typeof path==='string'&&path.startsWith('/api/')&&!path.startsWith('//')&&!/[\\#]/.test(path)&&!/^\/api\/(?:auth|account|backup|recovery|offline)(?:[/?]|$)/.test(path)&&!/(?:^|\/)(?:share|export|review)(?:[/?]|$)/.test(path);
+}
 export async function initializeDeviceCache(ownerId){
  const current=++initialization;verified=null;if(!globalThis.indexedDB)return null;
  const ticket=await activateOfflineAccount(ownerId);if(current!==initialization)return null;

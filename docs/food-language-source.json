@@ -100,7 +100,7 @@
     },
     {
       "output": "public/repeats.js",
-      "outputSha256": "51138ef2734fee12525e0b36111b63869f01b7f92ed795cfdef72752e5972b36"
+      "outputSha256": "dd1eb627f6a1aa77b45ea969dfc9ea1ee19c4b77892d9d9f07d47ee4312b7ea3"
     },
     {
       "output": "public/entry-adjustments.js",

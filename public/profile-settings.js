@@ -4,8 +4,7 @@ import {dc} from './discover-cloud-messages.js';
 import {uiLanguage,t} from './app-language.js';
 import {request} from './diary-api.js';
 import {escape as e} from './html.js';
-import {mountRecordEditor} from './records.js';
-import {AnchoredMenu} from './fasting-source/anchored-menu.js';
+import {openProfileEditor} from './profile-editor.js';
 import {moreBackHeader} from './more-source/menu-view.js';
 
 const options=(rows,value)=>rows.map(([id,label])=>`<option value="${e(id)}" ${String(id)===String(value)?'selected':''}>${e(label)}</option>`).join('');
@@ -17,28 +16,26 @@ const display=value=>value===null||value===undefined?t('threshold.target.notSet'
 
 /** Profile is a projection of explicitly configured policies and measurement series. */
 export function mountProfile({page,headerRoot,...ui}){
- let disposed=false,data,menu;const abort=new AbortController(),root=document.createElement('section');root.className='profile-page';page.replaceChildren(root);
+ let disposed=false,data,editor;const abort=new AbortController(),root=document.createElement('section');root.className='profile-page';page.replaceChildren(root);
  const alive=()=>!disposed&&root.isConnected,date=()=>typeof ui.date==='function'?ui.date():ui.date;
- headerRoot.innerHTML=moreBackHeader(t('settings.profile'));const more=document.createElement('button');more.type='button';more.className='profile-options';more.dataset.profileOptions='';more.setAttribute('aria-label',dc('profileOptions'));more.textContent='⋮';headerRoot.querySelector('.mm-child-header>span').replaceWith(more);
- async function load(){root.setAttribute('aria-busy','true');try{data=await request('/api/profile-settings?date='+encodeURIComponent(date()),null,abort.signal);if(alive())render();}catch(error){if(alive()){root.innerHTML='<p class="empty" role="status">'+e(error.message)+`</p><button class="profile-retry" data-profile-reload>${t('mobileSuggest.retry')}</button>`;}}finally{if(alive())root.setAttribute('aria-busy','false');}}
- const changed=async()=>{await ui.onChange?.();if(alive())await load();};
- function settings(screen){menu?.close();return openProfileSettings({...ui,date,initialScreen:screen,onChange:changed,onDone:ui.close});}
+ headerRoot.innerHTML=moreBackHeader(t('settings.profile'));
+ async function load(fresh=false){root.setAttribute('aria-busy','true');try{const apply=value=>{if(alive()){data=value;render();}};apply(await request('/api/profile-settings?date='+encodeURIComponent(date()),null,abort.signal,{fresh,onRefresh:value=>{if(!editor)apply(value);}}));}catch(error){if(alive()){root.innerHTML='<p class="empty" role="status">'+e(error.message)+`</p><button class="profile-retry" data-profile-reload>${t('mobileSuggest.retry')}</button>`;}}finally{if(alive())root.setAttribute('aria-busy','false');}}
+ const changed=async()=>{await ui.onChange?.();if(alive())await load(true);};
  function render(){
   const {demographics:d,measurements:m,bmi}=data.profile;
   const row=(id,label,value,extra='',editable=true)=>`<${editable?'button type="button"':'div'} class="profile-row" ${editable?'data-profile-row="'+id+'"':''}><strong>${label}</strong><span class="profile-value">${e(value)}${extra?'<small>'+e(extra)+'</small>':''}</span>${editable?'<span class="profile-chevron" aria-hidden="true">›</span>':''}</${editable?'button':'div'}>`;
   const value=kind=>m[kind].value===null?(m[kind].status==='unselected'?t('threshold.target.notSet'):m[kind].status==='empty'?dc('noReading'):t('health.unknown')):display(m[kind].value)+(m[kind].unit==='%'?'%':' '+m[kind].unit);
   root.innerHTML='<div class="profile-card">'+row('age',t('printDocument.stored.age'),display(d.age))+row('sex',dc('sex'),d.sex===null?t('threshold.target.notSet'):d.sex==="male"?dc('male'):dc('female'))+row("weight",t('measurementCatalog.metric.weight'),value("weight"))+row("height",t('measurementCatalog.metric.height'),value("height"))+row('bmi',dc('bmi'),display(bmi),'',false)+row('bodyFat',t('measurementCatalog.metric.body-fat'),value('bodyFat'),m.bodyFat.date?dc('lastUpdated',{date:m.bodyFat.date}):'')+'</div>';
  }
- more.addEventListener('click',()=>{menu?.close();menu=new AnchoredMenu({origin:more,anchor:more,label:dc('profileOptions'),items:[{id:"energy",label:dc('bodyActivity')},{id:'references',label:dc('nutrientReferences')},{id:'body',label:dc('recordedMeasurements')}],onChoose:settings,onClose:()=>{menu=null;}});},{signal:abort.signal});
- root.addEventListener('click',event=>{if(event.target.closest('[data-profile-reload]'))return void load();const id=event.target.closest('[data-profile-row]')?.dataset.profileRow;if(!id||!data)return;if(id==='age'||id==='sex')return void settings(id);const measurement=data.profile.measurements[id];if(!measurement?.choice)return void settings('body');void mountRecordEditor({...ui,date:date(),kind:'biometric',initialSelection:measurement.choice,onChange:changed});},{signal:abort.signal});
- root.textContent=t('mobileNutrientDetail.loading');void load();return {back(){if(menu){menu.close();return true;}return false;},dispose(){disposed=true;abort.abort();menu?.close();more.remove();}};
+ root.addEventListener('click',event=>{if(event.target.closest('[data-profile-reload]'))return void load(true);const kind=event.target.closest('[data-profile-row]')?.dataset.profileRow;if(!kind||!data)return;editor?.dispose();editor=openProfileEditor({kind,data,date:date(),onSaved:changed,onClose:()=>{editor=null;}});},{signal:abort.signal});
+ root.textContent=t('mobileNutrientDetail.loading');void load();return {back(){if(editor){editor.close();return true;}return false;},dispose(){disposed=true;abort.abort();editor?.dispose();}};
 }
 
 export async function openProfileSettings({date,show,close,header,content,onChange=async()=>{},initialScreen,onDone}){
  const selectedDate=typeof date==='function'?date():date;let data;
  const read=async()=>{data=await request('/api/profile-settings?date='+encodeURIComponent(selectedDate));};
  show(`${header(dc('profileBody'))}<p class="empty">${t('mobileNutrientDetail.loading')}</p>`);const loading=content.lastElementChild;
- try{await read();if(loading.isConnected)({energy:energyEditor,references:referenceEditor,body:bodyEditor,age:()=>demographicEditor('age'),sex:()=>demographicEditor('sex')}[initialScreen]??menu)();}catch(error){if(loading.isConnected)loading.textContent=error.message;}
+ try{await read();if(loading.isConnected)({energy:energyEditor,references:referenceEditor,body:bodyEditor}[initialScreen]??menu)();}catch(error){if(loading.isConnected)loading.textContent=error.message;}
  function menu(){
   show(`${header(dc('profileBody'))}<section class="profile-summary"><strong>${display(data.effectiveEnergy.components.resting)}${data.effectiveEnergy.components.resting===null?'':' kcal'}</strong><span>${t('energySummary.resting')}</span></section><div class="profile-menu">${[["energy",dc('bodyActivity')],['references',dc('nutrientReferences')],['body',dc('useMeasurements')]].map(([key,label])=>`<button type="button" data-profile="${key}">${label}<span>›</span></button>`).join('')}</div>`);
   content.querySelectorAll('[data-profile]').forEach(button=>button.onclick=()=>({energy:energyEditor,references:referenceEditor,body:bodyEditor})[button.dataset.profile]());
@@ -51,15 +48,6 @@ export async function openProfileSettings({date,show,close,header,content,onChan
    catch(error){if(error.status>=400&&error.status<500&&error.status!==408)pending=null;conflict=error.status===409;if(form.isConnected){status.textContent=error.message;if(conflict){const reload=document.createElement('button');reload.type='button';reload.textContent=dc('reloadSettings');reload.dataset.profileReload='';reload.onclick=async()=>{try{await onChange();await read();if(form.isConnected)(onDone??menu)();}catch(error){if(form.isConnected)status.textContent=error.message;}};status.append(reload);}}}
    finally{delete form.dataset.saving;form.querySelectorAll('button').forEach(button=>button.disabled=conflict&&button.type==='submit');for(const input of form.querySelectorAll('input,select'))input.disabled=Boolean(pending)||conflict;form.querySelector('[type=submit]').textContent=pending?t('mobileSuggest.retry'):t('common.save');}
   };return form;
- }
- function demographicEditor(kind){
-  const d=data.profile.demographics;if(!d.source)return energyEditor();
-  const source=d.source==="energy"?data.energy.resting:data.references;
-  const html=kind==='sex'?select('sex',dc('sex'),[["male",dc('male')],["female",dc('female')]],source.sex):source.birthDate?field('birthDate',t('referencePanel.birthDate'),source.birthDate,'date'):field('age',t('printDocument.stored.age'),d.age);
-  editor(kind==='age'?t('printDocument.stored.age'):dc('sex'),html+`<p class="profile-source-note">${dc(d.source==="energy"?'restingInputs':'nutrientInputs')}</p>`,form=>{
-   const patch=kind==='sex'?{sex:form.elements.sex.value}:source.birthDate?{birthDate:form.elements.birthDate.value}:{age:number(form,'age')};
-   return d.source==="energy"?{type:'profileSettings.energy',payload:{resting:{...source,...patch},baseline:data.energy.baseline}}:{type:'profileSettings.references',payload:{policy:{...source,...patch}}};
-  });
  }
  function energyEditor(){
   const resting=data.energy?.resting??{mode:'mifflin-st-jeor-birthday'},baseline=data.energy?.baseline??{mode:'multiplier',factor:0};

@@ -8,11 +8,17 @@ The domain switch, Appwrite migration and PWA installation are complete. The own
 
 ## Current checkpoint
 
+### More and Discover follow-up (November 16)
+
+The next release embeds Account in More, caches its display fields per account, and returns to More without focusing Search. Profile uses direct Birthday, Sex, Weight, Height and Body Fat dialogs based on the saved and live Cronometer references. Narrow profile commands preserve unrelated target policies. Discover follows the finger and uses a bounded slide transition with reduced-motion support. Repeat Items launched from More now has a generic Back label.
+
+Validation before publication: all 586 tests pass, including account isolation, warm Account reads, Profile saves/cancellation/unit conversion, swipe lifecycle and reminder retries. The production build and staged publication audit pass. The Oracle fixture now waits for its refreshed form before retrying; the reminder fixture supplies the service-worker registration API imported by Account. Private evidence: `.local/more-device-check/full-tests-final.log`, `build-final.log`, and `publication-final.log`. Deployment and physical-device verification follow.
+
 Production runtime `23b660f`, site deployment `6afb3e2b606915b3d407`, is active as of November 16 at 17:35:21 UTC. This follow-up fixes swipes across the blank area of empty Discover screens; three focused browser tests, the production build, publication audit and physical Pixel reverse swipe passed. The preceding cache/photo release was `af2c8ff`. For that preceding release, all 583 tests, the production build, staged publication audit and hosted language/navigation/data-integrity checks passed. Public cache, swipe, Report and service-worker files match the deployed source. Disposable verification accounts were removed and the owner's data was unchanged.
 
 The app now caches account-specific screen responses and saved photos in IndexedDB, warms the main views, refreshes older reads in the background, and automatically keeps the full offline diary snapshot. Writes, account changes, logout, expiry and restored generations invalidate the relevant cache authority. Existing offline queues and server revision guards remain. See `docs/device-caching.md` for cache bounds and behavior.
 
-Live repeat navigation measured Dashboard 57–63 ms, Charts 62–63 ms, Report 62–63 ms and Diary 44–49 ms, with no GET requests during those repeat visits. First uncached Dashboard/Report visits still took several seconds; a real-photo verification ran concurrently during those initial measurements. These are desktop Chrome mobile-viewport measurements, not physical Pixel timings. All samples are in `docs/tab-navigation-performance.json`.
+Live repeat navigation measured Dashboard 57â€“63 ms, Charts 62â€“63 ms, Report 62â€“63 ms and Diary 44â€“49 ms, with no GET requests during those repeat visits. First uncached Dashboard/Report visits still took several seconds; a real-photo verification ran concurrently during those initial measurements. These are desktop Chrome mobile-viewport measurements, not physical Pixel timings. All samples are in `docs/tab-navigation-performance.json`.
 
 Discover supports left/right touch swipes through Dashboard, Charts, Report and Snapshots. Real Chromium touch tests verified horizontal navigation, vertical scrolling, no wrap, chart/control/dialog exemptions and listener cleanup.
 
