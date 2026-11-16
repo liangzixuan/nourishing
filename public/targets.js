@@ -1,3 +1,4 @@
+import {MobileMacroScheduler} from './macro-scheduler-source/mobile-macro-scheduler.js';
 import {MobileMacroEnergy} from './macro-energy-source/mobile-macro-energy.js';
 import {mountRecordEditor} from './records.js';
 import {MobileWeightGoal} from './weight-goal-source/mobile-weight-goal.js';
@@ -23,7 +24,7 @@ export function mountTargets({page,headerRoot,date,show,close,header,content,onC
  document.body.classList.add('targets-mobile');
  const alive=()=>!disposed&&root.isConnected;
  const day=()=>typeof date==='function'?date():date;
- const expenditureSession={pending:null,listener:null},weightSession={pending:null,listener:null},macroSession={pending:null,listener:null};
+ const expenditureSession={pending:null,listener:null},weightSession={pending:null,listener:null},macroSession={pending:null,listener:null},schedulerSession={pending:null,listener:null};
  const ui={date,show,close,header,content,onChange:async()=>{await onChange();if(alive()&&child)await child.load();}};
  function heading(title){headerRoot.innerHTML=`<div class="mm-child-header"><button type="button" data-mt-back aria-label="Back">${moreIcon('chevron-left')}</button><h1>${e(title)}</h1><button type="button" data-mt-menu aria-label="${e(m('tools'))}" aria-haspopup="menu" aria-expanded="false">⋮</button></div>`;}
  function reset(){operation++;menu?.close(false);menu=null;child?.dispose();child=null;}
@@ -35,6 +36,10 @@ export function mountTargets({page,headerRoot,date,show,close,header,content,onC
  }
  function open(id){
   menu?.close();
+  if(id==='scheduler'||id==='day'){
+   reset();screen=id;heading(m('scheduler'));root.innerHTML='<div class="mt-section"><div id="mobile-macro-scheduler-root"></div></div>';window.scrollTo(0,0);
+   child=new MobileMacroScheduler({root:root.querySelector('#mobile-macro-scheduler-root'),header:headerRoot,date:day(),language:'en',energyUnit:'kcal',session:schedulerSession,onSaved:onChange,onNavigate:open,onDiary:onExit,initialAction:id==='day'?'day':'home'});return;
+  }
   if(id==='macros'){
    reset();screen='macros';heading(m('macros'));root.innerHTML='<div class="mt-section"><div id="mobile-macro-energy-root"></div></div>';window.scrollTo(0,0);
    child=new MobileMacroEnergy({root:root.querySelector('#mobile-macro-energy-root'),date:day(),language:'en',energyUnit:'kcal',session:macroSession,onSaved:onChange,onNavigate:open});return;
@@ -55,8 +60,7 @@ export function mountTargets({page,headerRoot,date,show,close,header,content,onC
   }
   if(id==='scores'||id==='diary'){void summary(id==='scores'?'choose-scores':'configure-diary-display');return;}
   if(id==='references'||id==='body'){void openProfileSettings({...ui,initialScreen:id});return;}
-  const initialScreen={scheduler:'schedule',weekday:'weekdays'}[id];
-  if(initialScreen)void openTargetPolicies({...ui,initialScreen,onSource:()=>{close();open('macros');}});
+  if(id==='weekday')void openTargetPolicies(ui);
  }
  function back(){if(menu){menu.close();return true;}if(child?.back())return true;if(screen!=='home'){home();return true;}return false;}
  headerRoot.addEventListener('click',event=>{

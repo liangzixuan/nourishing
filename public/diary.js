@@ -6,7 +6,6 @@ import {createAppShell} from './app-shell.js';
 import {mountMore} from './more.js';
 import {diarySummaryMarkup,mountDiarySummary} from './diary-summary.js';
 import {openDiarySummaryAction} from './diary-summary-actions.js';
-import {openTargetPolicies} from './target-policies.js';
 import {diaryCycleMarkup} from './diary-cycle.js';
 import {rememberOfflineAccount} from './offline-session.js';
 import {mountTextLog} from './text-log.js';
@@ -110,7 +109,7 @@ function navigate(next,initialTab='dashboard',reportDate){
 function sourceTargets(){pickerCleanup=mountTargetsSheet({date:()=>date,show,close,header,content,onChange:load});}
 async function summaryAction(input){
  if(input.action==='open-fasting')return navigate('discover','fasting');
- if(input.action==='edit-day-targets')return openTargetPolicies({date:()=>date,show,close,header,content,onChange:load,initialScreen:'day',onSource:sourceTargets});
+ if(input.action==='edit-day-targets'){pickerCleanup=mountTargetsSheet({date:()=>date,show,close,header,content,onChange:load,initialScreen:'day'});return;}
  if(input.action==='all-nutrients')return navigate('discover','report',date);
  if(input.action==='water'){try{await command(diary.revision,'water.add',{date,time:new Date().toTimeString().slice(0,5),amount:input.amount});await load();}catch(error){notice.textContent=error.message;}return;}
  if(input.action==='water-custom'){

@@ -1,73 +1,89 @@
-import {request,command} from './diary-api.js';
+import {request} from './diary-api.js';
 import {escape as e} from './html.js';
 import {mountNoteEditor} from './note-photos.js';
-const names={exercise:'Exercise',biometric:'Biometric',note:'Note'};
-const collections={exercise:'entries',biometric:'biometrics',note:'notes'};
-const input=(label,name,value,attributes='')=>`<label class="field-row"><span>${e(label)}</span><input aria-label="${e(label)}" name="${name}" value="${e(value??'')}" ${attributes}></label>`;
-const selectOption=(value,label,current)=>`<option value="${e(value)}" ${value===current?'selected':''}>${e(label)}</option>`;
-const format=value=>Number.isFinite(value)?value.toLocaleString(undefined,{maximumFractionDigits:1}):'—';
-
-export async function mountRecordEditor({kind,record,date,show,close,header,content,onChange,initialSelection}){
- if(!Object.hasOwn(names,kind))return;
- if(kind==='note')return mountNoteEditor({record,date,show,close,header,content,onChange});
- show(header((record?'Edit ':'Add ')+names[kind])+'<p class="empty">Loading…</p>');
- const loading=content.querySelector('.empty');let options,detail;
- try{
-  [options,detail]=await Promise.all([request('/api/records/options?'+new URLSearchParams({date:record?.date??date})),record?request('/api/records/item?'+new URLSearchParams({collection:collections[kind],id:record.id})):null]);
-  if(!loading.isConnected)return;
-  if(detail)record=detail.record;
-  if(kind==='biometric'&&!record&&initialSelection){const chosen=options.biometrics.metrics.find(row=>Object.keys(row.selection).length===Object.keys(initialSelection.selection??{}).length&&Object.entries(row.selection).every(([key,value])=>initialSelection.selection[key]===value));if(!chosen||initialSelection.unit!==null&&!chosen.units.includes(initialSelection.unit))throw Error('This weight measurement is no longer available.');initialSelection={...initialSelection,key:chosen.key};}
-  if(kind==='exercise'&&!record)exercisePicker();else editor();
- }catch(error){if(loading.isConnected)loading.textContent=error.message;}
- function diaryFields(){const group=record?.group??(options.groups.includes('Uncategorized')?'Uncategorized':kind==='exercise'?options.groups[0]:null);return input('Date','date',record?.date??date,'type="date" required')+input('Time','time',record?.time??new Date().toTimeString().slice(0,5),'type="time"')+`<label class="field-row"><span>Group</span><select aria-label="Group" name="group">${kind==='exercise'?'':selectOption('','Uncategorized',group??'')}${options.groups.map(value=>selectOption(value,value,group)).join('')}</select></label>`;}
- function fields(form){return {date:form.elements.date.value,time:form.elements.time.value,group:form.elements.group.value||null};}
- function actions(){return `<p class="sheet-message" role="status"></p><footer class="entry-actions">${record&&detail.deletable?'<button type="button" class="danger" data-delete>Delete</button>':''}${!record||detail.editable?'<button type="submit" class="primary">'+(record?'Save changes':'Add to diary')+'</button>':''}</footer>`;}
- function wireSave(form,payload,type){
-  form.onsubmit=async event=>{event.preventDefault();await save(type,()=>payload(),form);};
-  const remove=form.querySelector('[data-delete]');if(remove)remove.onclick=()=>{remove.textContent='Delete record';remove.onclick=()=>save(kind==='exercise'?'entry.delete':kind+'.delete',()=>({id:record.id}),form);};
+import {MobileExerciseBrowser} from './record-source/mobile-exercise-browser.js';
+import {MobileExerciseEditor,mobileExerciseMarkup} from './record-source/mobile-exercise-editor.js';
+import {CatalogExerciseEditor} from './record-source/catalog-exercise-editor.js';
+import {MobileBiometricPanel} from './record-source/mobile-biometric.js';
+import {blankBiometricDraft} from './record-source/biometric-entry.js';
+import {formatMessage} from './record-source/message-format.js';
+import {convertEnergy} from './dashboard-source/energy-units.mjs';
+const collections={exercise:'entries',biometric:'biometrics'},message=(key,values)=>formatMessage('en',key,values),clock=()=>new Date().toTimeString().slice(0,5);
+const classes=['mobile-food-editor','mobile-catalog-browser','mobile-exercise-editor','mobile-biometric'];
+/** Each open sheet owns its draft, pending command and disposable source presentation. */
+export async function mountRecordEditor(args){
+ const {kind,date,show,close,content,onChange,initialSelection}=args;let record=args.record;
+ if(kind==='note')return mountNoteEditor(args);if(!Object.hasOwn(collections,kind))return;
+ if(!document.querySelector('link[data-record-style]')){const link=document.createElement('link');link.rel='stylesheet';link.href='/records.css';link.dataset.recordStyle='';document.head.append(link);}
+ show('<section class="record-surface"><header class="dialog-head"><button type="button" data-record-close aria-label="Close">×</button><h2>Add '+(kind==='exercise'?'Exercise':'Biometric')+'</h2></header><div data-record-content><p class="empty" role="status">Loading…</p></div><div class="record-status" role="alert"></div></section>');
+ const root=content.querySelector('.record-surface'),sheet=content.closest('dialog'),abort=new AbortController();sheet.classList.add('record-sheet');
+ let options,detail,panel,session,disposed=false,busy=false,envelope=null,conflict=false,returnTo=null,deletePrompt=false;
+ const alive=()=>!disposed&&root.isConnected,status=()=>root.querySelector('.record-status');
+ function teardown(){panel?.dispose();panel=null;session=null;sheet.classList.remove(...classes);}
+ function dispose(){if(disposed)return;disposed=true;teardown();abort.abort();observer.disconnect();sheet.classList.remove('record-sheet');}
+ function exit(){if(busy)return;dispose();close();}
+ function back(){if(busy)return;if(deletePrompt){root.querySelector('.record-delete-confirm')?.remove();deletePrompt=false;return;}if(panel?.menu){panel.menu.close();return;}if(panel?.base?.menu){panel.base.menu.close();return;}if(envelope||conflict||record){exit();return;}if(kind==='biometric'&&panel?.back())return;if(returnTo){const next=returnTo;returnTo=null;next();return;}exit();}
+ function frame(title,html){teardown();root.innerHTML=`<header class="dialog-head"><button type="button" data-action="close-dialog" data-record-close aria-label="Back">×</button><h2>${e(title)}</h2></header><div data-record-content>${html}</div><div class="record-status" role="alert"></div>`;sheet.scrollTop=0;return root.querySelector('[data-record-content]');}
+ const observer=new MutationObserver(()=>{if(!root.isConnected)dispose();});observer.observe(content,{childList:true});
+ const cancel=event=>{if(!alive())return;event.preventDefault();event.stopImmediatePropagation();back();};sheet.addEventListener('cancel',cancel,{capture:true,signal:abort.signal});window.addEventListener('nourishing-back',cancel,{capture:true,signal:abort.signal});
+ sheet.addEventListener('click',event=>{if(event.target===sheet){event.preventDefault();event.stopImmediatePropagation();back();}},{capture:true,signal:abort.signal});
+ root.addEventListener('click',event=>{const button=event.target.closest('button');if(!button)return;if(button.hasAttribute('data-record-close'))back();if(button.hasAttribute('data-record-reload')){dispose();void mountRecordEditor(args);}if(button.hasAttribute('data-record-retry'))void save();if(button.hasAttribute('data-record-delete'))confirmDelete();if(button.hasAttribute('data-delete-cancel')){root.querySelector('.record-delete-confirm')?.remove();deletePrompt=false;}if(button.hasAttribute('data-delete-confirm'))void save(kind==='exercise'?'entry.delete':'biometric.delete',{id:record.id});},{signal:abort.signal});
+ function controls(){
+  if(!alive())return;const locked=busy||Boolean(envelope)||conflict;
+  if(!locked){for(const node of root.querySelectorAll('[data-record-disabled]')){node.disabled=node.dataset.recordDisabled==='true';delete node.dataset.recordDisabled;}if(panel instanceof CatalogExerciseEditor)panel.refresh();else if(panel instanceof MobileExerciseEditor)panel.update();else panel?.controls();}
+  if(locked||record&&!detail.editable)for(const node of root.querySelectorAll('input,select,form button')){if(!Object.hasOwn(node.dataset,'recordDisabled'))node.dataset.recordDisabled=String(node.disabled);node.disabled=true;}
+  for(const button of root.querySelectorAll('[data-record-close],[data-record-delete],[data-record-retry],[data-record-reload],[data-delete-cancel],[data-delete-confirm]'))button.disabled=busy||button.hasAttribute('data-record-delete')&&(Boolean(envelope)||conflict);
+  if(session?.unknown&&!busy&&!conflict){const retry=root.querySelector('[data-mb-check]');if(retry)retry.disabled=false;}
+  if(record&&!detail.editable)root.querySelector('[type=submit]')?.setAttribute('hidden','');
  }
- async function save(type,payload,form){
-  const status=form.querySelector('[role=status]');form.querySelectorAll('button').forEach(b=>b.disabled=true);status.textContent='';
-  try{await command(detail?.revision??options.revision,type,payload());await onChange();if(form.isConnected)close();}
-  catch(error){if(form.isConnected){status.textContent=error.message;if(error.status===409){const reload=document.createElement('button');reload.type='button';reload.textContent='Reload record';reload.onclick=()=>mountRecordEditor({kind,record,date,show,close,header,content,onChange,initialSelection});status.append(reload);}}}
-  finally{form.querySelectorAll('button').forEach(b=>b.disabled=false);}
+ function errorView(error){if(!alive())return;status().innerHTML=(session&&!conflict?'':e(error.message))+(conflict?'<button type="button" data-record-reload>Reload record</button>':envelope&&!session?'<button type="button" data-record-retry>Try again</button>':'');if(session){session.error=error.message;session.unknown=Boolean(envelope)&&!conflict;if(conflict)session.readOnly=true;session.notify();}}
+ async function save(type,payload){
+  if(busy||conflict||!alive())return;
+  if(!envelope)envelope={requestId:crypto.randomUUID(),revision:detail?.revision??options.revision,type,payload:structuredClone(payload)};
+  busy=true;status().textContent='';if(session){session.pending='save';session.error='';session.notify();}controls();
+  try{await request('/api/workspace/command',envelope);if(!alive())return;await onChange();if(alive()){busy=false;exit();}}
+  catch(error){if(!alive())return;if(error.status>=400&&error.status<500&&error.status!==408){envelope=null;conflict=error.status===409;}errorView(error);}
+  finally{busy=false;if(alive()){if(session){session.pending=null;session.notify();}controls();}}
  }
+ function confirmDelete(){if(busy||envelope||conflict||deletePrompt||!detail?.deletable)return;deletePrompt=true;root.insertAdjacentHTML('beforeend','<section class="record-delete-confirm" role="alertdialog" aria-label="Delete record"><p>Delete this record?</p><div><button type="button" data-delete-cancel>Cancel</button><button type="button" data-delete-confirm>Delete</button></div></section>');root.querySelector('[data-delete-cancel]').focus();}
+ function savedActions(){if(!record)return;if(!detail.editable)status().textContent=detail.reason;if(detail.deletable)root.insertAdjacentHTML('beforeend','<button type="button" class="record-delete" data-record-delete>Delete</button>');}
  function correction(changes){return {collection:collections[kind],id:record.id,recordRevision:detail.recordRevision,changes};}
- function editor(activity=null){
-  let specific='';
-  if(kind==='exercise')specific=input('Exercise','name',record?.name??activity?.description??'','required maxlength="300"')+input('Minutes','duration',record?.duration??30,'type="number" min="0.01" max="1440" step="any" required')+(activity?'<label class="field-row record-group"><span>Use estimated calories</span><input type="checkbox" name="useEstimate" checked></label>':'')+input('Calories (kcal)','calories',record?.caloriesBurned??'',`type="number" min="0" max="50000" step="any" required ${activity?'disabled':''}`)+(activity?'<div class="record-estimate" aria-live="polite">Calculating…</div>':'');
-  if(kind==='biometric')specific=record?input('Biometric','type',record.type,'required maxlength="100"')+input('Value','value',record.value,'type="number" step="any" required')+input('Unit','unit',record.unit,'required maxlength="30"'):`<div class="record-selection"><select name="metric" aria-label="Biometric">${options.biometrics.metrics.map(row=>selectOption(row.key,row.label,'catalog:weight')).join('')}<option value="__new__">New custom biometric…</option></select></div><div class="record-values"></div>`;
-  const blocked=record&&!detail.editable;
-  show(header((record?'Edit ':'Add ')+names[kind])+`<form class="entry-form"><fieldset class="record-fields" ${blocked?'disabled':''}>${specific}${diaryFields()}</fieldset>${blocked?`<p class="record-disabled">${e(detail.reason)}</p>`:''}${record?.exerciseBasis?`<details class="record-source"><summary>Original estimate</summary><p>${format(record.exerciseBasis.minutes)} min · ${format(record.exerciseBasis.weightKg)} kg · ${format(record.exerciseBasis.estimatedKcal)} kcal</p><a href="${e(record.exerciseBasis.source)}" target="_blank" rel="noreferrer">${e(record.exerciseBasis.edition)}</a></details>`:''}${actions()}</form>`);
-  const form=content.querySelector('form');
-  let metric;
-  if(kind==='biometric'&&!record){
-   const updateMetric=()=>{metric=options.biometrics.metrics.find(row=>row.key===form.elements.metric.value);const newCustom=!metric,unit=metric?.units[0]??'',multiple=metric?.fields.length===2;
-    form.querySelector('.record-values').innerHTML=(newCustom?input('Name','customName','','required maxlength="100"'):'')+(metric?.fields??[{key:'value',label:'Value'}]).map(field=>input(field.label,field.key,'','type="number" step="any" required')).join('')+input('Unit','unit',unit,`required maxlength="30" ${multiple||metric?.selection.kind==='metric'?'readonly':''} list="record-unit-options"`)+`<datalist id="record-unit-options">${(metric?.units??[]).map(unit=>`<option value="${e(unit)}"></option>`).join('')}</datalist>`;
-   };
-   if(initialSelection)form.elements.metric.value=initialSelection.key;
-   form.elements.metric.onchange=updateMetric;updateMetric();if(initialSelection?.unit)form.elements.unit.value=initialSelection.unit;
-  }
-  if(kind==='exercise'&&activity){
-   form.elements.name.readOnly=true;let calculation=null,version=0,timer;
-   const recalculate=()=>{clearTimeout(timer);const id=++version;calculation=null;const preview=form.querySelector('.record-estimate'),button=form.querySelector('[type=submit]');preview.textContent='Calculating…';button.disabled=true;
-    timer=setTimeout(async()=>{if(!form.isConnected)return;try{const result=await request('/api/records/exercise-estimate?'+new URLSearchParams({date:form.elements.date.value,code:activity.code,minutes:form.elements.duration.value}));if(id!==version||!form.isConnected)return;calculation=result;if(form.elements.useEstimate.checked)form.elements.calories.value=Number(result.netKcal.toFixed(1));preview.innerHTML=`<strong>${format(result.netKcal)} kcal</strong><small>${format(result.weightKg)} kg · Active calories</small>`;button.disabled=!result.recordable;}catch(error){if(id===version&&form.isConnected)preview.textContent=error.message;}},180);
-   };
-   form.elements.duration.oninput=recalculate;form.elements.date.onchange=recalculate;form.elements.useEstimate.onchange=()=>{form.elements.calories.disabled=form.elements.useEstimate.checked;if(calculation&&form.elements.useEstimate.checked)form.elements.calories.value=Number(calculation.netKcal.toFixed(1));};recalculate();
-   const manual=document.createElement('button');manual.type='button';manual.className='more-results';manual.textContent='Enter exercise manually';manual.onclick=()=>editor();form.querySelector('.record-fields').append(manual);
-   wireSave(form,()=>{if(!calculation)throw Error('Wait for the exercise estimate.');return {...fields(form),code:activity.code,duration:Number(form.elements.duration.value),weightKg:calculation.weightKg,useEstimate:form.elements.useEstimate.checked,...(!form.elements.useEstimate.checked?{calories:Number(form.elements.calories.value)}:{})};},'exercise.catalog.add');return;
-  }
-  wireSave(form,()=>{
-   if(kind==='exercise'){const changes={...fields(form),name:form.elements.name.value,duration:Number(form.elements.duration.value),calories:Number(form.elements.calories.value)};return record?correction(changes):changes;}
-   if(record)return correction({...fields(form),type:form.elements.type.value,value:Number(form.elements.value.value),unit:form.elements.unit.value});
-   return {...fields(form),selection:metric?.selection??{kind:'new-custom',name:form.elements.customName.value},unit:form.elements.unit.value,values:Object.fromEntries((metric?.fields??[{key:'value'}]).map(field=>[field.key,Number(form.elements[field.key].value)]))};
-  },record?'record.correct':kind==='biometric'?'biometric.log':kind+'.add');
+ try{
+  [options,detail]=await Promise.all([request('/api/records/options?'+new URLSearchParams({date:record?.date??date}),null,abort.signal),record?request('/api/records/item?'+new URLSearchParams({collection:collections[kind],id:record.id}),null,abort.signal):null]);
+  if(!alive())return;if(detail)record=detail.record;if(kind==='exercise'){if(record)exerciseEditor();else exerciseBrowser();}else biometricEditor();
+ }catch(error){if(alive())errorView(error);}
+ function exerciseBrowser(snapshot={node:'root',query:'',parent:null}){
+  const body=frame(message('exerciseBrowser.'+snapshot.node),'');returnTo=snapshot.parent?()=>exerciseBrowser(snapshot.parent):null;
+  panel=new MobileExerciseBrowser({root:body,dialog:sheet,message:key=>message('exerciseBrowser.'+key),api:()=>request('/api/records/exercise-catalog',null,abort.signal),snapshot,onNavigate:next=>exerciseBrowser(next),onSelect:(activity,choices,titleKey,from)=>exerciseEditor({activity,choices,titleKey,from}),onCustom:from=>exerciseEditor({from})});
  }
- function exercisePicker(){
-  show(header('Add Exercise')+'<div class="record-picker-tabs"><button type="button" aria-current="page">Search exercises</button><button type="button" data-manual>Custom exercise</button></div><div class="record-search"><input type="search" aria-label="Search exercises" placeholder="Search exercises"></div><ul class="search-results"></ul>');
-  const search=content.querySelector('input'),results=content.querySelector('.search-results');let serial=0,timer;
-  content.querySelector('[data-manual]').onclick=()=>editor();
-  async function find(offset=0){const id=++serial;try{const result=await request('/api/records/exercises?'+new URLSearchParams({q:search.value,offset}));if(id!==serial||!results.isConnected)return;const fragment=document.createDocumentFragment();for(const activity of result.items){const li=document.createElement('li'),button=document.createElement('button');button.type='button';button.textContent=activity.description;button.onclick=()=>editor(activity);li.append(button);fragment.append(li);}if(offset===0)results.replaceChildren();results.querySelector('[data-next]')?.remove();results.append(fragment);if(result.nextOffset!==null){const li=document.createElement('li');li.dataset.next='';const more=document.createElement('button');more.type='button';more.textContent='More exercises';more.onclick=()=>find(result.nextOffset);li.append(more);results.append(li);}if(!result.total)results.innerHTML='<li class="empty">No exercises found.</li>';}catch(error){if(id===serial&&results.isConnected)results.innerHTML=`<li class="empty">${e(error.message)}</li>`;}}
-  search.oninput=()=>{clearTimeout(timer);serial++;timer=setTimeout(()=>find(),180);};find();
+ function exerciseEditor({activity,choices,titleKey,from,draft}={}){
+  const value=record??draft??{},unit=options.energyUnit,group=value.group??(options.groups.includes('Uncategorized')?'Uncategorized':options.groups[0]);
+  const values={id:value.id,date:value.date??date,name:activity?.description??value.name??'',duration:value.duration??15,calories:value.caloriesBurned==null?'':convertEnergy(value.caloriesBurned,'kcal',unit),time:value.time??clock()};
+  const markup=mobileExerciseMarkup({value:values,groupOptions:options.groups.map(g=>`<option value="${e(g)}" ${g===group?'selected':''}>${e(g)}</option>`).join(''),unit,limits:{...options.exerciseLimits,maximumEnergy:convertEnergy(options.exerciseLimits.maximumKcal,'kcal',unit)},message,edit:Boolean(record)});
+  frame(record?'Edit Exercise':activity?message('exerciseBrowser.'+(titleKey??'root')):'Custom Exercise',markup);returnTo=from?()=>exerciseBrowser(from):null;
+  if(activity)panel=new CatalogExerciseEditor({dialog:sheet,message,activity,choices,titleKey,api:async()=>options.exerciseWeight,onCustom:next=>exerciseEditor({from,draft:next})});else panel=new MobileExerciseEditor({dialog:sheet,message});
+  const form=root.querySelector('form');
+  if(record){const dateField=document.createElement('label');dateField.className='me-row';dateField.innerHTML=`<strong>Date</strong><input type="date" value="${e(record.date)}" data-record-date required>`;form.querySelector('.me-card').append(dateField);dateField.querySelector('input').oninput=event=>form.elements.date.value=event.target.value;
+   if(record.exerciseBasis)form.insertAdjacentHTML('beforeend',`<details class="record-source"><summary>Original estimate</summary><p>${e(record.exerciseBasis.minutes)} min · ${e(record.exerciseBasis.weightKg)} kg · ${e(record.exerciseBasis.estimatedKcal)} kcal</p><a href="${e(record.exerciseBasis.source)}" target="_blank" rel="noreferrer">${e(record.exerciseBasis.edition)}</a></details>`);
+  }
+  form.addEventListener('submit',event=>{event.preventDefault();if(busy||envelope||conflict)return;const f=form.elements,common={date:f.date.value,time:f.time.value,group:f.group.value,duration:Number(f.duration.value)};if(activity)void save('exercise.catalog.add',{...common,code:f.code.value,weightKg:Number(f.weightKg.value),useEstimate:f.useEstimate.value==='true',...(f.useEstimate.value==='true'?{}:{calories:convertEnergy(Number(f.calories.value),unit,'kcal')})});else{const changes={...common,name:f.name.value,calories:convertEnergy(Number(f.calories.value),unit,'kcal')};void save(record?'record.correct':'exercise.add',record?correction(changes):changes);}},{signal:abort.signal});
+  savedActions();controls();
  }
+ function biometricEditor(){
+  const body=frame(record?'Edit Biometric':'Add Biometric',''),listeners=new Set(),selected=record?detail.biometricChoice:initialSelection;
+  const same=(a,b)=>a&&b&&Object.keys(a).length===Object.keys(b).length&&Object.entries(a).every(([key,value])=>b[key]===value);
+  const metric=selected?options.biometrics.metrics.find(row=>same(row.selection,selected.selection)):null;
+  if(selected&&(!metric||selected.unit!==null&&!metric.units.includes(selected.unit)))throw Error('This measurement is no longer available.');
+  const draft=blankBiometricDraft(record?.date??date,record?.time??clock(),record?.group??null);
+  if(record){if(!metric)throw Error('This measurement is no longer available.');draft.metric=metric.key;draft.unit=record.unit;draft.value=String(record.value);draft.name=record.type;
+   if(metric.selection.kind==='catalog'&&metric.selection.id==='weight'&&record.unit==='st'){draft.value=String(Math.floor(record.value));draft.stonePounds=String(Number(((record.value-Math.floor(record.value))*14).toFixed(12)));}
+   if(metric.selection.kind==='catalog'&&metric.selection.id==='sleep'&&record.unit==='h'){draft.durationHours=String(Math.floor(record.value));draft.durationMinutes=String(Math.round((record.value-Math.floor(record.value))*60));}
+  }
+  const original=structuredClone(draft);
+  session={language:'en',editing:Boolean(record),draft,library:options.biometrics,pending:null,error:'',unknown:false,imported:false,readOnly:Boolean(record&&!detail.editable),message:(key,values)=>message('measurementLog.'+key,values),subscribe(fn){listeners.add(fn);return()=>listeners.delete(fn);},notify(){for(const fn of listeners)fn();},invalidate(){if(!envelope){this.error='';this.notify();}},stopWaiting(){},load:async()=>{},reconcile:()=>save(),async save(input){if(record){const unchanged=['value','stonePounds','durationHours','durationMinutes','unit'].every(key=>this.draft[key]===original[key]),changes={date:input.date,time:input.time,group:input.group,type:metric.selection.kind==='metric'?this.draft.name:record.type,unit:input.unit,value:unchanged?record.value:input.values.value};await save('record.correct',correction(changes));}else await save('biometric.log',input);}};
+  panel=new MobileBiometricPanel({root:body,session,date,time:draft.time,group:draft.group,initialEntry:record?null:selected});
+
+  savedActions();controls();
+ }
+ return {dispose,back};
 }

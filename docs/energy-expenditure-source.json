@@ -98,15 +98,15 @@
     },
     {
       "path": "public/targets.js",
-      "sha256": "57ebdc946ac1c66f3d56a3e9e34a33c2f1c51a71ebd08a6f378279049c5f38f9"
+      "sha256": "e0e7636decc11bc75f6a15fe399a5fa6c83026f78247f55a558ab7d46a71412f"
     },
     {
       "path": "public/targets.css",
-      "sha256": "2bc81cc43ab49aad57d311506776210b9da5f564a786f96addd493b6c220fd08"
+      "sha256": "ad0a6f5ab764f6a2b8ce23d962afe68011d48d198accf5e28d47e5bcecb13b16"
     },
     {
       "path": "server/target-policy-view.mjs",
-      "sha256": "c63953a1e1f4d8df168a021b08030060b196d1a100edd0dbd7fa38f7c785157e"
+      "sha256": "685f5e50b56e9e885c647c928ef582e649094273b3e6bb1b888d3b0662fadbae"
     },
     {
       "path": "server/target-policy-commands.mjs",
@@ -114,11 +114,11 @@
     },
     {
       "path": "server/http.mjs",
-      "sha256": "94fdc3190c8d445af7348be23dbcf1d90b0b9e90cc0e8a9fec42ca72e3bcc2ab"
+      "sha256": "7ea564fe07d563a8cd38722d134af2ad30daa015ec1940e35d74cd2d8c545ade"
     },
     {
       "path": "server/appwrite-service.mjs",
-      "sha256": "7469df07514f830798a6b0451d8b55eda3e362ef0035b83dcacbbec37a189393"
+      "sha256": "f2b44a15a07f1d013faa0888cc355a857ddcd11a517ccd9e91769f0a20322492"
     },
     {
       "path": "tests/energy-expenditure.test.mjs",
@@ -126,11 +126,11 @@
     },
     {
       "path": "tests/energy-expenditure-browser.test.mjs",
-      "sha256": "7b7486c67438512962bfef20072f93fede4a9d6f23c6ba3d1f6f8235dea28f1c"
+      "sha256": "3fa16eab6bc502b5ef5a0072a3b5b411baacb1ac941e5eec050be56c34cbaacb"
     },
     {
       "path": "tests/targets-mobile.test.mjs",
-      "sha256": "2b8e5fa6e262f9481398440d1214234a6e208d23d706f47051c81e5252c64d3f"
+      "sha256": "f79de7ab2f0d752d59f2ee68f4865dbf82089a0f997ec58fe95ce38f4cd5e2ba"
     }
   ],
   "references": [

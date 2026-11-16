@@ -113,7 +113,7 @@
     },
     {
       "path": "public/fasting.css",
-      "sha256": "eb1b83f4d6de75f8bef3a06b3acd6034823c41c57feedce0ad4aff356911723a"
+      "sha256": "0f19022092f9377b29e756a2d068e26ac60bbfaa8808be21e38c5b13142c7c05"
     },
     {
       "path": "public/fasting-source/editor.js",
@@ -141,7 +141,7 @@
     },
     {
       "path": "public/more.js",
-      "sha256": "2d1a248fc7cbe071c2c768349c5526a7df5226773bc12b3ce98bf359c40cf859"
+      "sha256": "54feb21166fa2886ec6361b38e13e8e7e1557345fd9868d182c5a8cee9204afc"
     }
   ],
   "references": [
@@ -177,7 +177,7 @@
   "tests": [
     {
       "path": "tests/fasting-ui.test.mjs",
-      "sha256": "1b2364f1adc89a65d0205ee7f2f3cee6a504bcd98c73da8f3a69d95b9afb514c"
+      "sha256": "d10d8e462d88b633cb9829a90d98e62bdb7736de0f3451bf1d1ece12f8233bf6"
     }
   ],
   "adaptations": [

@@ -105,15 +105,15 @@
     },
     {
       "path": "public/records.js",
-      "sha256": "d95729c5865afebbbd9c3e825546fe15d24d1c60440d19c5f07cb6e27642a103"
+      "sha256": "8874aa7c1d673a8e6890ca5d3aaceac1fa86336495e1a633f7ed1a8c18dbf6f0"
     },
     {
       "path": "public/targets.js",
-      "sha256": "57ebdc946ac1c66f3d56a3e9e34a33c2f1c51a71ebd08a6f378279049c5f38f9"
+      "sha256": "e0e7636decc11bc75f6a15fe399a5fa6c83026f78247f55a558ab7d46a71412f"
     },
     {
       "path": "public/targets.css",
-      "sha256": "2bc81cc43ab49aad57d311506776210b9da5f564a786f96addd493b6c220fd08"
+      "sha256": "ad0a6f5ab764f6a2b8ce23d962afe68011d48d198accf5e28d47e5bcecb13b16"
     },
     {
       "path": "server/target-policy-commands.mjs",
@@ -121,7 +121,7 @@
     },
     {
       "path": "server/target-policy-view.mjs",
-      "sha256": "c63953a1e1f4d8df168a021b08030060b196d1a100edd0dbd7fa38f7c785157e"
+      "sha256": "685f5e50b56e9e885c647c928ef582e649094273b3e6bb1b888d3b0662fadbae"
     },
     {
       "path": "tests/weight-goal.test.mjs",
@@ -129,11 +129,11 @@
     },
     {
       "path": "tests/weight-goal-browser.test.mjs",
-      "sha256": "8d9f5524188a3220eec763ad4648c0e531c678b205c51481278147a4f7c610c9"
+      "sha256": "a0446c7168acdb50695dfe42a627157c971d80b0850b96b3d53dfd506dfb140c"
     },
     {
       "path": "tests/targets-mobile.test.mjs",
-      "sha256": "2b8e5fa6e262f9481398440d1214234a6e208d23d706f47051c81e5252c64d3f"
+      "sha256": "f79de7ab2f0d752d59f2ee68f4865dbf82089a0f997ec58fe95ce38f4cd5e2ba"
     },
     {
       "path": "public/weight-goal-source/close.svg",

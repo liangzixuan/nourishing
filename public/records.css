@@ -1,2 +1,26 @@
-.record-picker-tabs{display:flex;gap:8px;padding:14px}.record-picker-tabs button{flex:1;border:1px solid var(--line);padding:12px;background:var(--paper);border-radius:24px}.record-picker-tabs [aria-current]{color:var(--green);border-color:var(--green)}.record-search{display:flex;gap:12px;padding:14px}.record-search input{width:100%}.record-source{font-size:.8rem;color:var(--muted);margin:14px 18px}.record-source summary{cursor:pointer}.record-estimate{margin:14px 18px;padding:14px;border:1px solid var(--line);border-radius:14px}.record-estimate strong{font-size:1.2rem}.record-estimate small{display:block;color:var(--muted);margin-top:6px}.record-disabled{margin:18px;color:var(--muted)}.record-note{display:block;width:calc(100% - 36px);margin:18px;min-height:140px}.record-selection{padding:14px 18px}.record-selection select{width:100%}.record-values input{max-width:50%}.record-group input[type=checkbox]{width:22px;height:22px}.record-delete-confirm{display:flex;gap:12px;padding:14px 18px;background:var(--paper)}
-.record-fields{padding:0;margin:0;border:0;min-width:0}.record-fields:disabled{opacity:.65}
+@import url('/record-source/mobile-catalog-browser.css');
+@import url('/record-source/mobile-exercise-editor.css');
+@import url('/record-source/mobile-exercise-browser.css');
+@import url('/record-source/mobile-biometric.css');
+#sheet.record-sheet{width:100%;max-width:700px;height:100dvh;max-height:100dvh;margin:0 auto;padding:0;border:0;border-radius:0;background:var(--bg);color:var(--ink);font-family:Lato,sans-serif;}
+#sheet.record-sheet #sheet-content{padding:0;overflow:visible;}
+.record-surface{min-height:100%;background:var(--bg);color:var(--ink);font-family:Lato,sans-serif;}
+.record-surface .dialog-head{position:sticky;top:0;z-index:3;background:var(--paper);padding:12px 16px;border-radius:0 0 16px 16px;display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;min-height:72px;}
+.record-surface .dialog-head h2{margin:0;text-align:center;font:700 1.4rem/1.3 Karla,Lato,sans-serif;grid-column:2;grid-row:1;}
+.record-surface .dialog-head>button{grid-column:1;grid-row:1;border:0;background:transparent;color:inherit;font-size:2rem;min-width:44px;min-height:44px;padding:0;}
+.record-surface .dialog-head>button img{width:24px;height:24px;filter:var(--mobile-icon-filter);}
+.record-surface .mcb-grid img{filter:var(--mobile-icon-filter);opacity:.65;}
+.record-surface .mcb-search input{width:100%;font:inherit;}
+.record-surface .me-form,.record-surface .mb-card{font-family:Lato,sans-serif;}
+.record-status{padding:10px 16px;color:var(--mobile-danger);overflow-wrap:anywhere;}
+.record-status:empty{display:none;}
+.record-status button,.record-delete,.record-delete-confirm button{display:block;margin:12px auto;padding:10px 18px;border:0;border-radius:24px;background:var(--paper);color:var(--green);font:inherit;min-height:44px;}
+.record-delete{color:var(--mobile-danger);}
+.record-delete-confirm{padding:16px;text-align:center;background:var(--paper);border-radius:12px;}
+.record-delete-confirm div{display:flex;justify-content:center;gap:12px;}
+.record-source{margin:16px;font-size:.9rem;color:var(--muted);}
+.record-source a{color:var(--green);}
+.record-sheet .anchored-menu{margin:0;padding:8px;max-width:calc(100vw - 16px);border-radius:12px;box-shadow:0 6px 24px #0004;}
+.record-sheet .anchored-menu button{display:block;width:100%;text-align:left;border:0;background:transparent;color:inherit;padding:12px;font:inherit;}
+.record-sheet .record-surface [hidden]{display:none!important;}
+@media(min-width:701px){#sheet.record-sheet{border-radius:16px;max-height:96dvh;margin:auto;}}

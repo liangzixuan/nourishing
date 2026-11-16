@@ -10,7 +10,7 @@ import {date as calendarDate} from './domain/calendar.mjs';
 import {parseMacroPolicy,KETO_PRESETS} from './domain/macro-policy.mjs';
 import {parseEnergyPolicy} from './domain/energy-policy.mjs';
 import {carbohydratePreferences} from './domain/carbohydrate-policy.mjs';
-import {parseMacroPlan,projectMacroWeek} from './domain/macro-templates.mjs';
+import {parseMacroPlan,projectMacroWeek,parseTemplateSettings} from './domain/macro-templates.mjs';
 import {calculateSummary,resolveTargetSettings} from './domain/nutrition.mjs';
 
 export function targetPolicyView(state,date,{today,asOf,timeZone='UTC'}={}){
@@ -29,4 +29,14 @@ export function previewTargetPolicy(state,input,context){
  if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).length!==3||!['date','type','payload'].every(k=>Object.hasOwn(input,k))||!Object.hasOwn(targetPolicyCommandFields,input.type))fail();
  calendarDate(input.date);const copy=structuredClone(state);
  try{const action=prepareTargetPolicyCommand(copy,{type:input.type,payload:input.payload},context);act(copy,action.type,action.payload);return {revision:digest(state),view:targetPolicyView(copy,input.date,context)};}catch(error){if([400,409].includes(error.status))Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
+}
+
+/** Isolated template projection works even when the saved scheduler is disabled. */
+export function previewMacroTemplate(state,input){
+ const fail=()=>{throw Object.assign(Error('Choose valid template settings.'),{status:400,code:400,publicMessage:'Choose valid template settings.'});};
+ if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).length!==2||!['date','settings'].every(key=>Object.hasOwn(input,key)))fail();
+ try{
+  calendarDate(input.date);const settings=parseTemplateSettings(input.settings),copy={...state,settings:{...state.settings,macroPlan:{version:1,templates:[{id:'preview',name:'Preview',settings}],weeks:[],days:[{date:input.date,selection:{kind:'template',id:'preview'}}]}}};
+  return {revision:digest(state),date:input.date,settings,macroTargets:calculateSummary(copy,input.date).macroTargets};
+ }catch(error){fail();}
 }

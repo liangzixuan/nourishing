@@ -1,3 +1,5 @@
+import {barcodeAssets} from '../scripts/package-barcode-assets.mjs';
+const packagedAssets=new Map((await barcodeAssets()).map(asset=>['/'+asset.path,asset]));
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -12,6 +14,7 @@ test('Discover opens Coach and follows its selected date into Report and Suggest
  const state=initialState(),day='2026-11-15',selected='2026-11-14',context={now:new Date(day+'T18:00:00Z'),timeZone:'UTC'},requests=[],reportRanges=[];
  const server=createServer(async(req,res)=>{try{
   const url=new URL(req.url,'http://localhost'),path=url.pathname;
+  if(packagedAssets.has(path)){const asset=packagedAssets.get(path);res.setHeader('Content-Type',asset.type);return res.end(asset.body);}
   if(path==='/'){res.setHeader('Content-Type','text/html');return res.end(`<meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/dashboard.css"><link rel="stylesheet" href="/coach.css"><main></main><aside></aside><script type="module">import {mountNutrition} from '/nutrition.js';const content=document.querySelector('aside');window.mount=mountNutrition({page:document.querySelector('main'),mode:'discover',date:()=>'${day}',show:html=>content.innerHTML=html,close:()=>content.replaceChildren(),header:title=>'<h1>'+title+'</h1>',content,onChange:async()=>{},onSuggest:date=>document.body.dataset.suggest=date});</script>`);}
   if(path.startsWith('/api/')){
    requests.push(path);res.setHeader('Content-Type','application/json');

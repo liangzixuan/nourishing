@@ -1,6 +1,5 @@
 import {escape as e} from './html.js';
-import {request,command} from './diary-api.js';
-import {applyTheme} from './appearance.js';
+import {mountDisplay} from './display.js';
 import {mountTargets} from './targets.js';
 import {mountFasting} from './fasting.js';
 import {mountBackup} from './backup.js';
@@ -14,7 +13,6 @@ import {moreRow as row,moreLink as link,moreGroup as group,moreHomeHeader,moreBa
 
 const main=[['account','Account','account-cog'],['profile','Profile','account-circle'],['targets','Targets','bullseye'],['fasting','Fasting','timer-outline'],['display','Display','cellphone'],['sharing','Sharing','share'],['support','Support','help-circle'],['about','About','information']];
 const tools=[['reminders','Reminders'],['offline','Offline diary'],['repeats','Repeat Items'],['glucose','Glucose Timeline'],['cycle','Cycle Tracking'],['imports','Import CSV'],['export','Export data'],['backup','Backup & Restore']];
-const themes=[['dark','Dark'],['light','Light'],['system','System (device setting)']];
 
 /** Adapts the existing More layout to authenticated cloud features. */
 export function mountMore({page,headerRoot,date,show,close,header,content,onChange=async()=>{},onDiary,onFoods,onDiscover,identity='My workspace'}){
@@ -38,16 +36,6 @@ export function mountMore({page,headerRoot,date,show,close,header,content,onChan
   root.querySelector('.mm-empty').hidden=visible>0;
  }
  function childView(id,title,mount){reset();screen=id;heading(title);root.innerHTML='<div class="mm-destination"></div>';child=mount(root.firstElementChild);window.scrollTo(0,0);}
- function display(){
-  reset();screen='display';heading('Display');root.innerHTML='<p class="empty">Loading…</p>';const current=version;
-  const load=async()=>{
-   try{const data=await request('/api/targets?date='+encodeURIComponent(date()));if(!alive()||current!==version)return;
-    root.innerHTML=group(`<label class="mds-row"><strong>Theme</strong><select aria-label="Theme">${themes.map(([value,label])=>`<option value="${value}" ${value===data.theme?'selected':''}>${label}</option>`).join('')}</select></label>`,'mds-group')+'<p class="mm-status" role="status"></p>';
-    const select=root.querySelector('select'),status=root.querySelector('[role=status]');
-    select.onchange=async()=>{select.disabled=true;status.textContent='';try{const value=select.value;await command(data.revision,'preferences.patch',{theme:value});applyTheme(value);await onChange();if(alive()&&current===version)await load();}catch(error){if(alive()&&current===version){select.value=data.theme;status.textContent=error.message;}}finally{if(select.isConnected)select.disabled=false;}};
-   }catch(error){if(alive()&&current===version){root.innerHTML=`<p class="mm-status" role="status">${e(error.message)}</p><button type="button" class="mm-row" data-retry-display>Try again</button>`;root.querySelector('[data-retry-display]').onclick=load;}}
-  };void load();window.scrollTo(0,0);
- }
  function section(id,title,markup){reset();screen=id;heading(title);root.innerHTML=markup;window.scrollTo(0,0);}
  function open(id){
   if(screen==='home')scroll=window.scrollY;
@@ -62,14 +50,14 @@ export function mountMore({page,headerRoot,date,show,close,header,content,onChan
   if(id==='fasting')return childView(id,'Fasting',host=>mountFasting({...ui,page:host,headerRoot,onBack:home}));
   if(id==='backup')return childView(id,'Backup & Restore',host=>mountBackup({...ui,root:host}));
   if(id==='repeats')return childView(id,'Repeat Items',host=>mountRepeats({...ui,page:host,headerRoot,onExit:home}));
-  if(id==='display')return display();
+  if(id==='display')return childView(id,'Display',host=>mountDisplay({root:host,onChange}));
   if(id==='foods')return onFoods?.();
   if(id==='reports')return onDiscover?.('report');
   if(id==='sharing')return section(id,'Sharing',group((onFoods?row('foods','Foods & Recipes'):'')+(onDiscover?row('reports','Reports'):'')+row('backup','Backup & Restore')+row('export','Export data')));
   if(id==='support')return section(id,'Support',group(link('User Manual','https://support.cronometer.com/hc/en-us/categories/360001062451-Mobile-App',true)+row('backup','Backup & Restore')+row('reminders','Notifications')));
   if(id==='about')return section(id,'About','<div class="mm-about"><img src="/favicon.svg" alt=""><h2>Nourishing</h2></div>'+group(row('account','Account')+row('backup','Your data')));
  }
- const click=event=>{const button=event.target.closest('[data-more-open]');if(button){event.preventDefault();open(button.dataset.moreOpen);}else if(event.target.closest('[data-more-back]')){event.preventDefault();home();}};
+ const click=event=>{const button=event.target.closest('[data-more-open]');if(button){event.preventDefault();open(button.dataset.moreOpen);}else if(event.target.closest('[data-more-back]')){event.preventDefault();if(!child?.back?.())home();}};
  headerRoot.addEventListener('click',click,{signal});root.addEventListener('click',click,{signal});
  headerRoot.addEventListener('input',event=>{if(event.target.matches('[data-more-search]')){query=event.target.value;scroll=0;filter();}},{signal});
  home();return {back(){if(screen==='home')return false;if(child?.back?.())return true;home();return true;},dispose(){disposed=true;reset();events.abort();document.body.classList.remove('more-mobile','more-destination');}};

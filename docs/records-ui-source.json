@@ -1,0 +1,557 @@
+{
+  "version": 1,
+  "scope": "Exercise and Biometric record editors",
+  "hashEncoding": "Text hashes use LF bytes, matching published Git files; PNG hashes use raw bytes.",
+  "referencePolicy": "Saved source UI and Cronometer captures own presentation; account projections and existing record commands own data and calculations.",
+  "assets": [
+    {
+      "source": "../cronometer-local/public/biometric-catalog-language.js",
+      "output": "public/record-source/biometric-catalog-language.js",
+      "sourceSha256": "c859214492f4a86fc27bee7f5b66db0a6ce460fef493d8d1541878346e978105",
+      "outputSha256": "c859214492f4a86fc27bee7f5b66db0a6ce460fef493d8d1541878346e978105"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-entry.js",
+      "output": "public/record-source/biometric-entry.js",
+      "sourceSha256": "99ed189c20858a65e592d0e3bed44452784a6c22857e42e9e69d370738509710",
+      "outputSha256": "3feaef87c723a2470f385422a6a900a11cd2a75864e21ffc037c078e831ef2f1"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/bed.svg",
+      "output": "public/record-source/biometric-icons/bed.svg",
+      "sourceSha256": "e9e00e50d4212289644758005cffba999cd085264a7c4e6c06f958ac6d09a42e",
+      "outputSha256": "e9e00e50d4212289644758005cffba999cd085264a7c4e6c06f958ac6d09a42e"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/blood-bag.svg",
+      "output": "public/record-source/biometric-icons/blood-bag.svg",
+      "sourceSha256": "c9e990918e4fdfa6806aa9cc91fcf01f63275912445dce2eb44cc7338ccabdb6",
+      "outputSha256": "c9e990918e4fdfa6806aa9cc91fcf01f63275912445dce2eb44cc7338ccabdb6"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/chart-bell-curve.svg",
+      "output": "public/record-source/biometric-icons/chart-bell-curve.svg",
+      "sourceSha256": "a3e296114028db3c5f160865294fec5176950ac9345ac26147fcc7a6de5d59b6",
+      "outputSha256": "a3e296114028db3c5f160865294fec5176950ac9345ac26147fcc7a6de5d59b6"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/diabetes.svg",
+      "output": "public/record-source/biometric-icons/diabetes.svg",
+      "sourceSha256": "2cc7141bbf01c4daf55cc42f76202e74cebbfe19c54907b3ab0314dedc0b6d90",
+      "outputSha256": "2cc7141bbf01c4daf55cc42f76202e74cebbfe19c54907b3ab0314dedc0b6d90"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/emoticon-happy.svg",
+      "output": "public/record-source/biometric-icons/emoticon-happy.svg",
+      "sourceSha256": "4a686fdecd13080c3454dd4dbd9cbac26f9a39f26f8fe7ca09518cd6789c5205",
+      "outputSha256": "4a686fdecd13080c3454dd4dbd9cbac26f9a39f26f8fe7ca09518cd6789c5205"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/head-heart.svg",
+      "output": "public/record-source/biometric-icons/head-heart.svg",
+      "sourceSha256": "08d6d38e46d3852c0b88309ca14f61a9061864b40cd6b2a226687f4c55486cbd",
+      "outputSha256": "08d6d38e46d3852c0b88309ca14f61a9061864b40cd6b2a226687f4c55486cbd"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/heart-pulse.svg",
+      "output": "public/record-source/biometric-icons/heart-pulse.svg",
+      "sourceSha256": "a67bf6a8b705e9254141accdff7efc943bbfbe9ba35f4153673b30d876ba7e67",
+      "outputSha256": "a67bf6a8b705e9254141accdff7efc943bbfbe9ba35f4153673b30d876ba7e67"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/human-male-height.svg",
+      "output": "public/record-source/biometric-icons/human-male-height.svg",
+      "sourceSha256": "658f7c7292e6c53a479a58514d5b44fa350e2ddafefd7312419f9176f2e0c7f7",
+      "outputSha256": "658f7c7292e6c53a479a58514d5b44fa350e2ddafefd7312419f9176f2e0c7f7"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/LICENSE",
+      "output": "public/record-source/biometric-icons/LICENSE",
+      "sourceSha256": "3bae6305bcaa6d10219b999f65c342034c2d40b1c0e8567fa08605e73ccba829",
+      "outputSha256": "3bae6305bcaa6d10219b999f65c342034c2d40b1c0e8567fa08605e73ccba829"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/lightning-bolt.svg",
+      "output": "public/record-source/biometric-icons/lightning-bolt.svg",
+      "sourceSha256": "72c5bbcf935f31fa51ab36dea520b8c9c2ae6bd9cd6c42a02af9c57f6f9d42e4",
+      "outputSha256": "72c5bbcf935f31fa51ab36dea520b8c9c2ae6bd9cd6c42a02af9c57f6f9d42e4"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/lungs.svg",
+      "output": "public/record-source/biometric-icons/lungs.svg",
+      "sourceSha256": "028002ffd030696d4fc0822ce35d8fa5e354b2f0f3ad76fdc35f357624094df6",
+      "outputSha256": "028002ffd030696d4fc0822ce35d8fa5e354b2f0f3ad76fdc35f357624094df6"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/needle.svg",
+      "output": "public/record-source/biometric-icons/needle.svg",
+      "sourceSha256": "3d08cf1dbb800cf909c3994ea162ae00a3697794365092df1ebb92d9e20efbd4",
+      "outputSha256": "3d08cf1dbb800cf909c3994ea162ae00a3697794365092df1ebb92d9e20efbd4"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/restore.svg",
+      "output": "public/record-source/biometric-icons/restore.svg",
+      "sourceSha256": "54fd6c6c6a07313a7598104b9eed50a665720ac78e23ab1ca4edb6853e7f6d96",
+      "outputSha256": "54fd6c6c6a07313a7598104b9eed50a665720ac78e23ab1ca4edb6853e7f6d96"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/scale-bathroom.svg",
+      "output": "public/record-source/biometric-icons/scale-bathroom.svg",
+      "sourceSha256": "077a0dfc40d6e523012c6ce25a7d87a6f326d33b30b34fb04f23e5b415d8ebee",
+      "outputSha256": "077a0dfc40d6e523012c6ce25a7d87a6f326d33b30b34fb04f23e5b415d8ebee"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/sleep.svg",
+      "output": "public/record-source/biometric-icons/sleep.svg",
+      "sourceSha256": "b8aebdbe67455c3b62eb3763783eaadf1a5343c58e629a6a44d1be8303f23659",
+      "outputSha256": "b8aebdbe67455c3b62eb3763783eaadf1a5343c58e629a6a44d1be8303f23659"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/tape-measure.svg",
+      "output": "public/record-source/biometric-icons/tape-measure.svg",
+      "sourceSha256": "15ead0952b4a23bfd131bdc2ba8ecfd6b57eeb735fdc2412edfaf36295ee92fc",
+      "outputSha256": "15ead0952b4a23bfd131bdc2ba8ecfd6b57eeb735fdc2412edfaf36295ee92fc"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/test-tube.svg",
+      "output": "public/record-source/biometric-icons/test-tube.svg",
+      "sourceSha256": "a0fb4339fc67cd65cb4d5cd29555977d495ae6e54cea3831955d7bf3f24f410a",
+      "outputSha256": "a0fb4339fc67cd65cb4d5cd29555977d495ae6e54cea3831955d7bf3f24f410a"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/thermometer.svg",
+      "output": "public/record-source/biometric-icons/thermometer.svg",
+      "sourceSha256": "9a0c7a9ca6eea88f1f9f3ebc7d0dc97e1b8e0ce9680029d4e5b5dd8e830677e9",
+      "outputSha256": "9a0c7a9ca6eea88f1f9f3ebc7d0dc97e1b8e0ce9680029d4e5b5dd8e830677e9"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/toilet.svg",
+      "output": "public/record-source/biometric-icons/toilet.svg",
+      "sourceSha256": "49d8aff35794c67dae866345d52609fd7262786e22383df9765860408245369f",
+      "outputSha256": "49d8aff35794c67dae866345d52609fd7262786e22383df9765860408245369f"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/water-percent.svg",
+      "output": "public/record-source/biometric-icons/water-percent.svg",
+      "sourceSha256": "f5e6474e6b363ead04bde6e4c54c02a7906d9d87a3bf5f3f9d072d8967fde93c",
+      "outputSha256": "f5e6474e6b363ead04bde6e4c54c02a7906d9d87a3bf5f3f9d072d8967fde93c"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/water.svg",
+      "output": "public/record-source/biometric-icons/water.svg",
+      "sourceSha256": "d1ef8ee0cd88483911ec4a363503dfddb79a4c7fcee19933482990aa43eca081",
+      "outputSha256": "d1ef8ee0cd88483911ec4a363503dfddb79a4c7fcee19933482990aa43eca081"
+    },
+    {
+      "source": "../cronometer-local/public/biometric-value.js",
+      "output": "public/record-source/biometric-value.js",
+      "sourceSha256": "eb307c4d0a788d45fc129efeea96e983ab92ba897cb98d6fa03cf8c75d9f00e1",
+      "outputSha256": "eb307c4d0a788d45fc129efeea96e983ab92ba897cb98d6fa03cf8c75d9f00e1"
+    },
+    {
+      "source": "../cronometer-local/public/images/bristol/type-1.png",
+      "output": "public/record-source/bristol/type-1.png",
+      "sourceSha256": "ca9872b4e6e6f08e861d3493cb2bccda256977060a129c35dee585753c26d7b4",
+      "outputSha256": "ca9872b4e6e6f08e861d3493cb2bccda256977060a129c35dee585753c26d7b4"
+    },
+    {
+      "source": "../cronometer-local/public/images/bristol/type-2.png",
+      "output": "public/record-source/bristol/type-2.png",
+      "sourceSha256": "7155206e6aefbd5a1d1760053b4bd896804f558e4dd963d36e204f75a26a2f59",
+      "outputSha256": "7155206e6aefbd5a1d1760053b4bd896804f558e4dd963d36e204f75a26a2f59"
+    },
+    {
+      "source": "../cronometer-local/public/images/bristol/type-3.png",
+      "output": "public/record-source/bristol/type-3.png",
+      "sourceSha256": "3160e5999a849821854c16d9d9de83c22bc531b53c0359dc820cf5f9a2a725ba",
+      "outputSha256": "3160e5999a849821854c16d9d9de83c22bc531b53c0359dc820cf5f9a2a725ba"
+    },
+    {
+      "source": "../cronometer-local/public/images/bristol/type-4.png",
+      "output": "public/record-source/bristol/type-4.png",
+      "sourceSha256": "216f196db91e8229e1aa8b16abdcf0fd388f902e71f84cf0fcd18acd359e2d35",
+      "outputSha256": "216f196db91e8229e1aa8b16abdcf0fd388f902e71f84cf0fcd18acd359e2d35"
+    },
+    {
+      "source": "../cronometer-local/public/images/bristol/type-5.png",
+      "output": "public/record-source/bristol/type-5.png",
+      "sourceSha256": "48de02fa45d1c63a1c08c5f537869e53aa2a49e871fd785d99441713153e3307",
+      "outputSha256": "48de02fa45d1c63a1c08c5f537869e53aa2a49e871fd785d99441713153e3307"
+    },
+    {
+      "source": "../cronometer-local/public/images/bristol/type-6.png",
+      "output": "public/record-source/bristol/type-6.png",
+      "sourceSha256": "292bbdad99874dbc230f17e3062799861e8c45d221c3a37b7a47de14a3ad2af9",
+      "outputSha256": "292bbdad99874dbc230f17e3062799861e8c45d221c3a37b7a47de14a3ad2af9"
+    },
+    {
+      "source": "../cronometer-local/public/images/bristol/type-7.png",
+      "output": "public/record-source/bristol/type-7.png",
+      "sourceSha256": "aab42a5f8aac31e199f8383a0724dc82a7d978601aba3610fd422231ecbbaaa7",
+      "outputSha256": "aab42a5f8aac31e199f8383a0724dc82a7d978601aba3610fd422231ecbbaaa7"
+    },
+    {
+      "source": "../cronometer-local/public/catalog-exercise-editor.js",
+      "output": "public/record-source/catalog-exercise-editor.js",
+      "sourceSha256": "e6ac68701a25cef6c60e2df9b6d542100451c718c8c04bce616e28ccecb8c0ad",
+      "outputSha256": "846b2e6f766505fcfc52cda144d66a60ad170dfa5e8597136871e5b043e4b17a"
+    },
+    {
+      "source": "../cronometer-local/server/exercise-estimate.mjs",
+      "output": "public/record-source/exercise-estimate.mjs",
+      "sourceSha256": "58ba430d6ae54a59304dff8ed6fa03c541def7ca49220fc05cc3e62405a0ae69",
+      "outputSha256": "728577065c0ce50281f9271fddfda197778e2aff37ae0ff07080a101da8bf78d"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/account-group.svg",
+      "output": "public/record-source/exercise-icons/account-group.svg",
+      "sourceSha256": "c555dd898aeefd2e59a7e5c3ebf100a836a292c1dc4168d23f82330661eaba23",
+      "outputSha256": "c555dd898aeefd2e59a7e5c3ebf100a836a292c1dc4168d23f82330661eaba23"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/arm-flex.svg",
+      "output": "public/record-source/exercise-icons/arm-flex.svg",
+      "sourceSha256": "9c5900691f0eb36b2203587909d8de7309e895f0cc1dd88a4e0db89cd49f74b5",
+      "outputSha256": "9c5900691f0eb36b2203587909d8de7309e895f0cc1dd88a4e0db89cd49f74b5"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/bike.svg",
+      "output": "public/record-source/exercise-icons/bike.svg",
+      "sourceSha256": "cce88d5326cfa02322ce1c188756077fd0dca27a55b91ddaf26ec1a755f3f9e1",
+      "outputSha256": "cce88d5326cfa02322ce1c188756077fd0dca27a55b91ddaf26ec1a755f3f9e1"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/briefcase.svg",
+      "output": "public/record-source/exercise-icons/briefcase.svg",
+      "sourceSha256": "d4e4a654a62fb178e2d55130bc22b2f13068c600679b6ac92047bd58d14ca559",
+      "outputSha256": "d4e4a654a62fb178e2d55130bc22b2f13068c600679b6ac92047bd58d14ca559"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/car.svg",
+      "output": "public/record-source/exercise-icons/car.svg",
+      "sourceSha256": "a8e2b96646c01881d31bcae0e405b877c985e9e5f8a639f40cf8cbc97977ef52",
+      "outputSha256": "a8e2b96646c01881d31bcae0e405b877c985e9e5f8a639f40cf8cbc97977ef52"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/chevron-left.svg",
+      "output": "public/record-source/exercise-icons/chevron-left.svg",
+      "sourceSha256": "63017df5d04537d76bd4f5b3147b25366abfc48ed3f6f498caae699f9179b61b",
+      "outputSha256": "63017df5d04537d76bd4f5b3147b25366abfc48ed3f6f498caae699f9179b61b"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/close.svg",
+      "output": "public/record-source/exercise-icons/close.svg",
+      "sourceSha256": "518399857748e824a3e3f3c7654e259f07f337bf0f76fb72108d8572b21ab840",
+      "outputSha256": "518399857748e824a3e3f3c7654e259f07f337bf0f76fb72108d8572b21ab840"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/dance-ballroom.svg",
+      "output": "public/record-source/exercise-icons/dance-ballroom.svg",
+      "sourceSha256": "3770db56d52067ccd6802bfbfbf48ef849f654646b6a150b022159ea9e25bb72",
+      "outputSha256": "3770db56d52067ccd6802bfbfbf48ef849f654646b6a150b022159ea9e25bb72"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/dumbbell.svg",
+      "output": "public/record-source/exercise-icons/dumbbell.svg",
+      "sourceSha256": "e7d3b0287a1171112f77eb55de6b7154da2cc48c510936d2c500c3fc1cdcc892",
+      "outputSha256": "e7d3b0287a1171112f77eb55de6b7154da2cc48c510936d2c500c3fc1cdcc892"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/gamepad-variant.svg",
+      "output": "public/record-source/exercise-icons/gamepad-variant.svg",
+      "sourceSha256": "582674a7f638c5e3f733173832188e230b3c74d3f9f4af3c98e4da4f4aafd225",
+      "outputSha256": "582674a7f638c5e3f733173832188e230b3c74d3f9f4af3c98e4da4f4aafd225"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/hiking.svg",
+      "output": "public/record-source/exercise-icons/hiking.svg",
+      "sourceSha256": "19e1d050956f76c3a6133c50619bfe8480a474ef27916038571d78e5cbd11f3c",
+      "outputSha256": "19e1d050956f76c3a6133c50619bfe8480a474ef27916038571d78e5cbd11f3c"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/home.svg",
+      "output": "public/record-source/exercise-icons/home.svg",
+      "sourceSha256": "5eca2121c84b90b747888a662364bba5a2dc21b1c995bd0adb87ac039efaeddd",
+      "outputSha256": "5eca2121c84b90b747888a662364bba5a2dc21b1c995bd0adb87ac039efaeddd"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/human-handsup.svg",
+      "output": "public/record-source/exercise-icons/human-handsup.svg",
+      "sourceSha256": "80a971541c63fdec85c4986dad80356ff65b997a9939ec1df46bf82a9af21627",
+      "outputSha256": "80a971541c63fdec85c4986dad80356ff65b997a9939ec1df46bf82a9af21627"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/jump-rope.svg",
+      "output": "public/record-source/exercise-icons/jump-rope.svg",
+      "sourceSha256": "c78a3c72e78b1749b7de46c3cfc0920e41145214c605162bb85f4791f69e0357",
+      "outputSha256": "c78a3c72e78b1749b7de46c3cfc0920e41145214c605162bb85f4791f69e0357"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/LICENSE",
+      "output": "public/record-source/exercise-icons/LICENSE",
+      "sourceSha256": "3bae6305bcaa6d10219b999f65c342034c2d40b1c0e8567fa08605e73ccba829",
+      "outputSha256": "3bae6305bcaa6d10219b999f65c342034c2d40b1c0e8567fa08605e73ccba829"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/magnify.svg",
+      "output": "public/record-source/exercise-icons/magnify.svg",
+      "sourceSha256": "b124fa65c6c54b96b595f76f24ef2de114866a81cb2a5b75beaf86af964eff91",
+      "outputSha256": "b124fa65c6c54b96b595f76f24ef2de114866a81cb2a5b75beaf86af964eff91"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/rowing.svg",
+      "output": "public/record-source/exercise-icons/rowing.svg",
+      "sourceSha256": "98580d5707748c251720d106f6b80f6850b7fcf9875409194574639a721ecbe2",
+      "outputSha256": "98580d5707748c251720d106f6b80f6850b7fcf9875409194574639a721ecbe2"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/run-fast.svg",
+      "output": "public/record-source/exercise-icons/run-fast.svg",
+      "sourceSha256": "ff1cc934f5495ca7c9676ebc8085ecb5fa8fadc32eb6401ad4d630fa99cab9ac",
+      "outputSha256": "ff1cc934f5495ca7c9676ebc8085ecb5fa8fadc32eb6401ad4d630fa99cab9ac"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/skate.svg",
+      "output": "public/record-source/exercise-icons/skate.svg",
+      "sourceSha256": "ac414c15df0d2be2ac3bd6c10c518355102c8319715d388cd9e6764bca092dda",
+      "outputSha256": "ac414c15df0d2be2ac3bd6c10c518355102c8319715d388cd9e6764bca092dda"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/ski.svg",
+      "output": "public/record-source/exercise-icons/ski.svg",
+      "sourceSha256": "05850dc4fe114ce54f97bdd392a3e5d72fbfd4df2051a7f88860474e19bf4c8f",
+      "outputSha256": "05850dc4fe114ce54f97bdd392a3e5d72fbfd4df2051a7f88860474e19bf4c8f"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/soccer.svg",
+      "output": "public/record-source/exercise-icons/soccer.svg",
+      "sourceSha256": "c7d6cf1f1283d0af3fc504227ff2f20c4750ce5e1abfc7ee6d3574b00df76e2c",
+      "outputSha256": "c7d6cf1f1283d0af3fc504227ff2f20c4750ce5e1abfc7ee6d3574b00df76e2c"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/stairs.svg",
+      "output": "public/record-source/exercise-icons/stairs.svg",
+      "sourceSha256": "774b4b1e7c2c4c3500c5fbc33e5aed44000fd8bbbe86224acc5c075181f65333",
+      "outputSha256": "774b4b1e7c2c4c3500c5fbc33e5aed44000fd8bbbe86224acc5c075181f65333"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/surfing.svg",
+      "output": "public/record-source/exercise-icons/surfing.svg",
+      "sourceSha256": "e9ccfb5e9e1f29e8f2ebdacceb02b0725eeafbbdb2661833333a67a53b067732",
+      "outputSha256": "e9ccfb5e9e1f29e8f2ebdacceb02b0725eeafbbdb2661833333a67a53b067732"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/swim.svg",
+      "output": "public/record-source/exercise-icons/swim.svg",
+      "sourceSha256": "e69f812b7a9de971c19807636418a05683c08cb1763d0beb0912e778c18f0b0a",
+      "outputSha256": "e69f812b7a9de971c19807636418a05683c08cb1763d0beb0912e778c18f0b0a"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/walk.svg",
+      "output": "public/record-source/exercise-icons/walk.svg",
+      "sourceSha256": "8721521a3bb2aea73f916e0af3356235b1397726545029d051d6a88adcefdc3d",
+      "outputSha256": "8721521a3bb2aea73f916e0af3356235b1397726545029d051d6a88adcefdc3d"
+    },
+    {
+      "source": "../cronometer-local/public/exercise-navigation.js",
+      "output": "public/record-source/exercise-navigation.js",
+      "sourceSha256": "e634c935c20400c5de9665838d22703211b6595577eae1e905b72ca00b7085b3",
+      "outputSha256": "e634c935c20400c5de9665838d22703211b6595577eae1e905b72ca00b7085b3"
+    },
+    {
+      "source": "../cronometer-local/server/exercise-search.mjs",
+      "output": "public/record-source/exercise-search.mjs",
+      "sourceSha256": "099bff0ae0a31fd25e5099f4931c8c5e9c1bca9843d41c034d6b0857ea3fcd62",
+      "outputSha256": "099bff0ae0a31fd25e5099f4931c8c5e9c1bca9843d41c034d6b0857ea3fcd62"
+    },
+    {
+      "source": "../cronometer-local/public/locales/biometric-input.js",
+      "output": "public/record-source/locales/biometric-input.js",
+      "sourceSha256": "3c55a67424414f06a15d03f73248ae92e60654d5b69f2782e000f0e3adc4e0b9",
+      "outputSha256": "3c55a67424414f06a15d03f73248ae92e60654d5b69f2782e000f0e3adc4e0b9"
+    },
+    {
+      "source": "../cronometer-local/public/locales/exercise-browser.js",
+      "output": "public/record-source/locales/exercise-browser.js",
+      "sourceSha256": "ccfdbd313914e0a6401e140f82f30e42c74faa5810677879c235ae49e9d5b202",
+      "outputSha256": "ccfdbd313914e0a6401e140f82f30e42c74faa5810677879c235ae49e9d5b202"
+    },
+    {
+      "source": "../cronometer-local/public/locales/measurement-catalog.js",
+      "output": "public/record-source/locales/measurement-catalog.js",
+      "sourceSha256": "3eb17c06bf36d28cb43045f0cd30ba6f431c1875f086f33a77a0f70fbabcf895",
+      "outputSha256": "3eb17c06bf36d28cb43045f0cd30ba6f431c1875f086f33a77a0f70fbabcf895"
+    },
+    {
+      "source": "../cronometer-local/public/locales/measurement-log.js",
+      "output": "public/record-source/locales/measurement-log.js",
+      "sourceSha256": "1a5d7e400e48e466a7569fac9d4481894ca8ad45921c6aca564f50c2ab34f42a",
+      "outputSha256": "1a5d7e400e48e466a7569fac9d4481894ca8ad45921c6aca564f50c2ab34f42a"
+    },
+    {
+      "source": "../cronometer-local/public/locales/mobile-biometric.js",
+      "output": "public/record-source/locales/mobile-biometric.js",
+      "sourceSha256": "f4bb5a8ff1a0f7806685876b404cddaead69d005ec1410827d58b61efda2f372",
+      "outputSha256": "f4bb5a8ff1a0f7806685876b404cddaead69d005ec1410827d58b61efda2f372"
+    },
+    {
+      "source": "../cronometer-local/public/mobile-biometric.css",
+      "output": "public/record-source/mobile-biometric.css",
+      "sourceSha256": "d87c41a5badcb83b306f0fe11e16d169b7a29271b715abdcf0814fbb6e0f1cf4",
+      "outputSha256": "2ecc53d29f23324e8dd416f474a2599cc4dcced33ecf9e9d61d81ca848be75d7"
+    },
+    {
+      "source": "../cronometer-local/public/mobile-biometric.js",
+      "output": "public/record-source/mobile-biometric.js",
+      "sourceSha256": "34ecf5dd7e9a9561aa7395aaa5929c8d7c8363ba0b25940cd5d600414eff1405",
+      "outputSha256": "d11b494421550254f7924379fc813a862f4da29389cfaebf90d3b52d434782a6"
+    },
+    {
+      "source": "../cronometer-local/public/mobile-catalog-browser.css",
+      "output": "public/record-source/mobile-catalog-browser.css",
+      "sourceSha256": "2a5f30115f1575fa45e231cdc39b97c679da553c274d5bea43a7f5100367bd66",
+      "outputSha256": "125c25367e2b19ae051d4e8f2a9e6491abad1cfc67ce64d5a62f6be57a5a9522"
+    },
+    {
+      "source": "../cronometer-local/public/mobile-exercise-browser.css",
+      "output": "public/record-source/mobile-exercise-browser.css",
+      "sourceSha256": "cfd80792e9a9865c2137d33c93969ef0f464f2c3b681abca2b5089ee7a682867",
+      "outputSha256": "cfd80792e9a9865c2137d33c93969ef0f464f2c3b681abca2b5089ee7a682867"
+    },
+    {
+      "source": "../cronometer-local/public/mobile-exercise-browser.js",
+      "output": "public/record-source/mobile-exercise-browser.js",
+      "sourceSha256": "1f3973e1f51810053c557f2f8849872c553740023aad96148018788f9da7377a",
+      "outputSha256": "3d87b3e81ebefd2cfd6e2e7f82696ac87664910bd0d8d48077a22f495fdc9179"
+    },
+    {
+      "source": "../cronometer-local/public/mobile-exercise-editor.css",
+      "output": "public/record-source/mobile-exercise-editor.css",
+      "sourceSha256": "b6a336c6c67bceb8615ab15328b8e94f16a13e85d3d02d2b6ef762e36e6295da",
+      "outputSha256": "08b917be3a6e084d8a7a7007309efb808c44b00cfb63646c42d1913a99df48a7"
+    },
+    {
+      "source": "../cronometer-local/public/mobile-exercise-editor.js",
+      "output": "public/record-source/mobile-exercise-editor.js",
+      "sourceSha256": "c95807184e6e17886bde2e224acdae0663a6c11bf099346fb8bb8015f8528b7c",
+      "outputSha256": "c95807184e6e17886bde2e224acdae0663a6c11bf099346fb8bb8015f8528b7c"
+    },
+    {
+      "source": "../cronometer-local/public/sleep-duration.js",
+      "output": "public/record-source/sleep-duration.js",
+      "sourceSha256": "622971ee50a5591e42ba1a8a0f2d0cdbbd90480fd8deccdb848179345a57328d",
+      "outputSha256": "622971ee50a5591e42ba1a8a0f2d0cdbbd90480fd8deccdb848179345a57328d"
+    },
+    {
+      "source": "../cronometer-local/public/weight-entry.js",
+      "output": "public/record-source/weight-entry.js",
+      "sourceSha256": "9003ced9232ccacb273dac57092f4dbb308a0ea51ae5cb9acf4bb5e3912176c4",
+      "outputSha256": "9003ced9232ccacb273dac57092f4dbb308a0ea51ae5cb9acf4bb5e3912176c4"
+    }
+  ],
+  "adapters": [
+    {
+      "path": "public/record-source/anchored-menu.js",
+      "sha256": "f3d0b4eb90245a172d342c2aad704836414c03edafc31b67eaa35ca5e03053da"
+    },
+    {
+      "path": "public/record-source/discover-ui.js",
+      "sha256": "469858a43811ff75209effe27c9bd94d37363b5b5f2229072116dde71149e98c"
+    },
+    {
+      "path": "public/record-source/message-format.js",
+      "sha256": "538c0e5d6af326e2958860d907271d20292cf977cb0142f5ab55aee366aac84f"
+    },
+    {
+      "path": "public/records.js",
+      "sha256": "8874aa7c1d673a8e6890ca5d3aaceac1fa86336495e1a633f7ed1a8c18dbf6f0"
+    },
+    {
+      "path": "public/records.css",
+      "sha256": "831a2d23cfa04e42b4b5c8a5d65166c47dd4a8b3469a3d96dda9217864135a99"
+    },
+    {
+      "path": "server/record-views.mjs",
+      "sha256": "ac6aa65f859156f24a24f3dde8322bc0eba1b80037bf7299a735434afecdb940"
+    }
+  ],
+  "references": [
+    "../cronometer-local/verification/mobile-exercise-browser-20261109/design-qa.md",
+    "../cronometer-local/verification/mobile-biometrics-20261109/design-qa.md",
+    "../phone-discover-20261108/exercise-search.png",
+    "../phone-discover-20261108/exercise-cardio-list.png",
+    "../phone-discover-20261108/exercise-general-walking.png",
+    "../phone-discover-20261108/biometric-weight-form.png",
+    "../phone-discover-20261108/biometric-blood-pressure-form.png",
+    "../phone-discover-20261108/biometric-sleep-form.png"
+  ],
+  "adaptations": [
+    "Source modules use scoped cloud asset paths, existing message formatter and production CSP. SVG icons and Bristol illustrations retain source files.",
+    "The cloud sheet owns lifecycle, account revision and immutable command receipts. No local SQLite preview/recovery identifiers are fabricated.",
+    "Exercise estimates reuse the source exercise-estimate module. The save boundary revalidates catalog facts and selected account weight. Corrections retain original calculation basis.",
+    "Biometric source drafts use existing record commands for units, fractions, paired pressure, compound weight, sleep and custom definitions. Corrections and deletion respect source linkage and completed days.",
+    "Record projections add authenticated exercise catalog, energy unit, limits and exact biometric choice; no schemas or calculation rules changed."
+  ],
+  "verification": {
+    "automated": [
+      "tests/records-browser.test.mjs",
+      "tests/record-commands.test.mjs",
+      "tests/weight-goal-browser.test.mjs"
+    ],
+    "captures": [
+      ".local/records/exercise.png",
+      ".local/records/weight.png",
+      ".local/records/sleep.png",
+      ".local/records/stool.png",
+      ".local/records/categories-light-320.png"
+    ],
+    "coverage": "Production-CSP Chrome at 412px dark and 320px light; source navigation, menu outside dismissal, effort, manual override/reset, kJ, compound values, paired pressure, exact Weight Goal selection, correction/delete/cancel, committed-response retry, 409 reload, missing/conflicting estimates, source read-only, completed day and late close. Bristol image decoded before capture; missing assets fail the check.",
+    "hosted": "Prepared separately; not run as part of this manifest."
+  },
+  "limits": [
+    "Category hierarchy outside saved Cardio/Walking screens is local grouping over 1,111 Compendium records. Only Light walking mapping was verified against the captured calorie example.",
+    "Icons are licensed Material Design semantic substitutes. Exact Cronometer pictogram equivalence is not claimed.",
+    "Hematocrit units were not established by the saved capture and require explicit input.",
+    "No physical Pixel validation in this increment."
+  ],
+  "bristolAssetProvenance": {
+    "description": "Public reference illustrations retained from the original application asset inventory. These are diagram assets, not personal photographs. No license grant is inferred from public availability.",
+    "assets": [
+      {
+        "url": "https://cdn1.cronometer.com/img/metric/bristol-type-1.png",
+        "path": "public/record-source/bristol/type-1.png",
+        "sha256": "ca9872b4e6e6f08e861d3493cb2bccda256977060a129c35dee585753c26d7b4"
+      },
+      {
+        "url": "https://cdn1.cronometer.com/img/metric/bristol-type-2.png",
+        "path": "public/record-source/bristol/type-2.png",
+        "sha256": "7155206e6aefbd5a1d1760053b4bd896804f558e4dd963d36e204f75a26a2f59"
+      },
+      {
+        "url": "https://cdn1.cronometer.com/img/metric/bristol-type-3.png",
+        "path": "public/record-source/bristol/type-3.png",
+        "sha256": "3160e5999a849821854c16d9d9de83c22bc531b53c0359dc820cf5f9a2a725ba"
+      },
+      {
+        "url": "https://cdn1.cronometer.com/img/metric/bristol-type-4.png",
+        "path": "public/record-source/bristol/type-4.png",
+        "sha256": "216f196db91e8229e1aa8b16abdcf0fd388f902e71f84cf0fcd18acd359e2d35"
+      },
+      {
+        "url": "https://cdn1.cronometer.com/img/metric/bristol-type-5.png",
+        "path": "public/record-source/bristol/type-5.png",
+        "sha256": "48de02fa45d1c63a1c08c5f537869e53aa2a49e871fd785d99441713153e3307"
+      },
+      {
+        "url": "https://cdn1.cronometer.com/img/metric/bristol-type-6.png",
+        "path": "public/record-source/bristol/type-6.png",
+        "sha256": "292bbdad99874dbc230f17e3062799861e8c45d221c3a37b7a47de14a3ad2af9"
+      },
+      {
+        "url": "https://cdn1.cronometer.com/img/metric/bristol-type-7.png",
+        "path": "public/record-source/bristol/type-7.png",
+        "sha256": "aab42a5f8aac31e199f8383a0724dc82a7d978601aba3610fd422231ecbbaaa7"
+      }
+    ]
+  }
+}

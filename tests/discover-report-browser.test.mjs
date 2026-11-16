@@ -1,3 +1,5 @@
+import {barcodeAssets} from '../scripts/package-barcode-assets.mjs';
+const packagedAssets=new Map((await barcodeAssets()).map(asset=>['/'+asset.path,asset]));
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -28,6 +30,7 @@ test('Discover headers route Newsfeed and settings per tab; source Report render
   try{
    const url=new URL(req.url,'http://fixture'),path=url.pathname;
    res.setHeader('Content-Type','application/json');
+  if(packagedAssets.has(path)){const asset=packagedAssets.get(path);res.setHeader('Content-Type',asset.type);return res.end(asset.body);}
    if(path==='/api/nutrition-report'){const options=Object.fromEntries(url.searchParams);options.includeToday=options.includeToday==='true';options.includeSupplements=options.includeSupplements==='true';requests.push(options);return res.end(JSON.stringify(reportView(state,options,clock)));}
    if(path==='/api/dashboard')return res.end(JSON.stringify({...dashboardView(state,{date},clock),news:{version:1,items:[{id:'fixture-news',title:'Fixture News',body:'Header action test.'}]}}));
    if(path==='/api/charts')return res.end(JSON.stringify(chartSurfaceView(state,Object.fromEntries(url.searchParams),clock)));

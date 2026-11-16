@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "scope": "Source Macro Scheduler and selected Diary day targets",
+  "files": [
+    {
+      "source": "../cronometer-local/public/mobile-macro-scheduler.js",
+      "target": "public/macro-scheduler-source/mobile-macro-scheduler.js",
+      "sourceSha256": "058f427b083d0326349fc9acc06193e87677289c4a72aa45b6d04854961bf307",
+      "outputSha256": "f7cb3dd061874e0929dbb9cd4a27b52ca04cf98c7172066eb4747992a2d848c6",
+      "transforms": [
+        "LF normalization; redirect published source imports/assets; use cloud-owned policy capture, canonical template preview and shared immutable command lifecycle; scoped cloud dialog/switch resets."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/mobile-macro-scheduler.css",
+      "target": "public/macro-scheduler-source/mobile-macro-scheduler.css",
+      "sourceSha256": "a65855d8b0844e53ed63db2c06cc89489731c6939614797ffb16463768b8ac75",
+      "outputSha256": "bb919467eaf5e6a78025efc610f0084733d6bc797d9c96a21a132ebc30fbed55",
+      "transforms": [
+        "LF normalization; scoped cloud baseline switch, button, chevron and dialog resets."
+      ]
+    },
+    {
+      "target": "public/macro-scheduler.js",
+      "outputSha256": "d5a4815477f6279144f5792fe01c7698798d12cec261b57e263ccc5f4de2e26a"
+    },
+    {
+      "target": "public/targets.js",
+      "outputSha256": "e0e7636decc11bc75f6a15fe399a5fa6c83026f78247f55a558ab7d46a71412f"
+    },
+    {
+      "target": "public/targets.css",
+      "outputSha256": "ad0a6f5ab764f6a2b8ce23d962afe68011d48d198accf5e28d47e5bcecb13b16"
+    },
+    {
+      "target": "public/target-policies.js",
+      "outputSha256": "1222f6ab3afcf94adc044b2c0bbab132651e76aeb5bdd03fa226162077dfa387"
+    },
+    {
+      "target": "public/diary.js",
+      "outputSha256": "737babaf05af259c3d448c08e1eeb18fbc9f6381ae35c1aa5af1c604a485a243"
+    },
+    {
+      "target": "server/target-policy-view.mjs",
+      "outputSha256": "685f5e50b56e9e885c647c928ef582e649094273b3e6bb1b888d3b0662fadbae"
+    },
+    {
+      "target": "tests/macro-scheduler.test.mjs",
+      "outputSha256": "876eb91117a9c339126acd143539e39af07ed14ccf798c58fc8f954ec38e8fb5"
+    },
+    {
+      "target": "tests/macro-scheduler-browser.test.mjs",
+      "outputSha256": "1cb8b11e49071364dbc8c64386aeb04ca85c05ce3ef17d384766c4920facc1e9"
+    },
+    {
+      "target": "tests/targets-mobile.test.mjs",
+      "outputSha256": "f79de7ab2f0d752d59f2ee68f4865dbf82089a0f997ec58fe95ce38f4cd5e2ba"
+    },
+    {
+      "target": "scripts/targets-browser-flow.mjs",
+      "outputSha256": "0bb8af10ab13a23cde271778c47473fa3a10c64d85476ae794408352da346d32"
+    },
+    {
+      "target": "scripts/verify-targets-local.mjs",
+      "outputSha256": "ca5268f5dacc1e8140bdc666a532f993e07e6b61660a314dfe0e149329b36282"
+    }
+  ],
+  "references": [
+    "../cronometer-local/verification/phone-discover-20261108/macro-scheduler.png",
+    "../cronometer-local/verification/phone-discover-20261108/macro-template-form.png",
+    "../cronometer-local/verification/phone-discover-20261108/macro-template-fixed.png",
+    "../cronometer-local/verification/phone-discover-20261108/macro-template-keto.png",
+    "../cronometer-local/verification/phone-discover-20261108/macro-template-cancel.png",
+    "../cronometer-local/verification/phone-discover-20261108/keto-program-options.png"
+  ],
+  "canonicalOwner": "Existing parseMacroPlan, changeMacroPlan, parseTemplateSettings and calculateSummary own schedule history, assignment, conversions and unknown values. The read-only template preview isolates one template without enabling the saved plan. Existing targetPolicy.schedule and workspace receipts own every write; no schema or arithmetic change.",
+  "behavior": [
+    "Source scheduler tip, enabled switch, templates, weekly choices, reset, create/edit/copy/delete and source method/unit/keto controls.",
+    "Diary day sheet offers Follow schedule, Default, saved templates or Custom and returns to the selected Diary after apply/cancel.",
+    "Template preview works with disabled scheduler; inherited/default versus effective scheduled settings remain distinct.",
+    "Preview/save use workspace revision; stale or malformed responses do not save. Ambiguous writes retain and retry the identical envelope through shared TargetControlScreen.",
+    "Superseded generic scheduler/template/day editors removed; independent weekday nutrient overrides retained."
+  ],
+  "checks": [
+    "node --test tests/macro-scheduler.test.mjs tests/macro-scheduler-browser.test.mjs tests/target-policy.test.mjs tests/targets-mobile.test.mjs (13 passed)",
+    "node scripts/verify-targets-local.mjs (10 checks passed by Display integration worker)",
+    "node --check scripts/verify-macro-scheduler-hosted.mjs"
+  ],
+  "visual": [
+    ".local/macro-scheduler/home.png",
+    ".local/macro-scheduler/template.png"
+  ],
+  "limits": [
+    "Saved phone and local source references used; hosted acceptance remains release-owner work.",
+    "Reference Upper Limits and Guided Setup still need authenticated cloud adapters."
+  ],
+  "hostedVerification": {
+    "script": "scripts/verify-macro-scheduler-hosted.mjs",
+    "sha256": "134faa393108d72832b0effa41abfa266b6561aa2ddbe54741cc728f2e76f5a6",
+    "status": "prepared; not run against hosted"
+  }
+}

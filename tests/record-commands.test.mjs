@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {initialState,act} from '../server/domain/workspace.mjs';
 import {applyRecordCommand} from '../server/record-commands.mjs';
-import {recordOptions,recordView,exerciseSearch,exerciseEstimateView} from '../server/record-views.mjs';
+import {recordOptions,recordView,exerciseSearch,exerciseEstimateView,exerciseCatalogView} from '../server/record-views.mjs';
 const date='2026-11-14',fields={date,time:'12:00',group:'Lunch'};
 const apply=(state,type,payload)=>applyRecordCommand(state,{type,payload});
 test('manual exercise and catalog exercise use source validation and retain calculation basis',()=>{
@@ -49,4 +49,12 @@ test('note correction preserves unedited attachments and validates every recordi
  for(const payload of [{...fields,name:'Walk',duration:0,calories:1},{...fields,name:'Walk',duration:10,calories:-1},{...fields,date:'2026-02-30',name:'Walk',duration:10,calories:1}])assert.throws(()=>apply(state,'exercise.add',payload),{status:400});
  assert.throws(()=>apply(state,'biometric.log',{...fields,selection:{kind:'catalog',id:'stool'},unit:'Bristol type',values:{value:9}}),{status:400});
  assert.throws(()=>recordOptions(state,'bad'),{status:400});assert.throws(()=>exerciseSearch({q:'walk',offset:-1}),{status:400});
+});
+
+test('record projections expose source catalog and exact biometric choice without changing measurements',()=>{
+ const state=initialState();state.settings.energyUnit='kJ';state.settings.customBiometrics=[{name:'Morning mass',unit:'lb'}];
+ const options=recordOptions(state,date);assert.equal(options.energyUnit,'kJ');assert.equal(options.exerciseLimits.maximumKcal,50000);
+ const catalog=exerciseCatalogView();assert.equal(catalog.items.length,1111);assert.equal(catalog.headings.length,22);assert.ok(catalog.items.some(row=>row.conflict));assert.ok(catalog.items.every(row=>row.source.startsWith('https://pacompendium.com/')));
+ apply(state,'biometric.log',{...fields,selection:{kind:'metric',type:'Morning mass',unit:'lb'},unit:'lb',values:{value:180}});
+ const record=state.biometrics.at(-1),view=recordView(state,{collection:'biometrics',id:record.id});assert.deepEqual(view.biometricChoice,{selection:{kind:'metric',type:'Morning mass',unit:'lb'},unit:'lb'});assert.equal(view.record.value,180);
 });

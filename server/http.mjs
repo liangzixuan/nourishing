@@ -122,12 +122,14 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
         if(req.method==='POST'&&Object.hasOwn(methods,path))return json(200,await api[methods[path]](secret,body));
         fail(404,'Not found.');
       }
-      const recordQueries={'/api/repeats':['date'],'/api/records/options':['date'],'/api/records/item':['collection','id'],'/api/records/exercises':['q','offset'],'/api/records/exercise-estimate':['date','code','minutes']};
+      if(req.method==='GET'&&path==='/api/display'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');return json(200,await api.display(secret));}
+      const recordQueries={'/api/repeats':['date'],'/api/records/options':['date'],'/api/records/exercise-catalog':[],'/api/records/item':['collection','id'],'/api/records/exercises':['q','offset'],'/api/records/exercise-estimate':['date','code','minutes']};
       if(req.method==='GET'&&Object.hasOwn(recordQueries,path)){
         if(!secret)fail(401,'Please sign in.');const allowed=recordQueries[path];
         if([...url.searchParams.keys()].some(k=>!allowed.includes(k)||url.searchParams.getAll(k).length!==1)||(path!=='/api/records/exercises'&&allowed.some(k=>!url.searchParams.has(k))))fail(400,'Invalid query.');
         const p=Object.fromEntries(url.searchParams);
         if(path==='/api/repeats')return json(200,await api.repeats(secret,p.date));
+        if(path==='/api/records/exercise-catalog')return json(200,await api.exerciseCatalog(secret));
         if(path==='/api/records/options')return json(200,await api.recordOptions(secret,p.date));
         if(path==='/api/records/item')return json(200,await api.recordItem(secret,p));
         if(path==='/api/records/exercise-estimate'&&!/^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(p.minutes))fail(400,'Enter exercise minutes.');
@@ -157,6 +159,7 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
         return json(200,await api.nutritionReport(secret,input));
       }
       if(req.method==='POST'&&path==='/api/workspace/command'){if(!secret)fail(401,'Please sign in.');return json(200,await api.workspaceCommand(secret,body));}
+      if(req.method==='POST'&&path==='/api/target-policies/template-preview'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');return json(200,await api.targetTemplatePreview(secret,body));}
       if(req.method==='POST'&&path==='/api/target-policies/preview'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid query.');return json(200,await api.previewTargetPolicy(secret,body));}
       if(req.method==='POST'&&path==='/api/library/edit-preview')return json(200,await api.previewLibraryEdit(secret,body));
       if(req.method==='POST'&&path==='/api/library/preview'){if(!secret)fail(401,'Please sign in.');return json(200,await api.previewLibrary(secret,body));}

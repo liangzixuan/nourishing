@@ -1,3 +1,4 @@
+import {displayView} from './display-settings.mjs';
 import {previewLibraryEdit,validateLibraryEdit} from './library-edit.mjs';
 import {foodCopyView,validateFoodCopySelection} from './food-copy.mjs';
 import {previewFoodMultiAdd,validateFoodMultiInput} from './food-multi-add.mjs';
@@ -46,8 +47,8 @@ import {nutrientTargetsView,targetView,reportView} from './nutrition-views.mjs';
 import {csvReport} from './chart-view.mjs';
 import {chartSurfaceView} from './dashboard-pinned-charts.mjs';
 import {repeatView} from './repeat-view.mjs';
-import {recordOptions,recordView,exerciseSearch,exerciseEstimateView} from './record-views.mjs';
-import {targetPolicyView,previewTargetPolicy} from './target-policy-view.mjs';
+import {recordOptions,recordView,exerciseSearch,exerciseEstimateView,exerciseCatalogView} from './record-views.mjs';
+import {targetPolicyView,previewTargetPolicy,previewMacroTemplate} from './target-policy-view.mjs';
 import {captureCalendar} from './domain/calendar.mjs';
 
 async function reviewedPhoto(value){try{return await validateStoredPhoto(value);}catch(error){if(error.status===400)throw Object.assign(error,{code:400,publicMessage:'Choose a valid reviewed photo.'});throw error;}}
@@ -190,8 +191,11 @@ export function createAppwriteService(config, key, userAgent='') {
       return createWorkspaceStore(db,owner).command({requestId,revision,type:'photo.log',payload:{photoId:photo.id,reviewToken,date,time,group,rows,...(destination===undefined?{}:{destination})}},catalogReader(repository),{owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET,photo,stageMedia:context=>stagePhotoMedia({db,storage,owner,photo,...context})});
     },
     async previewTargetPolicy(secret,input){const {owner}=await data(secret),context=await calendarContext(secret,owner);return readView(secret,state=>previewTargetPolicy(state,input,context));},
+    async targetTemplatePreview(secret,input){return readView(secret,state=>previewMacroTemplate(state,input));},
     async targetPolicies(secret,date){const {owner}=await data(secret),context=await calendarContext(secret,owner);return readView(secret,state=>targetPolicyView(state,date,context));},
     async repeats(secret,date){return readView(secret,state=>repeatView(state,date));},
+    async exerciseCatalog(secret){await data(secret);return exerciseCatalogView();},
+    async display(secret){return readView(secret,state=>displayView(state));},
     async recordOptions(secret,date){return readView(secret,state=>recordOptions(state,date));},
     async recordItem(secret,input){return readView(secret,state=>recordView(state,input));},
     async exercises(secret,input){await data(secret);return exerciseSearch(input);},

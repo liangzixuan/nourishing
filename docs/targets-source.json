@@ -7,7 +7,7 @@
       "source": "../cronometer-local/public/mobile-targets.js",
       "target": "public/targets.js",
       "sourceSha256": "30a0259ebc75f84f4650c238dacb3d02c19f06fdda462bbaffff24815f378c00",
-      "outputSha256": "57ebdc946ac1c66f3d56a3e9e34a33c2f1c51a71ebd08a6f378279049c5f38f9",
+      "outputSha256": "e0e7636decc11bc75f6a15fe399a5fa6c83026f78247f55a558ab7d46a71412f",
       "transforms": [
         "Extract the six-row home markup and target navigation. Adapt icons, authenticated cloud requests, lifecycle and host header. Reuse existing cloud editors for other destinations. Supported tools only.",
         "Energy Expenditure now mounts the source child described in energy-expenditure-source.json.",

@@ -101,19 +101,19 @@
     },
     {
       "path": "public/targets.js",
-      "sha256": "57ebdc946ac1c66f3d56a3e9e34a33c2f1c51a71ebd08a6f378279049c5f38f9"
+      "sha256": "e0e7636decc11bc75f6a15fe399a5fa6c83026f78247f55a558ab7d46a71412f"
     },
     {
       "path": "public/targets.css",
-      "sha256": "2bc81cc43ab49aad57d311506776210b9da5f564a786f96addd493b6c220fd08"
+      "sha256": "ad0a6f5ab764f6a2b8ce23d962afe68011d48d198accf5e28d47e5bcecb13b16"
     },
     {
       "path": "public/target-policies.js",
-      "sha256": "46e051474e47e7ddab4f1909d70b598a373d815295a4c67c535e316e218cd485"
+      "sha256": "1222f6ab3afcf94adc044b2c0bbab132651e76aeb5bdd03fa226162077dfa387"
     },
     {
       "path": "public/diary.js",
-      "sha256": "b4e38260f90f4df3d37573f0a8993017f1c6909037f39e9991cc7c3b496a1f94"
+      "sha256": "737babaf05af259c3d448c08e1eeb18fbc9f6381ae35c1aa5af1c604a485a243"
     },
     {
       "path": "server/target-policy-commands.mjs",
@@ -121,7 +121,7 @@
     },
     {
       "path": "server/target-policy-view.mjs",
-      "sha256": "c63953a1e1f4d8df168a021b08030060b196d1a100edd0dbd7fa38f7c785157e"
+      "sha256": "685f5e50b56e9e885c647c928ef582e649094273b3e6bb1b888d3b0662fadbae"
     },
     {
       "path": "tests/macro-energy.test.mjs",
@@ -129,19 +129,19 @@
     },
     {
       "path": "tests/macro-energy-browser.test.mjs",
-      "sha256": "563ced5ce61940e219a0e985df9546f2a081ff0112a6a43fa69984a3f1808c55"
+      "sha256": "c9b4881a57a9b3abd5d507da332ef70321fa8dc4bfc144d25d8f56cf7ee900c5"
     },
     {
       "path": "tests/targets-mobile.test.mjs",
-      "sha256": "2b8e5fa6e262f9481398440d1214234a6e208d23d706f47051c81e5252c64d3f"
+      "sha256": "f79de7ab2f0d752d59f2ee68f4865dbf82089a0f997ec58fe95ce38f4cd5e2ba"
     },
     {
       "path": "scripts/targets-browser-flow.mjs",
-      "sha256": "9cba7913fbcc3221f7f75b994ceeb123d8d0ae3e18b25feb6460d3773bfe62e5"
+      "sha256": "0bb8af10ab13a23cde271778c47473fa3a10c64d85476ae794408352da346d32"
     },
     {
       "path": "scripts/verify-targets-local.mjs",
-      "sha256": "79ecf1a146bcff44dc9ba04cc6f978ca6c076aa26ecab380005350b839c43910"
+      "sha256": "ca5268f5dacc1e8140bdc666a532f993e07e6b61660a314dfe0e149329b36282"
     },
     {
       "path": "public/macro-energy-source/dots-vertical.svg",
@@ -149,7 +149,7 @@
     },
     {
       "path": "public/macro-energy-source/macro-capture.js",
-      "sha256": "5bbd349faea86df9b21c3f4ded20f7933d2e81b844dae8fb0fdd767eb3fb10a9"
+      "sha256": "f630efc9ca80dd8f7050d456e38e8406480c3ded7ad26b733ec3b8311cb649ae"
     },
     {
       "path": "public/macro-energy-source/macro-guidance.js",
@@ -196,7 +196,7 @@
     "Custom energy keeps inactive Weight Goal; switching back restores it. Above-baseline, carbohydrate deductions and restore defaults preserve unrelated targets, expenditure, display and schedules.",
     "Default projections exclude macroPlan only; effective scheduled day projections remain separate. Missing and zero macros retain their identities.",
     "Pending edits disable secondary actions. Cancel aborts preview; malformed captures cannot save. Custom Energy retains input on preview failure. Ambiguous save retries identical request; stale state requires reload.",
-    "Diary Energy Summary settings mount the same source screen. Diary Target opens its selected-day custom-target editor. Superseded generic global macro/energy/carbohydrate forms are removed."
+    "Diary Energy Summary settings mount the same source screen. Diary Target opens its selected-day source scheduler choices. Superseded generic global macro/energy/carbohydrate forms are removed."
   ],
   "checks": [
     "tests/macro-energy.test.mjs",
@@ -214,13 +214,12 @@
     ".local/macro-energy/advanced.png"
   ],
   "limits": [
-    "Macro Scheduler and the day-specific template editor still use their existing cloud presentation; source restoration is separate.",
     "Reference Upper Limits and Guided Setup still require their authenticated cloud adapters.",
     "Saved phone and local source references were used; hosted acceptance belongs to the release owner."
   ],
   "hostedVerification": {
     "script": "scripts/verify-macro-energy-hosted.mjs",
-    "sha256": "591a9aeef223fffbc593ed5543782ac247ec387e2179021ea519a46f83f41fef",
+    "sha256": "5d0386b56ccc05533b7e596c7b5328e7d8a8f0ac9350a6b77b2547c7dd70cbae",
     "status": "prepared; not run against hosted"
   }
 }
