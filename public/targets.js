@@ -1,3 +1,5 @@
+import {mountRecordEditor} from './records.js';
+import {MobileWeightGoal} from './weight-goal-source/mobile-weight-goal.js';
 import {MobileEnergyExpenditure} from './expenditure-source/mobile-energy-expenditure.js';
 import {escape as e} from './html.js';
 import {request,command} from './diary-api.js';
@@ -20,7 +22,7 @@ export function mountTargets({page,headerRoot,date,show,close,header,content,onC
  document.body.classList.add('targets-mobile');
  const alive=()=>!disposed&&root.isConnected;
  const day=()=>typeof date==='function'?date():date;
- const expenditureSession={pending:null,listener:null};
+ const expenditureSession={pending:null,listener:null},weightSession={pending:null,listener:null};
  const ui={date,show,close,header,content,onChange:async()=>{await onChange();if(alive()&&child)await child.load();}};
  function heading(title){headerRoot.innerHTML=`<div class="mm-child-header"><button type="button" data-mt-back aria-label="Back">${moreIcon('chevron-left')}</button><h1>${e(title)}</h1><button type="button" data-mt-menu aria-label="${e(m('tools'))}" aria-haspopup="menu" aria-expanded="false">⋮</button></div>`;}
  function reset(){operation++;menu?.close(false);menu=null;child?.dispose();child=null;}
@@ -32,6 +34,10 @@ export function mountTargets({page,headerRoot,date,show,close,header,content,onC
  }
  function open(id){
   menu?.close();
+  if(id==='weight'){
+   reset();screen='weight';heading(m('weight'));root.innerHTML='<div class="mt-section"><div id="mobile-weight-goal-root"></div></div>';window.scrollTo(0,0);
+   child=new MobileWeightGoal({root:root.querySelector('#mobile-weight-goal-root'),header:headerRoot,date:day(),language:'en',energyUnit:'kcal',session:weightSession,onSaved:onChange,onNavigate:open,onRecordWeight:initialSelection=>mountRecordEditor({...ui,kind:'biometric',date:day(),initialSelection:initialSelection??{selection:{kind:'catalog',id:'weight'},unit:null}})});return;
+  }
   if(id==='expenditure'){
    reset();screen='expenditure';heading(m('expenditure'));root.innerHTML='<div class="mt-section"><div id="mobile-energy-expenditure-root"></div></div>';window.scrollTo(0,0);
    child=new MobileEnergyExpenditure({root:root.querySelector('#mobile-energy-expenditure-root'),header:headerRoot,date:day(),language:'en',energyUnit:'kcal',session:expenditureSession,onSaved:onChange});return;
@@ -44,7 +50,7 @@ export function mountTargets({page,headerRoot,date,show,close,header,content,onC
   }
   if(id==='scores'||id==='diary'){void summary(id==='scores'?'choose-scores':'configure-diary-display');return;}
   if(id==='references'||id==='body'){void openProfileSettings({...ui,initialScreen:id});return;}
-  const initialScreen={weight:'energy',macros:'macros',scheduler:'schedule',weekday:'weekdays'}[id];
+  const initialScreen={macros:'macros',scheduler:'schedule',weekday:'weekdays'}[id];
   if(initialScreen)void openTargetPolicies({...ui,initialScreen});
  }
  function back(){if(menu){menu.close();return true;}if(child?.back())return true;if(screen!=='home'){home();return true;}return false;}

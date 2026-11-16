@@ -7,7 +7,7 @@ const input=(label,name,value,attributes='')=>`<label class="field-row"><span>${
 const selectOption=(value,label,current)=>`<option value="${e(value)}" ${value===current?'selected':''}>${e(label)}</option>`;
 const format=value=>Number.isFinite(value)?value.toLocaleString(undefined,{maximumFractionDigits:1}):'—';
 
-export async function mountRecordEditor({kind,record,date,show,close,header,content,onChange}){
+export async function mountRecordEditor({kind,record,date,show,close,header,content,onChange,initialSelection}){
  if(!Object.hasOwn(names,kind))return;
  if(kind==='note')return mountNoteEditor({record,date,show,close,header,content,onChange});
  show(header((record?'Edit ':'Add ')+names[kind])+'<p class="empty">Loading…</p>');
@@ -16,6 +16,7 @@ export async function mountRecordEditor({kind,record,date,show,close,header,cont
   [options,detail]=await Promise.all([request('/api/records/options?'+new URLSearchParams({date:record?.date??date})),record?request('/api/records/item?'+new URLSearchParams({collection:collections[kind],id:record.id})):null]);
   if(!loading.isConnected)return;
   if(detail)record=detail.record;
+  if(kind==='biometric'&&!record&&initialSelection){const chosen=options.biometrics.metrics.find(row=>Object.keys(row.selection).length===Object.keys(initialSelection.selection??{}).length&&Object.entries(row.selection).every(([key,value])=>initialSelection.selection[key]===value));if(!chosen||initialSelection.unit!==null&&!chosen.units.includes(initialSelection.unit))throw Error('This weight measurement is no longer available.');initialSelection={...initialSelection,key:chosen.key};}
   if(kind==='exercise'&&!record)exercisePicker();else editor();
  }catch(error){if(loading.isConnected)loading.textContent=error.message;}
  function diaryFields(){const group=record?.group??(options.groups.includes('Uncategorized')?'Uncategorized':kind==='exercise'?options.groups[0]:null);return input('Date','date',record?.date??date,'type="date" required')+input('Time','time',record?.time??new Date().toTimeString().slice(0,5),'type="time"')+`<label class="field-row"><span>Group</span><select aria-label="Group" name="group">${kind==='exercise'?'':selectOption('','Uncategorized',group??'')}${options.groups.map(value=>selectOption(value,value,group)).join('')}</select></label>`;}
@@ -28,7 +29,7 @@ export async function mountRecordEditor({kind,record,date,show,close,header,cont
  async function save(type,payload,form){
   const status=form.querySelector('[role=status]');form.querySelectorAll('button').forEach(b=>b.disabled=true);status.textContent='';
   try{await command(detail?.revision??options.revision,type,payload());await onChange();if(form.isConnected)close();}
-  catch(error){if(form.isConnected){status.textContent=error.message;if(error.status===409){const reload=document.createElement('button');reload.type='button';reload.textContent='Reload record';reload.onclick=()=>mountRecordEditor({kind,record,date,show,close,header,content,onChange});status.append(reload);}}}
+  catch(error){if(form.isConnected){status.textContent=error.message;if(error.status===409){const reload=document.createElement('button');reload.type='button';reload.textContent='Reload record';reload.onclick=()=>mountRecordEditor({kind,record,date,show,close,header,content,onChange,initialSelection});status.append(reload);}}}
   finally{form.querySelectorAll('button').forEach(b=>b.disabled=false);}
  }
  function correction(changes){return {collection:collections[kind],id:record.id,recordRevision:detail.recordRevision,changes};}
@@ -43,7 +44,9 @@ export async function mountRecordEditor({kind,record,date,show,close,header,cont
   if(kind==='biometric'&&!record){
    const updateMetric=()=>{metric=options.biometrics.metrics.find(row=>row.key===form.elements.metric.value);const newCustom=!metric,unit=metric?.units[0]??'',multiple=metric?.fields.length===2;
     form.querySelector('.record-values').innerHTML=(newCustom?input('Name','customName','','required maxlength="100"'):'')+(metric?.fields??[{key:'value',label:'Value'}]).map(field=>input(field.label,field.key,'','type="number" step="any" required')).join('')+input('Unit','unit',unit,`required maxlength="30" ${multiple||metric?.selection.kind==='metric'?'readonly':''} list="record-unit-options"`)+`<datalist id="record-unit-options">${(metric?.units??[]).map(unit=>`<option value="${e(unit)}"></option>`).join('')}</datalist>`;
-   };form.elements.metric.onchange=updateMetric;updateMetric();
+   };
+   if(initialSelection)form.elements.metric.value=initialSelection.key;
+   form.elements.metric.onchange=updateMetric;updateMetric();if(initialSelection?.unit)form.elements.unit.value=initialSelection.unit;
   }
   if(kind==='exercise'&&activity){
    form.elements.name.readOnly=true;let calculation=null,version=0,timer;

@@ -70,7 +70,7 @@
   "outputs": [
     {
       "path": "public/energy-expenditure.js",
-      "sha256": "4273d59dee6212ec7e0604354a45247b02a94d2f324710c6c9496dcf7a5544fd"
+      "sha256": "d879dfa5a92fa9547e8616695a8be5190689b2c9ac2dc9005c1cfe26a86ba15d"
     },
     {
       "path": "public/expenditure-source/mobile-energy-expenditure.js",
@@ -98,19 +98,19 @@
     },
     {
       "path": "public/targets.js",
-      "sha256": "b295ed8df965b46b6f44321bb2454a760c544dac5acc6e3fbbfbbe168dcbae6a"
+      "sha256": "811470acbdb7ca7c9fe5f97b642523a6f7264f9d34a148de25453d7c83234d59"
     },
     {
       "path": "public/targets.css",
-      "sha256": "8f77adfa561ead3355020aca8d9ad234a23db490326632fd1526675081bd3442"
+      "sha256": "ca50746ffc510c118bb0a4cc4226750871706074864ccf262678d2065766eff2"
     },
     {
       "path": "server/target-policy-view.mjs",
-      "sha256": "62dae6f63b968541c97b2dc6806c8b8e8ba9a89316cd16c5ff3062fddccf3afa"
+      "sha256": "262385fd23d79c2f57dfb7fff7dbc72c7976837d4b06610188b14a5e7af06be8"
     },
     {
       "path": "server/target-policy-commands.mjs",
-      "sha256": "410c5b63b2337b15c282962261ec61cb91c768949f42dd211adf05ac75350cf3"
+      "sha256": "aa68b008093eed836929d2dd63f3d6c7c4cd1f06e6ca124495f453fafdb72fe1"
     },
     {
       "path": "server/http.mjs",
@@ -130,7 +130,7 @@
     },
     {
       "path": "tests/targets-mobile.test.mjs",
-      "sha256": "4a9792e834ad3110aed80f6c9c6297826536f24db755b3d707d0acddb1ad28f6"
+      "sha256": "c01a8ea94113b3063b3c8c1cad1f6143da069c2d3b4e821173467e577d96a305"
     }
   ],
   "references": [
@@ -149,7 +149,8 @@
     "Respect kcal/kJ and preserve missing/zero values. Setup leaves existing fixed calorie target intact; updates preserve active goal/display or inactive goal under custom energy.",
     "Remove Health Connect and activity-device controls per the PWA decision.",
     "Keep editor drafts on preview failure; closing an editor aborts pending preview before save. No write on cancellation.",
-    "Validate canonical preview before immutable workspace command. Retry the same request after transport/5xx uncertainty. Reject stale revisions and reload persisted values."
+    "Validate canonical preview before immutable workspace command. Retry the same request after transport/5xx uncertainty. Reject stale revisions and reload persisted values.",
+    "Shared preview/receipt lifecycle also serves Weight Goal; expenditure parser and UI remain unchanged."
   ],
   "checks": [
     "tests/energy-expenditure.test.mjs",
@@ -162,7 +163,7 @@
     ".local/expenditure/activity.png"
   ],
   "limits": [
-    "Weight Goal, Macro & Energy, Scheduler, Upper Limits and Guided Setup are separate remaining child restorations.",
+    "Macro & Energy, Scheduler, Upper Limits and Guided Setup are separate remaining child restorations.",
     "Saved phone and local-source captures were used; no new phone inspection in this slice.",
     "Hosted acceptance is performed separately by the release owner."
   ]

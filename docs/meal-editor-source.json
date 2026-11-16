@@ -1,0 +1,104 @@
+{
+  "sourceRoot": "../cronometer-local",
+  "scope": "Meal editor and transient ingredient review only. Recipe editor remains the current cloud implementation.",
+  "sources": [
+    {
+      "path": "public/mobile-composite-editor.js",
+      "sha256": "a2521ffa6ba7133778ca1f7c4b931a07fd62a89773ae28f2bea811aab9ff1315"
+    },
+    {
+      "path": "public/mobile-composite-items.js",
+      "sha256": "7910bfa8959af8c568223be852efa36b65ff1a8839528219cc067293806e7c54"
+    },
+    {
+      "path": "public/mobile-composite-editor.css",
+      "sha256": "3020a60f5619bece891c6e68d27b74167be4da50147803b678ba706441a94e20"
+    },
+    {
+      "path": "public/mobile-ingredient-detail.js",
+      "sha256": "1d569115a621a375a5d20620692e89520d3f6118e917ce490cbc36a4ac603a23"
+    },
+    {
+      "path": "public/app.js",
+      "sha256": "0c1f8e322d776480b0aeab107daee72310d83bf3dc6681c3e8913144a3b0c911"
+    }
+  ],
+  "files": [
+    {
+      "source": "../cronometer-local/public/mobile-composite-editor.css",
+      "target": "public/composite-source/mobile-composite-editor.css",
+      "sourceSha256": "3020a60f5619bece891c6e68d27b74167be4da50147803b678ba706441a94e20",
+      "outputSha256": "8b001c279806f3b46f55c7bd28e63c5c0227b886b7b06424e41793483d97678a",
+      "transforms": [
+        "Copy shared composite stage, ingredient-row, dialog and footer styles before the recipe-serving picker section.",
+        "Keep cloud host adaptations and review/narrow footer rules in composite-editor.css.",
+        "Normalize UTF-8 text to LF."
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "path": "public/composite-editor.js",
+      "sha256": "b1a5a9a5473be39d18de6de9735d050829c8ba0d9fb56004d1c10dfba98ee019"
+    },
+    {
+      "path": "public/composite-items.js",
+      "sha256": "d3d83d7528cd1a93fbb5d235138d59b7781f29a647c80f4652a6c365d8ac6c49"
+    },
+    {
+      "path": "public/composite-editor.css",
+      "sha256": "d7bf82c45fa2ba9002d9dee961de3c628090320b4032da08b8e2ac0dce37eedc"
+    },
+    {
+      "path": "public/library.js",
+      "sha256": "652414d17e95c5ab10a3f4548265cd15489d7e41b57d52813a584df84f25b426"
+    },
+    {
+      "path": "public/library.css",
+      "sha256": "1dce11fc1b3dd1682d406b9dbc2a6b4dc3a75a9d046a80a4253cf989024f319c"
+    },
+    {
+      "path": "server/library-view.mjs",
+      "sha256": "d4fdef6db65dcadd251bb673c46beb971d2d77e4caeec3ddc3eb430626b61532"
+    },
+    {
+      "path": "tests/meal-editor-browser.test.mjs",
+      "sha256": "1755a0f1cbb3a3492fa0af14762dd8e031f7ba7d0ec9051b7bf5bcfff3b8613c"
+    },
+    {
+      "path": "tests/foods-ui-parity.test.mjs",
+      "sha256": "60d4039cb6e0414f63175214e51b577db0b229170ed38c3869da60935d7e1d92"
+    }
+  ],
+  "reuse": [
+    "Use existing MobileIngredientDetail and FoodNutritionView for canonical quantities, nutrition/unknown coverage and explicit draft Apply.",
+    "Use existing mountFoodPicker for paged catalog/library/recipe search; no meal recursion.",
+    "Use authenticated library preview and existing meal.save workspace transaction/receipt. Catalog snapshots are captured by the server on save.",
+    "Source stage order: Meal Name and Meal Items, then nutrition review; Next, Back, Save Meal and Save & Add. Save & Add opens the existing diary entry detail without logging.",
+    "Shared quantity-options projection supplies existing ingredient source/portion labels without per-item requests. Missing measurement bases stay unavailable."
+  ],
+  "verification": {
+    "command": "node --test tests/meal-editor-browser.test.mjs tests/foods-ui-parity.test.mjs tests/custom-food-browser.test.mjs tests/library-commands.test.mjs",
+    "result": "8 passed",
+    "browser": "Headless Chrome, 412 x 915, production HTTP CSP; actual library/controller/quantity/preview/store receipt composition.",
+    "screenshots": [
+      ".local/meal-editor/items.png",
+      ".local/meal-editor/review.png"
+    ],
+    "coverage": [
+      "Create/edit/cancel, child quantity cancellation, source labels, reorder, name retention across stages.",
+      "Food grams, recipe servings and public catalog grams; unknown nutrients and catalog provenance captured only on Save.",
+      "Preview failure and retry; no premature writes; immutable command replay after the committed reply is lost.",
+      "Save & Add opens mountFoodEntry with no diary entries; existing text review metadata preserved on rename.",
+      "Namespace-colliding food/recipe IDs and unknown measurement bases in the ingredient projection.",
+      "Existing Custom Food editor and Foods collection navigation remain functional."
+    ]
+  },
+  "limitations": [
+    "The saved source used-item update/preserve review is not exposed by current cloud meal.save. This UI keeps existing edit semantics: dependent records without an occurrence override read the current saved meal definition. Restore reviewed update/preserve behavior with the later recipe/backend increment.",
+    "Catalog source facts are resolved by the canonical server at preview and save; this slice does not freeze or fingerprint them across those requests.",
+    "Recipe servings/cooked-weight/notes stages remain outside this Meal-only slice.",
+    "Ingredient search returns to a fresh search after closing a new ingredient detail; no barcode capture action is added here.",
+    "Headless browser verification is not a new physical-device comparison; hosted verification is owned by the release task."
+  ]
+}

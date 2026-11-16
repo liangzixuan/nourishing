@@ -64,11 +64,11 @@
     },
     {
       "path": "public/library.js",
-      "sha256": "5a9f4540df4c6153d21340c949d384f04fc0dbbde26466a0ec82b3f6de096369"
+      "sha256": "652414d17e95c5ab10a3f4548265cd15489d7e41b57d52813a584df84f25b426"
     },
     {
       "path": "public/library.css",
-      "sha256": "454fb9f63149f629f439aae64b4b88a4b94c0c85b0bae20894cd8bd2106c113d"
+      "sha256": "1dce11fc1b3dd1682d406b9dbc2a6b4dc3a75a9d046a80a4253cf989024f319c"
     },
     {
       "path": "public/custom-food-source/food-portions.js",
@@ -92,7 +92,7 @@
     },
     {
       "path": "server/library-view.mjs",
-      "sha256": "fc8038c9c9e2ebb0f5a6915733aae3ccacefb257afd4ac208f3d9e89541712d3"
+      "sha256": "d4fdef6db65dcadd251bb673c46beb971d2d77e4caeec3ddc3eb430626b61532"
     },
     {
       "path": "server/workspace-commands.mjs",
@@ -108,7 +108,7 @@
     },
     {
       "path": "tests/foods-ui-parity.test.mjs",
-      "sha256": "d2b732b91ba1a44d75b35753e36ce6dd9986040359c88eda322440cca56b32e0"
+      "sha256": "60d4039cb6e0414f63175214e51b577db0b229170ed38c3869da60935d7e1d92"
     },
     {
       "path": "tests/library-sharing-ui.test.mjs",

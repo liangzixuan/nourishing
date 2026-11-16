@@ -59,7 +59,7 @@ export function mountMore({page,headerRoot,date,show,close,header,content,onChan
   if(id==='imports')return void openImports(ui);
   if(id==='export')return void openExport(ui);
   if(id==='targets')return childView(id,'Targets',host=>mountTargets({...ui,page:host,headerRoot,onExit:home}));
-  if(id==='fasting')return childView(id,'Fasting',host=>mountFasting({...ui,page:host}));
+  if(id==='fasting')return childView(id,'Fasting',host=>mountFasting({...ui,page:host,headerRoot,onBack:home}));
   if(id==='backup')return childView(id,'Backup & Restore',host=>mountBackup({...ui,root:host}));
   if(id==='repeats')return childView(id,'Repeat Items',host=>mountRepeats({...ui,page:host,headerRoot,onExit:home}));
   if(id==='display')return display();

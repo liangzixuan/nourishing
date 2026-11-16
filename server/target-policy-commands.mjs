@@ -1,8 +1,10 @@
 import {parseTemplateSettings,changeMacroPlan} from './domain/macro-templates.mjs';
+import {parseWeightGoal} from './domain/weight-goal.mjs';
 import {parseEnergyPolicy,parseEnergyExpenditure} from './domain/energy-policy.mjs';
 import {parseCarbohydratePolicy,carbohydratePreferences} from './domain/carbohydrate-policy.mjs';
 
 export const targetPolicyCommandFields={
+ 'targetPolicy.weightGoal':['goal','applyToEnergy'],
  'targetPolicy.expenditure':['expenditure'],
  'targetPolicy.macros':['macro'],
  'targetPolicy.energy':['policy','kcal'],
@@ -20,6 +22,12 @@ export function prepareTargetPolicyCommand(state,action,context={}){
  if(!object(p)||Object.keys(p).some(key=>!allowed.includes(key))||allowed.filter(key=>key!=='kcal').some(key=>!Object.hasOwn(p,key)))fail('Choose the required target settings only.');
  let patch;
  switch(action.type){
+  case 'targetPolicy.weightGoal':{
+   const goal=parseWeightGoal(p.goal),policy=parseEnergyPolicy(state.settings.energyPolicy);if(!goal||typeof p.applyToEnergy!=='boolean')fail('Choose a weight goal and whether to apply it to energy.');
+   const target={mode:'weight-goal',goal,includeAboveBaseline:policy?.target.includeAboveBaseline??true};
+   if(p.applyToEnergy){if(!policy)throw Object.assign(Error('Set up Energy Expenditure before applying a weight goal.'),{status:409});patch={energyPolicy:{...policy,target}};}
+   else patch={inactiveEnergyTarget:target,...(policy?{energyPolicy:{...policy,target:policy.target.mode==='fixed'?policy.target:{mode:'fixed',includeAboveBaseline:false}}}:{})};break;
+  }
   case 'targetPolicy.expenditure':{
    const expenditure=parseEnergyExpenditure(p.expenditure);if(expenditure.activity.mode!=='manual')fail('Choose recorded exercise for activity.');
    const previous=parseEnergyPolicy(state.settings.energyPolicy);patch={energyPolicy:{...(previous??{version:1,target:{mode:'fixed',includeAboveBaseline:false},display:'remaining'}),...expenditure}};break;

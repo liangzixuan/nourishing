@@ -67,7 +67,7 @@
     },
     {
       "path": "public/dashboard.js",
-      "sha256": "0a148a1c6a2b9a08cbc928bf4353ec25241118dd67832041a8a512920014fc0c"
+      "sha256": "0951e3fc3cbe04453d6a57d1d13ccbea06580ac1f8839c43182a190dd2dca43e"
     },
     {
       "path": "tests/charts-browser.test.mjs",

@@ -12,23 +12,30 @@ function capture(value,date){
 }
 /** Source expenditure presentation uses cloud-owned previews and workspace receipts. */
 export class TargetControlScreen{
+ capture(value){return capture(value,this.date);}
+ action(change){return {type:'targetPolicy.expenditure',payload:{expenditure:change.expenditure}};}
+ async previewChange(change,signal){
+  const action=this.action(change),value=await request('/api/target-policies/preview',{date:this.date,...action},signal);const view=this.capture(value.view);
+  if(value.revision!==this.saved.revision)throw Object.assign(Error('Targets changed. Reload to continue.'),{status:409});return {...view,baseRevision:value.revision,action};
+ }
+ async commitReviewed(view){
+  if(this.disposed||this.session.pending)return;if(view.baseRevision!==this.saved.revision)throw Object.assign(Error('Targets changed. Reload to continue.'),{status:409});
+  this.session.pending={phase:'saving',body:{requestId:crypto.randomUUID(),revision:view.baseRevision,...structuredClone(view.action)}};await this.commit();
+ }
  async load(){
   this.readController?.abort();const controller=new AbortController();this.readController=controller;this.busy=true;this.error='';this.render();
-  try{const value=capture(await request('/api/target-policies?'+new URLSearchParams({date:this.date}),undefined,controller.signal),this.date);if(this.disposed||controller.signal.aborted)return;this.saved=value;this.energyUnit=value.energyUnit;this.reset();}
+  try{const value=this.capture(await request('/api/target-policies?'+new URLSearchParams({date:this.date}),undefined,controller.signal));if(this.disposed||controller.signal.aborted)return;this.saved=value;this.energyUnit=value.energyUnit;this.reset();}
   catch(error){if(!this.disposed&&!controller.signal.aborted)this.error=error.message;}
   finally{if(!this.disposed&&this.readController===controller){this.busy=false;this.render();}}
  }
  async perform(change,popup){
   if(this.busy||this.session.pending)return;this.calcController?.abort();const controller=new AbortController();this.calcController=controller;this.busy=true;this.error='';this.render();
-  const body={date:this.date,type:'targetPolicy.expenditure',payload:{expenditure:change.expenditure}};
   // Closing an editor cancels its preview before any command is submitted.
   popup?.controller.signal.addEventListener('abort',()=>controller.abort(),{once:true});
   popup?.root.querySelectorAll('input,select,button[type=submit]').forEach(el=>el.disabled=true);
   try{
-   const preview=await request('/api/target-policies/preview',body,controller.signal);if(this.disposed||controller.signal.aborted)return;
-   capture(preview.view,this.date);if(preview.revision!==this.saved.revision)throw Object.assign(Error('Targets changed. Reload to continue.'),{status:409});
-   this.session.pending={phase:'saving',body:{requestId:crypto.randomUUID(),revision:preview.revision,type:body.type,payload:structuredClone(body.payload)}};
-   popup?.close();await this.commit();
+   const preview=await this.previewChange(change,controller.signal);if(this.disposed||controller.signal.aborted)return;
+   popup?.close();await this.commitReviewed(preview);
   }catch(error){if(!this.disposed&&!controller.signal.aborted){this.error=error.message;if(popup&&!popup.closed)popup.error(error);}}
   finally{if(!this.disposed){this.busy=false;this.render();if(popup&&!popup.closed){popup.root.querySelectorAll('button[type=submit]').forEach(el=>el.disabled=false);popup.restoreInputs?.();}}}
  }

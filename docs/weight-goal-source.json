@@ -1,0 +1,216 @@
+{
+  "version": 1,
+  "scope": "Weight Goal overview, goal/units/start details, rate review, apply-to-energy and Current Weight",
+  "files": [
+    {
+      "source": "../cronometer-local/public/mobile-weight-goal.js",
+      "target": "public/weight-goal-source/mobile-weight-goal.js",
+      "sourceSha256": "cc5b3edbfddd35ade8741bd04826ea49368578425b41bff216a433ea208e1f71",
+      "outputSha256": "97164bfde791ca2cf6d9e6096a25c496c01a275c36d0a145a3fb42695d1a69b3",
+      "transforms": [
+        "Redirect imports and API calls to cloud target owner; use shared immutable request lifecycle; abort cancelled preview; show concise loading/retry copy; round converted display input to 12 significant digits to avoid binary tails."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/mobile-weight-goal.css",
+      "target": "public/weight-goal-source/mobile-weight-goal.css",
+      "sourceSha256": "9c854cafba435f45f2e3a2e5810f62c29e6ddf74013908fc26ccb9b33d66c2ff",
+      "outputSha256": "604c7e74c2e597365bd0fa80009bc1c2a10ab4127bab19abb63cc915d0791f22",
+      "transforms": [
+        "LF normalization and scoped cloud SVG/help-dialog/switch resets."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/weight-goal-capture.js",
+      "target": "public/weight-goal-source/weight-goal-capture.js",
+      "sourceSha256": "a62a3224dab3a292319e70216a1fef18d2ecd7b74b0f6875de9a1b7eaa7e9181",
+      "outputSha256": "a6b349aa73a88c549847697fc9fcbe06763494679741346542d8529020564879",
+      "transforms": [
+        "LF normalization; redirect existing canonical projection and message imports."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/biometric-icons/scale-bathroom.svg",
+      "target": "public/weight-goal-source/scale-bathroom.svg",
+      "sourceSha256": "077a0dfc40d6e523012c6ce25a7d87a6f326d33b30b34fb04f23e5b415d8ebee",
+      "outputSha256": "077a0dfc40d6e523012c6ce25a7d87a6f326d33b30b34fb04f23e5b415d8ebee",
+      "transforms": [
+        "LF normalization."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/exercise-icons/close.svg",
+      "target": "public/weight-goal-source/close.svg",
+      "sourceSha256": "518399857748e824a3e3f3c7654e259f07f337bf0f76fb72108d8572b21ab840",
+      "outputSha256": "518399857748e824a3e3f3c7654e259f07f337bf0f76fb72108d8572b21ab840",
+      "transforms": [
+        "LF normalization."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/discover-assets/navigation/minus.svg",
+      "target": "public/weight-goal-source/minus.svg",
+      "sourceSha256": "edc1a695ae9d3e18b3e4225b0b9d1343b276f71c2df756bf347075571d500e77",
+      "outputSha256": "edc1a695ae9d3e18b3e4225b0b9d1343b276f71c2df756bf347075571d500e77",
+      "transforms": [
+        "LF normalization."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/discover-assets/navigation/plus.svg",
+      "target": "public/weight-goal-source/plus.svg",
+      "sourceSha256": "a82b3e61f15be1073a3f37e1b795dc572d04e653594761a4497b37e72bce6de8",
+      "outputSha256": "a82b3e61f15be1073a3f37e1b795dc572d04e653594761a4497b37e72bce6de8",
+      "transforms": [
+        "LF normalization."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/discover-assets/navigation/trophy-outline.svg",
+      "target": "public/weight-goal-source/trophy-outline.svg",
+      "sourceSha256": "0883fccd2fb5277cb0bcf66978ee664d5da1933792e680482cfce479a2549983",
+      "outputSha256": "0883fccd2fb5277cb0bcf66978ee664d5da1933792e680482cfce479a2549983",
+      "transforms": [
+        "LF normalization."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/discover-assets/navigation/fire.svg",
+      "target": "public/weight-goal-source/fire.svg",
+      "sourceSha256": "cd8b4696fe873c4124ed80ef926082ba89c2b8c653c56f2edaa37a64610ce9fd",
+      "outputSha256": "cd8b4696fe873c4124ed80ef926082ba89c2b8c653c56f2edaa37a64610ce9fd",
+      "transforms": [
+        "LF normalization."
+      ]
+    }
+  ],
+  "additionalSources": [
+    {
+      "source": "../cronometer-local/server/target-controls.mjs",
+      "sha256": "a03ff585c13d2062a7cc1b4186251b2446de7b9719c130b13be7900540752252"
+    },
+    {
+      "source": "../cronometer-local/public/target-control-screen.js",
+      "sha256": "8e3233afaf8bb667c520475123680f613d07b16e2ea1a0eb826f5bf699b851f2"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "public/energy-expenditure.js",
+      "sha256": "d879dfa5a92fa9547e8616695a8be5190689b2c9ac2dc9005c1cfe26a86ba15d"
+    },
+    {
+      "path": "public/weight-goal.js",
+      "sha256": "6829e69209af452338ea1e2d69804129053cfb21f301939c38c89f10e5d85d44"
+    },
+    {
+      "path": "public/records.js",
+      "sha256": "d95729c5865afebbbd9c3e825546fe15d24d1c60440d19c5f07cb6e27642a103"
+    },
+    {
+      "path": "public/targets.js",
+      "sha256": "811470acbdb7ca7c9fe5f97b642523a6f7264f9d34a148de25453d7c83234d59"
+    },
+    {
+      "path": "public/targets.css",
+      "sha256": "ca50746ffc510c118bb0a4cc4226750871706074864ccf262678d2065766eff2"
+    },
+    {
+      "path": "server/target-policy-commands.mjs",
+      "sha256": "aa68b008093eed836929d2dd63f3d6c7c4cd1f06e6ca124495f453fafdb72fe1"
+    },
+    {
+      "path": "server/target-policy-view.mjs",
+      "sha256": "262385fd23d79c2f57dfb7fff7dbc72c7976837d4b06610188b14a5e7af06be8"
+    },
+    {
+      "path": "tests/weight-goal.test.mjs",
+      "sha256": "024bd272c4169bf02357c77056368c0ddc4316f403eebcae3ed06ec5924a7867"
+    },
+    {
+      "path": "tests/weight-goal-browser.test.mjs",
+      "sha256": "8d9f5524188a3220eec763ad4648c0e531c678b205c51481278147a4f7c610c9"
+    },
+    {
+      "path": "tests/targets-mobile.test.mjs",
+      "sha256": "c01a8ea94113b3063b3c8c1cad1f6143da069c2d3b4e821173467e577d96a305"
+    },
+    {
+      "path": "public/weight-goal-source/close.svg",
+      "sha256": "518399857748e824a3e3f3c7654e259f07f337bf0f76fb72108d8572b21ab840"
+    },
+    {
+      "path": "public/weight-goal-source/fire.svg",
+      "sha256": "cd8b4696fe873c4124ed80ef926082ba89c2b8c653c56f2edaa37a64610ce9fd"
+    },
+    {
+      "path": "public/weight-goal-source/minus.svg",
+      "sha256": "edc1a695ae9d3e18b3e4225b0b9d1343b276f71c2df756bf347075571d500e77"
+    },
+    {
+      "path": "public/weight-goal-source/mobile-weight-goal.css",
+      "sha256": "604c7e74c2e597365bd0fa80009bc1c2a10ab4127bab19abb63cc915d0791f22"
+    },
+    {
+      "path": "public/weight-goal-source/mobile-weight-goal.js",
+      "sha256": "97164bfde791ca2cf6d9e6096a25c496c01a275c36d0a145a3fb42695d1a69b3"
+    },
+    {
+      "path": "public/weight-goal-source/plus.svg",
+      "sha256": "a82b3e61f15be1073a3f37e1b795dc572d04e653594761a4497b37e72bce6de8"
+    },
+    {
+      "path": "public/weight-goal-source/scale-bathroom.svg",
+      "sha256": "077a0dfc40d6e523012c6ce25a7d87a6f326d33b30b34fb04f23e5b415d8ebee"
+    },
+    {
+      "path": "public/weight-goal-source/trophy-outline.svg",
+      "sha256": "0883fccd2fb5277cb0bcf66978ee664d5da1933792e680482cfce479a2549983"
+    },
+    {
+      "path": "public/weight-goal-source/weight-goal-capture.js",
+      "sha256": "a6b349aa73a88c549847697fc9fcbe06763494679741346542d8529020564879"
+    }
+  ],
+  "references": [
+    {
+      "path": "../cronometer-local/verification/phone-discover-20261108/weight-goal-settings.png",
+      "sha256": "23874942e61f287e29acd3bc570d86118288eded01b3c335bb0dc4d0e813d94e"
+    },
+    {
+      "path": "../cronometer-local/verification/phone-discover-20261108/weight-gain-draft-next.png",
+      "sha256": "88b88eba87921b6c82711a70612777e7632a42fd8810a0460ff7b355c2c7b0dd"
+    },
+    {
+      "path": "../cronometer-local/verification/phone-discover-20261108/weight-gain-rate-controls.png",
+      "sha256": "fae07061a783aa07811971bf2edbacda0c557b88eaf428bad44be2d62eb27792"
+    }
+  ],
+  "canonicalOwner": "Existing parseWeightGoal, createWeightGoalView, projectBodyComposition, calculateSummary and settings.save own validation, projection and persistence. targetPolicy.weightGoal projects a narrow settings patch; the authenticated preview endpoint and workspace command share that parser. No schema or domain arithmetic changed.",
+  "behavior": [
+    "Source overview, two-step goal/rate review, units/start details, help, fixed footer, active/inactive state and exact Current Weight selection.",
+    "Forecast and default energy preview use canonical source owners. Scheduled daily targets stay separate and unchanged. Expenditure, macros, display, and unrelated settings are preserved.",
+    "Current Weight opens the existing record editor with the exact canonical selection and unit. Missing selected measurement fails without substituting a different metric. Unknown body inputs stay unknown.",
+    "Cancel/back abort pending previews. Invalid captures disable save. A stale revision requires reload. Ambiguous writes retry the same immutable workspace receipt."
+  ],
+  "checks": [
+    "tests/weight-goal.test.mjs",
+    "tests/weight-goal-browser.test.mjs",
+    "tests/energy-expenditure.test.mjs",
+    "tests/energy-expenditure-browser.test.mjs",
+    "tests/target-policy.test.mjs",
+    "tests/targets-mobile.test.mjs",
+    "tests/record-commands.test.mjs",
+    "tests/diary-mixed-records.test.mjs"
+  ],
+  "visual": [
+    ".local/weight-goal/home.png",
+    ".local/weight-goal/goal.png",
+    ".local/weight-goal/rate.png"
+  ],
+  "limits": [
+    "Current Weight reuses the existing cloud biometric editor; this slice does not restore its full source presentation.",
+    "Macro & Energy, Macro Scheduler, Reference Upper Limits and Guided Target Setup are separate remaining child restorations.",
+    "Saved phone/source screenshots were used; no new phone inspection. Hosted acceptance belongs to the release owner."
+  ]
+}

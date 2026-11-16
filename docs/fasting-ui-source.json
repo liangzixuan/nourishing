@@ -1,0 +1,199 @@
+{
+  "version": 1,
+  "scope": "Fasting source UI restoration",
+  "referencePolicy": "Latest saved Cronometer references and existing local source presentation. Cloud account projections own clock, timezone, history, statistics and command semantics.",
+  "assets": [
+    {
+      "source": "../cronometer-local/public/discover-fasting.js",
+      "output": "public/fasting-source/discover-fasting.js",
+      "sourceSha256": "e48e7384a3e343937c1c6e07f4e6c77327cbc5b84a0af9b25893c50c95635c0b",
+      "outputSha256": "b7b0136e8721909bce14c45affbac0a4150c3901fe42587b9d8641158653bf68"
+    },
+    {
+      "source": "../cronometer-local/public/discover-schedule.js",
+      "output": "public/fasting-source/discover-schedule.js",
+      "sourceSha256": "e192edf1642a92daf881f9c8397f0a342b9a929e7f78274333a93104e82f4ce1",
+      "outputSha256": "2e44e9034a2d5f42c007cd9df3845e46cc610469eea4384cf439520773c01352"
+    },
+    {
+      "source": "../cronometer-local/public/mobile-fasting-recurrence.js",
+      "output": "public/fasting-source/mobile-fasting-recurrence.js",
+      "sourceSha256": "4021231dd608df07892e88c190a1cf67883b0fcda1cabcc28e78012dcce97d74",
+      "outputSha256": "8caed26fb4e6ace8c0fbe2192c3dce4155ed27a6dedf3543e81c9365bf8f90ce"
+    },
+    {
+      "source": "../cronometer-local/public/mobile-fasting-recurrence.css",
+      "output": "public/fasting-source/mobile-fasting-recurrence.css",
+      "sourceSha256": "516045ef868f2c2acbcb7452b59a2403a913df6df6db8fe5147d62d2b0601c57",
+      "outputSha256": "b9205ce2431160bba50b4362e595307f71b327230ae26268955b34d966d0424a"
+    },
+    {
+      "source": "../cronometer-local/public/fasting-recurrence-fields.js",
+      "output": "public/fasting-source/fasting-recurrence-fields.js",
+      "sourceSha256": "1421cc10fb4bd588d29522ed02c0d05ce9a5b7c2ce36e6eb0c88f4a011c58a44",
+      "outputSha256": "6beb0adfe3f210a7a11feaabdf73bd21fad6a81780a9e8644501b0c011c4e16e"
+    },
+    {
+      "source": "../cronometer-local/public/fasting-schedule-facts.js",
+      "output": "public/fasting-source/fasting-schedule-facts.js",
+      "sourceSha256": "aac97598805337838b2117acdfe43170688cb624027323e2b57ab1a79fa20fcc",
+      "outputSha256": "8a94daa418bef5fd6c9f150cb5b9cde5fb6ce171d427c24a96314434ad950397"
+    },
+    {
+      "source": "../cronometer-local/public/mobile-datetime-picker.js",
+      "output": "public/fasting-source/mobile-datetime-picker.js",
+      "sourceSha256": "4c6516ee872cd0b2a4b8138726d8fa1a3e20053d5177179610cec59219135c03",
+      "outputSha256": "87494cf1cd30c5be947116dd9652ccdda7af90c78c86d8cfe05bc385a0f17c62"
+    },
+    {
+      "source": "../cronometer-local/public/mobile-datetime-picker.css",
+      "output": "public/fasting-source/mobile-datetime-picker.css",
+      "sourceSha256": "f6e1b14e611584cfa82c13275f5548b5502d9395173dc0ae514a099c2458ee28",
+      "outputSha256": "a6a12a887a5c92b579f82a6da1a10c2ddc75ab6ff94fffed73e11884cb1f0da8"
+    },
+    {
+      "source": "../cronometer-local/public/mobile-datetime-values.js",
+      "output": "public/fasting-source/mobile-datetime-values.js",
+      "sourceSha256": "c143d216458060005317bc104469246f382c21ba1dd5c848d2470ce0671ee757",
+      "outputSha256": "1c8532e3513903975a3de56b7e7329b0a3df9ac3567e0f80dd26192151bf6410"
+    },
+    {
+      "source": "../cronometer-local/public/mobile-fasting-delete-dialog.js",
+      "output": "public/fasting-source/mobile-fasting-delete-dialog.js",
+      "sourceSha256": "a6e721bf8bf718293b2e817ce324dff4d223c06913e4097821243054299e6eb5",
+      "outputSha256": "c868bc5849758de6ffdb7345497fc67ba2d57595f1fb3ad589448a9d9c7f113f"
+    },
+    {
+      "source": "../cronometer-local/public/anchored-menu.js",
+      "output": "public/fasting-source/anchored-menu.js",
+      "sourceSha256": "03ba812e18c6b285d74c7e4940e47444ad824524c21f56a2f4edd80eb04860a9",
+      "outputSha256": "675bc48fbb9f9e45a647cbef0f352ae5c1d96bcd16f4a8a0898c70b3559f9fb8"
+    },
+    {
+      "source": "server/domain/fasting-time.mjs",
+      "output": "public/fasting-source/fasting-time.mjs",
+      "sourceSha256": "8f06999c9ba0526b69f65eac6450c73437628bba7714907310a32fae85b9281d",
+      "outputSha256": "a0ce631d8b12fbf984dfd65ba079de708d6410462fe9b6b58ced149ca728bd03"
+    },
+    {
+      "source": "server/domain/fasting-schedule-contract.mjs",
+      "output": "public/fasting-source/fasting-schedule-contract.mjs",
+      "sourceSha256": "57dc3cd655c32fdd317b6be177064af178ec1d50ee3229b0c4d39801b7d48460",
+      "outputSha256": "57dc3cd655c32fdd317b6be177064af178ec1d50ee3229b0c4d39801b7d48460"
+    },
+    {
+      "source": "node_modules/@js-temporal/polyfill/dist/index.esm.js",
+      "output": "public/fasting-source/vendor/temporal.js",
+      "sourceSha256": "21f067c54fa5f532f20a8e85e3d2401a3ae1cf60d85fafea6502f621dc93b167",
+      "outputSha256": "8446bc59298a90c82b6ee8089a9fd4b6fc4551a00c27612e02616fbdd1040517"
+    },
+    {
+      "source": "node_modules/jsbi/dist/jsbi.mjs",
+      "output": "public/fasting-source/vendor/jsbi.mjs",
+      "sourceSha256": "c0d70fb47e0818e31bdf964805a530d9a0fb4ee5bdadb442a13f3691a5f15583",
+      "outputSha256": "68b96ada51781f4de45d4a970d1edb6fe6508f76506bf2f68ea76886677e0509"
+    },
+    {
+      "source": "node_modules/@js-temporal/polyfill/LICENSE",
+      "output": "public/fasting-source/vendor/temporal.LICENSE",
+      "sourceSha256": "ffc4aee7f1279fc0494ff2b27f6829e6b4d16c20aa93aa008c3bd8d8af176387",
+      "outputSha256": "ffc4aee7f1279fc0494ff2b27f6829e6b4d16c20aa93aa008c3bd8d8af176387"
+    },
+    {
+      "source": "node_modules/jsbi/LICENSE",
+      "output": "public/fasting-source/vendor/jsbi.LICENSE",
+      "sourceSha256": "9568a2b155e66ac3e0ba1fd80b52b827b9460e6cf6f233125e7cbca8e206ddc3",
+      "outputSha256": "9568a2b155e66ac3e0ba1fd80b52b827b9460e6cf6f233125e7cbca8e206ddc3"
+    }
+  ],
+  "adapters": [
+    {
+      "path": "public/fasting.js",
+      "sha256": "4e8c1cdcb380e51d1e9fb7e349aaefc46b88ecff4cad886f69cc41b6255958a8"
+    },
+    {
+      "path": "public/fasting.css",
+      "sha256": "eb1b83f4d6de75f8bef3a06b3acd6034823c41c57feedce0ad4aff356911723a"
+    },
+    {
+      "path": "public/fasting-source/editor.js",
+      "sha256": "082c94d6703501982daf73bbba76ae44526ebd71e89cd608cddc2c53ccdf1a7e"
+    },
+    {
+      "path": "public/fasting-source/mutation.js",
+      "sha256": "a5d1543adad5d345fcdf67b84f72654de2c3553e4144ff6d38289eec27cabc37"
+    },
+    {
+      "path": "public/fasting-source/ui.js",
+      "sha256": "d83a605e5be092fc6aff1d69254891ac2ee5fe1581b22771973a75bc7ae9f6fe"
+    },
+    {
+      "path": "public/fasting-source/time.js",
+      "sha256": "136ee9ec46f720d24905c51b2e1fe56b5699a6baee1fce46ddbca92f5fbde2d4"
+    },
+    {
+      "path": "public/nutrition.js",
+      "sha256": "dd213dbc0aa0327fd51d58a272493de6fccbc28ff2301e696ef7fb2d46c23d3c"
+    },
+    {
+      "path": "public/dashboard.js",
+      "sha256": "0951e3fc3cbe04453d6a57d1d13ccbea06580ac1f8839c43182a190dd2dca43e"
+    },
+    {
+      "path": "public/more.js",
+      "sha256": "2d1a248fc7cbe071c2c768349c5526a7df5226773bc12b3ce98bf359c40cf859"
+    }
+  ],
+  "references": [
+    {
+      "path": "../cronometer-local/verification/fasting-entry-reference-20261111/reference.png",
+      "sha256": "fc66ee928859e4d654dde35588a2592f20cbef9e938ec818ed2ea2b0a7b1d997"
+    },
+    {
+      "path": "../cronometer-local/verification/fasting-datetime-reference-20261111/compact-editor.jpg",
+      "sha256": "0130e24c0a7e5e442a847b401ac3548a5b9213243849636e14af2a15730ee8be"
+    },
+    {
+      "path": "../cronometer-local/verification/fasting-datetime-reference-20261111/picker.jpg",
+      "sha256": "536153a6ddb6ab4c8d7253d6bb13c04530d748cec69500251703b3a5b9822551"
+    },
+    {
+      "path": "../cronometer-local/verification/fasting-recurrence-20261111/cronometer-custom.png",
+      "sha256": "dc22ed8f7bd7faf204b75cd70e853c7fb2cec7b9b0f0ed086aef5ba4b0d3f72a"
+    },
+    {
+      "path": "../cronometer-local/verification/mobile-fasting-history-20261111/editor.jpg",
+      "sha256": "966d8c887703d966c21c7c2e4fdeabbefc9ce25e19f748cbf4d75d0423d5bfdf"
+    },
+    {
+      "path": "../cronometer-local/verification/mobile-fasting-history-20261111/delete-confirmation.jpg",
+      "sha256": "a17555700f2121b2e61048feba0a7ec8f94a45928c55be17b597fc620424ee29"
+    },
+    {
+      "path": "../cronometer-local/verification/fasting-stats-20261111/populated.png",
+      "sha256": "07e992027e9e07550c295df2910b4f95091f7eba2ead2980b3c5c8ae7b965cfb"
+    }
+  ],
+  "tests": [
+    {
+      "path": "tests/fasting-ui.test.mjs",
+      "sha256": "1b2364f1adc89a65d0205ee7f2f3cee6a504bcd98c73da8f3a69d95b9afb514c"
+    }
+  ],
+  "adaptations": [
+    "Original source controls use existing cloud command and revision receipts. One frozen command survives ambiguous failure; definite validation failures release it; stale revisions require read-only reload.",
+    "Account timezone is explicit for history, scheduled timestamps, date controls and Dashboard previews. Original goal/time/recurrence helpers are copied from canonical owners; no schema or formula changes.",
+    "Installed Temporal 0.5.1 and JSBI ESM assets retain licenses; bare import and source-map comments are rewritten for browser delivery.",
+    "Production CSP uses SVG/CSS icons and CSSOM popover placement without inline style attributes. Shared source fasting layout remains in public/shell-source/discover.css.",
+    "More and Discover supply their own Back destination. Dashboard New Fast opens quick start; settings New Fast opens the schedule editor directly."
+  ],
+  "verification": [
+    "Production-CSP Chrome flow through mountNutrition and mountMore, 412px dark and 320px light; account Chicago/browser Tokyo.",
+    "Schedule duration/end wheel synchronization; recurrence presets/custom limits/cancel/back; schedule creation/start-now/deletion.",
+    "Completed history duration retains goal; repeat retains schedule independence; delete cancellation preserves draft; canonical stats and 102-row pagination/100-row selection bound.",
+    "Lost-response exact receipt retry; 400 validation unlock; 409 reload; successful-write/read-failure retry; disposal prevents late UI mount."
+  ],
+  "limitations": [
+    "Hosted verification is performed by the parent release task. Physical phone touch momentum and native display were not tested in this increment."
+  ]
+}
