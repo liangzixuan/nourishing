@@ -1,3 +1,4 @@
+import {glucoseView,cycleView,previewCycleImport,previewCycleRemoval} from './health-controls.mjs';
 import {createReminderScheduleStore} from './reminder-schedules-store.mjs';
 import {createReminderDispatcher} from './reminder-schedules-dispatch.mjs';
 import {createWebPushStore} from './web-push-store.mjs';
@@ -110,6 +111,10 @@ export function createAppwriteService(config, key, userAgent='') {
     async libraryShare(secret,input){return readView(secret,state=>exportLibraryItem(state,input));},
     async librarySharePreview(secret,input){return readView(secret,state=>previewSharedImport(state,input));},
     async libraryFoodPrint(secret,input){const {owner}=await data(secret);return readView(secret,state=>({...previewFoodPrint(state,input),accountId:owner}));},
+    async glucoseTimeline(secret,input){const {owner}=await data(secret),calendar=await calendarContext(secret,owner);return readView(secret,state=>glucoseView(state,input,{now:new Date(calendar.asOf),timeZone:calendar.timeZone}));},
+    async cycleView(secret,input){const {owner}=await data(secret),calendar=await calendarContext(secret,owner);return readView(secret,state=>cycleView(state,input,{now:new Date(calendar.asOf),timeZone:calendar.timeZone}));},
+    async cycleImportPreview(secret,input){return readView(secret,state=>previewCycleImport(state,input));},
+    async cycleRemovalPreview(secret,input){return readView(secret,state=>previewCycleRemoval(state,input));},
     async coachPreferences(secret){return readView(secret,coachView);},
     async coachAnswer(secret,input){return readView(secret,state=>coachAnswer(state,input));},
     async dashboard(secret,date){const {owner}=await data(secret),context=await calendarContext(secret,owner);return readView(secret,state=>dashboardView(state,{date},context));},
@@ -189,7 +194,7 @@ export function createAppwriteService(config, key, userAgent='') {
     async exportReport(secret,input){return readView(secret,state=>csvReport(state,input));},
     async targets(secret,date){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();return targetView(await repository.readState(),date);},
     async nutritionReport(secret,options){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();const account=await new Account(session(secret)).get(),profile=await ensureProfile(secret,account);return reportView(await repository.readState(),options,{timeZone:profile.timeZone});},
-    async readDiary(secret,date){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();return repository.diary(date);},
+    async readDiary(secret,date){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();const calendar=await calendarContext(secret,owner);return repository.diary(date,{now:new Date(calendar.asOf),timeZone:calendar.timeZone});},
     async workspaceCommand(secret,input){const {owner,repository}=await data(secret);return createWorkspaceStore(new TablesDB(elevated()),owner).command(input,catalogReader(repository),await calendarContext(secret,owner));},
     async entryAdjustment(secret,input){return readView(secret,state=>entryAdjustmentView(state,input));},
     async previewEntryAdjustment(secret,payload){const action={type:'entry.ingredients.adjust',payload};validateAction(action);const {repository}=await data(secret),state=await repository.readState();const prepared=captureActionFoods(state,action,await readActionFoods(action,catalogReader(repository)));try{return previewEntryAdjustment(state,prepared.payload);}catch(error){if([400,404,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}},

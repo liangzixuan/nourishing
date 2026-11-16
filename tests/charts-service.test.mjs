@@ -21,6 +21,6 @@ test('Charts HTTP service adapts the captured account calendar for source projec
   const response=await handler(new Request(config.origin+'/api/charts?to=2026-11-15',{headers:{Cookie:'__Host-nourishing_session=fixture-session'}}));
   assert.equal(response.status,200,await response.clone().text());const view=await response.json();
   assert.equal(view.calendar.timeZone,'America/Chicago');assert.ok(Number.isFinite(Date.parse(view.calendar.asOf)));assert.equal(view.cards.find(card=>card.kind==='custom').name,'Weight history');
-  assert.equal(response.headers.get('cache-control'),'no-store');assert.deepEqual(labels,['charts']);assert.equal(operations.size,0);
+  assert.equal(response.headers.get('cache-control'),'no-store');for(const endpoint of ['glucose-timeline','cycle']){const response=await handler(new Request(config.origin+'/api/'+endpoint+'?from=2026-11-01&to=2026-11-15',{headers:{Cookie:'__Host-nourishing_session=fixture-session'}}));assert.equal(response.status,200,await response.clone().text());assert.equal((await response.json()).view.calendar.timeZone,'America/Chicago');}assert.deepEqual(labels,['charts','glucoseTimeline','cycleView']);assert.equal(operations.size,0);
  }finally{setGlobalDispatcher(previous);await mock.close();}
 });

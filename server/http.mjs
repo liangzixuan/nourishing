@@ -43,6 +43,14 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       if(req.method==='GET'&&path==='/api/reminders'){if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid notification request.');return json(200,await api.reminders(secret));}
       const pushRequest=req.method==='POST'&&['/api/reminders/subscribe','/api/reminders/unsubscribe','/api/reminders/test','/api/reminders/schedule','/api/reminders/schedule/delete','/api/reminders/settings'].includes(path);
       if(pushRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid notification request.');}
+      const cycleRequest=req.method==='POST'&&['/api/cycle/preview','/api/cycle/import','/api/cycle/removal-preview','/api/cycle/remove'].includes(path);
+      if(cycleRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid cycle request.');}
+      if(req.method==='GET'&&['/api/glucose-timeline','/api/cycle'].includes(path)){
+        if(!secret)fail(401,'Please sign in.');const keys=path==='/api/cycle'?['from','to']:['from','to','compare'];
+        if([...url.searchParams.keys()].some(key=>!keys.includes(key)||url.searchParams.getAll(key).length!==1)||!url.searchParams.has('from')||!url.searchParams.has('to'))fail(400,'Choose a date range.');
+        const input=Object.fromEntries(url.searchParams);if(Object.hasOwn(input,'compare')){try{input.compare=JSON.parse(input.compare);}catch{fail(400,'Choose a comparison.');}}
+        return json(200,await api[path==='/api/cycle'?'cycleView':'glucoseTimeline'](secret,input));
+      }
       const sharingRequest=req.method==='POST'&&['/api/library/share/preview','/api/library/share/import','/api/library/food-print'].includes(path);
       if(sharingRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid library request.');}
       const coachRequest=req.method==='POST'&&path==='/api/coach/answer';
@@ -67,7 +75,13 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
       if(printRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid report query.');}
       const diaryToolsRequest=req.method==='POST'&&['/api/diary/tools/review','/api/diary/tools/save'].includes(path),nutrientRequest=req.method==='POST'&&['/api/nutrient-detail','/api/nutrition-report/nutrient'].includes(path);
       if(diaryToolsRequest||nutrientRequest){if(!secret)fail(401,'Please sign in.');await api.current(secret);if(url.search)fail(400,'Invalid diary query.');}
-      const body=req.method==='GET'?null:await readBody(req,sharingRequest?20_000_000:offlineRequest?601_000:textRequest?60_100:csvRequest?CSV_BODY_BYTES:barcodeRequest?BARCODE_BODY_BYTES:(libraryCommand||ingredientRequest||printRequest||diaryToolsRequest||path==='/api/nutrient-detail')?4*1024*1024:backupRequest?(path==='/api/backup/inspect'?20_000_000:path.endsWith('/media')?5*1024*1024:16384):photoRequest?((path.endsWith('/analyze')||path.endsWith('/prepare'))?12:5)*1024*1024:recipeRequest&&path!=='/api/recipe-import'?16*1024*1024:16384);
+      const body=req.method==='GET'?null:await readBody(req,(sharingRequest||cycleRequest)?20_000_000:offlineRequest?601_000:textRequest?60_100:csvRequest?CSV_BODY_BYTES:barcodeRequest?BARCODE_BODY_BYTES:(libraryCommand||ingredientRequest||printRequest||diaryToolsRequest||path==='/api/nutrient-detail')?4*1024*1024:backupRequest?(path==='/api/backup/inspect'?20_000_000:path.endsWith('/media')?5*1024*1024:16384):photoRequest?((path.endsWith('/analyze')||path.endsWith('/prepare'))?12:5)*1024*1024:recipeRequest&&path!=='/api/recipe-import'?16*1024*1024:16384);
+      if(cycleRequest){
+        if(path.endsWith('/preview'))return json(200,await api.cycleImportPreview(secret,body));
+        if(path.endsWith('/removal-preview'))return json(200,await api.cycleRemovalPreview(secret,body));
+        if(body?.type!==(path.endsWith('/import')?'cycle.import':'cycle.remove'))fail(400,'Choose a cycle action.');
+        return json(200,await api.workspaceCommand(secret,body));
+      }
       if(sharingRequest){
         if(path.endsWith('/preview'))return json(200,await api.librarySharePreview(secret,body));
         if(path.endsWith('/food-print')){fields(body,['id','includeNotes']);return json(200,await api.libraryFoodPrint(secret,body));}

@@ -1,0 +1,32 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+import {initialState} from '../server/domain/workspace.mjs';
+import {diaryCycleDays,glucoseView,cycleView,previewCycleImport,previewCycleRemoval} from '../server/health-controls.mjs';
+import {createWorkspaceStore} from '../server/workspace-store.mjs';
+import {diaryStoreFixture} from './fixtures/diary-store.mjs';
+import {digest} from '../server/data-codec.mjs';
+const range={from:'2026-11-13',to:'2026-11-15'},clock={now:new Date('2026-11-15T18:00:00Z'),timeZone:'UTC'};
+const packet={format:'nourish-cycle-data',version:1,source:{id:'personal',name:'My observations'},exportedAt:'2026-11-15T18:00:00Z',records:[{id:'phase',date:'2026-11-14',metric:'phase',value:'follicular',observedAt:null},{id:'temp',date:'2026-11-14',metric:'temperatureVariation',value:0.2,observedAt:null}]};
+test('cycle import/removal is reviewed, account-bound, atomic and retry-safe',async()=>{
+ const f=diaryStoreFixture(initialState()),store=createWorkspaceStore(f.db,'fixture'),review=previewCycleImport(f.state(),packet);
+ assert.equal(review.writes,undefined);assert.equal(review.counts.added,2);assert.equal(f.state().cycleRecords,undefined);
+ const input={requestId:randomUUID(),revision:review.revision,type:'cycle.import',payload:{data:packet,reviewToken:review.reviewToken,confirmed:true}};
+ const saved=await store.command(input);assert.deepEqual(await store.command(input),saved);assert.equal(f.state().cycleRecords.length,2);assert.equal(f.state().cycleRecords[0].source.recordId,'phase');
+ const capture=cycleView(f.state(),range,clock);assert.equal(capture.view.days.length,1);assert.equal(capture.view.records.length,2);assert.equal(capture.view.calendar.today,'2026-11-15');
+ assert.equal(diaryCycleDays(f.state(),'2026-11-14',clock).length,1);assert.equal(diaryCycleDays(f.state(),'2026-11-15',clock).length,0);const hidden=structuredClone(f.state());hidden.settings.cycleDisplay={version:1,showDiary:false};assert.deepEqual(diaryCycleDays(hidden,'2026-11-14',clock),[]);
+ const before=digest(f.state()),ids=[capture.view.records[0].id],remove=previewCycleRemoval(f.state(),{ids});
+ for(const payload of [{ids,reviewToken:remove.reviewToken,confirmed:false},{ids,reviewToken:'old',confirmed:true}])await assert.rejects(store.command({requestId:randomUUID(),revision:before,type:'cycle.remove',payload}));
+ assert.equal(digest(f.state()),before);assert.throws(()=>previewCycleRemoval(initialState(),{ids}));
+ const deletion={requestId:randomUUID(),revision:remove.revision,type:'cycle.remove',payload:{ids,reviewToken:remove.reviewToken,confirmed:true}};
+ const removed=await store.command(deletion);assert.equal(removed.ok,true);assert.deepEqual(await store.command(deletion),removed);assert.equal(f.state().cycleRecords.length,1);
+ await assert.rejects(store.command({...input,requestId:randomUUID()}),error=>error.code===409||error.status===409);
+});
+test('glucose configuration uses exact sources, conversion and source timeline statistics',async()=>{
+ const s=initialState();s.biometrics=[{id:'g1',type:'Meter',unit:'mg/dL',value:90,date:'2026-11-14',time:'08:00'},{id:'g2',type:'Meter',unit:'mmol/L',value:6,date:'2026-11-14',time:'09:00'},{id:'other',type:'Other meter',unit:'mg/dL',value:300,date:'2026-11-14',time:'09:00'},{id:'insulin',type:'Dose',unit:'U',value:2,date:'2026-11-14',time:'09:00'}];
+ const f=diaryStoreFixture(s),store=createWorkspaceStore(f.db,'fixture'),policy={version:1,glucose:{type:'Meter'},insulin:{type:'Dose',unit:'U'},displayUnit:'mmol/L',range:{low:4,high:8}};
+ const before=glucoseView(s,range,clock);assert.equal(before.view.status,'unconfigured');
+ await store.command({requestId:randomUUID(),revision:digest(f.state()),type:'glucose.settings',payload:{policy}});
+ const capture=glucoseView(f.state(),range,clock);assert.equal(capture.view.readings.length,2);assert.equal(capture.view.insulin.length,1);assert.equal(capture.view.policy.displayUnit,'mmol/L');assert.equal(capture.view.stats.count,2);assert.ok(capture.view.readings[0].displayValue<6);assert.equal(capture.view.readings[1].displayValue,6);assert.ok(capture.view.comparisonOptions.length);
+ const snapshot=digest(f.state());await assert.rejects(store.command({requestId:randomUUID(),revision:snapshot,type:'glucose.settings',payload:{policy:{...policy,insulin:{type:'Dose',unit:'mg'}}}}));assert.equal(digest(f.state()),snapshot);
+});
