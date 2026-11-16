@@ -1,3 +1,8 @@
+import {createAppShell} from './app-shell.js';
+import {mountMore} from './more.js';
+import {diarySummaryMarkup,mountDiarySummary} from './diary-summary.js';
+import {openDiarySummaryAction} from './diary-summary-actions.js';
+import {openTargetPolicies} from './target-policies.js';
 import {diaryCycleMarkup} from './diary-cycle.js';
 import {rememberOfflineAccount} from './offline-session.js';
 import {mountTextLog} from './text-log.js';
@@ -24,26 +29,29 @@ const svg=path=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 const icons={check:svg('<path d="m5 12 4 4L19 6"/>'),back:svg('<path d="m15 5-7 7 7 7"/>'),chevron:svg('<path d="m9 5 7 7-7 7"/>'),more:svg('<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>'),plus:svg('<path d="M12 5v14M5 12h14"/>'),close:svg('<path d="m6 6 12 12M18 6 6 18"/>'),food:svg('<path d="M5 3v7m4-7v7m-4-4h4M7 10v11M18 3v18m0-18c-4 3-4 9 0 9"/>')};
 const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
 const num=(v,d=1)=>Number.isFinite(v)?v.toLocaleString(undefined,{maximumFractionDigits:d}):'—';
-let view='diary',library=null,nutrition=null,pickerCleanup;
+const headerRoot=document.querySelector('.app-header'),shell=createAppShell({headerRoot,dateBar,navigation:document.querySelector('.app-nav')});
+let view='diary',library=null,nutrition=null,more=null,summaryPanel=null,pickerCleanup,account;
 let accountReady=false;
 let date=today(),diary=null,loadId=0,searchId=0,group='Uncategorized';
 function show(html){pickerCleanup?.();pickerCleanup=null;searchId++;content.innerHTML=html;if(!sheet.open)sheet.showModal();sheet.scrollTop=0;}
 function close(){pickerCleanup?.();pickerCleanup=null;searchId++;sheet.close();content.replaceChildren();}
 const header=title=>`<header class="sheet-header"><button type="button" class="icon-button" data-close aria-label="Close">${icons.close}</button><h2 id="sheet-title">${e(title)}</h2></header>`;
-const diaryTools=createDiaryTools({diary:()=>diary,date:()=>date,show,close,header,content,render,onChange:load});
+const diaryTools=createDiaryTools({diary:()=>diary,date:()=>date,show,close,header,content,render,onChange:load,onDisplay:()=>summaryAction({action:'configure-diary-display'}),onScores:()=>summaryAction({action:'choose-scores'})});
 sheet.addEventListener('click',event=>{if(event.target===sheet){const r=sheet.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)close();}if(event.target.closest('[data-close]'))close();});
 sheet.addEventListener('cancel',event=>{event.preventDefault();close();});
-async function load(){const id=++loadId;notice.textContent='';page.setAttribute('aria-busy','true');try{if(!accountReady){await rememberOfflineAccount(await request('/api/account'));accountReady=true;}const result=await request('/api/diary?date='+date);if(id!==loadId)return;diary=result;applyTheme(result.theme);if(view==='diary')render();}catch(error){if(id===loadId){notice.textContent=error.message;if(view==='diary')page.innerHTML='<p class="empty"><button type="button" data-reload>Try again</button><a href="/offline.html">Open offline diary</a></p>';}}finally{if(id===loadId)page.setAttribute('aria-busy','false');}}
-function selectTab(id){document.querySelectorAll('.app-nav [aria-current]').forEach(b=>b.removeAttribute('aria-current'));document.getElementById(id).setAttribute('aria-current','page');}
-function leaveView(){diaryTools.reset();library?.dispose();library=null;nutrition?.dispose();nutrition=null;}
+async function load(){const id=++loadId;notice.textContent='';page.setAttribute('aria-busy','true');try{if(!accountReady){account=await request('/api/account');await rememberOfflineAccount(account);accountReady=true;}const result=await request('/api/diary?date='+date);if(id!==loadId)return;diary=result;applyTheme(result.theme);if(view==='diary')render();}catch(error){if(id===loadId){notice.textContent=error.message;if(view==='diary')page.innerHTML='<p class="empty"><button type="button" data-reload>Try again</button><a href="/offline.html">Open offline diary</a></p>';}}finally{if(id===loadId)page.setAttribute('aria-busy','false');}}
+function selectTab(id){shell.select(id);}
+function leaveView(){diaryTools.reset();summaryPanel?.dispose();summaryPanel=null;library?.dispose();library=null;nutrition?.dispose();nutrition=null;more?.dispose();more=null;headerRoot.replaceChildren();}
 function render(){
+ summaryPanel?.dispose();
  selectTab('diary-tab');
  dateBar.hidden=false;document.querySelector('#diary-tab').setAttribute('aria-current','page');document.querySelector('#foods-tab').removeAttribute('aria-current');
  const s=diary.summary,totals=s.totals??{},calories=diary.consumedEnergy,energyUnit=diary.energyUnit,carbohydrate=s.carbohydrate;
  dateBar.innerHTML=mobileDiaryHeader({date,today:today(),complete:diary.completed,icons,menu:`<button type="button" data-diary-menu class="icon-button" aria-label="Diary actions">${icons.more}</button>`,labels:{today:'Today',complete:'Mark day complete',reopen:'Reopen day',previous:'Previous day',next:'Next day',date:'Diary date'},language:'en'});
- dateBar.querySelector('[data-md-calendar]').outerHTML=`<label class="md-date-label"><input aria-label="Diary date" type="date" value="${date}" id="date-picker"></label>`;
+ const calendar=dateBar.querySelector('[data-md-calendar]');calendar.outerHTML=`<label class="md-date-label">${calendar.innerHTML}<input aria-label="Diary date" type="date" value="${date}" id="date-picker"></label>`;
  const names=[...new Set([...diary.groups,...diary.entries.map(r=>r.group)])];
- page.innerHTML=`${diaryCycleMarkup(diary.cycleDays)}${diaryTools.toolbar()}<section class="calorie-summary" aria-label="Daily nutrition"><button type="button" class="energy-ring" data-diary-nutrient="calories" aria-label="Energy details"><strong>${num(calories??0,0)}</strong><small>${e(energyUnit)}</small></button><div>${[['protein','Protein'],[carbohydrate?.definition.mode==='net'?'netCarbohydrate':'carbs',carbohydrate?.definition.mode==='net'?'Net Carbs':'Carbs'],['fat','Fat']].map(([id,label])=>`<button type="button" class="macro-row" data-diary-nutrient="${id}"><strong>${label}</strong><span>${num((id==='carbs'||id==='netCarbohydrate'?carbohydrate?.value:totals[id])??0)} g</span></button>`).join('')}</div></section><div class="md-diary diary-layout">${mobileDiaryGroups({groups:names,configuredGroups:diary.groups,records:diary.entries,renderRow:entry=>mobileDiaryRecord({id:entry.id,collection:'entries',name:entry.facts?.name??entry.name,meta:e([entry.time,entry.kind==='exercise'?`${num(entry.duration)} min`:entry.quantity!==undefined?`${num(entry.quantity)} ${entry.unit==='portion'?(entry.facts?.portionLabel??'portions'):entry.unit}`:`${num(entry.amount)} servings`].filter(Boolean).join(' · ')),amount:`${num(entry.energyValue,0)}<br>${e(energyUnit)}`,icon:icons.food,selectBox:diaryTools.selectBox('entries',entry),action:'edit-entry'}),selectBox:group=>diaryTools.groupBox(group),subtotal:group=>`<button type="button" class="diary-group-tools" data-tool-group="${e(group)}" aria-label="${e(group)} actions">⋯</button>`,icons,labels:{add:'Add food'}})}</div><section class="record-section"><div class="section-actions"><h2>Notes</h2><button type="button" data-note>Add note</button></div>${diary.notes.map(row=>`<div class="diary-record-selectable">${diaryTools.selectBox('notes',row)}<button type="button" class="record-text" data-record-kind="note" data-record-id="${e(row.id)}">${notePhotoThumbnail(row)}${e(row.time)} ${e(row.text)}</button></div>`).join('')}</section>${diary.biometrics.length?`<section class="record-section"><h2>Biometrics</h2>${diary.biometrics.map(row=>`<div class="diary-record-selectable">${diaryTools.selectBox('biometrics',row)}<button type="button" class="record-text" data-record-kind="biometric" data-record-id="${e(row.id)}">${e(row.type)} · ${e(row.value)} ${e(row.unit)}</button></div>`).join('')}</section>`:''}`;
+ page.innerHTML=`${diaryCycleMarkup(diary.cycleDays)}${diaryTools.toolbar()}${diarySummaryMarkup(diary)}<div class="md-diary diary-layout">${mobileDiaryGroups({groups:names,configuredGroups:diary.groups,records:diary.entries,renderRow:entry=>mobileDiaryRecord({id:entry.id,collection:'entries',name:entry.facts?.name??entry.name,meta:e([entry.time,entry.kind==='exercise'?`${num(entry.duration)} min`:entry.quantity!==undefined?`${num(entry.quantity)} ${entry.unit==='portion'?(entry.facts?.portionLabel??'portions'):entry.unit}`:`${num(entry.amount)} servings`].filter(Boolean).join(' · ')),amount:`${num(entry.energyValue,0)}<br>${e(energyUnit)}`,icon:icons.food,selectBox:diaryTools.selectBox('entries',entry),action:'edit-entry'}),selectBox:group=>diaryTools.groupBox(group),subtotal:group=>`<button type="button" class="diary-group-tools" data-tool-group="${e(group)}" aria-label="${e(group)} actions">⋯</button>`,icons,labels:{add:'Add food'}})}</div><section class="record-section"><div class="section-actions"><h2>Notes</h2><button type="button" data-note>Add note</button></div>${diary.notes.map(row=>`<div class="diary-record-selectable">${diaryTools.selectBox('notes',row)}<button type="button" class="record-text" data-record-kind="note" data-record-id="${e(row.id)}">${notePhotoThumbnail(row)}${e(row.time)} ${e(row.text)}</button></div>`).join('')}</section>${diary.biometrics.length?`<section class="record-section"><h2>Biometrics</h2>${diary.biometrics.map(row=>`<div class="diary-record-selectable">${diaryTools.selectBox('biometrics',row)}<button type="button" class="record-text" data-record-kind="biometric" data-record-id="${e(row.id)}">${e(row.type)} · ${e(row.value)} ${e(row.unit)}</button></div>`).join('')}</section>`:''}`;
+ summaryPanel=mountDiarySummary({root:page,diary,onAction:summaryAction});
 }
 function openInsights(mode='suggestions',day=date){return openFoodInsights({mode,date:()=>day,show,close,header,content,onAdd:(kind,id,quantity)=>edit(null,id,'food',quantity),onAddMeal:async input=>{await command(input.revision,'meal.log',{date:input.date,time:input.time,group:input.group,rows:input.rows.map(row=>({foodId:row.ref.id,...(row.unit==='servings'?{amount:row.quantity}:{quantity:row.quantity,unit:row.unit,...(row.unit==='portion'?{portionId:row.portionId}:{})})}))});await load();}});}
 
@@ -63,13 +71,34 @@ document.addEventListener('click',async event=>{
  if(action==='complete-day'){target.disabled=true;try{await command(diary.revision,'day.complete',{date,completed:!diary.completed});await load();}catch(error){notice.textContent=error.message;}finally{target.disabled=false;}return;}
  if(['add-food','group-quick-add'].includes(action)){group=target.dataset.group??(diary?.groups.includes('Uncategorized')?'Uncategorized':diary?.groups[0]);return search();}
  if(action==='edit-entry'||target.hasAttribute('data-md-context')){const id=target.dataset.id??target.closest('[data-id]')?.dataset.id;const entry=diary.entries.find(row=>row.id===id);if(target.hasAttribute('data-md-context'))return diaryTools.recordMenu('entries',id,()=>entry?.kind==='exercise'?recordEditor('exercise',entry):edit(entry));return entry?.kind==='exercise'?recordEditor('exercise',entry):edit(entry);}
- if(['discover-tab','settings-tab'].includes(target.id)){leaveView();view=target.id==='discover-tab'?'discover':'targets';dateBar.hidden=true;selectTab(target.id);nutrition=mountNutrition({page,mode:view,date:()=>date,show,close,header,content,onChange:load,onSuggest:day=>{date=day;return openInsights('suggestions',day);},onDiary:nextDate=>{leaveView();date=nextDate;view='diary';selectTab('diary-tab');load();}});return;}
+ if(target.id==='discover-tab')return navigate('discover');
+ if(target.id==='settings-tab')return navigate('more');
  if(target.hasAttribute('data-recipe-import')){let pending;return openRecipeImport({show,close,header,content,onSave:async input=>{const signature=JSON.stringify(input);if(pending?.signature!==signature)pending={signature,body:{...input,requestId:crypto.randomUUID()}};const result=await request('/api/recipe-import/save',pending.body);pending=null;await load();await library?.reload();return result;}});}
  if(target.dataset.foodInsight)return openInsights(target.dataset.foodInsight);
- if(target.hasAttribute('data-library-repeats')){leaveView();view='repeats';dateBar.hidden=true;selectTab('foods-tab');library=mountRepeats({page,show,close,header,content,date:()=>date,onChange:load});return;}
- if(target.id==='foods-tab'){leaveView();selectTab('foods-tab');view='foods';dateBar.hidden=true;document.querySelector('#foods-tab').setAttribute('aria-current','page');document.querySelector('#diary-tab').removeAttribute('aria-current');library?.dispose();library=mountLibrary({page,show,close,header,content,date:()=>date,openEntry:(kind,id)=>edit(null,id,kind),onChange:load});return;}
- if(target.id==='diary-tab'){leaveView();view='diary';library?.dispose();library=null;dateBar.hidden=false;document.querySelector('#diary-tab').setAttribute('aria-current','page');document.querySelector('#foods-tab').removeAttribute('aria-current');return load();}
+ if(target.hasAttribute('data-library-repeats')){leaveView();view='repeats';selectTab('foods-tab');headerRoot.innerHTML='<div class="screen-title"><button type="button" class="icon-button" aria-label="Back">'+icons.back+'</button><span>Repeat Items</span></div>';headerRoot.querySelector('button').onclick=()=>navigate('foods');library=mountRepeats({page,show,close,header,content,date:()=>date,onChange:load});return;}
+ if(target.id==='foods-tab')return navigate('foods');
+ if(target.id==='diary-tab')return navigate('diary');
 });
+function navigate(next,initialTab='dashboard',reportDate){
+ leaveView();view=next;window.scrollTo(0,0);
+ const common={page,headerRoot,date:()=>date,show,close,header,content,onChange:load,onDiary:nextDate=>{date=nextDate;return navigate('diary');}};
+ if(next==='diary'){selectTab('diary-tab');return load();}
+ if(next==='foods'){selectTab('foods-tab');library=mountLibrary({...common,openEntry:(kind,id)=>edit(null,id,kind)});return;}
+ if(next==='more'){selectTab('settings-tab');more=mountMore({...common,identity:account?.name||'My workspace',onFoods:()=>navigate('foods'),onDiscover:tab=>navigate('discover',tab)});return;}
+ selectTab('discover-tab');nutrition=mountNutrition({...common,mode:'discover',initialTab,reportDate,onSuggest:day=>{date=day;return openInsights('suggestions',day);}});
+}
+async function summaryAction(input){
+ if(input.action==='open-fasting')return navigate('discover','fasting');
+ if(input.action==='edit-day-targets')return openTargetPolicies({date:()=>date,show,close,header,content,onChange:load});
+ if(input.action==='all-nutrients')return navigate('discover','report',date);
+ if(input.action==='water'){try{await command(diary.revision,'water.add',{date,time:new Date().toTimeString().slice(0,5),amount:input.amount});await load();}catch(error){notice.textContent=error.message;}return;}
+ if(input.action==='water-custom'){
+  show(header('Add Water')+'<form class="entry-form"><label class="field-row"><span>Amount (mL)</span><input name="amount" type="number" min="1" step="any" value="250" required></label><p class="sheet-message" role="status"></p><footer class="entry-actions"><button class="primary">Add to Diary</button></footer></form>');
+  const form=content.querySelector('form');form.onsubmit=async event=>{event.preventDefault();const button=form.querySelector('button');button.disabled=true;try{await command(diary.revision,'water.add',{date,time:new Date().toTimeString().slice(0,5),amount:Number(form.elements.amount.value)});await load();if(form.isConnected)close();}catch(error){if(form.isConnected)form.querySelector('[role=status]').textContent=error.message;}finally{button.disabled=false;}};return;
+ }
+ if(input.action==='nutrient-contributors')return openNutrientDetail({nutrient:input.id,date,show,header,content});
+ openDiarySummaryAction({...input,diary,date,show,close,header,content,onChange:load,onTargets:()=>openTargetPolicies({date:()=>date,show,close,header,content,onChange:load}),onReport:day=>navigate('discover','report',day)});
+}
 function search(){
  if(!diary)return;show(`${header('Add Food')}<div class="diary-picker"></div>`);pickerCleanup=mountFoodPicker(content.querySelector('.diary-picker'),{onPick:(kind,id)=>edit(null,id,kind),onBarcode:()=>barcode(),onBranded:()=>barcode('search')});
 }

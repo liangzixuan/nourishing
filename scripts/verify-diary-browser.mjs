@@ -14,7 +14,7 @@ try{
  const context=await browser.newContext({viewport:{width:412,height:915},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  page=await context.newPage();page.setDefaultTimeout(30000);page.on('pageerror',error=>errors.push(error.message));
  await page.goto(origin+'/login');await page.getByLabel('Email',{exact:true}).fill(email);await page.getByLabel('Password',{exact:true}).fill(password);await page.getByRole('button',{name:'Sign in',exact:true}).click();
- await page.waitForURL('**/diary');await page.locator('#page[aria-busy="false"] .calorie-summary').waitFor();
+ await page.waitForURL('**/diary');await page.locator('#page[aria-busy="false"] .md-summary').waitFor();
  assert.equal(await page.locator('[data-diary-record]').count(),0);
  await page.getByRole('button',{name:'Add entry',exact:true}).click();await page.getByRole('button',{name:'Food',exact:true}).click();const searched=page.waitForResponse(r=>r.url().includes('/api/catalog/search?')&&r.url().includes('rice')&&r.status()===200);await page.getByRole('searchbox',{name:'Search foods'}).fill('rice cooked');await searched;await page.locator('.search-results button').first().waitFor();
  await page.locator('.search-results button').first().click();await page.locator('.entry-form').waitFor();await page.getByLabel('Amount',{exact:true}).fill('150');await page.getByLabel('Serving',{exact:true}).selectOption('g');await page.getByLabel('Group',{exact:true}).selectOption('Lunch');

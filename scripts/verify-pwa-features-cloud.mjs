@@ -55,7 +55,7 @@ try {
  const print=await post('/api/library/food-print',{id:food,includeNotes:false});assert.equal(print.accountId,created[0]);assert.equal(print.capture.request.id,food);
  checks.push('explicit library sharing, exact import replay and account-bound food print');
  const page=await context.newPage(),errors=[];page.setDefaultTimeout(25000);page.on('pageerror',error=>errors.push(error.message));
- await page.goto(origin+'/diary');await page.locator('.calorie-summary').waitFor();
+ await page.goto(origin+'/diary');await page.locator('.md-summary').waitFor();
  await page.locator('#discover-tab').click();await page.locator('[data-health-card=glucose]').waitFor();await page.locator('[data-health-card=cycle]').waitFor();
  await page.locator('[data-chart-open="'+chartId+'"]').waitFor();
  await page.getByRole('button',{name:'Share streak',exact:true}).click();await page.locator('.dc-streak-image').waitFor();await page.screenshot({path:'.local/pwa-hosted-streak.png'});await page.locator('#sheet').evaluate(dialog=>dialog.close());

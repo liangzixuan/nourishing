@@ -54,7 +54,7 @@ try{
  assert.equal((await get('/api/reminders')).schedules.length,1);assert.equal((await get('/api/reminders',other)).schedules.length,0);
  report.checks.push('offline immutable replay','offline account and generation isolation','paused reminder settings and isolation');
  const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
- await page.goto(origin+'/diary');await page.locator('.calorie-summary').waitFor();await page.evaluate(()=>navigator.serviceWorker.ready);await page.waitForFunction(()=>navigator.serviceWorker.controller);
+ await page.goto(origin+'/diary');await page.locator('.md-summary').waitFor();await page.evaluate(()=>navigator.serviceWorker.ready);await page.waitForFunction(()=>navigator.serviceWorker.controller);
  assert.equal(await page.locator('link[rel=manifest]').getAttribute('href'),'/manifest.webmanifest');
  const manifest=await get('/manifest.webmanifest');assert.equal(manifest.display,'standalone');
  for(const icon of manifest.icons)assert.equal((await context.request.get(origin+icon.src)).status(),200);
@@ -74,7 +74,7 @@ try{
  report.checks.push('offline food selection and balances with unchanged daily scores and completeness');
  await page.getByRole('button',{name:'Water',exact:true}).click();await page.getByLabel('Water (mL)').fill('250');await page.getByRole('button',{name:'Save pending'}).click();await page.getByRole('button',{name:'Sync 1 pending'}).waitFor();await page.reload();await page.getByRole('button',{name:'Sync 1 pending'}).waitFor();
  await context.setOffline(false);await page.getByRole('button',{name:'Refresh copy'}).waitFor({timeout:90000});assert.equal((await get('/api/offline')).state.biometrics.length,biometricsBefore+1);
- await page.getByRole('link',{name:'Open online diary'}).click();await page.locator('.calorie-summary').waitFor();
+ await page.getByRole('link',{name:'Open online diary'}).click();await page.locator('.md-summary').waitFor();
  report.checks.push('hosted offline restart, queued water entry, and automatic sync');
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(errors,[]);
  report.checks.push('hosted service worker','install manifest and icons','public-only offline cache','offline/online recovery','mobile layout');

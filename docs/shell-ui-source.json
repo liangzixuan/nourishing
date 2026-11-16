@@ -1,0 +1,42 @@
+{
+  "source": "../cronometer-local",
+  "files": [
+    {
+      "source": "public/discover.css",
+      "target": "public/shell-source/discover.css",
+      "sourceSha256": "2993a036c6060322ca2e636a1570e76dd6b8bfd4ba1ca521342315b7ccf7a77b",
+      "sha256": "68f6a1c57873e13eaeba0c3db12b5baa9ecfd97806326bf9a100722df99e54d1",
+      "transforms": [
+        "Remove imports supplied by the cloud entrypoint",
+        "Rewrite navigation asset paths",
+        "Embed exact source Coach background bytes",
+        "Normalize LF"
+      ]
+    },
+    {
+      "source": "public/discover-assets/navigation/chart-box.svg",
+      "target": "public/shell-source/navigation/chart-box.svg",
+      "sha256": "364156cdbdbdd4df40141d8e173e4af7bf3256fc62867749a422e58dbd140455"
+    },
+    {
+      "source": "public/discover-assets/navigation/notebook-fill.svg",
+      "target": "public/shell-source/navigation/notebook-fill.svg",
+      "sha256": "e58b383d37d18ce45302b0ad6c49d8ebca752e98ba40a75dfe0321583b8b8de0"
+    },
+    {
+      "source": "public/discover-assets/navigation/apple-whole.svg",
+      "target": "public/shell-source/navigation/apple-whole.svg",
+      "sha256": "f1bd44d1860cc99a1d53a352922dcfe89f1820d858bcaed7098f0f9483172c60"
+    },
+    {
+      "source": "public/discover-assets/navigation/dots-horizontal-circle.svg",
+      "target": "public/shell-source/navigation/dots-horizontal-circle.svg",
+      "sha256": "26066f6dcb3dd4a5c5cabc761af69f1a83ae0e3c3a8554a03e0e5e6e9df6c213"
+    },
+    {
+      "source": "public/discover-assets/navigation/plus.svg",
+      "target": "public/shell-source/navigation/plus.svg",
+      "sha256": "a82b3e61f15be1073a3f37e1b795dc572d04e653594761a4497b37e72bce6de8"
+    }
+  ]
+}

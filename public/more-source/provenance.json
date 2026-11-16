@@ -1,0 +1,104 @@
+{
+  "source": "cronometer-local/public",
+  "extraction": {
+    "source": "mobile-more.js",
+    "sourceSha256": "02a25ed0edb5e3ee60c6b74c56c7ce27278732fcc41e1c78d2b74cfedc9e8f97",
+    "target": "public/more-source/menu-view.js",
+    "notes": "View-only row, link, group, home and child header markup. Static English labels and relocated source icon paths; destination adapters are in more.js."
+  },
+  "files": [
+    {
+      "source": "mobile-more.css",
+      "sourceSha256": "b3404d43f83cbae0526939bbe6d15e1d37353a28416cd07d57d2febed0e0cdb9",
+      "target": "public/more-source/mobile-more.css",
+      "outputSha256": "5656c91a50b519963ffc1a9399a2f22922598a5a46e854abb56d7dc4e562e8e5",
+      "transforms": [
+        "Normalize LF for Git publication"
+      ]
+    },
+    {
+      "source": "mobile-display.css",
+      "sourceSha256": "f8f75c2b8dd400d8d865af90ade2d01d39811497edd98001f2dc0fbb92397be4",
+      "target": "public/more-source/mobile-display.css",
+      "outputSha256": "ea6a296f528aa0ce85702281ad119d73d266f9994bed7fa6fff6cdffdefa8d91",
+      "transforms": [
+        "Normalize LF for Git publication"
+      ]
+    },
+    {
+      "source": "more-icons/account-cog.svg",
+      "sourceSha256": "8785110af7064627b8bdaccb2c95efb21c29946d6a0877eca711775e0a98caa2",
+      "target": "public/more-source/icons/account-cog.svg",
+      "outputSha256": "8785110af7064627b8bdaccb2c95efb21c29946d6a0877eca711775e0a98caa2"
+    },
+    {
+      "source": "more-icons/account-circle.svg",
+      "sourceSha256": "7d26790a8e0cb4f7ed7c0d6e5dab486eba1afdb484b92b614fc752f3fda93fb3",
+      "target": "public/more-source/icons/account-circle.svg",
+      "outputSha256": "7d26790a8e0cb4f7ed7c0d6e5dab486eba1afdb484b92b614fc752f3fda93fb3"
+    },
+    {
+      "source": "more-icons/bullseye.svg",
+      "sourceSha256": "9cc613d6fe990982022c043822b31666729a9b886c43d8cd32c670dd7b740df6",
+      "target": "public/more-source/icons/bullseye.svg",
+      "outputSha256": "9cc613d6fe990982022c043822b31666729a9b886c43d8cd32c670dd7b740df6"
+    },
+    {
+      "source": "more-icons/timer-outline.svg",
+      "sourceSha256": "3d28a4d561aac4be8909ca7d25c15d26ede3cafd27216104f833fae7c2eb5aa4",
+      "target": "public/more-source/icons/timer-outline.svg",
+      "outputSha256": "3d28a4d561aac4be8909ca7d25c15d26ede3cafd27216104f833fae7c2eb5aa4"
+    },
+    {
+      "source": "more-icons/cellphone.svg",
+      "sourceSha256": "02e6c9b8e8f945288e0e1c5023517209c3a14a6d419c1551fb9823f8690bf7ef",
+      "target": "public/more-source/icons/cellphone.svg",
+      "outputSha256": "02e6c9b8e8f945288e0e1c5023517209c3a14a6d419c1551fb9823f8690bf7ef"
+    },
+    {
+      "source": "more-icons/share.svg",
+      "sourceSha256": "c187e1a222b5d77ed88a35f2a49ffbe954ba222be0181ffae2dbd5b8e832a3b9",
+      "target": "public/more-source/icons/share.svg",
+      "outputSha256": "c187e1a222b5d77ed88a35f2a49ffbe954ba222be0181ffae2dbd5b8e832a3b9"
+    },
+    {
+      "source": "more-icons/help-circle.svg",
+      "sourceSha256": "19138898ecbd83c33571dad908b55277b822ea9371a2d47d7e643f5e139b2f3b",
+      "target": "public/more-source/icons/help-circle.svg",
+      "outputSha256": "19138898ecbd83c33571dad908b55277b822ea9371a2d47d7e643f5e139b2f3b"
+    },
+    {
+      "source": "more-icons/information.svg",
+      "sourceSha256": "623d505979ab29ca1f18aa90571f7f7d9dff6edf758a240b73e373550ea10a28",
+      "target": "public/more-source/icons/information.svg",
+      "outputSha256": "623d505979ab29ca1f18aa90571f7f7d9dff6edf758a240b73e373550ea10a28"
+    },
+    {
+      "source": "more-icons/chevron-left.svg",
+      "sourceSha256": "63017df5d04537d76bd4f5b3147b25366abfc48ed3f6f498caae699f9179b61b",
+      "target": "public/more-source/icons/chevron-left.svg",
+      "outputSha256": "63017df5d04537d76bd4f5b3147b25366abfc48ed3f6f498caae699f9179b61b"
+    },
+    {
+      "source": "more-icons/chevron-right.svg",
+      "sourceSha256": "391f6b0267c48b1dbb4197cde4ab7637084a34eadb1746571809f743ef0903aa",
+      "target": "public/more-source/icons/chevron-right.svg",
+      "outputSha256": "391f6b0267c48b1dbb4197cde4ab7637084a34eadb1746571809f743ef0903aa"
+    },
+    {
+      "source": "more-icons/magnify.svg",
+      "sourceSha256": "b124fa65c6c54b96b595f76f24ef2de114866a81cb2a5b75beaf86af964eff91",
+      "target": "public/more-source/icons/magnify.svg",
+      "outputSha256": "b124fa65c6c54b96b595f76f24ef2de114866a81cb2a5b75beaf86af964eff91"
+    },
+    {
+      "source": "more-icons/LICENSE",
+      "sourceSha256": "f3bc8715bad84b26396bb42d2abd11f919cf58163be158eab79ecbaabf84cdf2",
+      "target": "public/more-source/icons/LICENSE",
+      "outputSha256": "3bae6305bcaa6d10219b999f65c342034c2d40b1c0e8567fa08605e73ccba829",
+      "transforms": [
+        "Normalize LF for Git publication"
+      ]
+    }
+  ]
+}

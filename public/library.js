@@ -1,25 +1,58 @@
 import {openLibrarySharing} from './library-sharing.js';
 import {openFoodPrint} from './library-print.js';
-import {openFavorites,openNutritionLabel,favoriteButton,setFavorite} from './library-extras.js';
+import {openFavorites,openNutritionLabel,setFavorite} from './library-extras.js';
 import {openLibraryTools} from './library-tools.js';
 import {request,command} from './diary-api.js';
 import {escape as e} from './html.js';
 import {quantityFields,quantityValue} from './quantity.js';
 import {mountFoodPicker} from './food-picker.js';
-const labels={food:'Custom Food',recipe:'Recipe',meal:'Meal'},plural={food:'Custom Foods',recipe:'Recipes',meal:'Meals'};
+import {mobileFoodsHeader,mobileFoodsHome} from './foods-source/mobile-foods-home.js';
+import {mobileLibraryHeader,mobileLibraryCollection,MobileLibrarySheet,MobileLibraryActions} from './foods-source/mobile-library.js';
+import {icon} from './foods-source/icons.js';
+const labels={food:'Custom Food',recipe:'Recipe',meal:'Meal'};
 const fmt=value=>Number.isFinite(value)?Number(value.toFixed(1)).toLocaleString():'—';
 const row=(label,name,value,attrs='')=>`<label class="field-row"><span>${label}</span><input name="${name}" value="${e(value??'')}" ${attrs}></label>`;
-export function mountLibrary({page,show,close,header,content,date,openEntry,onChange}){
- let data,kind='food',query='',disposed=false,serial=0,pickerCleanup,extrasCleanup;
+export function mountLibrary({page,show,close,header,content,date,openEntry,onChange,headerRoot}){
+ let data,kind='food',screen='home',sort='recent',retired=false,query='',disposed=false,serial=0,pickerCleanup,extrasCleanup,optionsSheet;
  const alive=id=>!disposed&&id===serial;
  async function reload(){const id=++serial;try{data=await request('/api/library');if(alive(id))render();}catch(error){if(alive(id))page.innerHTML=`<p class="empty">${e(error.message)}</p><button type="button" data-library-retry>Try again</button>`;}}
- function render(){
-  page.innerHTML=`<section class="library-page"><div class="section-actions"><h1>Foods</h1><button type="button" data-library-new class="primary">＋ Create</button></div><div class="picker-tabs" role="group" aria-label="Library">${Object.keys(labels).map(k=>`<button type="button" data-library-tab="${k}" aria-pressed="${k===kind}">${plural[k]}</button>`).join('')}</div><button type="button" data-library-favorites>Favorites</button>${kind==='food'?'<button type="button" data-library-label>Nutrition Label</button>':''}<button type="button" class="more-results" data-library-repeats>Repeat Items</button><button type="button" data-recipe-import>Import Recipe</button><button type="button" data-library-import>Import shared item</button><button type="button" data-food-insight="suggestions">Suggest Food</button><button type="button" data-food-insight="oracle">Nutrient Oracle</button><div class="search-box"><input type="search" id="library-search" aria-label="Search library" placeholder="Search" value="${e(query)}"></div><ul class="search-results library-list"></ul></section>`;
-  page.querySelector('#library-search').oninput=event=>{query=event.target.value;renderItems();};renderItems();
+ function renderHeader(markup){if(headerRoot){headerRoot.hidden=false;headerRoot.innerHTML=markup;return '';}return `<header class="library-inline-header">${markup}</header>`;}
+ function collectionMarkup(){return mobileLibraryCollection({items:data.items.filter(item=>item.kind===kind&&item.retired===retired&&item.name.toLocaleLowerCase().includes(query.toLocaleLowerCase())),tab:kind+'s',query,sort,retired,language:'en',icon});}
+ function bindCollection(){
+  page.querySelector('#library-search').setAttribute('aria-label','Search library');
+  page.querySelector('#library-search').oninput=event=>{query=event.target.value;renderItems();};
+  page.querySelectorAll('.ml-row').forEach(button=>button.dataset.libraryItem=button.dataset.id);
  }
- function renderItems(){const items=data.items.filter(item=>item.kind===kind&&item.name.toLocaleLowerCase().includes(query.toLocaleLowerCase()));page.querySelector('.library-list').innerHTML=items.map(item=>`<li class="favorite-result"><button type="button" data-library-item="${e(item.id)}"><strong>${e(item.name)}</strong>${item.retired?'<small>Retired</small>':''}<span aria-hidden="true">›</span></button>${item.retired?'':favoriteButton(item.kind,item.id,!!item.favorite)}</li>`).join('')||`<li class="empty">No ${plural[kind].toLowerCase()} yet.</li>`;}
- async function select(event){const b=event.target.closest('button');if(!b)return;if(b.hasAttribute('data-library-import')){extrasCleanup?.();extrasCleanup=openLibrarySharing({show,header,content,close,onChange:async()=>{await onChange();await reload();}});return;}if(b.hasAttribute('data-library-favorites')){extrasCleanup?.();extrasCleanup=openFavorites({show,header,content,openEntry,onChange:async()=>{await onChange();await reload();}});return;}if(b.hasAttribute('data-library-label')){extrasCleanup?.();extrasCleanup=openNutritionLabel({show,header,content,date,close,onChange:async()=>{await onChange();await reload();}});return;}if(b.dataset.favoriteId){if(b.disabled)return;b.disabled=true;try{await setFavorite({kind:b.dataset.favoriteKind,id:b.dataset.favoriteId,enabled:b.getAttribute('aria-pressed')!=='true',revision:data.revision,onChange:async()=>{await onChange();await reload();}});}catch(error){if(b.isConnected){b.disabled=false;let status=page.querySelector('[data-favorite-error]');if(!status){status=document.createElement('p');status.className='sheet-message';status.dataset.favoriteError='';status.setAttribute('role','status');page.querySelector('.library-page').append(status);}status.textContent=error.message;}}return;}if(b.dataset.libraryTab){kind=b.dataset.libraryTab;query='';render();}if(b.hasAttribute('data-library-new'))editor(kind,null);if(b.dataset.libraryItem)openItem(kind,b.dataset.libraryItem);if(b.hasAttribute('data-library-retry'))reload();}
+ function render(){
+  document.body.classList.toggle('foods-home-mobile',screen==='home');document.body.classList.toggle('mobile-library',screen==='collection');
+  if(screen==='home'){
+   page.innerHTML=`<section class="library-page">${renderHeader(mobileFoodsHeader('en',icon))}${mobileFoodsHome('en',icon)}</section>`;
+   page.querySelector('[data-action="recipe-import"]').setAttribute('data-recipe-import','');
+   page.querySelector('[data-view="repeats"]').setAttribute('data-library-repeats','');
+   page.querySelectorAll('[data-action="foods-insight"]').forEach(button=>button.dataset.foodInsight=button.dataset.section==='suggest'?'suggestions':'oracle');
+   page.querySelectorAll('[data-action^="new-"]').forEach(button=>button.disabled=!data);
+  }else{
+   page.innerHTML=`<section class="library-page">${renderHeader(mobileLibraryHeader({tab:kind+'s',language:'en',icon}))}${data?collectionMarkup():'<p class="empty">Loading…</p>'}</section>`;
+   if(data)bindCollection();
+  }
+ }
+ function renderItems(){const fragment=document.createElement('template');fragment.innerHTML=collectionMarkup();for(const selector of ['.ml-list','.ml-tools'])page.querySelector(selector).replaceWith(fragment.content.querySelector(selector));bindCollection();}
+ function utilities(action){extrasCleanup?.();const options={show,header,content,close,date,openEntry,onChange:async()=>{await onChange();await reload();}};if(action==='favorites')extrasCleanup=openFavorites(options);if(action==='label')extrasCleanup=openNutritionLabel(options);if(action==='import')extrasCleanup=openLibrarySharing(options);}
+ function libraryOptions(){optionsSheet?.close(false);optionsSheet=new MobileLibrarySheet({label:'Library options',items:[{id:'recent',label:'Most Recent',selected:sort==='recent'},{id:'alphabetical',label:'Alphabetical',selected:sort==='alphabetical'},{id:'retired',label:retired?'Show active items':'Show retired items'},{id:'favorites',label:'Favorites'},...(kind==='food'?[{id:'label',label:'Nutrition Label'}]:[]),{id:'import',label:'Import shared item'}],onChoose:choice=>{if(disposed)return;if(['recent','alphabetical'].includes(choice)){sort=choice;renderItems();}else if(choice==='retired'){retired=!retired;renderItems();}else utilities(choice);}});}
+ function itemActions(tab,id){const item=data?.items.find(item=>item.kind+'s'===tab&&item.id===id);if(!item)return;optionsSheet?.close(false);optionsSheet=new MobileLibrarySheet({label:item.name,items:[{id:'edit',label:'Edit'},...(!item.retired?[{id:'log',label:'Add to diary'},{id:'favorite',label:item.favorite?'Remove from favorites':'Add to favorites'}]:[]),{id:'share',label:'Share'}],onChoose:async choice=>{if(disposed)return;if(choice==='edit')return openItem(item.kind,id);if(choice==='log')return openEntry(item.kind,id);if(choice==='share'){extrasCleanup?.();extrasCleanup=openLibrarySharing({kind:item.kind,id,show,header,content,close,onChange});return;}if(choice==='favorite')try{await setFavorite({kind:item.kind,id,enabled:!item.favorite,revision:data.revision,onChange:async()=>{await onChange();await reload();}});}catch(error){if(!disposed){const status=document.createElement('p');status.className='sheet-message';status.setAttribute('role','status');status.textContent=error.message;page.append(status);}}}});}
+ async function select(event){
+  const b=event.target.closest('button');if(!b)return;
+  const action=b.dataset.action;
+  if(action==='food-tab'){event.stopPropagation();kind=b.dataset.tab.slice(0,-1);screen='collection';query='';retired=false;render();return;}
+  if(action==='foods-home'){event.stopPropagation();screen='home';query='';render();return;}
+  if(action?.startsWith('new-')&&labels[action.slice(4)]){event.stopPropagation();if(data)editor(action.slice(4),null);return;}
+  if(action==='library-options'){event.stopPropagation();libraryOptions();return;}
+  if(b.dataset.libraryItem){event.stopPropagation();openItem(kind,b.dataset.libraryItem);return;}
+  if(b.hasAttribute('data-library-retry'))reload();
+ }
+ const itemMenu=new MobileLibraryActions({root:page,onChoose:itemActions});
  page.addEventListener('click',select);
+ headerRoot?.addEventListener('click',select);
  async function openItem(itemKind,id,keptDraft){show(header(labels[itemKind])+'<p class="empty">Loading…</p>');const loading=content.querySelector('.empty');try{const item=await request('/api/library/item?'+new URLSearchParams({kind:itemKind,id}));if(!disposed&&loading.isConnected)editor(itemKind,item,keptDraft);}catch(error){if(!disposed&&loading.isConnected)loading.textContent=error.message;}}
 
  function editor(itemKind,saved,draft){
@@ -45,5 +78,5 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
   form.onsubmit=event=>{event.preventDefault();save(itemKind+'.save',changes());};
   if(resource){const back=()=>openItem(itemKind,resource.id,draft);form.querySelector('[data-library-share]').onclick=()=>{draft=read();extrasCleanup?.();extrasCleanup=openLibrarySharing({kind:itemKind,id:resource.id,show,header,content,close,onBack:back,onChange:async()=>{await onChange();await reload();}});};if(itemKind==='food')form.querySelector('[data-library-print]').onclick=()=>{draft=read();extrasCleanup?.();extrasCleanup=openFoodPrint({id:resource.id,show,header,content,onBack:back});};form.querySelector('[data-library-tools]').onclick=()=>{draft=read();openLibraryTools({kind:itemKind,id:resource.id,show,close,header,content,onChange:async()=>{await onChange();await reload();},onBack:()=>openItem(itemKind,resource.id,draft)});};form.querySelector('[data-library-log]').onclick=()=>openEntry(itemKind,resource.id);form.querySelector('[data-library-delete]').onclick=()=>{show(`${header('Delete '+labels[itemKind])}<p class="sheet-message">Delete ${e(resource.name)}?</p><div class="entry-actions"><button type="button" data-cancel-delete>Cancel</button><button type="button" class="danger" data-confirm-delete>Delete</button></div><p role="status" class="sheet-message"></p>`);content.querySelector('[data-cancel-delete]').onclick=()=>editor(itemKind,saved,draft);content.querySelector('[data-confirm-delete]').onclick=async event=>{event.target.disabled=true;try{await command(data.revision,itemKind+'.delete',{id:resource.id});await onChange();await reload();close();}catch(error){content.querySelector('[role=status]').textContent=error.message;event.target.disabled=false;}};};}
  }
- reload();return {reload,dispose(){disposed=true;serial++;pickerCleanup?.();extrasCleanup?.();data=null;page.removeEventListener('click',select);}};
+ render();reload();return {reload,dispose(){disposed=true;serial++;pickerCleanup?.();extrasCleanup?.();optionsSheet?.close(false);itemMenu.dispose();data=null;page.removeEventListener('click',select);headerRoot?.removeEventListener('click',select);document.body.classList.remove('foods-home-mobile','mobile-library');}};
 }
