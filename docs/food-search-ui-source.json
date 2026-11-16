@@ -16,7 +16,7 @@
       "source": "../cronometer-local/public/message-format.js",
       "target": "public/food-search-source/message-format.js",
       "sourceSha256": "f5f4ebe4c014f4bb10cde0100a61ea54effe1dfada6066cb18e89d298ca3e273",
-      "sha256": "112a0857ed13e4969d5802e5b88d390b6f7be8f81a56e41694c4f8203f5f51e1"
+      "sha256": "5182a39f144034d765379e99bc18c8e831e8d6a1ccdfc898c31ce1686ae779c6"
     },
     {
       "source": "../cronometer-local/public/mobile-food-search-row.js",
@@ -34,13 +34,13 @@
       "source": "../cronometer-local/public/mobile-food-search.js",
       "target": "public/food-search-source/mobile-food-search.js",
       "sourceSha256": "43247c8499616924addef93e446dc707634f86603f0dbaec293048000a102e05",
-      "sha256": "6c89754358335cf04f0ffff2c28c7f9e3450293a38e60264dfd28b9df9dbb920"
+      "sha256": "4b15158d8c73676692cef7462d4f75cac13cf44ba01d9a1468fe40e6b1a56792"
     }
   ],
   "changes": [
     "Adapt source search to the account-scoped cloud route and preserve ingredient exclusions.",
     "Use SVG controls and a search-only translation formatter.",
-    "Expose supported single selection; multi-add remains pending."
+    "Main Diary picker opts into source multi-add; child ingredient, photo and text pickers retain single selection."
   ],
   "backend": "Uses the existing canonical domain search against a verified public catalog artifact."
 }

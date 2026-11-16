@@ -106,17 +106,43 @@ async function summaryAction(input){
  if(input.action==='nutrient-contributors')return openNutrientDetail({nutrient:input.id,date,show,header,content});
  openDiarySummaryAction({...input,diary,date,show,close,header,content,onChange:load,onTargets:()=>openTargetPolicies({date:()=>date,show,close,header,content,onChange:load}),onReport:day=>navigate('discover','report',day)});
 }
-function search(){
- if(!diary)return;show(`${header('Add Food')}<div class="diary-picker"></div>`);pickerCleanup=mountFoodPicker(content.querySelector('.diary-picker'),{onPick:(kind,id)=>edit(null,id,kind),onBarcode:()=>barcode(),onBranded:()=>barcode('search')});
+async function search(restore=null,{applied,selected}={}){
+ if(!diary)return;
+ if(!diary.groups.includes(group))group=diary.groups.includes('Uncategorized')?'Uncategorized':diary.groups[0];
+ show(`${header('Add Food')}<div class="diary-picker"></div>`);
+ const picker=mountFoodPicker(content.querySelector('.diary-picker'),{
+  onPick:(kind,id)=>{const snapshot=picker.snapshot();return edit(null,id,kind,undefined,()=>search(snapshot));},
+  onBarcode:()=>searchBarcode('camera',picker.snapshot()),onBranded:()=>searchBarcode('search',picker.snapshot()),
+  multi:{ownerId:account.id,defaults:restore?.defaults??{date,group,time:new Date().toTimeString().slice(0,5)},restore,
+   onEdit:async row=>{
+    const snapshot=picker.snapshot(),serial=searchId,kind=({catalog:'food',foods:'food',recipes:'recipe',meals:'meal'})[row.selection.kind];
+    const item=await request('/api/library/item?'+new URLSearchParams({kind,id:row.selection.id}));
+    if(serial!==searchId||!sheet.open)return;
+    pickerCleanup=mountFoodEntry({item,draft:row.entry,date,group,groups:diary.groups,revision:()=>diary.revision,show,close,content,
+     onChange:load,onBack:()=>search(snapshot),onApply:value=>search(snapshot,{applied:value})});
+   },
+   onSaved:async result=>{await load();close();notice.textContent=result.item?.kind==='recipe'?'Recipe created':'Items added to diary';}
+  }
+ });
+ pickerCleanup=picker;await picker.ready;if(pickerCleanup!==picker)return;
+ if(applied)picker.applyEntry(applied);
+ if(selected)picker.select(selected.row,selected.entry);
+ picker.returnFromDetail();
 }
-async function edit(entry,id=entry?.foodId??entry?.recipeId??entry?.mealId,kind=entry?.recipeId?'recipe':entry?.mealId?'meal':'food',quantity){
+function searchBarcode(mode,snapshot){
+ const returnToSearch=()=>search(snapshot);
+ const barcodeHeader=title=>header(title).replace('data-close','data-barcode-back');
+ pickerCleanup=openBarcode({mode,show,close:returnToSearch,header:barcodeHeader,content,date:()=>date,groups:diary.groups,group,onChange:load,revision:()=>diary.revision,
+  ...(snapshot.multi.enabled?{onSelect:async (row,entry)=>search(snapshot,{selected:{row,entry}})}:{})});
+}
+async function edit(entry,id=entry?.foodId??entry?.recipeId??entry?.mealId,kind=entry?.recipeId?'recipe':entry?.mealId?'meal':'food',quantity,returnSearch){
  if(!id){show(`${header('Diary entry')}<p class="empty">Editing this record type is not available in the cloud preview yet.</p>`);return;}
  show(`${header('Food')}<p class="empty">Loading…</p>`);const serial=searchId;
- try{const item=await request('/api/library/item?'+new URLSearchParams({kind,id,...(entry?{entryId:entry.id}:{})}));if(serial!==searchId||!sheet.open)return;foodEditor(item,entry,quantity);}catch(error){if(serial===searchId)content.innerHTML=header('Food')+`<p class="sheet-message">${e(error.message)}</p>`;}
+ try{const item=await request('/api/library/item?'+new URLSearchParams({kind,id,...(entry?{entryId:entry.id}:{})}));if(serial!==searchId||!sheet.open)return;foodEditor(item,entry,quantity,returnSearch);}catch(error){if(serial===searchId)content.innerHTML=header('Food')+`<p class="sheet-message">${e(error.message)}</p>`;}
 }
-function foodEditor(item,entry,quantity){
+function foodEditor(item,entry,quantity,returnSearch){
  pickerCleanup=mountFoodEntry({item,entry,quantity,date,group,groups:diary.groups,revision:()=>diary.revision,show,close,content,
-  onChange:async()=>{await load();if(view==='foods')await library?.reload();},onBack:search,
+  onChange:async()=>{await load();if(view==='foods')await library?.reload();},onBack:returnSearch??search,
   onAdjust:()=>openEntryAdjustment({kind:item.kind,date:entry.date,id:entry.id,show,close,header,content,onSave:load,onBack:()=>edit(entry)}),
   onConflict:async()=>{await load();if(entry){const latest=diary.entries.find(row=>row.id===entry.id);if(latest)edit(latest);else close();}}
  });

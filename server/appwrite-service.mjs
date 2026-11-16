@@ -1,3 +1,4 @@
+import {previewFoodMultiAdd,validateFoodMultiInput} from './food-multi-add.mjs';
 import {glucoseView,cycleView,previewCycleImport,previewCycleRemoval} from './health-controls.mjs';
 import {createReminderScheduleStore} from './reminder-schedules-store.mjs';
 import {createReminderDispatcher} from './reminder-schedules-dispatch.mjs';
@@ -206,6 +207,11 @@ export function createAppwriteService(config, key, userAgent='') {
     async previewDiary(secret,payload){const {repository}=await data(secret),state=await repository.readState();validateAction({type:payload?.id?'entry.update':'entry.add',payload});const p={...payload};try{if(p.foodId&&!state.foods.some(row=>row.id===p.foodId))p.foodId=captureCatalogFood(state,(await repository.food(p.foodId)).food).id;const preview=previewDiaryItem(state,p);return {...preview,energy:diaryEnergy(state,preview.nutrition.totals.calories)};}catch(error){if([400,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}},
     async catalogStatus(secret){return (await data(secret)).repository.catalogStatus();},
     async searchCatalog(secret,input){return (await data(secret)).repository.search(input);},
+    async previewFoodMultiAdd(secret,input){
+      validateFoodMultiInput(input);const {owner,repository}=await data(secret),state=await repository.readState();
+      const catalogFoods=await readActionFoods({type:'food.multi.add',payload:input},catalogReader(repository));
+      try{return previewFoodMultiAdd(state,input,{owner,catalogFoods});}catch(error){if([400,401,404,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
+    },
     async foodSearch(secret,input){return insights(secret,input,searchCloudFoods);},
     async readCatalogFood(secret,id){return (await data(secret)).repository.food(id);},
     async readMedia(secret,namespace,id){const {repository,storage}=await data(secret);const collection=namespace==='progress_photos'?'progressSnapshots':namespace===NOTE_MEDIA_NAMESPACE?'notes':null;if(collection&&!((await repository.readState())[collection]??[]).some(row=>row.imageId===id))throw Object.assign(Error('Photo not found.'),{code:404});const fileId=await repository.media(namespace,id);return storage.getFileView({bucketId:'private-media',fileId});},

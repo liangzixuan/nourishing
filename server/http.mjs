@@ -175,6 +175,10 @@ export function createWebHandler({config,service,serviceForRequest,assets=new Ma
         return json(200,await api.libraryItem(secret,kind,string(url.searchParams.get('id'),1,1000),url.searchParams.has('entryId')?string(url.searchParams.get('entryId'),1,1000):null));
       }
       if(req.method==='POST'&&path==='/api/diary/preview'){if(!secret)fail(401,'Please sign in.');return json(200,await api.previewDiary(secret,body));}
+      if(req.method==='POST'&&path==='/api/food-search/preview'){
+        if(!secret)fail(401,'Please sign in.');if(url.search)fail(400,'Invalid preview.');
+        return json(200,await api.previewFoodMultiAdd(secret,body));
+      }
       if(req.method==='GET'&&path==='/api/food-search'){
         if(!secret)fail(401,'Please sign in.');
         let input;try{input=readCloudFoodSearchQuery(url.searchParams);}catch(error){if(error.status===400)fail(400,error.message);throw error;}

@@ -1,3 +1,4 @@
+import {validateFoodMultiInput,foodMultiCatalogReferences,applyFoodMultiAdd} from './food-multi-add.mjs';
 import {parseAddMenu} from './domain/add-menu.mjs';
 import {diaryDisplayCommandFields,prepareDiaryDisplayCommand} from './diary-display-settings.mjs';
 import {healthCommandFields,applyHealthCommand} from './health-controls.mjs';
@@ -27,6 +28,7 @@ import {invalid} from './request-errors.mjs';
 const fields={
  ...diaryDisplayCommandFields,...healthCommandFields,...chartDisplayCommandFields,...librarySharingCommandFields,...coachCommandFields,...textLogCommandFields,...libraryExtrasCommandFields,...notePhotoCommandFields,...diaryToolCommandFields,...barcodeCommandFields,...dashboardCommandFields,...entryAdjustmentFields,...libraryToolCommandFields,...profileSettingsCommandFields,...snapshotCommandFields,...repeatCommandFields,...recordCommandFields,...targetPolicyCommandFields,...photoCommandFields,...foodInsightCommandFields,...fastingCommandFields,
  'addMenu.save':['addMenu'],
+ 'food.multi.add':['destination','rows','reviewToken','confirmed'],
  'meal.log':['date','time','group','rows'],
  'chart.save':['version','id','name','primary','secondary','days','visible','cycleOverlay'],
  'chart.delete':['id'],
@@ -54,6 +56,7 @@ export function validateAction(input){
  if(input.type==='note.photo.save')validateNotePhotoAction(input);
  if(input.type==='barcode.log')validateBarcodeAction(input);
  if(input.type==='photo.log')validatePhotoAction(input);
+ if(input.type==='food.multi.add')validateFoodMultiInput(p,{saving:true});
  if(input.type==='meal.log')validateMealLog(p);
  if(input.type==='text.log')validateTextLog(p);
  if(input.type==='share.import')validateSharedImport(p);
@@ -77,7 +80,7 @@ export function parseCommand(input){
 }
 export function applyWorkspaceCommand(state,input,context={}){
  validateAction(input);
- try{if(input.type==='addMenu.save')return act(state,'settings.save',{addMenu:parseAddMenu(input.payload.addMenu)});if(Object.hasOwn(diaryDisplayCommandFields,input.type)){const prepared=prepareDiaryDisplayCommand(state,input);return act(state,prepared.type,prepared.payload);}const health=applyHealthCommand(state,input);if(health.handled)return health.result;const chartDisplay=applyChartDisplayCommand(state,input);if(chartDisplay.handled)return chartDisplay.result;if(input.type==='share.import')return applySharedImport(state,input.payload);const coach=applyCoachCommand(state,input);if(coach.handled)return coach.result;if(Object.hasOwn(libraryExtrasCommandFields,input.type)){const prepared=prepareLibraryExtrasCommand(state,input);return act(state,prepared.type,prepared.payload);}const notePhoto=applyNotePhotoCommand(state,input,context);if(notePhoto.handled)return notePhoto.result;const diaryTools=applyDiaryToolsCommand(state,input);if(diaryTools.handled)return diaryTools.result;if(input.type==='barcode.log')return applyBarcodeLog(state,input.payload,context);const dashboard=applyDashboardCommand(state,input,context);if(dashboard.handled)return dashboard.result;if(Object.hasOwn(entryAdjustmentFields,input.type)){const prepared=prepareEntryAdjustmentCommand(state,input);return act(state,prepared.type,prepared.payload);}if(Object.hasOwn(libraryToolCommandFields,input.type)){const prepared=prepareLibraryToolCommand(state,input);return act(state,prepared.type,prepared.payload);}if(Object.hasOwn(profileSettingsCommandFields,input.type)){const prepared=prepareProfileSettingsCommand(state,input);return act(state,prepared.type,prepared.payload);}const snapshot=applySnapshotCommand(state,input,context);if(snapshot.handled)return snapshot.result;const fasting=applyFastingCommand(state,input,context);if(fasting.handled)return fasting.result;if(Object.hasOwn(foodInsightCommandFields,input.type)){const prepared=prepareFoodInsightCommand(state,input);return act(state,prepared.type,prepared.payload);}if(input.type==='text.log')return applyTextLog(state,input.payload);if(input.type==='meal.log')return applyMealLog(state,input.payload);if(input.type==='photo.log')return applyPhotoLog(state,input.payload,context);if(Object.hasOwn(targetPolicyCommandFields,input.type)){const prepared=prepareTargetPolicyCommand(state,input,context);return act(state,prepared.type,prepared.payload);}const record=applyRecordCommand(state,input);if(record.handled)return record.result;return act(state,input.type==='preferences.patch'?'settings.save':input.type,libraryPayload(state,input));}catch(error){if([400,404,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
+ try{if(input.type==='food.multi.add')return applyFoodMultiAdd(state,input.payload,context);if(input.type==='addMenu.save')return act(state,'settings.save',{addMenu:parseAddMenu(input.payload.addMenu)});if(Object.hasOwn(diaryDisplayCommandFields,input.type)){const prepared=prepareDiaryDisplayCommand(state,input);return act(state,prepared.type,prepared.payload);}const health=applyHealthCommand(state,input);if(health.handled)return health.result;const chartDisplay=applyChartDisplayCommand(state,input);if(chartDisplay.handled)return chartDisplay.result;if(input.type==='share.import')return applySharedImport(state,input.payload);const coach=applyCoachCommand(state,input);if(coach.handled)return coach.result;if(Object.hasOwn(libraryExtrasCommandFields,input.type)){const prepared=prepareLibraryExtrasCommand(state,input);return act(state,prepared.type,prepared.payload);}const notePhoto=applyNotePhotoCommand(state,input,context);if(notePhoto.handled)return notePhoto.result;const diaryTools=applyDiaryToolsCommand(state,input);if(diaryTools.handled)return diaryTools.result;if(input.type==='barcode.log')return applyBarcodeLog(state,input.payload,context);const dashboard=applyDashboardCommand(state,input,context);if(dashboard.handled)return dashboard.result;if(Object.hasOwn(entryAdjustmentFields,input.type)){const prepared=prepareEntryAdjustmentCommand(state,input);return act(state,prepared.type,prepared.payload);}if(Object.hasOwn(libraryToolCommandFields,input.type)){const prepared=prepareLibraryToolCommand(state,input);return act(state,prepared.type,prepared.payload);}if(Object.hasOwn(profileSettingsCommandFields,input.type)){const prepared=prepareProfileSettingsCommand(state,input);return act(state,prepared.type,prepared.payload);}const snapshot=applySnapshotCommand(state,input,context);if(snapshot.handled)return snapshot.result;const fasting=applyFastingCommand(state,input,context);if(fasting.handled)return fasting.result;if(Object.hasOwn(foodInsightCommandFields,input.type)){const prepared=prepareFoodInsightCommand(state,input);return act(state,prepared.type,prepared.payload);}if(input.type==='text.log')return applyTextLog(state,input.payload);if(input.type==='meal.log')return applyMealLog(state,input.payload);if(input.type==='photo.log')return applyPhotoLog(state,input.payload,context);if(Object.hasOwn(targetPolicyCommandFields,input.type)){const prepared=prepareTargetPolicyCommand(state,input,context);return act(state,prepared.type,prepared.payload);}const record=applyRecordCommand(state,input);if(record.handled)return record.result;return act(state,input.type==='preferences.patch'?'settings.save':input.type,libraryPayload(state,input));}catch(error){if([400,404,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
 }
 function libraryPayload(state,{type,payload}){
  if(!['food.save','recipe.save','meal.save'].includes(type)||!payload.id)return payload;
@@ -88,13 +91,14 @@ function libraryPayload(state,{type,payload}){
 function actionFoodRows({type,payload}){
  return ['entry.add','repeat.save'].includes(type)?[payload]:['photo.log','meal.log','text.log'].includes(type)?(payload.rows??[]):type==='recipe.save'?(payload.ingredients??[]):['meal.save','entry.ingredients.adjust'].includes(type)?(payload.items??[]):[];
 }
-export function catalogReferences(action){return [...new Set([...actionFoodRows(action).map(row=>row.foodId).filter(id=>typeof id==='string'),...libraryExtrasCatalogReferences(action)])];}
+export function catalogReferences(action){if(action.type==='food.multi.add')return [...new Set(foodMultiCatalogReferences(action.payload))];return [...new Set([...actionFoodRows(action).map(row=>row.foodId).filter(id=>typeof id==='string'),...libraryExtrasCatalogReferences(action)])];}
 export async function readActionFoods(input,readCatalog){
  const ids=catalogReferences(input),foods=new Map();
  for(let i=0;i<ids.length;i+=4){for(const [id,food] of await Promise.all(ids.slice(i,i+4).map(async id=>[id,await readCatalog(id)])))foods.set(id,food);}
  return foods;
 }
 export function captureActionFoods(state,input,foods){
+ if(input.type==='food.multi.add')return structuredClone(input);
  const action=structuredClone(input),replacements=new Map();
  for(const id of catalogReferences(action)){const food=foods.get(id);if(food)replacements.set(id,captureCatalogFood(state,food).id);}
  for(const row of actionFoodRows(action))if(replacements.has(row.foodId))row.foodId=replacements.get(row.foodId);

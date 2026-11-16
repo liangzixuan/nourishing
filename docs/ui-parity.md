@@ -75,3 +75,10 @@ Candidate changes restore source Food Search categories, database filters, sort 
 The public catalog artifact now includes the category metadata already present in the imported SQLite compact records. All 34,885 rows were published with categories, and the downloaded artifact passed digest validation. Owner records were not changed by that publication.
 
 Remaining food-flow gaps are multi-add, Edit a copy, and Photo Log Create. Deployment `6afaa0a216b486d21e89` is live at nourishing.app. All 442 tests, build and publication checks passed. Hosted checks passed food search, favorites, preview, add/reload/edit/delete, day completion, notes, outside dismissal and sign-out, with no phone-width overflow. The live indexed Beverages category returned 1,875 matches. The main-screen acceptance also passed with no browser/HTTP/CSP errors and no owner workspace change. Both fixture accounts were removed. Live Search and entry captures were visually inspected. Photo Log changes were exercised locally; installed-device checks remain pending.
+
+
+## Multi-add candidate
+
+Source multi-add now selects foods, recipes and meals, restores selection/search state after amount editing and barcode lookup, and offers Add to Diary or Create Recipe. The cloud preview resolves quantities and source facts. The confirmed command verifies an account-bound review token and saves all results in the existing Appwrite transaction. Submitted requests persist by owner and retry with the same request ID; unsent selections remain transient.
+
+Local production-composition checks pass mixed quantities, canonical meal totals, recipe creation, barcode selection without a diary write, reload after a lost reply, and receipt replay without duplicates. The full suite passed 449 tests. Hosted acceptance and deployment remain pending.

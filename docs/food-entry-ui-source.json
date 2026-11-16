@@ -35,7 +35,8 @@
     "onBack": "Return to food picker.",
     "onAdjust": "Open occurrence ingredient adjustment for current recipe/meal.",
     "onConflict": "Reload latest entry on command conflict.",
-    "stylesheet": "/food-entry-source/mobile-food-entry.css"
+    "stylesheet": "/food-entry-source/mobile-food-entry.css",
+    "draft/onApply": "Draft quantity/date/group/time seed the editor. Apply returns values without a diary command; Back discards the edit."
   },
   "validation": [
     "tests/food-entry-browser.test.mjs: add/edit/delete, amount/unit/portion identity, timestamps, groups, favorites, source details, menu outside/Escape dismissal, failed preview and save retry, recipe adjustment callback, pending-preview disposal, unknown values, CSP and mobile layout"
