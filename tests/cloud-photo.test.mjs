@@ -18,11 +18,11 @@ test('photo review is authenticated, owner-bound, photo-bound and expiring', () 
   assert.throws(() => signPhotoReview({owner, photoId, analysis: null}, {secret, now}), {code: 502});
 });
 
-test('recognition normalizes images, disables storage/retries, and ranks original source matches', async () => {
+test('recognition normalizes images, disables storage, bounds overload retries, and ranks original source matches', async () => {
   let captured, requests = 0;
   const analyzer = createCloudPhotoAnalyzer({apiKey: 'fixture-key', reviewSecret: secret, now: () => now, clientFactory: async () => ({interactions: {create: async (input, options) => {captured = {input, options}; return {status: 'completed', output_text: JSON.stringify(raw), usage: {total_input_tokens: 5, total_output_tokens: 20}};}}})});
   const result = await analyzer.analyze({image: imageData}, {owner, search: async () => {requests++;return {items: [{id: 'raw', name: 'White rice, raw', grams: 100, serving: '100 g'}, {id: 'cooked', name: 'White rice, cooked', grams: 100, serving: '100 g'}]};}});
-  assert.equal(captured.input.store, false);assert.equal(captured.options.retries.strategy, 'none');assert.equal(captured.input.generation_config.thinking_level, 'minimal');
+  assert.equal(captured.input.store, false);assert.equal(captured.options.retries.strategy, 'attempt-count-backoff');assert.equal(captured.options.retries.maxRetries,2);assert.equal(captured.options.retries.retryConnectionErrors,false);assert.deepEqual(captured.options.retry_codes,['503']);assert.equal(captured.input.generation_config.thinking_level, 'minimal');
   assert.equal(captured.input.input[0].content[1].mime_type, 'image/jpeg');assert.match(result.photo.dataUrl, /^data:image\/jpeg;base64,/);assert.equal(result.photo.width, 24);
   assert.equal(result.suggestions[0].selection.id, 'cooked');assert.deepEqual(result.observations[0].portionEstimate, estimate);assert.ok(requests > 0 && requests <= 4);
   assert.deepEqual(verifyPhotoReview(result.reviewToken, {owner, photoId: result.photo.id, secret, now}), analysis);
@@ -41,4 +41,20 @@ test('quota and cancellation errors are concise and do not disclose provider det
   const analyzer = createCloudPhotoAnalyzer({apiKey: 'fixture-key', reviewSecret: secret, clientFactory: async () => ({interactions: {create: async () => {throw {statusCode: 429, message: 'provider-secret-detail'};}}})});
   await assert.rejects(() => analyzer.analyze({image: imageData}, {owner, search: async () => ({items: []})}), error => error.code === 429 && !error.message.includes('provider-secret-detail'));
   const abort = new AbortController();abort.abort();await assert.rejects(() => analyzer.analyze({image: imageData}, {owner, search: async () => ({items: []}), signal: abort.signal}), {code: 499});
+});
+
+
+test('installed Gemini SDK retries only explicit overload and obeys cancellation and deadline', async () => {
+  const {GoogleGenAI}=await import('@google/genai'),{createServer}=await import('node:http');
+  let responses=[],calls=[],afterRequest;
+  const server=createServer(async(req,res)=>{let rawBody='';for await(const chunk of req)rawBody+=chunk;calls.push(JSON.parse(rawBody));const code=responses.shift()??503;res.writeHead(code,{'content-type':'application/json'});res.end(JSON.stringify(code===200?{id:'fixture-interaction',status:'completed',output_text:JSON.stringify(raw),usage:{total_input_tokens:5,total_output_tokens:20}}:{error:{code:code===429?'resource_exhausted':'service_unavailable',message:'provider-private-detail'}}));afterRequest?.();});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const origin='http://127.0.0.1:'+server.address().port,client=new GoogleGenAI({apiKey:'fixture-key',vertexai:false,apiVersion:'v1'}),factory=async()=>({interactions:{create:(input,options)=>client.interactions.create(input,{...options,server_url:origin})}}),analyzer=createCloudPhotoAnalyzer({apiKey:'fixture-key',reviewSecret:secret,clientFactory:factory}),context={owner,search:async()=>({items:[]})};
+  try{
+    responses=[503,200];const result=await analyzer.analyze({image:imageData},context);assert.equal(result.observations.length,1);assert.equal(calls.length,2);assert.deepEqual(calls[0],calls[1]);assert.equal(calls[0].store,false);
+    calls=[];responses=[503,503,503,200];await assert.rejects(()=>analyzer.analyze({image:imageData},context),error=>error.code===503&&!error.message.includes('provider-private-detail'));assert.equal(calls.length,3);
+    for(const status of [400,401,403,429]){calls=[];responses=[status,200];await assert.rejects(()=>analyzer.analyze({image:imageData},context),{code:status===429?429:503});assert.equal(calls.length,1);}
+    calls=[];responses=[503,200];const abort=new AbortController();afterRequest=()=>abort.abort();await assert.rejects(()=>analyzer.analyze({image:imageData},{...context,signal:abort.signal}),{code:499});assert.equal(calls.length,1);afterRequest=undefined;
+    calls=[];responses=[503,200];const short=createCloudPhotoAnalyzer({apiKey:'fixture-key',reviewSecret:secret,clientFactory:factory,timeoutMs:100});await assert.rejects(()=>short.analyze({image:imageData},context),{code:504});assert.equal(calls.length,1);
+  }finally{server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
 });

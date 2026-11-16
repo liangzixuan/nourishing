@@ -12,6 +12,10 @@ Production runtime `51e509b`, site deployment `6afaec0c3732a31301a1`, is active 
 
 The tab-delay investigation and two measured improvements are complete: Dashboard no longer waits for an unused Report, and a loaded Diary appears immediately while it revalidates. Three final browser samples measured Diary return at 25–33 ms versus about 1.8 seconds before that change. These are click-to-visible measurements in desktop Chrome at phone width, not physical-device or fresh-data completion times. Other data-driven screens still make their own reads; this release does not claim every tab is instantaneous.
 
+## Current implementation pass
+
+The user reported a live Photo Log failure and requested persistent device caching plus horizontal Discover swipes. These are now active work; device acceptance is not the only remaining task. The working tree adds account-scoped JSON/photo caching, background refresh, automatic full diary copies, static UI caching and Discover swipes. Gemini returned temporary high-demand HTTP 503 responses; a bounded retry on that status passed a real-provider check. All 583 regression tests, the production build and the publication audit pass. The real Gemini check found three foods in 12.08 seconds. Hosted release verification remains in progress.
+
 ## Remaining work, in order
 
 1. Complete installed-PWA acceptance: new camera photo, existing-photo selection, closing Photo Log without a draft, barcode, notification delivery, offline restart and one-time queued sync. The device questions are pending; no USB or Tailscale connection is needed. Browser simulations do not replace these checks.
@@ -22,7 +26,7 @@ Completion requires working source-based screens and child flows, account isolat
 
 Separate capability limits: Coach currently returns recorded diary facts, not model-generated personalized advice. MFA is not implemented. Spanish and separate UK-English catalogs are absent from the source. These must not be presented as completed capabilities; they are outside this migration/UI-restoration completion criterion.
 
-The platform goal remains active. Its old APK wording cannot be edited by the available goal API; this record is the current user-approved scope. Do not falsely mark the old objective complete to replace its text.
+The platform goal is blocked from the earlier device-only checkpoint; its API cannot resume it. New user feedback has reopened useful implementation work. Its old APK wording cannot be edited by the available goal API; this record is the current user-approved scope. Do not falsely mark the old objective complete to replace its text.
 
 ---
 

@@ -47,7 +47,7 @@
     },
     {
       "target": "public/library.js",
-      "outputSha256": "6e908d9c4bf2f9f0b5e9c7c9b16d4bc609499cb51b77272a6fba1f238feb70cd"
+      "outputSha256": "6c61faeabb6ed978867a7ac9b76a54275a07fbcaccb8f47f3002b4db9601e5cb"
     },
     {
       "target": "public/library.css",

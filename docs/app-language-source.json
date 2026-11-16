@@ -40,7 +40,7 @@
     },
     {
       "output": "public/account.js",
-      "outputSha256": "2cc4dbd44fb527190f105ddb86d77ca3af0b0dfeddfae791bc785ef42125f66f"
+      "outputSha256": "70ba65ea8adc573d30a38530b1c6a27903055fe323155367aab335dbd7ef41f5"
     },
     {
       "output": "public/add-menu-source/add-menu.js",
@@ -84,7 +84,7 @@
     },
     {
       "output": "public/charts.js",
-      "outputSha256": "dc3f9cf8dc34bf62d69a4c5e05cee3fb3f28bbbc4eae8e0d35c4ac9d7e980256"
+      "outputSha256": "bd803b14c9a12f0d6e49bda192f71c0a7f2b55cc7666c8005cb4e533d424bf4c"
     },
     {
       "output": "public/coach.js",
@@ -128,11 +128,11 @@
     },
     {
       "output": "public/dashboard.js",
-      "outputSha256": "c5e744618b6b7483ac6b4f6b293888035328a882fbf9b29ce63a1eab352eed78"
+      "outputSha256": "8cf803187ade6e8a149212d0ae18b85d8e38f4f985fee7f5a93430a465470ccd"
     },
     {
       "output": "public/diary-api.js",
-      "outputSha256": "5ea84f0802d14a4c9d58ee0749b797c266d6a073ef6edb54b0dbf54abcf36f8c"
+      "outputSha256": "863ea4e80aad46e3186adc677681982fc28c176253025976053eedea5435aae2"
     },
     {
       "output": "public/diary-cycle.js",
@@ -168,7 +168,7 @@
     },
     {
       "output": "public/diary.js",
-      "outputSha256": "f058c170ba9226925081d54d3934acbe9f4ee74b2f920fdfe1871fce7d917af0"
+      "outputSha256": "ae94ae975f24180ed2a44ad401849069c1bb509627c17bb485f2070af3e60ceb"
     },
     {
       "output": "public/discover-cloud-messages.js",
@@ -276,7 +276,7 @@
     },
     {
       "output": "public/library.js",
-      "outputSha256": "6e908d9c4bf2f9f0b5e9c7c9b16d4bc609499cb51b77272a6fba1f238feb70cd"
+      "outputSha256": "6c61faeabb6ed978867a7ac9b76a54275a07fbcaccb8f47f3002b4db9601e5cb"
     },
     {
       "output": "public/macro-energy-source/mobile-macro-energy.js",
@@ -304,7 +304,7 @@
     },
     {
       "output": "public/nutrition.js",
-      "outputSha256": "0a80ec8ba34dba2611ac934b3901e25aec00c0af9e0c0b2a7d4baecb86fcc425"
+      "outputSha256": "e8255ca77a010e7627aafe9ed3fea553956a75d6c60eaf06c08d5eb933af07f8"
     },
     {
       "output": "public/offline-controls.js",
@@ -332,15 +332,15 @@
     },
     {
       "output": "public/offline-session.js",
-      "outputSha256": "ea943f2c9573d33737535e83290fb5135713646a4a61b35db34584b09473595e"
+      "outputSha256": "52818e1eb25c0a10993a6a59ffd86792056a6dced0cb463c8be287113c50a250"
     },
     {
       "output": "public/offline-store.js",
-      "outputSha256": "974121a888850c3879c5127fa83785c4a94434d689659663b73dd2ee01ecd5a1"
+      "outputSha256": "e6de4d6187d46afa17c346dba85f8276c031202b101911a99ca1f906b3b5ce00"
     },
     {
       "output": "public/offline-sync.js",
-      "outputSha256": "9865c2860c24cee810362e5a9aa30581e11a2a031b7baefea24e31c75d5726e2"
+      "outputSha256": "e83129f457074101b0db9efd6c5f042885b8e95b8e95f6b74370c5198dc4a784"
     },
     {
       "output": "public/offline.html",
@@ -432,11 +432,11 @@
     },
     {
       "output": "public/snapshot-view.js",
-      "outputSha256": "e8dc278d545268363a1b365f79654e9daf9350be96e3319a99d24487234af56c"
+      "outputSha256": "fc05a27ff6e547513b05e62f90bf58d0a771fda9bfb7edc9f621514cb5acef55"
     },
     {
       "output": "public/snapshots.js",
-      "outputSha256": "5beb7c106d106a38def94ed17bf2f933b7722aded934005418f9fd103cb541eb"
+      "outputSha256": "db2fc0a2d84a15cdbbcbae3c068682c8ca9fc4739e04fe14c969aa0f0f0d6096"
     },
     {
       "output": "public/streak-sharing.js",
@@ -448,7 +448,7 @@
     },
     {
       "output": "public/sw.js",
-      "outputSha256": "8cfce7ded37c0280ce886c373839b867839747bb326be16edc51b9fa5a3e42d8"
+      "outputSha256": "0e5a024e7269201d5bc710dc69626168182c193b7acb69154ecce4427e0d9158"
     },
     {
       "output": "public/target-policies.js",

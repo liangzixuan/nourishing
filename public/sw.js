@@ -1,8 +1,9 @@
-// Only the packaged public shell is cached. Private diary copies live in
-// account-partitioned IndexedDB after the user's explicit device-storage choice.
+// Public assets use the release cache. Private data and photos stay in
+// account-partitioned IndexedDB and are never put in shared CacheStorage.
 importScripts('/offline-assets.js');
 const {cache:CACHE,files:FILES}=self.NOURISHING_OFFLINE;
-self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES))));
+const PRELOAD=self.NOURISHING_OFFLINE.precache??FILES;
+self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(PRELOAD))));
 self.addEventListener('activate',event=>event.waitUntil((async()=>{
  for(const name of await caches.keys())if(name.startsWith('nourishing-public-offline-')&&name!==CACHE)await caches.delete(name);
  await self.clients.claim();
@@ -16,7 +17,8 @@ self.addEventListener('fetch',event=>{
   }));return;
  }
  if(!url.search&&FILES.includes(url.pathname))event.respondWith((async()=>{
-  const cache=await caches.open(CACHE);return await cache.match(url.pathname)||fetch(request);
+  const cache=await caches.open(CACHE),saved=await cache.match(url.pathname);if(saved)return saved;
+  const response=await fetch(request);if(response.ok)await cache.put(url.pathname,response.clone());return response;
  })());
 });
 
@@ -48,7 +50,7 @@ self.addEventListener('message',event=>{
  if(event.data?.type!=='PREPARE_OFFLINE'||!event.ports?.[0])return;
  event.waitUntil((async()=>{try{
   const cache=await caches.open(CACHE);
-  if(!(await Promise.all(FILES.map(file=>cache.match(file)))).every(Boolean))await cache.addAll(FILES);
+  if(!(await Promise.all(PRELOAD.map(file=>cache.match(file)))).every(Boolean))await cache.addAll(PRELOAD);
   event.ports[0].postMessage({ok:true});
  }catch{event.ports[0].postMessage({ok:false,error:'Could not save the offline app. Try again online.'});}})());
 });

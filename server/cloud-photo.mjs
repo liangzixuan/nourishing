@@ -82,7 +82,9 @@ export function createCloudPhotoAnalyzer({apiKey = process.env.GEMINI_API_KEY, r
       let response;
       try {
         const client = await clientFactory(apiKey);
-        response = await client.interactions.create({model, store: false, input: [{type: 'user_input', content: [{type: 'text', text: MEAL_PHOTO_PROMPT + ' Use the best-supported likely food name. Keep reasons brief. Return concise JSON only.'}, {type: 'image', mime_type: 'image/jpeg', data: photo.base64}]}], response_format: {type: 'text', mime_type: 'application/json', schema: responseSchema}, generation_config: {thinking_level: 'minimal', max_output_tokens: 4096}}, {signal: requestSignal, retries: {strategy: 'none'}});
+        // Retry only explicit temporary-overload responses, within the same total deadline.
+        // Do not replay quota, authentication, validation or ambiguous transport failures.
+        response = await client.interactions.create({model, store: false, input: [{type: 'user_input', content: [{type: 'text', text: MEAL_PHOTO_PROMPT + ' Use the best-supported likely food name. Keep reasons brief. Return concise JSON only.'}, {type: 'image', mime_type: 'image/jpeg', data: photo.base64}]}], response_format: {type: 'text', mime_type: 'application/json', schema: responseSchema}, generation_config: {thinking_level: 'minimal', max_output_tokens: 4096}}, {signal: requestSignal, retry_codes: ['503'], retries: {strategy: 'attempt-count-backoff', maxRetries: 2, retryConnectionErrors: false, backoff: {initialInterval: 500, maxInterval: 1000, exponent: 2}}});
       } catch (error) {
         if (signal?.aborted) throw failure('Photo recognition cancelled.', 499);
         if (timeout.aborted) throw failure('Recognition took too long. Try again.', 504);

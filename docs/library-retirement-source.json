@@ -35,7 +35,7 @@
     },
     {
       "target": "public/library.js",
-      "outputSha256": "6e908d9c4bf2f9f0b5e9c7c9b16d4bc609499cb51b77272a6fba1f238feb70cd"
+      "outputSha256": "6c61faeabb6ed978867a7ac9b76a54275a07fbcaccb8f47f3002b4db9601e5cb"
     },
     {
       "target": "public/library.css",
@@ -63,7 +63,7 @@
     },
     {
       "target": "tests/library-retirement-browser.test.mjs",
-      "outputSha256": "c814eea97f20e928a2d06c6345c89c42b7c2819d1ffb4e0278a0628182be9c44"
+      "outputSha256": "5abbc359a8de98a960b22bb01fc60c32854e38d8a8a0cbc939b70b918dca92ef"
     },
     {
       "target": "scripts/verify-library-tools-hosted.mjs",

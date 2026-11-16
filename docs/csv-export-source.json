@@ -8,7 +8,7 @@
   "files": [
     {
       "target": "public/charts.js",
-      "outputSha256": "dc3f9cf8dc34bf62d69a4c5e05cee3fb3f28bbbc4eae8e0d35c4ac9d7e980256"
+      "outputSha256": "bd803b14c9a12f0d6e49bda192f71c0a7f2b55cc7666c8005cb4e533d424bf4c"
     },
     {
       "target": "server/chart-view.mjs",

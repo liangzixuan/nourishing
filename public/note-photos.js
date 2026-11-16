@@ -1,8 +1,9 @@
+import {privateImageAttributes} from './private-images.js';
 import {request,command} from './diary-api.js';
 import {escape as e} from './html.js';
 
 export const notePhotoUrl=record=>/^[a-f0-9]{64}$/.test(record?.imageId??'')?'/api/media?'+new URLSearchParams({namespace:'note_photos',id:record.imageId}):null;
-export const notePhotoThumbnail=record=>notePhotoUrl(record)?`<img class="note-photo-thumbnail" loading="lazy" src="${e(notePhotoUrl(record))}" alt="Note photo" referrerpolicy="no-referrer">`:'';
+export const notePhotoThumbnail=record=>notePhotoUrl(record)?`<img class="note-photo-thumbnail" loading="lazy" ${privateImageAttributes(notePhotoUrl(record))} alt="Note photo" referrerpolicy="no-referrer">`:'';
 const fileData=file=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('Could not open this photo.'));reader.readAsDataURL(file);});
 
 /** One mounted note owns its draft, normalized photo and exact retry packet. */
@@ -31,7 +32,7 @@ export async function mountNoteEditor({record,date,initialGroup,show,close,heade
  }
  function renderPhoto(){
   const src=mode==='replace'?photo?.dataUrl:mode==='keep'?notePhotoUrl(record):null;
-  preview.innerHTML=src?`<button type="button" class="note-photo-open" aria-label="Enlarge note photo"><img src="${e(src)}" alt="Note photo"></button><div class="note-photo-actions"><button type="button" data-note-remove>Remove photo</button>${mode!=='keep'&&notePhotoUrl(record)?'<button type="button" data-note-undo>Keep original photo</button>':''}</div>`:mode!=='keep'&&notePhotoUrl(record)?'<button type="button" data-note-undo>Keep original photo</button>':'';
+  preview.innerHTML=src?`<button type="button" class="note-photo-open" aria-label="Enlarge note photo"><img ${privateImageAttributes(src)} alt="Note photo"></button><div class="note-photo-actions"><button type="button" data-note-remove>Remove photo</button>${mode!=='keep'&&notePhotoUrl(record)?'<button type="button" data-note-undo>Keep original photo</button>':''}</div>`:mode!=='keep'&&notePhotoUrl(record)?'<button type="button" data-note-undo>Keep original photo</button>':'';
   preview.querySelector('.note-photo-open')?.addEventListener('click',event=>{const expanded=preview.classList.toggle('expanded');event.currentTarget.setAttribute('aria-label',expanded?'Reduce note photo':'Enlarge note photo');});
   preview.querySelector('[data-note-remove]')?.addEventListener('click',()=>{mode='remove';photo=null;renderPhoto();});
   preview.querySelector('[data-note-undo]')?.addEventListener('click',()=>{mode='keep';photo=null;renderPhoto();});

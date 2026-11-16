@@ -1,3 +1,4 @@
+import {privateImageAttributes} from './private-images.js';
 import {dc} from './discover-cloud-messages.js';
 import {uiLanguage,t} from './app-language.js';
 import {snapshotListMarkup} from './snapshot-view.js';
@@ -28,7 +29,7 @@ export function mountSnapshots({root,date,onChange=async()=>{}}){
  function setBusy(value){busy=value;const add=shell.querySelector('[data-snapshot-add]');if(add)add.disabled=value||pending!==null;list.querySelectorAll('[data-snapshot-options]').forEach(button=>button.disabled=value);}
  function facts(row){const v=row.vitals;return [[t('printDocument.stored.age'),v.age],[t('measurementCatalog.metric.weight'),v.weight?number(v.weight.value)+' '+(v.weight.unit==='lb'?'lbs':v.weight.unit):null],[t('printDocument.profile.bmi'),row.bmi===undefined?null:Number(row.bmi).toLocaleString(uiLanguage(),{maximumFractionDigits:0})],[t('bodyPanel.bodyFat'),v.bodyFat===undefined?null:number(v.bodyFat)+'%']].filter(([,value])=>value!==undefined&&value!==null).map(([label,value])=>`<div><dt>${label}:</dt><dd>${e(value)}</dd></div>`).join('');}
  function render(){list.innerHTML=snapshotListMarkup(rows,{busy:busy||pending!==null,media,dateLabel,facts});list.querySelectorAll('img').forEach(img=>img.onerror=()=>img.replaceWith(Object.assign(document.createElement('span'),{className:'snapshot-missing',textContent:dc('photoUnavailable')})));}
- async function load(){const serial=++readSerial;message(m('loading'));try{const result=await request('/api/snapshots',undefined,abort.signal);if(!alive()||serial!==readSerial)return;rows=result.items;revision=result.revision;render();message('');}catch(error){if(alive()&&error.name!=='AbortError')message(error.message,true);}}
+ async function load(){const serial=++readSerial;message(m('loading'));try{const apply=result=>{if(!alive()||serial!==readSerial)return;rows=result.items;revision=result.revision;render();message('');};apply(await request('/api/snapshots',undefined,abort.signal,{onRefresh:result=>{if(!document.querySelector('dialog[open]'))apply(result);}}));}catch(error){if(alive()&&error.name!=='AbortError')message(error.message,true);}}
  function back(){if(calendar){calendar.close();return true;}camera?.dispose();camera=null;if(!dialog)return false;dialog.close();dialog.remove();dialog=null;if(focus?.isConnected)focus.focus({preventScroll:true});return true;}
  function popup(label,markup,kind=''){
   back();focus=document.activeElement;const owner=document.createElement('dialog');owner.className='ms-dialog '+kind;owner.setAttribute('aria-label',label);owner.innerHTML=markup;dialog=owner;
@@ -65,7 +66,7 @@ export function mountSnapshots({root,date,onChange=async()=>{}}){
  list.onclick=event=>{
   if(event.target.closest('[data-snapshot-add]'))return openSource();
   const view=event.target.closest('[data-snapshot-view]'),options=event.target.closest('[data-snapshot-options]');const row=rows.find(row=>row.id===(view?.dataset.snapshotView??options?.dataset.snapshotOptions));if(!row)return;
-  if(view){popup(dateLabel(row.date),`<header><button type="button" data-snapshot-back aria-label="${t('discover.back')}">${icon('chevron-left')}</button><h2>${e(dateLabel(row.date))}</h2></header><img data-ms-photo src="${e(media(row))}" alt="${e(row.note||row.title||m('photo'))}" referrerpolicy="no-referrer">`,'ms-viewer');return;}
+  if(view){popup(dateLabel(row.date),`<header><button type="button" data-snapshot-back aria-label="${t('discover.back')}">${icon('chevron-left')}</button><h2>${e(dateLabel(row.date))}</h2></header><img data-ms-photo ${privateImageAttributes(media(row))} alt="${e(row.note||row.title||m('photo'))}" referrerpolicy="no-referrer">`,'ms-viewer');return;}
   if(options&&!busy)openOptions(row);
  };
  function openOptions(row){

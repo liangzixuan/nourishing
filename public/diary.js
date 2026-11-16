@@ -1,3 +1,5 @@
+import {startDeviceSync,warmDeviceViews} from './device-sync.js';
+import {startPrivateImages} from './private-images.js';
 import {sameDiarySnapshot,presentDiarySnapshot} from './diary-snapshot.js';
 import {uiLanguage,applyAppLanguage,t} from './app-language.js';
 import {coreText} from './core-cloud-messages.js';
@@ -50,19 +52,24 @@ sheet.addEventListener('cancel',event=>{event.preventDefault();if(!pickerCleanup
 async function load({reuseUnchanged=false}={}){
  const id=++loadId;notice.textContent='';page.setAttribute('aria-busy','true');
  try{
-  if(!accountReady){account=await request('/api/account');await rememberOfflineAccount(account);accountReady=true;}
-  const result=await request('/api/diary?date='+date);if(id!==loadId)return;
+  if(!accountReady){account=await request('/api/account');await rememberOfflineAccount(account);accountReady=true;startDeviceSync(account.id);startPrivateImages();}
+  const result=await request('/api/diary?date='+date,undefined,undefined,{onRefresh:next=>{if(id!==loadId||document.querySelector('dialog[open]'))return;applyDiary(next);}});if(id!==loadId)return;
   // Revalidate the current in-memory snapshot without replacing live controls.
   // A pending editor keeps its captured revision; its save still uses the server guard.
   if(reuseUnchanged&&(sameDiarySnapshot(diary,result)||document.querySelector('dialog[open]')))return;
-  diary=result;diaryReceivedAt=performance.now();const languageChanged=uiLanguage()!==(result.presentation?.settings?.appLanguage??'en');
-  applyAppLanguage(result.presentation?.settings?.appLanguage??'en');shell.refreshLanguage();if(languageChanged)more?.refreshLanguage();applyTheme(result.theme);applyFontPreferences(result.presentation?.settings);
-  if(view==='diary')render();
-  if(pendingNavigation){const pending=pendingNavigation;pendingNavigation=null;navigate(...pending);}
+  applyDiary(result);
  }catch(error){
   if(id===loadId){notice.textContent=error.message;if(view==='diary'&&!reuseUnchanged)page.innerHTML=`<p class="empty"><button type="button" data-reload>${e(coreText('retry'))}</button><a href="/offline.html">${e(t('nav.offline'))}</a></p>`;}
  }finally{if(id===loadId)page.setAttribute('aria-busy','false');}
 }
+function applyDiary(result){
+  warmDeviceViews(date);
+  diary=result;diaryReceivedAt=performance.now()-Math.max(0,Date.now()-(Date.parse(result.presentation?.fasting?.asOf)||Date.now()));const languageChanged=uiLanguage()!==(result.presentation?.settings?.appLanguage??'en');
+  applyAppLanguage(result.presentation?.settings?.appLanguage??'en');shell.refreshLanguage();if(languageChanged)more?.refreshLanguage();applyTheme(result.theme);applyFontPreferences(result.presentation?.settings);
+  if(view==='diary')render();
+  if(pendingNavigation){const pending=pendingNavigation;pendingNavigation=null;navigate(...pending);}
+}
+
 function selectTab(id){shell.select(id);}
 function leaveView(){diaryCalendar?.close();diaryTools.reset();summaryPanel?.dispose();summaryPanel=null;library?.dispose();library=null;nutrition?.dispose();nutrition=null;more?.dispose();more=null;headerRoot.replaceChildren();}
 function render(){

@@ -1,3 +1,4 @@
+import {readDeviceCache,invalidateDeviceCache} from './device-cache.js';
 import {applyAppLanguage,uiLanguage,resolveBrowserLanguage} from './app-language.js';
 import {requestErrorMessage} from './request-error.js';
 import {accountMessage as m} from './account-cloud-messages.js';
@@ -15,6 +16,11 @@ const token={userId:params.get('userId'),secret:params.get('secret')};
 if(location.search)history.replaceState(null,'',location.pathname);
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function api(path,body,method='POST',signal){
+ const ticket=method!=='GET'?(await readDeviceCache('/api/diary').catch(()=>({}))).ticket:null;
+ if(ticket)await invalidateDeviceCache(ticket).catch(()=>{});
+ try{return await accountNetwork(path,body,method,signal);}finally{if(ticket)await invalidateDeviceCache(ticket).catch(()=>{});}
+}
+async function accountNetwork(path,body,method,signal){
   const response=await fetch(path,{method,signal,credentials:'same-origin',cache:'no-store',headers:body?{'Content-Type':'application/json'}:{},...(body?{body:JSON.stringify(body)}:{})}).catch(error=>{if(error.name==='AbortError')throw error;throw Error(requestErrorMessage(null,503));});
   const result=await response.json().catch(()=>{throw Error(requestErrorMessage(null,503));});if(!response.ok)throw Object.assign(Error(requestErrorMessage(result,response.status)),{status:response.status,errorCode:result.errorCode});return result;
 }

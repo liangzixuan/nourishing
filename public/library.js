@@ -16,7 +16,7 @@ const labels=()=>({food:t("mobileSearch.food"),recipe:t("recipeEditor.recipe"),m
 export function mountLibrary({page,show,close,header,content,date,openEntry,onChange,headerRoot}){
  let data,kind='food',screen='home',sort='recent',retired=false,query='',disposed=false,serial=0,extrasCleanup,optionsSheet,foodEditor,mealEditor,recipeEditor;
  const alive=id=>!disposed&&id===serial;
- async function reload(){const id=++serial;try{data=await request('/api/library');if(alive(id))render();}catch(error){if(alive(id))page.innerHTML=`<p class="empty">${e(error.message)}</p><button type="button" data-library-retry>${e(t("mobileSuggest.retry"))}</button>`;}}
+ async function reload(){const id=++serial;try{const apply=value=>{if(alive(id)){data=value;render();}};apply(await request('/api/library',undefined,undefined,{onRefresh:value=>{if(!document.querySelector('dialog[open]'))apply(value);}}));}catch(error){if(alive(id))page.innerHTML=`<p class="empty">${e(error.message)}</p><button type="button" data-library-retry>${e(t("mobileSuggest.retry"))}</button>`;}}
  function renderHeader(markup){if(headerRoot){headerRoot.hidden=false;headerRoot.innerHTML=markup;return '';}return `<header class="library-inline-header">${markup}</header>`;}
  function collectionMarkup(){return mobileLibraryCollection({items:data.items.filter(item=>item.kind===kind&&item.retired===retired&&item.name.toLocaleLowerCase().includes(query.toLocaleLowerCase())),tab:kind+'s',query,sort,retired,language:uiLanguage(),icon});}
  function bindCollection(){
