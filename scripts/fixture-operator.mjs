@@ -18,9 +18,27 @@ export function createFixtureOperator(connection,{record}={}){
   try{await lifecycle.initialize(proof.ownerId);save(proof,'initialized');return user;}
   catch(error){save(proof,'initialization_failed');throw Object.assign(error,{fixtureOwner:proof.ownerId});}
  }
+ // Declare the only identity change this fixture is allowed to make before sending it.
+ async function prepareIdentityChange({userId,kind,value}){
+  const proof=owned.get(userId);if(!proof||proof.expectedIdentity||!['name','email'].includes(kind)||typeof value!=='string')fail();
+  if(kind==='name'&&(!value.trim()||value.length>128))fail();
+  if(kind==='email'&&(!value.endsWith('@example.com')||!value.split('@')[0].includes(userId)||value.length>320))fail();
+  const user=await connection.users.get({userId});if(!exact(user,proof))fail();
+  proof.expectedIdentity={name:proof.name,email:proof.email,[kind]:value};save(proof,'identity_change_pending');
+ }
+ async function confirmIdentityChange({userId}){
+  const proof=owned.get(userId);if(!proof?.expectedIdentity)fail();
+  const user=await connection.users.get({userId});
+  if(!exact(user,{...proof,...proof.expectedIdentity}))fail();
+  Object.assign(proof,proof.expectedIdentity);delete proof.expectedIdentity;save(proof,'identity_change_confirmed');
+ }
  async function remove({userId}){
   const proof=owned.get(userId);if(!proof)fail();
-  const user=await optional(()=>connection.users.get({userId}));if(user&&!exact(user,proof))fail();
+  const user=await optional(()=>connection.users.get({userId}));
+  if(user&&!exact(user,proof)){
+   if(!proof.expectedIdentity||!exact(user,{...proof,...proof.expectedIdentity}))fail();
+   Object.assign(proof,proof.expectedIdentity);delete proof.expectedIdentity;save(proof,'identity_change_reconciled');
+  }
   // Validate the entire owned metadata inventory before making any cleanup mutation.
   const groups=[];
   for(const tableId of ['account_operations','account_deletions']){
@@ -33,7 +51,7 @@ export function createFixtureOperator(connection,{record}={}){
   if(user)await optional(()=>connection.users.delete({userId}));save(proof,'cleaned');
  }
  const users=new Proxy(connection.users,{get(target,property){if(property==='create')return create;if(property==='delete')return remove;const value=Reflect.get(target,property,target);return typeof value==='function'?value.bind(target):value;}});
- return {...connection,users};
+ return {...connection,users,prepareIdentityChange,confirmIdentityChange};
 }
 export function fixtureOperator(){
  const directory=new URL('../.local/fixture-accounts/',import.meta.url);mkdirSync(directory,{recursive:true});

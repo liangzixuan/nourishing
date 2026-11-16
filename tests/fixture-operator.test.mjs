@@ -12,3 +12,24 @@ test('unexpected foreign operation rows abort inventory cleanup and failed clean
  const foreign=setup();await foreign.op.users.create(input);const list=foreign.raw.db.listRows;foreign.raw.db.listRows=async args=>{const page=await list(args);return args.tableId==='account_operations'?{rows:[...page.rows,{$id:'foreign',ownerId:'other'}]}:page;};await assert.rejects(foreign.op.users.delete({userId:input.userId}));assert.equal(foreign.events.length,0);
  const retry=setup();await retry.op.users.create(input);retry.table('account_operations').set('operation',{$id:'operation',ownerId:input.userId});const remove=retry.raw.db.deleteRow;let failed=false;retry.raw.db.deleteRow=async args=>{if(!failed){failed=true;throw {code:503};}return remove(args);};await assert.rejects(retry.op.users.delete({userId:input.userId}),{code:503});assert.equal(retry.records.at(-1).status,'cleaning');assert.equal(retry.users.has(input.userId),true);await retry.op.users.delete({userId:input.userId});assert.equal(retry.records.at(-1).status,'cleaned');
 });
+
+test('declared identity transitions confirm exact name and email without replacing immutable identity',async()=>{
+ const f=setup();await f.op.users.create(input);
+ for(const [kind,value] of [['name','Updated fixture'],['email','changed-fixture-123@example.com']]){
+  await f.op.prepareIdentityChange({userId:input.userId,kind,value});
+  await assert.rejects(f.op.confirmIdentityChange({userId:input.userId}));
+  f.users.get(input.userId)[kind]=value;await f.op.confirmIdentityChange({userId:input.userId});
+  assert.equal(f.records.at(-1)[kind],value);assert.equal(f.records.at(-1).createdAt,'2026-11-15T12:00:00.000Z');assert.equal(f.records.at(-1).expectedIdentity,undefined);
+ }
+ await f.op.users.delete({userId:input.userId});assert.equal(f.users.size,0);assert.ok(!JSON.stringify(f.records).includes(input.password));
+});
+test('cleanup reconciles only a predeclared committed transition, or its unchanged original identity',async()=>{
+ for(const committed of [true,false]){const f=setup();await f.op.users.create(input);await f.op.prepareIdentityChange({userId:input.userId,kind:'name',value:'Expected'});if(committed)f.users.get(input.userId).name='Expected';await f.op.users.delete({userId:input.userId});assert.equal(f.users.size,0);assert.equal(f.records.some(r=>r.status==='identity_change_reconciled'),committed);}
+});
+test('unexpected changed identity and reused account remain unowned even during a declared transition',async()=>{
+ for(const [key,value] of [['name','Unexpected'],['email','unplanned-fixture-123@example.com'],['$createdAt','2026-11-16T00:00:00.000Z'],['$id','other']]){
+  const f=setup();await f.op.users.create(input);await f.op.prepareIdentityChange({userId:input.userId,kind:'name',value:'Expected'});f.users.get(input.userId).name='Expected';f.users.get(input.userId)[key]=value;
+  await assert.rejects(f.op.confirmIdentityChange({userId:input.userId}));await assert.rejects(f.op.users.delete({userId:input.userId}));assert.equal(f.events.length,0);
+ }
+ const f=setup();await f.op.users.create(input);await assert.rejects(f.op.prepareIdentityChange({userId:input.userId,kind:'email',value:'person@outlook.com'}));await assert.rejects(f.op.prepareIdentityChange({userId:input.userId,kind:'email',value:'unrelated@example.com'}));await f.op.prepareIdentityChange({userId:input.userId,kind:'name',value:'Expected'});await assert.rejects(f.op.prepareIdentityChange({userId:input.userId,kind:'name',value:'Replacement'}));assert.equal(f.events.length,0);
+});

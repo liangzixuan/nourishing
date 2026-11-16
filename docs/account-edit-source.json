@@ -42,6 +42,14 @@
     {
       "target": "tests/account-edit-browser.test.mjs",
       "outputSha256": "6a921ada4cccd192db60ca46e7de24c1c6d88e503a1d1663bcf9aa505744f2a2"
+    },
+    {
+      "target": "scripts/fixture-operator.mjs",
+      "outputSha256": "1568ccf8b7dc834b971fab8aa43ac770d5af39786833c8c0669daeb57abda116"
+    },
+    {
+      "target": "tests/fixture-operator.test.mjs",
+      "outputSha256": "ca8fc559e9b43d374c044eece08f15c300fe38b2216c409d7771d5f1e9f2f7c2"
     }
   ],
   "integration": "Parent-owned POST /api/account/update validates explicit discriminator and calls session-bound updateAccount. No workspace records, mutation receipts, API keys or provider credentials are exposed or persisted. Existing lifecycle operation ownership remains unchanged.",
@@ -57,7 +65,8 @@
     "node --test tests/macro-scheduler.test.mjs tests/account-deletion-ui.test.mjs tests/auth.test.mjs (15 passed)",
     "node --test tests/account-edit.test.mjs tests/account-edit-browser.test.mjs (4 passed after discriminator/encoding fixes)",
     "node --test tests/account-appearance-browser.test.mjs tests/account-edit-browser.test.mjs tests/guided-setup.test.mjs tests/guided-setup-browser.test.mjs (5 passed on final runtime bytes)",
-    "node --check scripts/verify-account-edit-hosted.mjs"
+    "node --check scripts/verify-account-edit-hosted.mjs",
+    "node --test tests/fixture-operator.test.mjs (8 passed; declared identity transition and cleanup recovery)"
   ],
   "visual": [
     {
@@ -71,11 +80,15 @@
   ],
   "hostedVerification": {
     "script": "scripts/verify-account-edit-hosted.mjs",
-    "sha256": "b4da6f2e63510689785a1144cf41b86158cc3e3c35cc88b9cea315eb9bc3076b",
-    "status": "prepared; not run against hosted"
+    "sha256": "87a8aa3025c272efaacb5db70b163debe89b8ab61a0f6bf15df7d6c04a6927f6",
+    "status": "passed",
+    "deployment": "6afad01cad154ce9c7c7",
+    "runtime": "8f87107",
+    "fixtureRemoved": true,
+    "ownerUnchanged": true
   },
   "limits": [
-    "Credential editor is a cloud adaptation; the saved local Account page did not support identity changes.",
-    "Real-provider credential and verification behavior still requires the prepared hosted test."
-  ]
+    "Credential editor is a cloud adaptation; the saved local Account page did not support identity changes."
+  ],
+  "fixtureOwnership": "Before changing disposable account identity, declare its exact expected name/email. Confirm against immutable user id and creation time. Cleanup reconciles only the recorded original or declared resulting identity; unrelated changes fail before cleanup."
 }

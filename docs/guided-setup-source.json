@@ -82,6 +82,10 @@
   "hostedVerification": {
     "script": "scripts/verify-guided-setup-hosted.mjs",
     "sha256": "d0cdd4484e3776de766940c86a0a88df6423b84d43ff22fef70ae9911493fd00",
-    "status": "prepared; not run against hosted"
+    "status": "passed",
+    "deployment": "6afad01cad154ce9c7c7",
+    "runtime": "8f87107",
+    "fixtureRemoved": true,
+    "ownerUnchanged": true
   }
 }

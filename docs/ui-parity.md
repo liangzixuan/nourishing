@@ -1,5 +1,7 @@
 # Local-to-cloud UI parity
 
+Current production: `6afad01cad154ce9c7c7`, runtime `8f87107`. The Remaining workflow audit below is the current gap list; earlier dated release notes describe historical gaps.
+
 Status: initial shell/Diary/Foods/More restoration is live. The Add menu and Discover body/header follow-up is live and passed hosted checks. Full parity of child editors is still incomplete. Functional verification alone does not establish visual parity.
 
 ## Approved restoration work
@@ -129,13 +131,13 @@ Deployment `6afabf363c43fbd91e57` (runtime `5b29b7a`) passed 488 tests, build/pu
 The main-screen restoration does not close these child workflows:
 
 - Recipe stages and reviewed library edits are deployed. Update existing uses and Preserve history choices use account-bound preview and transactional retry.
-- Targets: Macro & Energy is deployed; Scheduler/day targets are deployed and hosted-verified. Upper Limits is deployed with a refresh-race fix pending in the next release. Guided Setup is locally verified for the next release.
-- Display: Theme, energy units, timestamps and summary visibility are deployed and hosted-verified. Summary Column and Group Subtotals are deployed and hosted-verified. Calendar and Diary settings are locally verified for the next release. Font and language remain.
+- Targets: Macro & Energy is deployed; Scheduler/day targets are deployed and hosted-verified. Upper Limits and Guided Setup are deployed and hosted-verified.
+- Display: Theme, energy units, timestamps and summary visibility are deployed and hosted-verified. Summary Column and Group Subtotals are deployed and hosted-verified. Calendar and Diary settings are deployed and hosted-verified. Font, Pause Life and language remain.
 - Exercise/Biometrics: source category navigation, effort/unit/group pickers and metric-specific controls are deployed and hosted-verified. Saved-reference limits remain below.
 - Profile: captured Age, Sex, Weight, Height, BMI and Body Fat summary is deployed and hosted-verified. Uses `profile-reference-second-pass.png`; the earlier similarly named image shows Account confirmation.
-- Account: registration, verification, recovery, logout and deletion work. App theme/navigation alignment is deployed and locally verified. Authenticated name/email/password editing is in progress; MFA is a separate capability, not established by the old local placeholder.
+- Account: registration, verification, recovery, logout and deletion work. App theme/navigation alignment is deployed and locally verified. Authenticated name/email/password editing is deployed and hosted-verified; MFA is a separate capability, not established by the old local placeholder.
 - CSV export: group inclusion and account energy units are deployed. Production-handler browser checks pass grouped kJ download, cancellation without a late download, report switching and close/reopen.
-- Reminders and text logging: working cloud actions still have generic forms. Restore compact controls while retaining browser permission and save/review behavior.
+- Reminders and Text Log: compact controls are deployed and hosted-verified, including interrupted-write recovery. Physical notification delivery and microphone behavior remain device checks.
 - Coach: recorded-fact answers/preferences work; model-backed proposals require additional cloud capability. Restore concise onboarding separately.
 - Library utility/import forms remain generic; reuse the restored editors before making cosmetic copies.
 
@@ -145,3 +147,10 @@ Saved-reference limits: some exercise category/effort mappings were local choice
 ## Recipe, Macro & Energy and export acceptance
 
 Deployment `6afac36c92eec897ff8e` (runtime `9377eb1`) passed 506 tests and the build/publication checks. Four hosted browser flows passed: Recipe, Meal, Custom Food and Macro/export. Canonical quantity and nutrition previews, translated measures, preserved versions, exact retry receipts, source controls, scheduled/default target separation, and grouped CSV download were checked. Owner records stayed unchanged and temporary fixtures were removed. Live captures were inspected; no browser/CSP errors or horizontal overflow occurred. Physical-device comparison remains separate.
+
+
+## Display language scope
+
+The saved Cronometer language menu lists English (US), English (UK), French, German, Spanish and Portuguese (Brazil). The imported local app supports only `en`, `fr`, `de` and `pt-BR`: its 175 catalogs contain 8,021 keys for each of these four locales. No Spanish or separate UK-English catalog is available.
+
+Cloud components still pin English in several adapters, and cloud-only account, settings and logging labels need translations. The existing catalogs can supply source labels; the remaining labels need a dedicated cloud catalog and one application language owner. A language selector must wait until navigation, editors, errors, formatting and reload behavior work together. Offline and captured print-document language behavior must remain intact. This is an implementation gap, not a request for another phone inspection.

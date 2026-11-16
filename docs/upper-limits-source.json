@@ -102,7 +102,11 @@
   "hostedVerification": {
     "script": "scripts/verify-upper-limits-hosted.mjs",
     "sha256": "aeed172dd7ba826dbf98bfaee4d09ca448fb0922fd178aeee5df3338068a0d0f",
-    "status": "prepared; not run against hosted"
+    "status": "passed",
+    "deployment": "6afad01cad154ce9c7c7",
+    "runtime": "8f87107",
+    "fixtureRemoved": true,
+    "ownerUnchanged": true
   },
   "visualEvidence": [
     {
