@@ -1,3 +1,4 @@
+import {openPhotoCreate} from './photo-create.js';
 import {photoMacros,photoNutritionSummary} from './photo-nutrition.js';
 import {request} from './diary-api.js';
 import {escape as e} from './html.js';
@@ -11,7 +12,7 @@ const fileData = file => new Promise((resolve, reject) => {const reader = new Fi
 
 /** Save is injected by the authenticated cloud owner; no photo draft is persisted. */
 export function mountPhotoLog({show, close, header, content, date, groups, save, onChange = async () => {}}) {
-  let disposed = false, serial = 0, abort, analysis, originalImage, rows = [], pickerCleanup, pendingSave = false, nutritionAbort, nutritionVersion = 0, hintDismissed = false;
+  let disposed = false, serial = 0, abort, analysis, originalImage, rows = [], pickerCleanup, pendingSave = false, nutritionAbort, nutritionVersion = 0, hintDismissed = false, createCleanup;
   const nutritionCache = new Map();
   // Same default as the existing mobile photoDialog: uncategorized, then the current meal.
   const clock = new Date(), hour = clock.getHours(), meal = hour >= 6 && hour < 11 ? 'Breakfast' : hour >= 11 && hour < 16 ? 'Lunch' : hour >= 16 && hour < 22 ? 'Dinner' : 'Snacks';
@@ -19,7 +20,7 @@ export function mountPhotoLog({show, close, header, content, date, groups, save,
   show(`<section class="photo-log">${header('Photo Log')}<input type="file" accept="image/jpeg,image/png,image/webp" data-photo-gallery><input type="file" accept="image/*" capture="environment" data-photo-camera><div class="photo-log-body"></div></section>`);
   const shell = content.querySelector('.photo-log'), body = shell.querySelector('.photo-log-body');
   const alive = () => !disposed && shell.isConnected;
-  function dispose() { if (disposed) return; disposed = true; serial++; abort?.abort(); nutritionAbort?.abort(); nutritionCache.clear(); pickerCleanup?.(); observer.disconnect(); originalImage = null; analysis = null; rows = []; }
+  function dispose() { if (disposed) return; disposed = true; serial++; abort?.abort(); nutritionAbort?.abort(); nutritionCache.clear(); createCleanup?.(); pickerCleanup?.(); observer.disconnect(); originalImage = null; analysis = null; rows = []; }
   const observer = new MutationObserver(() => {if (!shell.isConnected) dispose();});observer.observe(content, {childList: true, subtree: true});
   function replace(html) {nutritionVersion++;nutritionAbort?.abort();pickerCleanup?.();pickerCleanup = null;body.innerHTML = html;body.scrollTop = 0;}
   const picker = camera => {if (!pendingSave) shell.querySelector(camera ? '[data-photo-camera]' : '[data-photo-gallery]').click();};
@@ -51,7 +52,7 @@ export function mountPhotoLog({show, close, header, content, date, groups, save,
   }
   function review() {
     const additions = analysis.suggestions.filter(suggestion => suggestion.kind === 'possible-addition' && !rows.some(row => row.additionIndex === suggestion.additionIndex));
-    replace(`<div class="photo-thumb"><img src="${e(analysis.photo.dataUrl)}" alt="Meal photo"><div><strong>My Photo</strong><input name="time" aria-label="Time" type="time" value="${e(time)}"></div><button type="button" data-gallery aria-label="Choose another photo">＋</button></div><div class="photo-review-hint" ${hintDismissed?'hidden':''}><span>Estimated portions · tap to edit</span><button type="button" data-dismiss-hint aria-label="Dismiss portion hint">×</button></div><p class="photo-row-heading">Matched foods</p>${rows.map((row, index) => `<div class="photo-food-row"><div class="photo-food-main"><strong>${e(row.name)}</strong><button type="button" data-quantity="${index}">${row.foodId ? e(quantityLabel(row)) : 'Choose a match'}</button><small class="photo-macros" data-macros="${index}" aria-live="polite"></small></div><button type="button" class="icon-button" data-replace="${index}" aria-label="Replace ${e(row.name)}">↻</button><button type="button" class="photo-remove" data-remove="${index}" aria-label="Remove ${e(row.name)}">×</button></div>`).join('')}<button type="button" class="more-results" data-add>Search for more</button>${additions.length ? `<section class="photo-additions"><p class="photo-row-heading">Did you also have…?</p>${additions.map(row => `<button type="button" class="more-results" data-addition="${row.additionIndex}">＋ ${e(row.description)}</button>`).join('')}</section>` : ''}<label class="field-row"><span>Group</span><select name="group" aria-label="Group">${groups.map(value => `<option ${value === group ? 'selected' : ''}>${e(value)}</option>`).join('')}</select></label><details class="photo-nutrition-summary" open><summary>Energy Summary</summary></details><details class="photo-preview-details"><summary>Photo details</summary><label class="field-row"><span>Date</span><input name="date" aria-label="Date" type="date" value="${e(diaryDate)}"></label></details><p class="sheet-message" role="status"></p><footer class="photo-log-actions"><button type="button" class="primary" data-save ${!rows.length || rows.some(row => !row.foodId) ? 'disabled' : ''}>Add to diary</button></footer>`);
+    replace(`<div class="photo-thumb"><img src="${e(analysis.photo.dataUrl)}" alt="Meal photo"><div><strong>My Photo</strong><input name="time" aria-label="Time" type="time" value="${e(time)}"></div><button type="button" data-gallery aria-label="Choose another photo">＋</button></div><div class="photo-review-hint" ${hintDismissed?'hidden':''}><span>Estimated portions · tap to edit</span><button type="button" data-dismiss-hint aria-label="Dismiss portion hint">×</button></div><p class="photo-row-heading">Matched foods</p>${rows.map((row, index) => `<div class="photo-food-row"><div class="photo-food-main"><strong>${e(row.name)}</strong><button type="button" data-quantity="${index}">${row.foodId ? e(quantityLabel(row)) : 'Choose a match'}</button><small class="photo-macros" data-macros="${index}" aria-live="polite"></small></div><button type="button" class="icon-button" data-replace="${index}" aria-label="Replace ${e(row.name)}">↻</button><button type="button" class="photo-remove" data-remove="${index}" aria-label="Remove ${e(row.name)}">×</button></div>`).join('')}<button type="button" class="more-results" data-add>Search for more</button>${additions.length ? `<section class="photo-additions"><p class="photo-row-heading">Did you also have…?</p>${additions.map(row => `<button type="button" class="more-results" data-addition="${row.additionIndex}">＋ ${e(row.description)}</button>`).join('')}</section>` : ''}<label class="field-row"><span>Group</span><select name="group" aria-label="Group">${groups.map(value => `<option ${value === group ? 'selected' : ''}>${e(value)}</option>`).join('')}</select></label><details class="photo-nutrition-summary" open><summary>Energy Summary</summary></details><details class="photo-preview-details"><summary>Photo details</summary><label class="field-row"><span>Date</span><input name="date" aria-label="Date" type="date" value="${e(diaryDate)}"></label></details><p class="sheet-message" role="status"></p><footer class="photo-log-actions"><button type="button" class="photo-create-button" data-create ${!rows.length || rows.some(row => !row.foodId) ? 'disabled' : ''}>Create…</button><button type="button" class="primary" data-save ${!rows.length || rows.some(row => !row.foodId) ? 'disabled' : ''}>Add to diary</button></footer>`);
     body.querySelector('[data-gallery]').onclick = () => picker(false);
     body.querySelector('[name=group]').onchange = event => {group = event.target.value;updateNutrition();};
     body.querySelector('[name=date]').onchange = event => {diaryDate = event.target.value;updateNutrition();};
@@ -64,15 +65,22 @@ export function mountPhotoLog({show, close, header, content, date, groups, save,
     body.querySelector('[data-add]').onclick = () => chooseFood();
     body.querySelectorAll('[data-addition]').forEach(button => button.onclick = () => {const suggestion = additions.find(row => row.additionIndex === Number(button.dataset.addition)), candidate = suggestion.candidates.find(row => row.ref.id === suggestion.selection?.id);rows.push(makeRow(suggestion, candidate));if (candidate) review();else chooseFood(rows.length - 1);});
     const saveButton = body.querySelector('[data-save]');saveButton.onclick = async () => {
-      if (pendingSave) return;pendingSave = true;body.querySelectorAll('button,input,select').forEach(element => element.disabled = true);
-      const panel = body.firstElementChild, status = body.querySelector('[role=status]');
-      try {
-        await save({photo: {id: analysis.photo.id, dataUrl: analysis.photo.dataUrl}, reviewToken: analysis.reviewToken, date: diaryDate, time, group, rows: rows.map(({foodId, observationIndex, additionIndex, amount, quantity, unit, portionId}) => ({foodId, ...(observationIndex !== undefined ? {observationIndex} : {}), ...(additionIndex !== undefined ? {additionIndex} : {}), ...(quantity !== undefined ? {quantity, unit, ...(portionId ? {portionId} : {})} : {amount})}))});
-        await onChange();if (alive() && panel.isConnected) {dispose();close();}
-      } catch (error) {if (alive() && status.isConnected) status.textContent = error.message;}
-      finally {pendingSave = false;if (saveButton.isConnected) body.querySelectorAll('button,input,select').forEach(element => element.disabled = false);}
+      const status=body.querySelector('[role=status]');status.textContent='';
+      try{await commit();}catch(error){if(alive()&&status.isConnected)status.textContent=error.message;}
+    };
+    body.querySelector('[data-create]').onclick=()=>{
+      createCleanup?.();createCleanup=openPhotoCreate({onSave:commit,onClose:()=>{createCleanup=null;if(alive())body.querySelector('[data-create]')?.focus();}});
     };
   }
+  async function commit(destination){
+    if(pendingSave)return;pendingSave=true;const panel=body.firstElementChild;
+    body.querySelectorAll('button,input,select').forEach(element=>element.disabled=true);
+    try{
+      await save({photo:{id:analysis.photo.id,dataUrl:analysis.photo.dataUrl},reviewToken:analysis.reviewToken,date:diaryDate,time,group,...(destination?{destination}:{}),rows:rows.map(({foodId,observationIndex,additionIndex,amount,quantity,unit,portionId})=>({foodId,...(observationIndex!==undefined?{observationIndex}:{}),...(additionIndex!==undefined?{additionIndex}:{}),...(quantity!==undefined?{quantity,unit,...(portionId?{portionId}:{})}:{amount})}))});
+      await onChange();if(alive()&&panel.isConnected){dispose();close();}
+    }finally{pendingSave=false;if(alive())body.querySelectorAll('button,input,select').forEach(element=>element.disabled=false);}
+  }
+
   async function updateNutrition() {
     nutritionAbort?.abort();nutritionAbort=new AbortController();const signal=nutritionAbort.signal,version=++nutritionVersion;
     const summary=body.querySelector('.photo-nutrition-summary');if(!summary)return;

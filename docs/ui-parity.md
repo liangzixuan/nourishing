@@ -51,7 +51,7 @@ The 434-test suite passed 433 cases initially; its Coach-to-Report test expected
 
 ### Remaining gaps
 
-- Search Food: multi-add remains; tabs, database filters, sorting and badges are restored in the November 16 release.
+- Search Food: multi-add, tabs, database filters, sorting and badges are restored in the November 16 releases.
 - Food entry: Edit a copy remains; favorite/options controls, timestamp toggle, source/nutrition sections and fixed footer are restored.
 - Photo Log review: Create menu remains; per-food macros and Energy Summary are restored.
 - Diary: mixed note/biometric placement within groups.
@@ -77,8 +77,15 @@ The public catalog artifact now includes the category metadata already present i
 Remaining food-flow gaps are multi-add, Edit a copy, and Photo Log Create. Deployment `6afaa0a216b486d21e89` is live at nourishing.app. All 442 tests, build and publication checks passed. Hosted checks passed food search, favorites, preview, add/reload/edit/delete, day completion, notes, outside dismissal and sign-out, with no phone-width overflow. The live indexed Beverages category returned 1,875 matches. The main-screen acceptance also passed with no browser/HTTP/CSP errors and no owner workspace change. Both fixture accounts were removed. Live Search and entry captures were visually inspected. Photo Log changes were exercised locally; installed-device checks remain pending.
 
 
-## Multi-add candidate
+## Multi-add release, November 16
 
 Source multi-add now selects foods, recipes and meals, restores selection/search state after amount editing and barcode lookup, and offers Add to Diary or Create Recipe. The cloud preview resolves quantities and source facts. The confirmed command verifies an account-bound review token and saves all results in the existing Appwrite transaction. Submitted requests persist by owner and retry with the same request ID; unsent selections remain transient.
 
-Local production-composition checks pass mixed quantities, canonical meal totals, recipe creation, barcode selection without a diary write, reload after a lost reply, and receipt replay without duplicates. The full suite passed 449 tests. Hosted acceptance and deployment remain pending.
+Local production-composition checks pass mixed quantities, canonical meal totals, recipe creation, barcode selection without a diary write, reload after a lost reply, and receipt replay without duplicates. The full suite passed 449 tests. Deployment `6afaa52acd2674b318b3`, revision `c62515429300102a67d45e9591bb0a22006bbb1b`, is active. Hosted acceptance passed mixed food/recipe/meal saves with the expected 550 kcal, amount editing, reload after a deliberately lost successful response, exact receipt replay without duplicates, and recipe creation without diary writes. The live review screenshot was inspected. There were no browser/CSP errors or horizontal overflow, the owner workspace was unchanged, and the fixture account was removed. An initial test setup request returned 503; a fresh run completed successfully. This isolated provider failure is not claimed as diagnosed. Evidence is in ignored `.local/multi-hosted-result.json` and `.local/multi-review-hosted.png`.
+
+
+## Food-copy and Photo Log Create work
+
+The next increment restores the food detail menu's Edit a copy action and Photo Log's Create menu. Copy editing must preserve source provenance and leave the original food unchanged; cancelling must restore the same detail values and search context. Photo Log must create a reusable meal or recipe with its reviewed quantities and private photo reference, without adding diary entries. Cancel, Escape and outside dismissal return to the photo review. The compact Create sheet uses the saved source flow in `cronometer-local/public/compact-photo-review.js`; the latest supplied screenshots remain the visual authority.
+
+Frontend Photo Log checks pass automatic recognition, amount editing, default group, source macros, Create Meal/Recipe requests, cancellation, outside dismissal, failed-save retry and discard on closing Photo Log. All 458 tests and the build passed. The actual Diary composition also passed copy cancellation with restored raw quantity/date/group/time, Back to the same search, and exact retry after a lost successful response. Photo backend checks passed canonical yields, library-only private media, stale/cross-account review rejection and transactional retry. Hosted acceptance for this increment is pending.

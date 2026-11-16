@@ -9,7 +9,7 @@ Acceptance:
 - Each deployed increment has appropriate automated and live-browser verification with disposable fixtures; owner data remains unchanged.
 - Device-only checks and deferred password-recovery email checks are explicitly identified and requested only when they become the remaining blocker.
 
-Completed increment: rich food search, source food-entry layout, compact Photo Log nutrition review, deployed and verified on November 16. Next: multi-add and remaining child editors listed in docs/ui-parity.md. The platform goal remains active; its older APK objective text is superseded by this user-approved PWA scope because the available goal API cannot edit objective text.
+Completed increments: rich food search, source food-entry layout, compact Photo Log nutrition review, and multi-add with recipe creation and safe retry, deployed and verified on November 16. Next: Food entry Edit a copy and Photo Log Create, then the remaining child editors listed in docs/ui-parity.md. The platform goal remains active; its older APK objective text is superseded by this user-approved PWA scope because the available goal API cannot edit objective text.
 
 ---
 

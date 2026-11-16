@@ -25,7 +25,7 @@ export function foodReviewIssues({parsed,conversion,match}){
   return issues.filter(issue=>{const identity=issue.code==='food-match'?JSON.stringify(issue.reason):issue.explanation?JSON.stringify(issue.explanation):issue.kind==='ingredient'?JSON.stringify(issue):issue.message;if(seen.has(identity))return false;seen.add(identity);return true;});
 }
 const exact=(value,keys)=>value!==null&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).length===keys.length&&keys.every(key=>Object.hasOwn(value,key));
-function destination(value){
+export function parseReviewedDestination(value){
   if(value===undefined)return {kind:'diary'};
   if(value?.kind==='diary'&&exact(value,['kind']))return {kind:'diary'};
   if(value?.kind==='meal'&&exact(value,['kind','name']))return {kind:'meal',name:text(value.name,'Meal name',300)};
@@ -68,7 +68,7 @@ export function reviewedQuantityError(conversion){
 }
 /** Shared source resolution, quantity facts and nutrition preview for photo/text adapters. */
 export function evaluateReviewedFoods(input,{foodCatalog,foods,settings,reviewSaves},{tokenSource,quantityForRow=canonicalReviewedQuantity,rowExtras=()=>({}),tokenRows=rows=>rows.map(reviewedRowEvidence),includeOriginals=false}={}){
-  const selectedDestination=destination(input.destination);
+  const selectedDestination=parseReviewedDestination(input.destination);
   if(!Array.isArray(input.rows)||input.rows.length>30)invalid('Review up to 30 foods.');
   date(input.date);
   requiredRecordGroup(input.group,settings.groups);

@@ -1,3 +1,4 @@
+import {mountFoodCopy} from './food-copy.js';
 import {mountFoodEntry} from './food-entry.js';
 import {AddMenu} from './add-menu-source/add-menu.js';
 import {createAppShell} from './app-shell.js';
@@ -118,8 +119,8 @@ async function search(restore=null,{applied,selected}={}){
     const snapshot=picker.snapshot(),serial=searchId,kind=({catalog:'food',foods:'food',recipes:'recipe',meals:'meal'})[row.selection.kind];
     const item=await request('/api/library/item?'+new URLSearchParams({kind,id:row.selection.id}));
     if(serial!==searchId||!sheet.open)return;
-    pickerCleanup=mountFoodEntry({item,draft:row.entry,date,group,groups:diary.groups,revision:()=>diary.revision,show,close,content,
-     onChange:load,onBack:()=>search(snapshot),onApply:value=>search(snapshot,{applied:value})});
+    const detail=viewState=>{pickerCleanup=mountFoodEntry({item,draft:row.entry,date,group,groups:diary.groups,revision:()=>diary.revision,show,close,content,viewState,
+     onChange:load,onBack:()=>search(snapshot),onApply:value=>search(snapshot,{applied:value}),onCopy:kind==='food'?kept=>copyFood(item,()=>detail(kept)):undefined});};detail();
    },
    onSaved:async result=>{await load();close();notice.textContent=result.item?.kind==='recipe'?'Recipe created':'Items added to diary';}
   }
@@ -140,13 +141,14 @@ async function edit(entry,id=entry?.foodId??entry?.recipeId??entry?.mealId,kind=
  show(`${header('Food')}<p class="empty">Loading…</p>`);const serial=searchId;
  try{const item=await request('/api/library/item?'+new URLSearchParams({kind,id,...(entry?{entryId:entry.id}:{})}));if(serial!==searchId||!sheet.open)return;foodEditor(item,entry,quantity,returnSearch);}catch(error){if(serial===searchId)content.innerHTML=header('Food')+`<p class="sheet-message">${e(error.message)}</p>`;}
 }
-function foodEditor(item,entry,quantity,returnSearch){
- pickerCleanup=mountFoodEntry({item,entry,quantity,date,group,groups:diary.groups,revision:()=>diary.revision,show,close,content,
+function foodEditor(item,entry,quantity,returnSearch,viewState){
+ pickerCleanup=mountFoodEntry({item,entry,quantity,date,group,groups:diary.groups,viewState,onCopy:item.kind==='food'?kept=>copyFood(item,()=>foodEditor(item,entry,quantity,returnSearch,kept)):undefined,revision:()=>diary.revision,show,close,content,
   onChange:async()=>{await load();if(view==='foods')await library?.reload();},onBack:returnSearch??search,
   onAdjust:()=>openEntryAdjustment({kind:item.kind,date:entry.date,id:entry.id,show,close,header,content,onSave:load,onBack:()=>edit(entry)}),
   onConflict:async()=>{await load();if(entry){const latest=diary.entries.find(row=>row.id===entry.id);if(latest)edit(latest);else close();}}
  });
 }
+function copyFood(item,onCancel){pickerCleanup=mountFoodCopy({selection:item.copySelection,show,content,onCancel,onSaved:async()=>{await load();if(view==='foods')await library?.reload();close();notice.textContent='Food created';}});}
 function photoLog(){if(!diary)return;return mountPhotoLog({show,close,header,content,date:()=>date,groups:diary.groups,save:photoSaver(()=>diary.revision),onChange:load});}
 function recordEditor(kind,record){return mountRecordEditor({kind,record,date,show,close,header,content,onChange:load});}
 window.addEventListener('pagehide',()=>{addMenu?.dispose();addMenu=null;diaryTools.dispose();loadId++;leaveView();view='diary';clearPending();diary=null;close();page.replaceChildren();});

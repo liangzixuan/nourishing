@@ -68,7 +68,7 @@ export function createWorkspaceStore(db,owner){
    const loggingBefore=beginCloudLogging(state,input.type);
    const calendar=loggingBefore?await loggingCalendar(db,owner,context):null;
    const action=captureActionFoods(state,{type:input.type,payload:input.payload},catalogFoods);
-   const saved=applyWorkspaceCommand(state,action,input.type==='food.multi.add'?{...context,owner,catalogFoods}:context);
+   const saved=applyWorkspaceCommand(state,action,['food.multi.add','food.copy'].includes(input.type)?{...context,owner,catalogFoods}:context);
    finishCloudLogging(state,loggingBefore,input.type,calendar);
    if(context.stageMedia)await context.stageMedia({transactionId:tx.$id,generation:h.generation});
    const revision=await persist(state,before,h,tx.$id,context);

@@ -1,3 +1,4 @@
+import {foodCopyView,validateFoodCopySelection} from './food-copy.mjs';
 import {previewFoodMultiAdd,validateFoodMultiInput} from './food-multi-add.mjs';
 import {glucoseView,cycleView,previewCycleImport,previewCycleRemoval} from './health-controls.mjs';
 import {createReminderScheduleStore} from './reminder-schedules-store.mjs';
@@ -180,11 +181,11 @@ export function createAppwriteService(config, key, userAgent='') {
     async previewFoodSuggestion(secret,input){return insights(secret,input,previewFoodSuggestion);},
     async analyzePhoto(secret,input,signal){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();const state=await repository.readState();return createCloudPhotoAnalyzer().analyze(input,{owner,foods:state.foods,signal,search:(query,{limit})=>repository.search({query,limit,offset:0})});},
     async savePhoto(secret,input){
-      const allowed=['requestId','revision','photo','reviewToken','date','time','group','rows'];
+      const allowed=['requestId','revision','photo','reviewToken','date','time','group','rows','destination'];
       if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!allowed.includes(k)))throw Object.assign(Error('Invalid photo fields.'),{code:400,publicMessage:'Invalid photo fields.'});
       const {owner,repository}=await data(secret),db=new TablesDB(elevated()),storage=new Storage(elevated()),photo=await reviewedPhoto(input.photo);
-      const {requestId,revision,reviewToken,date,time,group,rows}=input;
-      return createWorkspaceStore(db,owner).command({requestId,revision,type:'photo.log',payload:{photoId:photo.id,reviewToken,date,time,group,rows}},catalogReader(repository),{owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET,photo,stageMedia:context=>stagePhotoMedia({db,storage,owner,photo,...context})});
+      const {requestId,revision,reviewToken,date,time,group,rows,destination}=input;
+      return createWorkspaceStore(db,owner).command({requestId,revision,type:'photo.log',payload:{photoId:photo.id,reviewToken,date,time,group,rows,...(destination===undefined?{}:{destination})}},catalogReader(repository),{owner,reviewSecret:process.env.PHOTO_REVIEW_SECRET,photo,stageMedia:context=>stagePhotoMedia({db,storage,owner,photo,...context})});
     },
     async targetPolicies(secret,date){const {owner}=await data(secret),context=await calendarContext(secret,owner);return readView(secret,state=>targetPolicyView(state,date,context));},
     async repeats(secret,date){return readView(secret,state=>repeatView(state,date));},
@@ -202,7 +203,12 @@ export function createAppwriteService(config, key, userAgent='') {
     async previewEntryAdjustment(secret,payload){const action={type:'entry.ingredients.adjust',payload};validateAction(action);const {repository}=await data(secret),state=await repository.readState();const prepared=captureActionFoods(state,action,await readActionFoods(action,catalogReader(repository)));try{return previewEntryAdjustment(state,prepared.payload);}catch(error){if([400,404,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}},
     async libraryTools(secret,input){return readView(secret,state=>libraryToolsView(state,input));},
     async library(secret){const {owner,repository}=await data(secret);await createWorkspaceStore(new TablesDB(elevated()),owner).create();return libraryView(await repository.readState());},
-    async libraryItem(secret,kind,id,entryId){const {repository}=await data(secret),state=await repository.readState();const entry=entryId?state.entries.find(row=>row.id===entryId):null;if(entryId&&!entry)throw Object.assign(Error('This diary entry no longer exists.'),{code:404});const resource=state[kind+'s'].find(row=>row.id===id)??(kind==='food'?(await repository.food(id)).food:null);const viewState=kind==='food'&&!state.foods.some(row=>row.id===id)?{...state,foods:[...state.foods,resource]}:state;return libraryItem(viewState,kind,resource,entry);},
+    async foodCopy(secret,selection){
+      validateFoodCopySelection(selection);const {owner,repository}=await data(secret),state=await repository.readState();
+      const catalogFoods=selection.kind==='catalog'?new Map([[selection.id,(await repository.food(selection.id)).food]]):new Map();
+      try{return foodCopyView(state,selection,{owner,catalogFoods});}catch(error){if([400,404,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
+    },
+    async libraryItem(secret,kind,id,entryId){const {repository}=await data(secret),state=await repository.readState();const entry=entryId?state.entries.find(row=>row.id===entryId):null;if(entryId&&!entry)throw Object.assign(Error('This diary entry no longer exists.'),{code:404});const resource=state[kind+'s'].find(row=>row.id===id)??(kind==='food'?(await repository.food(id)).food:null);const viewState=kind==='food'&&!state.foods.some(row=>row.id===id)?{...state,foods:[...state.foods,resource]}:state;return {...libraryItem(viewState,kind,resource,entry),...(kind==='food'?{copySelection:{kind:state.foods.some(row=>row.id===id)?'library':'catalog',id}}:{})};},
     async previewLibrary(secret,input){const action=validateLibraryPreview(input),{repository}=await data(secret),state=await repository.readState();const prepared=captureActionFoods(state,action,await readActionFoods(action,catalogReader(repository)));return previewLibrary(state,{...input,draft:prepared.payload});},
     async previewDiary(secret,payload){const {repository}=await data(secret),state=await repository.readState();validateAction({type:payload?.id?'entry.update':'entry.add',payload});const p={...payload};try{if(p.foodId&&!state.foods.some(row=>row.id===p.foodId))p.foodId=captureCatalogFood(state,(await repository.food(p.foodId)).food).id;const preview=previewDiaryItem(state,p);return {...preview,energy:diaryEnergy(state,preview.nutrition.totals.calories)};}catch(error){if([400,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}},
     async catalogStatus(secret){return (await data(secret)).repository.catalogStatus();},
