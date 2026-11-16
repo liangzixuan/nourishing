@@ -10,7 +10,7 @@ The response/photo cache holds up to 128 entries and 20 MiB, evicting least rece
 
 Public UI scripts, styles, icons and fonts use a release-versioned service-worker cache. Only the offline shell is eagerly downloaded; other assets are cached when used. API responses, photos, credentials and authentication pages never enter the shared public cache. Passwords, session cookies, signed reviews and mutation receipts are not response-cache entries.
 
-Discover supports single-finger left/right swipes between Dashboard, Charts, Report and Snapshots, without wrapping. Content follows the horizontal drag and slides into the adjacent tab when it is ready. A slow uncached response uses its normal loading view after a 400 ms transition bound. Reduced-motion preferences and unsupported browsers use direct navigation. Vertical scrolling, chart gestures, controls, horizontally scrolling areas and dialogs keep their own behavior.
+Discover supports single-finger left/right swipes between Dashboard, Charts, Report and Snapshots, without wrapping. Content follows the horizontal drag and slides into the adjacent tab when it is ready. A slow uncached response uses its normal loading view after a 400 ms transition bound. Reduced-motion preferences and unsupported browsers use direct navigation. Vertical scrolling, chart gestures, controls, horizontally scrolling areas and dialogs keep their own behavior. Gesture capture remains active within Discover during a native slide, so consecutive swipes do not need to wait for the animation to finish.
 
 Validation evidence is recorded in PROGRESS.md. Desktop browser checks do not establish physical-device notification delivery or camera behavior.
 
