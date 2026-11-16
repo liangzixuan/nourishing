@@ -437,3 +437,23 @@ Runtime `51e509b`, deployment `6afaec0c3732a31301a1`, is active. All 574 tests, 
 The Diary uses its current in-memory response on tab return and performs a fresh read. An unchanged response preserves live controls; an open editor retains its captured revision. Server revision guards still apply to all saves. Fasting display time is advanced from monotonic time since response receipt without mutating the captured response. Page teardown clears the snapshot; no persistent cache was added.
 
 Three production browser samples measured Diary return at 30/25/33 ms versus 1,834/1,850/1,850 ms in the previous release. The final Dashboard samples were 2,384/2,888/2,868 ms with one API request, compared with the original 3,900/3,370/5,972 ms with two. Report now loads when first opened. The full sample record and limitations are in `docs/tab-navigation-performance.json`. Installed-device results and the deferred recovery email remain pending, so the goal remains active.
+
+
+## Completion audit — November 16, 2026, after `51e509b`
+
+The previous goal turn made progress: it deployed the language and navigation changes, passed 574 tests and hosted acceptance, and preserved owner data. This audit inspected the saved evidence and current backup/device state rather than repeating unrelated tests.
+
+| Requirement | Evidence inspected | Result |
+| --- | --- | --- |
+| Appwrite PWA on the production domain | Active deployment record and successful hosted language/navigation report at `https://nourishing.app` | Passed |
+| Independence from the PC app server | PC port 4288 absent before and after the successful hosted PWA/offline verification | Passed for browser acceptance |
+| Current-app data reconciliation | Read-only reconciliation: approved baseline matched, expected historical metadata only, three photos and three nutrition dates verified | Passed |
+| Public signup and private accounts | Hosted registration/session/profile/direct-write-denial report; direct-provider and hosted cross-account checks; owner unchanged and fixtures removed | Passed |
+| Account deletion and cleanup | Wrong-password and cross-account denial; zero remaining fixture rows/files; other account, owner and catalog unchanged | Passed |
+| Backup and recovery | Isolated T7 recovery restored 76 rows and three photos; owner unchanged and fixture removed | Passed |
+| Scheduled off-PC backup | Current task is Ready, last result 0, next run November 16 at 09:00 Central; D: T7 is Healthy | Available; still requires the PC, Windows account and drive |
+| Cloud reminders | Private worker deployment is active; prior delayed-execution checks and current payload regressions passed | Server checks passed; phone delivery pending |
+| Installed PWA camera, gallery, barcode, notification and offline sync | Owner confirmed installation and diary access; remaining device questions have no answer yet. ADB currently lists no device. | Pending user results |
+| Emailed password recovery | Owner explicitly deferred the email test | Pending user results |
+
+No phone screen-awake setting was changed. The owner can perform the pending checks directly in the installed PWA without USB or Tailscale. Do not reset the owner's password or mark the goal complete from browser simulation. This is the first continuation audit at an impasse on the remaining device/email results; keep the goal active until the blocked-turn threshold is met or new results arrive.
