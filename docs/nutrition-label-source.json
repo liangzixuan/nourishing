@@ -1,0 +1,99 @@
+{
+  "sourceRoot": "../cronometer-local",
+  "purpose": "Consolidate Nutrition Label into the source custom-food editor and retain canonical vitamin activity ownership.",
+  "sources": [
+    {
+      "path": "public/mobile-food-editor.js",
+      "sha256": "8ec7b8aac394f9409782746a2fa90bb4c39e20bad182b4c7c3af31da24de2774"
+    },
+    {
+      "path": "public/mobile-food-label.js",
+      "sha256": "82a52e315d116c78d6fb29be395b43e23800cea51bd48ba66856b364c09eda70"
+    },
+    {
+      "path": "server/food-label-draft.mjs",
+      "sha256": "6ef89d3e91324bb7ddaad410db64b19e6747715aae5e20c0b9930db538d13904"
+    },
+    {
+      "path": "server/vitamin-activity.mjs",
+      "sha256": "e1dd6b7ed4c9c4e60bc5b19bf2742493c9ac2941362f7f4e64c2ce7af4dca95c"
+    },
+    {
+      "path": "server/nutrition-label.mjs",
+      "sha256": "1f7592c31d9764eba953d3e4f8c57abfd7adaf6be79c5ac00b44e53a6b91e1fc"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "public/custom-food-editor.js",
+      "sha256": "119a289fbe25bb62712c96f9b52f50b8dc4e67aff069e4ce99466c5d7c4849d7"
+    },
+    {
+      "path": "public/custom-food-activity.js",
+      "sha256": "da82ec5b59bf2ed524eb50b35cb0a6271b305d4746fa5d07c04cd8ae6383b6e1"
+    },
+    {
+      "path": "public/custom-food-source/mobile-food-editor.css",
+      "sha256": "bf1b471a8c4256afefc7b942113b1cd32d73af2c365d761c391ba9b1a805ecee"
+    },
+    {
+      "path": "public/library-extras.js",
+      "sha256": "665456fef484e38c1d1afefcb09261433a04f4f9ee176c9d9bf988a3bd3fd6c1"
+    },
+    {
+      "path": "public/library-extras.css",
+      "sha256": "a3d13132e61237781ab0cfab3b4352cc42a9d7902717d3408366cb9dc91df8ae"
+    },
+    {
+      "path": "server/food-editor.mjs",
+      "sha256": "62b57988d2ed159b608437607bd89173b302b8f3cc3aede82c7746266ac158b9"
+    },
+    {
+      "path": "server/domain/food-label-draft.mjs",
+      "sha256": "1eaf7e7d96338ec51052ebf24160344b50057cbaae96f3ebfacc43e608fc4827"
+    },
+    {
+      "path": "tests/food-editor.test.mjs",
+      "sha256": "b1dc25cd074fc5797fb1ef14d23488707a28b3c1c7255c2306bb6c98361740e0"
+    },
+    {
+      "path": "tests/custom-food-browser.test.mjs",
+      "sha256": "752d206881f2f765542dee7b48be8f24c56fb07e6d4a2f678ec044a18998a0a5"
+    },
+    {
+      "path": "tests/library-extras.test.mjs",
+      "sha256": "9ecc7cd360d0d26e41e97ab6714eeec8f199215514919e71186db27d5f498dc7"
+    },
+    {
+      "path": "tests/library-extras-ui.test.mjs",
+      "sha256": "8c605d9021fd07fd3766ecfefed2bcc38f911e7be196044e82ea3d22c139b82a"
+    },
+    {
+      "path": "scripts/verify-nutrition-label-hosted.mjs",
+      "sha256": "8f803c404b58fa0aca136f2655b04c2f1a0ddc1a225f42c16a0d34012c4b9705"
+    }
+  ],
+  "behavior": [
+    "Foods → Nutrition Label opens New Food with Nutrition Details expanded. Known vitamin forms remain collapsed until requested.",
+    "Server-projected form names and IDs drive controls. Individual and mixed shares use the canonical parser and factors; clients do not perform conversions.",
+    "Only authored nutrient edits change data. Known → Unknown removes prior conversion-owned activity while retaining IU; explicit manual activity, including identical values and zero, retains its ownership. A new known-form edit becomes the latest conversion owner.",
+    "The common reviewed save retains immutable receipt retry, stale-revision draft recovery and transient cancellation. Favorites keep their existing module after obsolete label exports are removed."
+  ],
+  "canonicalTransforms": [
+    "Resolve the existing decimal owner through the installed big.js package; keep canonical vitamin factors and label validation.",
+    "Track explicit manual vitamin activity ownership in labelActivityOverrides, including same-value and zero writes. New explicit known-form conversion becomes the latest owner.",
+    "When an IU amount or form is edited, clear only its prior conversion-owned activity using recorded derivation and serving basis. Unknown forms retain IU without stale converted activity; preserve independent authored values.",
+    "Normalize UTF-8 publication text to LF."
+  ],
+  "checks": [
+    "tests/food-editor.test.mjs",
+    "tests/custom-food-browser.test.mjs",
+    "tests/library-extras.test.mjs",
+    "tests/library-extras-ui.test.mjs"
+  ],
+  "hostedVerifier": "scripts/verify-nutrition-label-hosted.mjs",
+  "limits": [
+    "The form disclosure is a cloud adapter over the saved source editor and canonical label capabilities; there is no captured native known-form disclosure to reproduce.",
+    "Hosted verification is prepared for the next deployment and is not claimed by the local browser checks."
+  ]
+}

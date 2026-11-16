@@ -12,7 +12,7 @@ import {createWebPushStore} from './web-push-store.mjs';
 import {parseTextFoodLog} from './text-log.mjs';
 import {createFastingDispatcher} from './scheduler-dispatch.mjs';
 import {createCsvImportStore} from './csv-import-store.mjs';
-import {favoriteView,nutritionLabelView,nutritionLabelPreview} from './library-extras.mjs';
+import {favoriteView} from './library-extras.mjs';
 import {createAccountLifecycle} from './account-lifecycle.mjs';
 import {createAccountDeletion} from './account-deletion.mjs';
 import {AccountOperationClient,withinAccountOperation} from './account-operation-context.mjs';
@@ -141,8 +141,6 @@ export function createAppwriteService(config, key, userAgent='') {
     async previewCsvImport(secret,input){return (await csvImports(secret)).preview(input);},
     async importCsv(secret,input){return (await csvImports(secret)).import(input);},
     async favorites(secret){return readView(secret,favoriteView);},
-    async nutritionLabel(secret){return readView(secret,nutritionLabelView);},
-    async previewNutritionLabel(secret,input){return readView(secret,state=>nutritionLabelPreview(state,input));},
     async exportBackup(secret){return (await backups(secret)).export();},
     async listRecoveries(secret){return (await backups(secret)).listRecoveries();},
     async inspectRecovery(secret,input){return (await backups(secret)).inspectRecovery(input);},

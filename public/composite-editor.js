@@ -10,7 +10,7 @@ const identity=row=>(row.recipeId?'recipe:':'food:')+(row.recipeId??row.foodId);
 export function mountMealEditor({saved,data,draft,show,close,content,date,onSaved,onAction,onReload,openEntry}){
  const resource=saved?.resource,values=structuredClone(draft??{name:resource?.name??'',items:resource?.items??[]}),names=new Map((saved?.ingredients??[]).map(row=>[identity(row),{name:row.name,source:row.options?(row.source?.name??(row.recipeId?'Recipe':'Custom Food')):'',options:row.options}]));
  show('<section class="meal-editor"></section>');const root=content.querySelector('.meal-editor'),sheet=content.closest('dialog'),abort=new AbortController();sheet.classList.add('mobile-composite-editor');
- let stage=0,ordering=false,disposed=false,busy=false,saveAdd=false,ready=false,generation=0,previewRequest,footerSize,child,menu,nutrition,conflict=false,error='';
+ let stage=0,ordering=false,disposed=false,busy=false,saveAdd=false,ready=false,generation=0,previewRequest,footerSize,child,actionChild,menu,nutrition,conflict=false,error='';
  const alive=()=>!disposed&&root.isConnected,read=()=>({...values,...(resource?{id:resource.id}:{})});
  const saver=new LibraryEditorSave({kind:'meal',revision:data.revision,host:()=>root.querySelector('[data-meal-preview]'),onChange:()=>{if(alive())controls();}});
  function cleanupPreview(){++generation;previewRequest?.abort();nutrition?.dispose();nutrition=null;}
@@ -42,8 +42,8 @@ export function mountMealEditor({saved,data,draft,show,close,content,date,onSave
  }
 
  function editItem(index){child?.close();child=openCompositeIngredient({date:date(),items:values.items,index,nutrients:data.nutrients,energyUnit:data.energyUnit,onApply:(row,label)=>{if(index===undefined)values.items.push(row);else values.items[index]=row;names.set(identity(row),label);error='';render();},onClose:()=>child=null});}
- function back(){if(child){child.back();return;}if(menu){menu.close();return;}if(busy)return;if(stage&&!saver.locked&&!conflict){stage=0;render();}else{dispose();close();}}
- function dispose(){if(disposed)return;disposed=true;saver.dispose();cleanupPreview();footerSize?.disconnect();abort.abort();child?.close();menu?.close(false);observer.disconnect();sheet.classList.remove('mobile-composite-editor');}
+ function back(){if(actionChild?.back())return;if(child){child.back();return;}if(menu){menu.close();return;}if(busy)return;if(stage&&!saver.locked&&!conflict){stage=0;render();}else{dispose();close();}}
+ function dispose(){if(disposed)return;disposed=true;actionChild?.dispose();saver.dispose();cleanupPreview();footerSize?.disconnect();abort.abort();child?.close();menu?.close(false);observer.disconnect();sheet.classList.remove('mobile-composite-editor');}
  root.addEventListener('submit',event=>{event.preventDefault();if(busy)return;if(ordering){ordering=false;render();return;}if(stage)void save(event.submitter?.hasAttribute('data-mce-add'));else{if(!values.items.length){error='Add a meal item.';render();return;}error='';stage=1;render();}},{signal:abort.signal});
  root.addEventListener('click',event=>{
   const b=event.target.closest('button');if(!b)return;
@@ -54,7 +54,7 @@ export function mountMealEditor({saved,data,draft,show,close,content,date,onSave
   if(b.dataset.mealItem!==undefined)return editItem(Number(b.dataset.mealItem));
   if(b.dataset.mealRemove!==undefined){values.items.splice(Number(b.dataset.mealRemove),1);render();return;}
   if(b.dataset.mealMove!==undefined){const index=Number(b.dataset.mealMove),next=index+Number(b.dataset.direction);if(next>=0&&next<values.items.length){[values.items[index],values.items[next]]=[values.items[next],values.items[index]];render();}return;}
-  if(b.hasAttribute('data-meal-menu'))menu=new MobileLibrarySheet({label:'Meal options',onClose:()=>menu=null,items:[{id:'reorder',label:'Reorder Items'},...(resource?['Share','Portions & visibility','Add to diary','Delete'].map(id=>({id,label:id})):[])],onChoose:id=>{menu=null;if(id==='reorder'){stage=0;ordering=true;render();}else onAction?.(id,read());}});
+  if(b.hasAttribute('data-meal-menu'))menu=new MobileLibrarySheet({label:'Meal options',onClose:()=>menu=null,items:[{id:'reorder',label:'Reorder Items'},...(resource?['Share',resource.retired?'Restore to library':'Retire from library','Add to diary','Delete'].map(id=>({id,label:id})):[])],onChoose:id=>{menu=null;if(id==='reorder'){stage=0;ordering=true;render();}else actionChild=onAction?.(id,read());}});
  },{signal:abort.signal});
  const cancel=event=>{if(!alive())return;event.preventDefault();event.stopImmediatePropagation();back();};sheet.addEventListener('cancel',cancel,{capture:true,signal:abort.signal});window.addEventListener('nourishing-back',cancel,{capture:true,signal:abort.signal});
  const observer=new MutationObserver(()=>{if(!root.isConnected)dispose();});observer.observe(content,{childList:true});

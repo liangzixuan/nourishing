@@ -62,9 +62,10 @@
       "source": "public/locales/discover.js",
       "target": "public/dashboard-source/locales/discover.js",
       "sourceSha256": "83dece6c9cb462972ca2f1fb850543538aa41b8bb4627b68b10cd1edd3e3c151",
-      "sha256": "7311c24b9476b940a71151f101f9359334b827a9ef0427f7793d91674f4a4f6a",
+      "sha256": "b501e2d26c6940f5e97e7df9d32c57f76b5711b001f4feb7f6ebd1bf01bcf22f",
       "transforms": [
-        "CRLF to LF"
+        "CRLF to LF",
+        "English Coach description states recorded diary facts and saved goals/preferences; no model guidance is implied."
       ]
     },
     {

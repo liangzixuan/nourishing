@@ -39,7 +39,7 @@
   "outputs": [
     {
       "path": "public/composite-editor.js",
-      "sha256": "8e9f764507eef8d6399ca77424b71d9185596cdb43942c45590c1b4cc5c9d7ba"
+      "sha256": "764caaeaef9c73429af9cb261a61cd1e52bc13d9c62240c58ad4147c2f42aa90"
     },
     {
       "path": "public/composite-items.js",
@@ -51,11 +51,11 @@
     },
     {
       "path": "public/library.js",
-      "sha256": "ebc797e5bf1861d24890bcff6932e184559cfcd81e3595bf99e624004c90b40d"
+      "sha256": "2626b7f1c072a580b44274db5ae1f6b3eb4e5bdff2b968716879aeab689f217a"
     },
     {
       "path": "public/library.css",
-      "sha256": "64bb9dca85c60aaceeac045ff94530c9be6c72fad3c4c5588dcd3fecb5421a96"
+      "sha256": "c81a6fe355c0d816e5f40fb5ac54278ed1116e29ca5dfa66e8d4066adbc13a84"
     },
     {
       "path": "server/library-view.mjs",

@@ -1559,9 +1559,12 @@
       "source": "server/food-label-draft.mjs",
       "target": "server/domain/food-label-draft.mjs",
       "sourceSha256": "6ef89d3e91324bb7ddaad410db64b19e6747715aae5e20c0b9930db538d13904",
-      "outputSha256": "99fec055541d39bc108da3e649cad141e15695a5ee8ef5d3bf6a81dbc342e1f2",
+      "outputSha256": "1eaf7e7d96338ec51052ebf24160344b50057cbaae96f3ebfacc43e608fc4827",
       "transforms": [
-        "Resolve the existing decimal owner through the installed big.js package; source conversions and provenance are unchanged."
+        "Resolve the existing decimal owner through the installed big.js package; keep canonical vitamin factors and label validation.",
+        "Track explicit manual vitamin activity ownership in labelActivityOverrides, including same-value and zero writes. New explicit known-form conversion becomes the latest owner.",
+        "When an IU amount or form is edited, clear only its prior conversion-owned activity using recorded derivation and serving basis. Unknown forms retain IU without stale converted activity; preserve independent authored values.",
+        "Normalize UTF-8 publication text to LF."
       ]
     }
   ]

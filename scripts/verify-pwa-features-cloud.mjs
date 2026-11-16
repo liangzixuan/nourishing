@@ -30,7 +30,7 @@ try {
  async function get(path,session=context){const response=await session.request.get(origin+path);assert.equal(response.status(),200,path);return response.json();}
  async function post(path,data,session=context){const response=await session.request.post(origin+path,{headers:{Origin:origin},data,timeout:90000});assert.equal(response.status(),200,path+' '+await response.text());return response.json();}
  async function command(type,payload){const revision=(await get('/api/library')).revision;return post('/api/workspace/command',{requestId:randomUUID(),revision,type,payload});}
- const date='2026-11-15',food=(await command('food.label.save',{label:{profile:'us-2016',population:'adult-4-plus',name:'PWA feature oats',serving:'40 g',grams:'40',values:{calories:{amount:'150'},protein:{amount:'5'}}}})).item.id;
+ const date='2026-11-15',food=(await command('food.save',{name:'PWA feature oats',serving:'40 g',grams:40,nutrients:{},nutrientEdits:[{kind:'label',profile:'us-2016',quantity:{amount:1},basis:{serving:'40 g',grams:40},values:{calories:{amount:'150'},protein:{amount:'5'}}}]})).item.id;
  const group=(await get('/api/offline')).state.settings.groups[0];
  await command('entry.add',{foodId:food,date,time:'12:00',group,amount:1});
  const preferences=await get('/api/coach/preferences');

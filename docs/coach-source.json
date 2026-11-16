@@ -1,0 +1,59 @@
+{
+  "scope": "Discover Coach preferences presentation and recorded diary facts.",
+  "files": [
+    {
+      "source": "../cronometer-local/public/discover.js",
+      "target": "public/coach.js",
+      "sourceSha256": "6ffc164dd2504087c9240ccbc21ca74bdb72871925c71220718ab47be5d72665",
+      "outputSha256": "ae1fd85ab8badb7d47e4a3c2ff078ecafc08f04bd5ba65157bc7a0b39c4b1202",
+      "transforms": [
+        "Reuse goals/diet cards, notes, Cancel/Save header and stable custom-choice text/order through discover-ui helpers.",
+        "Keep existing authenticated deterministic recorded-facts endpoint, dates, shortcuts and Report/Suggest routes. Omit unavailable model selection and AI consent gate.",
+        "Use existing immutable mutation owner for unknown writes and stale reload; abort reads and dispose on dialog removal."
+      ]
+    },
+    {
+      "source": "../cronometer-local/public/discover.css",
+      "target": "public/coach.css",
+      "sourceSha256": "2993a036c6060322ca2e636a1570e76dd6b8bfd4ba1ca521342315b7ccf7a77b",
+      "outputSha256": "d1ee7c9a1c65a0099c4c95e61b7f14cb7392adacb5f958621a4800c1b07d9bc8",
+      "transforms": [
+        "Extract teal choice pills and section cards. Adapt header, compact recorded-facts cards and composer to cloud theme, narrow viewport and scaled text."
+      ]
+    }
+  ],
+  "canonicalOwners": [
+    "server/coach-view.mjs",
+    "server/domain/coach-preferences.mjs",
+    "public/dashboard-source/discover-ui.js",
+    "public/fasting-source/mutation.js"
+  ],
+  "reference": {
+    "screenshots": [
+      "../cronometer-local/verification/phone-discover-20261108/coach-onboarding.png",
+      "../cronometer-local/verification/phone-discover-20261108/coach-onboarding-next.png",
+      "../cronometer-local/verification/mobile-coach-presentation-20261110/en-composer.png",
+      "../cronometer-local/verification/mobile-coach-presentation-20261110/en-answer.png"
+    ],
+    "inspectedOutputs": [
+      ".local/coach-source/preferences.png",
+      ".local/coach-source/facts.png"
+    ]
+  },
+  "validation": {
+    "local": [
+      "tests/coach-browser.test.mjs",
+      "tests/coach-nutrition-browser.test.mjs",
+      "tests/coach-lifecycle-browser.test.mjs",
+      "tests/coach-view.test.mjs",
+      "tests/coach-http.test.mjs"
+    ],
+    "hostedVerifier": "scripts/verify-coach-hosted.mjs",
+    "hostedStatus": "Prepared; not yet run for this candidate."
+  },
+  "limits": [
+    "Current answers are deterministic recorded diary facts, not personalized model advice. Saved preferences do not change computations or targets.",
+    "Source AI disclaimer, Codex provider/range controls and model output are deliberately not presented for the recorded-only backend.",
+    "No new native phone capture; visual comparison uses retained source screenshots and local production-composition browser captures."
+  ]
+}

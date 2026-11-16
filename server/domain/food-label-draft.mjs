@@ -3,6 +3,7 @@ import {labelProfiles,prepareNutritionLabel} from './nutrition-label.mjs';
 import {resolveFoodQuantity,parseServingAmount} from './food-quantity.mjs';
 import {convertVitaminD} from './vitamin-d-units.mjs';
 import {convertEnergy} from './energy-units.mjs';
+import {vitaminActivityDefinition} from './vitamin-activity.mjs';
 
 const Decimal=Big();Decimal.DP=340;
 const invalid=message=>{throw Object.assign(Error(message),{status:400});};
@@ -24,6 +25,35 @@ const scaled=(value,factor,divide=false)=>{
  if(!Number.isFinite(result)||value>0&&result===0)invalid('The label measurement is outside the supported numeric range.');
  return result;
 };
+// A prior label conversion owns its output until another authored measurement replaces it.
+function ownsActivity(source,inputId,outputId,current){
+ if(!Number.isFinite(current)||source?.labelActivityOverrides?.includes(outputId))return false;
+ const matches=(derivation,factor=1)=>derivation?.method==='vitamin-activity-conversion'&&derivation.inputId===inputId&&Number.isFinite(derivation.value)&&factor>0&&scaled(derivation.value,factor,true)===current;
+ if(source?.labelEditVersion===1&&Array.isArray(source.labelEdits)){
+  for(const edit of [...source.labelEdits].reverse()){
+   if(edit.cleared?.includes(outputId))return false;
+   const authored=edit.derivations?.find(row=>row.id===outputId);
+   if(authored)return matches(authored,edit.basis?.factor??1);
+  }
+  return ownsActivity(source.originalSource,inputId,outputId,current);
+ }
+ if(source?.labelVersion===1)return matches(source.derivations?.find(row=>row.id===outputId));
+ return false;
+}
+/** Retain explicit manual activity ownership, including an overwrite with the same value. */
+export function projectFoodManualDraft(food,values){
+ const result=structuredClone(food),activityIds=new Set(['vitaminA','vitaminE']);
+ for(const [id,value]of Object.entries(values)){
+  if(value===null)delete result.nutrients[id];
+  else{if(typeof value!=='number'||!Number.isFinite(value)||value<0)invalid('Enter a nonnegative nutrient amount.');result.nutrients[id]=value;}
+ }
+ if(result.source?.labelVersion===1||result.source?.labelEditVersion===1){
+  const overrides=new Set(result.source.labelActivityOverrides??[]);
+  for(const id of Object.keys(values))if(activityIds.has(id))overrides.add(id);
+  if(overrides.size)result.source.labelActivityOverrides=[...overrides];
+ }
+ return result;
+}
 function labelInput(food,profile,basis,values){return {profile:profile.id,population:profile.populationId??'adult-4-plus',...(profile.servingBasis?{basis:basis.column}:{}),name:food.name||'Food draft',serving:basis.serving,grams:basis.grams===null?null:String(basis.grams),values};}
 
 /** Only authored fields are applied. Merely choosing another display format
@@ -41,6 +71,8 @@ export function projectFoodLabelDraft(food,input){
   const row=profile.rows.find(row=>row.id===id); // The label parser validated the row and its fields.
   if(Object.hasOwn(value,'amount'))removed.add(row.nutrientId??id);
   if(Object.hasOwn(value,'percent'))removed.add(row.percentId);
+  const activity=vitaminActivityDefinition(row.id);
+  if(activity&&ownsActivity(result.source,row.id,activity.id,nutrients[activity.id]))removed.add(activity.id);
  }
  for(const id of removed)delete nutrients[id];
  for(const [id,value]of Object.entries(prepared.nutrients)){nutrients[id]=scaled(value,basis.factor,true);removed.delete(id);}
@@ -56,7 +88,8 @@ export function projectFoodLabelDraft(food,input){
  }
  result.nutrients=nutrients;
  const prior=result.source,isEdit=prior?.labelEditVersion===1&&Array.isArray(prior.labelEdits)&&Object.hasOwn(prior,'originalSource');
- result.source={name:'User-edited nutrition label',userModified:true,labelEditVersion:1,originalSource:isEdit?prior.originalSource:prior??'User-provided label or manual entry',labelEdits:[...(isEdit?prior.labelEdits:[]),{profile:profile.id,quantity:structuredClone(input.quantity??{amount:1}),basis,values,derivations:prepared.source.derivations,...(aggregateDerivations.length?{aggregateInputs,aggregateDerivations}:{}),cleared:[...removed]}]};
+ const overrides=(prior?.labelActivityOverrides??[]).filter(id=>!Object.hasOwn(prepared.nutrients,id)&&!removed.has(id));
+ result.source={name:'User-edited nutrition label',userModified:true,labelEditVersion:1,...(overrides.length?{labelActivityOverrides:overrides}:{}),originalSource:isEdit?prior.originalSource:prior??'User-provided label or manual entry',labelEdits:[...(isEdit?prior.labelEdits:[]),{profile:profile.id,quantity:structuredClone(input.quantity??{amount:1}),basis,values,derivations:prepared.source.derivations,...(aggregateDerivations.length?{aggregateInputs,aggregateDerivations}:{}),cleared:[...removed]}]};
  if(new TextEncoder().encode(JSON.stringify(result.source)).byteLength>32768)invalid('Food provenance exceeds 32 KiB.');
  return result;
 }

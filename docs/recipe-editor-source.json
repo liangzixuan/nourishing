@@ -122,11 +122,11 @@
     },
     {
       "path": "public/recipe-editor.js",
-      "sha256": "d7faf8e12533bcc5da73e303c458d5afbb180f4db0de28886ada2142173896ef"
+      "sha256": "c4cbee5fa3df6c0b78030bdd8586c3220dfc7a549d6f1d2b001085a9d7a8310c"
     },
     {
       "path": "public/composite-editor.js",
-      "sha256": "8e9f764507eef8d6399ca77424b71d9185596cdb43942c45590c1b4cc5c9d7ba"
+      "sha256": "764caaeaef9c73429af9cb261a61cd1e52bc13d9c62240c58ad4147c2f42aa90"
     },
     {
       "path": "public/composite-editor.css",
@@ -138,7 +138,7 @@
     },
     {
       "path": "public/custom-food-editor.js",
-      "sha256": "2e2e9f01cef614f12eb4b6aa9a0e03b46440b70324e17fbca612825e1d36bd46"
+      "sha256": "119a289fbe25bb62712c96f9b52f50b8dc4e67aff069e4ce99466c5d7c4849d7"
     },
     {
       "path": "public/food-picker.js",
@@ -146,11 +146,11 @@
     },
     {
       "path": "public/library.js",
-      "sha256": "ebc797e5bf1861d24890bcff6932e184559cfcd81e3595bf99e624004c90b40d"
+      "sha256": "2626b7f1c072a580b44274db5ae1f6b3eb4e5bdff2b968716879aeab689f217a"
     },
     {
       "path": "public/library.css",
-      "sha256": "64bb9dca85c60aaceeac045ff94530c9be6c72fad3c4c5588dcd3fecb5421a96"
+      "sha256": "c81a6fe355c0d816e5f40fb5ac54278ed1116e29ca5dfa66e8d4066adbc13a84"
     },
     {
       "path": "public/composite-source/mobile-composite-editor.css",
@@ -166,7 +166,7 @@
     },
     {
       "path": "tests/recipe-editor-browser.test.mjs",
-      "sha256": "147e0fa2569a5c769127c101e63ed59a6faa04c3db3f260b957d3b72c753bb07"
+      "sha256": "f9899192af7690c1378721caae312263bff00ac1a48216880a2913035c22c284"
     },
     {
       "path": "scripts/verify-recipe-editor-hosted.mjs",

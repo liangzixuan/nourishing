@@ -32,11 +32,12 @@ try{
  let revision=(await get('/api/library')).revision;
  const command=async(type,payload)=>{const result=await post('/api/workspace/command',{requestId:randomUUID(),revision,type,payload});revision=result.revision;return result;};
  const label={profile:'us-2016',population:'adult-4-plus',name:'PWA label fixture',serving:'1 cup',grams:'40',values:{calories:{amount:'150'},protein:{amount:'5'},sodium:{percent:'10'}}};
- const food=(await command('food.label.save',{label})).item.id;
+ const draft={name:label.name,serving:label.serving,grams:Number(label.grams),nutrients:{},nutrientEdits:[{kind:'label',profile:label.profile,quantity:{amount:1},basis:{serving:label.serving,grams:Number(label.grams)},values:label.values}]};
+ const food=(await command('food.save',draft)).item.id;
  await command('favorite.set',{kind:'food',id:food,enabled:true});
  assert.equal((await get('/api/library/favorites')).items[0].id,food);assert.equal((await get('/api/library/favorites',other)).items.length,0);
  const resource=(await get('/api/library/item?kind=food&id='+encodeURIComponent(food))).resource;
- assert.equal(resource.nutrients.sodium,230);assert.deepEqual(resource.source.original,label);
+ assert.equal(resource.nutrients.sodium,230);assert.deepEqual(resource.source.labelEdits[0].values,label.values);assert.equal(resource.source.labelEdits[0].profile,label.profile);
  report.checks.push('label source and derived nutrients','account-isolated favorites');
  const input={kind:'biometrics',text:'date,type,value,unit,time\n2026-11-14,Weight,70,kg,08:00'};
  const preview=await post('/api/imports/csv/preview',input);assert.equal(preview.count,1);

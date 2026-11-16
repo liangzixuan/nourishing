@@ -1435,7 +1435,7 @@ const rows={
     "REM"
   ],
   "coach.about": [
-    "Nourishing Coach provides you with guidance and support toward your health goals.",
+    "Review recorded diary facts and save your goals and preferences.",
     "Nourishing Coach vous accompagne vers vos objectifs de santé.",
     "Nourishing Coach begleitet Sie auf dem Weg zu Ihren Gesundheitszielen.",
     "O Nourishing Coach oferece orientação e apoio para suas metas de saúde."
