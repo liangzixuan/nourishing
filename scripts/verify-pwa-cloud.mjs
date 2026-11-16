@@ -60,9 +60,17 @@ try{
  const cached=await page.evaluate(async()=>{const result=[];for(const name of await caches.keys())for(const request of await(await caches.open(name)).keys())result.push(new URL(request.url).pathname);return result.sort();});
  const assetManifest=await page.evaluate(()=>fetch('/offline-assets.js').then(r=>r.text()).then(text=>JSON.parse(text.slice(text.indexOf('=')+1).replace(/;\s*$/,''))));
  assert.deepEqual(cached,assetManifest.files.slice().sort());assert.ok(cached.every(path=>!path.startsWith('/api/')&&!['/diary','/account','/login'].includes(path)));
+ revision=(await get('/api/library')).revision;for(const amount of [1,2])await command('entry.add',{foodId:food,date:'2026-11-15',time:amount===1?'12:00':'13:00',group:snapshot.state.settings.groups[0],amount});
  await page.goto(origin+'/offline.html');await page.getByRole('button',{name:'Keep diary on this device'}).click();await page.getByRole('button',{name:'Refresh copy'}).waitFor();
  const biometricsBefore=(await get('/api/offline')).state.biometrics.length;
  await context.setOffline(true);await page.goto(origin+'/diary');await page.getByRole('heading',{name:'Offline diary'}).waitFor();
+ await page.getByLabel('Date',{exact:true}).fill('2026-11-15');await page.waitForFunction(()=>document.querySelector('.offline-summary').textContent.includes('450 kcal'));
+ const dailyScores=await page.locator('[data-offline-panel=scores]').innerHTML(),completeness=await page.locator('[data-offline-completeness-value]').textContent();
+ await page.getByRole('button',{name:'Select foods',exact:true}).click();await page.locator('[data-select-food]').first().check();await page.waitForFunction(()=>document.querySelector('.offline-summary').textContent.includes('150 kcal'));
+ assert.equal(await page.locator('[data-offline-panel=scores]').innerHTML(),dailyScores);assert.equal(await page.locator('[data-offline-completeness-value]').textContent(),completeness);
+ await page.locator('[data-offline-panel=balances]>summary').click();await page.locator('[data-balance-scope]').filter({hasText:'1 selected food entry'}).waitFor();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:'.local/pwa-hosted-offline-analysis.png'});
+ await page.getByRole('button',{name:'Done',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.offline-summary').textContent.includes('450 kcal'));
+ report.checks.push('offline food selection and balances with unchanged daily scores and completeness');
  await page.getByRole('button',{name:'Water',exact:true}).click();await page.getByLabel('Water (mL)').fill('250');await page.getByRole('button',{name:'Save pending'}).click();await page.getByRole('button',{name:'Sync 1 pending'}).waitFor();await page.reload();await page.getByRole('button',{name:'Sync 1 pending'}).waitFor();
  await context.setOffline(false);await page.getByRole('button',{name:'Refresh copy'}).waitFor({timeout:90000});assert.equal((await get('/api/offline')).state.biometrics.length,biometricsBefore+1);
  await page.getByRole('link',{name:'Open online diary'}).click();await page.locator('.calorie-summary').waitFor();

@@ -7,6 +7,8 @@ const aliases={
 // New cloud-shell labels have no matching source string. The source owns all
 // domain labels, nutrient identities and existing action translations.
 const cloud={
+ 'Select foods':['Sélectionner des aliments','Lebensmittel auswählen','Selecionar alimentos'],
+ 'Done':['Terminé','Fertig','Concluído'],
  'Sign in to unlock this diary.':['Connectez-vous pour ouvrir ce journal.','Melden Sie sich an, um dieses Tagebuch zu öffnen.','Entre para abrir este diário.'],
  'Saved on this device':['Enregistré sur cet appareil','Auf diesem Gerät gespeichert','Salvo neste dispositivo'],
  'Device copy removed':['Copie de l’appareil supprimée','Gerätekopie entfernt','Cópia do dispositivo removida'],
