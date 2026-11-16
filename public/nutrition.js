@@ -21,7 +21,7 @@ export function mountNutrition({page,headerRoot,date,show,close,header,content,o
  let dashboard=null,snapshots=null,charts=null,fasting=null,mobileReport=null,disposed=false,serial=0,reportController,data,tab=initialTab,reportOptions={from:reportDate??offset(date(),-6),to:reportDate??date(),dayFilter:reportDate?'all':'nonempty',includeToday:true,includeSupplements:true};
  const root=document.createElement('section');root.className='nutrition-page';page.replaceChildren(root);
  const motion=createDiscoverMotion(root);let finishLoading,refreshHeader;
- const releaseSwipe=bindDiscoverSwipe(root,{current:()=>tab,select,onMove:motion.preview,onCancel:motion.reset});
+ const releaseSwipe=bindDiscoverSwipe(root,{current:()=>tab,select,onMove:motion.preview,onCancel:motion.reset,isTransitioning:motion.isTransitioning});
  const alive=()=>!disposed&&root.isConnected;
  const changed=onChange;
  onChange=async(...args)=>{data=undefined;cancelReport();return changed?.(...args);};

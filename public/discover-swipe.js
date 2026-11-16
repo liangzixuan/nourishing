@@ -2,8 +2,8 @@ const tabs=['dashboard','charts','report','snapshots'];
 const controls='a,button,input,select,textarea,label,summary,canvas,svg,.mcl-plot,.chart-canvas,.dc-chart,.report-energy-ring,[contenteditable]:not([contenteditable="false"]),[role="button"],[role="slider"],[role="tab"],[data-discover-swipe-ignore]';
 
 /** A touch gesture owns navigation only after horizontal intent on plain content. */
-export function bindDiscoverSwipe(root,{current,select,onMove=()=>{},onCancel=()=>{}}){
- let gesture=null;
+export function bindDiscoverSwipe(root,{current,select,onMove=()=>{},onCancel=()=>{},isTransitioning=()=>false}){
+ let gesture=null;const surface=root.ownerDocument;
  const blocked=()=>!root.isConnected||root.ownerDocument.querySelector('dialog[open],[aria-modal="true"]')!==null;
  function eligible(target){
   if(!(target instanceof Element)||target.closest(controls))return false;
@@ -16,9 +16,13 @@ export function bindDiscoverSwipe(root,{current,select,onMove=()=>{},onCancel=()
  }
  function start(event){
   cancel();
-  if(event.touches.length!==1||blocked()||!tabs.includes(current())||!eligible(event.target))return;
-  const touch=event.touches[0];
-  gesture={id:touch.identifier,x:touch.clientX,y:touch.clientY,tab:current(),target:event.target,axis:null};
+  if(event.touches.length!==1||blocked()||!tabs.includes(current()))return;
+  const touch=event.touches[0],bounds=root.getBoundingClientRect();
+  // Native view-transition snapshots temporarily hit-test as the document.
+  // Keep ownership of touches inside Discover while that animation is active.
+  const snapshot=isTransitioning()&&event.target===surface.documentElement&&touch.clientX>=bounds.left&&touch.clientX<=bounds.right&&touch.clientY>=bounds.top&&touch.clientY<=bounds.bottom;
+  if(!snapshot&&(!root.contains(event.target)||!eligible(event.target)))return;
+  gesture={id:touch.identifier,x:touch.clientX,y:touch.clientY,tab:current(),axis:null};
  }
  function move(event){
   if(!gesture)return;
@@ -37,16 +41,16 @@ export function bindDiscoverSwipe(root,{current,select,onMove=()=>{},onCancel=()
  }
  function end(event){
   const done=gesture;gesture=null;
-  if(!done||event.touches.length||blocked()||current()!==done.tab||!done.target.isConnected){onCancel();return;}
+  if(!done||event.touches.length||blocked()||current()!==done.tab){onCancel();return;}
   const touch=[...event.changedTouches].find(item=>item.identifier===done.id);if(!touch){onCancel();return;}
   const dx=touch.clientX-done.x,dy=touch.clientY-done.y;
   if(Math.abs(dx)<64||Math.abs(dx)<=Math.abs(dy)*1.5){onCancel();return;}
   const next=tabs[tabs.indexOf(done.tab)+(dx<0?1:-1)];if(next)select(next);else onCancel();
  }
  const cancel=()=>{gesture=null;onCancel();};
- root.addEventListener('touchstart',start,{passive:true});
- root.addEventListener('touchmove',move,{passive:false});
- root.addEventListener('touchend',end,{passive:true});
- root.addEventListener('touchcancel',cancel,{passive:true});
- return ()=>{cancel();root.removeEventListener('touchstart',start);root.removeEventListener('touchmove',move);root.removeEventListener('touchend',end);root.removeEventListener('touchcancel',cancel);};
+ surface.addEventListener('touchstart',start,{capture:true,passive:true});
+ surface.addEventListener('touchmove',move,{capture:true,passive:false});
+ surface.addEventListener('touchend',end,{capture:true,passive:true});
+ surface.addEventListener('touchcancel',cancel,{capture:true,passive:true});
+ return ()=>{cancel();surface.removeEventListener('touchstart',start,true);surface.removeEventListener('touchmove',move,true);surface.removeEventListener('touchend',end,true);surface.removeEventListener('touchcancel',cancel,true);};
 }

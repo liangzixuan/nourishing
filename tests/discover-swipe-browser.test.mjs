@@ -84,7 +84,17 @@ test('Discover touch swipes navigate bounded tabs while preserving scrolling, co
   await page.locator('[data-tab=snapshots]').click();await page.locator('.snapshot-list [data-snapshot-add]').waitFor();await tab('snapshots');
   await page.evaluate(()=>scrollTo(0,0));
   assert.equal(await page.evaluate(()=>document.elementFromPoint(120,650)?.closest('.nutrition-page')!==null),true);
-  await realTouch({x:120,y:650},{x:300,y:650});await tab('report');await page.locator('.mobile-report-toolbar').waitFor();
+  // A second gesture must work while native snapshots intercept hit-testing.
+  await page.evaluate(()=>{window.rapidStarts=[];document.addEventListener('touchstart',event=>{window.rapidStarts.push({inRoot:!!event.target.closest('.nutrition-page'),transition:document.documentElement.classList.contains('discover-transition')});},{capture:true});});
+  await realTouch({x:120,y:650},{x:300,y:650});
+  await realTouch({x:120,y:650},{x:300,y:650});
+  await tab('charts');
+  assert.equal(await page.evaluate(()=>window.rapidStarts.some(start=>start.transition&&!start.inRoot)),true,'regression must exercise snapshot hit-testing');
+  await page.locator('[data-tab=report]').click();await tab('report');await page.locator('.mobile-report-toolbar').waitFor();
+  // Reverse direction immediately, without waiting for the forward slide.
+  await realTouch({x:300,y:650},{x:120,y:650});
+  await realTouch({x:120,y:650},{x:300,y:650});
+  await tab('report');
   // Native snapshots animate only after the destination rendered, in the
   // requested direction. No duplicate DOM/canvas snapshots are retained.
   await page.locator('[data-tab=charts]').click();

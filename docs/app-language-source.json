@@ -304,7 +304,7 @@
     },
     {
       "output": "public/nutrition.js",
-      "outputSha256": "bab5abc32b0ff95abdebab2927bdbe965eb3545a8dbc8b5ab6612fc89f432935"
+      "outputSha256": "b245dd9f99ffa9afe1c95e7a520b6131f10340ab21a83710b4c1f895b52d3dc3"
     },
     {
       "output": "public/offline-controls.js",

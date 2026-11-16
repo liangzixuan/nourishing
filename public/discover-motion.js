@@ -45,5 +45,5 @@ export function createDiscoverMotion(root){
   }).catch(()=>{});
   owned.finished.finally(()=>{if(id===run){transition=null;for(const animation of animations)animation.cancel();animations=[];html.classList.remove('discover-transition');}}).catch(()=>{});
  }
- return {preview,reset,change,cancel,dispose(){disposed=true;cancel();}};
+ return {preview,reset,change,cancel,isTransitioning:()=>Boolean(transition),dispose(){disposed=true;cancel();}};
 }
