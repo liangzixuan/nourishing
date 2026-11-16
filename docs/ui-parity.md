@@ -132,14 +132,14 @@ The main-screen restoration does not close these child workflows:
 
 - Recipe stages and reviewed library edits are deployed. Update existing uses and Preserve history choices use account-bound preview and transactional retry.
 - Targets: Macro & Energy is deployed; Scheduler/day targets are deployed and hosted-verified. Upper Limits and Guided Setup are deployed and hosted-verified.
-- Display: Theme, energy units, timestamps and summary visibility are deployed and hosted-verified. Summary Column and Group Subtotals are deployed and hosted-verified. Calendar and Diary settings are deployed and hosted-verified. Font Size and Pause Life are deployed and hosted-verified. Language remains.
+- Display: Theme, energy units, timestamps and summary visibility are deployed and hosted-verified. Summary Column and Group Subtotals are deployed and hosted-verified. Calendar and Diary settings are deployed and hosted-verified. Font Size, Pause Life and Language are deployed and hosted-verified.
 - Exercise/Biometrics: source category navigation, effort/unit/group pickers and metric-specific controls are deployed and hosted-verified. Saved-reference limits remain below.
 - Profile: captured Age, Sex, Weight, Height, BMI and Body Fat summary is deployed and hosted-verified. Uses `profile-reference-second-pass.png`; the earlier similarly named image shows Account confirmation.
 - Account: registration, verification, recovery, logout and deletion work. App theme/navigation alignment is deployed and locally verified. Authenticated name/email/password editing is deployed and hosted-verified; MFA is a separate capability, not established by the old local placeholder.
 - CSV export: group inclusion and account energy units are deployed. Production-handler browser checks pass grouped kJ download, cancellation without a late download, report switching and close/reopen.
 - Reminders and Text Log: compact controls are deployed and hosted-verified, including interrupted-write recovery. Physical notification delivery and microphone behavior remain device checks.
 - Coach: concise preferences and recorded diary facts are deployed and hosted-verified. Model-backed personalized advice remains a separate unimplemented capability.
-- Recipe Import and consolidated Nutrition Label entry are deployed and hosted-verified. Direct Retire/Restore is deployed and hosted-verified. Shared-item import passed cancellation, exact retry, stale reload and data-preservation checks. Its Back button still needs the source styling.
+- Recipe Import and consolidated Nutrition Label entry are deployed and hosted-verified. Direct Retire/Restore is deployed and hosted-verified. Shared-item import passed cancellation, exact retry, stale reload and data-preservation checks. Its Back button source styling is deployed with the language release.
 
 Saved-reference limits: some exercise category/effort mappings were local choices; Hematocrit units are unknown; notification capture only shows the disabled state. Native health/Firebase features are excluded. Installed PWA camera/barcode, notification delivery, offline behavior and the deferred emailed password recovery check remain separate device/user acceptance items.
 
@@ -179,3 +179,12 @@ The user's earlier tab-switching concern also remains open. The current shell di
 Production deployment `6afadad318f427a6c5ff` (runtime `d8ac865`) passed all 551 tests, the production build and publication checks. Four production browser workflows passed: consolidated Nutrition Label entry, direct Retire/Restore, shared-library import and Coach preferences/recorded facts. Checks cover authored versus derived nutrient values, unsaved editor drafts, exact retry receipts, stale-review recovery, original library records, unchanged logged nutrition and owner isolation. All disposable fixtures were removed. Live captures were inspected. The shared-import Back button still uses browser-default styling and remains an open UI defect.
 
 Initial verifier failures were corrected without runtime changes: wait for the completed save response; open More Details before editor actions; wait for fresh retirement review data; and allow library-derived suggestions/rankings to change after import while checking all recorded nutrition and targets. Private reports are retained in `.local`. These browser checks do not establish installed-device acceptance.
+
+
+## Language acceptance, November 16
+
+This supersedes the earlier language implementation gap and shared-import Back-button defect. Runtime `dc73921`, site `6afae86cd143c9745487` and reminder worker `6afae86e686773fefa0c` are active. English, French, German and Brazilian Portuguese use one saved account setting and shared source formatters. Explicit cloud catalogs cover account, food, Discover and error controls. The Language selector is enabled. Source/user text, database identities, quantities and command receipts remain unchanged.
+
+All 572 tests, the build and publication audit passed. Production acceptance covered translated Diary/Add/Discover headers, Display cancellation, persistence across reload and exact command retry after a lost successful reply. Owner data and recorded nutrition were unchanged; the fixture was removed. Hosted captures were inspected. Local browser tests also cover 320 px width and 200 percent text, translated editors, account flows, barcode controls, CSV, offline snapshots and captured print language. Generic push text supports the four locales; physical delivery remains a separate check.
+
+Spanish and separate UK-English catalogs remain unavailable. Coach model advice and MFA remain separate capability limits. Installed-device and password-recovery acceptance are still pending.

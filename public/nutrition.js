@@ -16,30 +16,37 @@ import {request} from './diary-api.js';
 import {openPrintReport} from './print-report.js';
 const offset=(date,days)=>{const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10);};
 export function mountNutrition({page,headerRoot,date,show,close,header,content,onChange,onDiary,onSuggest,initialTab='dashboard',reportDate}){
- let dashboard=null,snapshots=null,charts=null,fasting=null,mobileReport=null,disposed=false,serial=0,data,tab=initialTab,reportOptions={from:reportDate??offset(date(),-6),to:reportDate??date(),dayFilter:reportDate?'all':'nonempty',includeToday:true,includeSupplements:true};
+ let dashboard=null,snapshots=null,charts=null,fasting=null,mobileReport=null,disposed=false,serial=0,reportController,data,tab=initialTab,reportOptions={from:reportDate??offset(date(),-6),to:reportDate??date(),dayFilter:reportDate?'all':'nonempty',includeToday:true,includeSupplements:true};
  const root=document.createElement('section');root.className='nutrition-page';page.replaceChildren(root);
  const alive=()=>!disposed&&root.isConnected;
+ const changed=onChange;
+ onChange=async(...args)=>{data=undefined;cancelReport();return changed?.(...args);};
+ function cancelReport(){serial++;reportController?.abort();reportController=null;}
+ function select(next){if(next===tab)return;tab=next;discover();}
  async function news(){
   if(dashboard)return dashboard.openNews();
   show(`${header(t('discover.title.newsfeed'))}<div class="dashboard-panel" aria-busy="true"></div>`);const host=content.querySelector('.dashboard-panel');
   try{const result=await request('/api/dashboard?'+new URLSearchParams({date:date()}));if(alive()&&host.isConnected)host.innerHTML=result.news.items.length?newsCardsMarkup(parseNewsfeed(result.news)):newsfeedMarkup(uiLanguage());}
   catch(error){if(host.isConnected)host.textContent=error.message;}finally{host.removeAttribute('aria-busy');}
  }
- async function load(){const id=++serial;root.setAttribute('aria-busy','true');root.innerHTML=`<p class="empty">${t('mobileNutrientDetail.loading')}</p>`;
-  try{const result=await request('/api/nutrition-report?'+new URLSearchParams(reportOptions));if(!alive()||serial!==id)return;data=result;discover();}
-  catch(error){if(alive()&&serial===id){if(data&&tab==='report'){discover();const status=document.createElement('p');status.className='sheet-message';status.setAttribute('role','status');status.textContent=error.message;root.querySelector('.report-content').append(status);return;}root.innerHTML=`<p class="sheet-message">${e(error.message)}</p><button class="more-results" data-retry>${t('mobileSuggest.retry')}</button>`;root.querySelector('[data-retry]').onclick=load;}}
-  finally{if(alive()&&serial===id)root.setAttribute('aria-busy','false');}
+ async function loadReport(panel){
+  cancelReport();const id=serial,controller=new AbortController();reportController=controller;
+  panel.setAttribute('aria-busy','true');panel.innerHTML=`<p class="empty">${t('mobileNutrientDetail.loading')}</p>`;
+  try{const result=await request('/api/nutrition-report?'+new URLSearchParams(reportOptions),undefined,controller.signal);if(!alive()||serial!==id||tab!=='report')return;data=result;discover();}
+  catch(error){if(alive()&&serial===id&&!controller.signal.aborted){panel.innerHTML=`<p class="sheet-message" role="status">${e(error.message)}</p><button class="more-results" data-retry>${t('mobileSuggest.retry')}</button>`;panel.querySelector('[data-retry]').onclick=()=>loadReport(panel);}}
+  finally{if(panel.isConnected&&serial===id)panel.removeAttribute('aria-busy');}
  }
- function discover(){dashboard?.dispose();dashboard=null;snapshots?.dispose();snapshots=null;charts?.dispose();charts=null;fasting?.dispose();fasting=null;mobileReport?.dispose();mobileReport=null;
+ function discover(){cancelReport();dashboard?.dispose();dashboard=null;snapshots?.dispose();snapshots=null;charts?.dispose();charts=null;fasting?.dispose();fasting=null;mobileReport?.dispose();mobileReport=null;
   root.innerHTML=`${headerRoot?'':'<div class="dashboard-header-fallback"></div>'}<div class="report-content"></div>`;
   const title=headerRoot??root.querySelector('.dashboard-header-fallback'),panel=root.querySelector('.report-content');
-  const renderHeader=(ready=true)=>{if(alive())discoverHeader({root:title,tab,ready,onTab:next=>{tab=next;discover();},onNews:news,onSettings:()=>tab==='charts'?charts?.openManage():tab==='report'?mobileReport?.openSettings():dashboard?.openSettings()});};
-  renderHeader(!['dashboard','charts'].includes(tab));
+  const renderHeader=(ready=true)=>{if(alive())discoverHeader({root:title,tab,ready,onTab:select,onNews:news,onSettings:()=>tab==='charts'?charts?.openManage():tab==='report'?mobileReport?.openSettings():dashboard?.openSettings()});};
+  renderHeader(!['dashboard','charts'].includes(tab)&&(tab!=='report'||Boolean(data)));
+  if(tab==='report'&&!data){void loadReport(panel);return;}
   if(tab==='snapshots'){snapshots=mountSnapshots({root:panel,show,close,header,content,date,onChange});return;}
   if(['fasting','new-fast','end-fast','start-now'].includes(tab)){const initialAction=tab==='new-fast'?'new':tab==='end-fast'?'end':tab==='start-now'?'start-now':undefined;tab='fasting';fasting=mountFasting({page:panel,headerRoot:title,onBack:()=>{tab='dashboard';discover();},show,close,header,content,onChange,initialAction});return;}
   if(tab==='charts'){charts=mountCharts({page:panel,date,show,close,header,content,onChange,onReady:()=>{if(panel.isConnected&&tab==='charts')renderHeader();}});return;}
   if(tab==='dashboard'){
-   dashboard=mountDashboard({root:panel,date,show,close,header,content,onChange,onDiary,onReady:()=>{if(panel.isConnected&&tab==='dashboard')renderHeader();},onHealth:kind=>(kind==='glucose'?openGlucose:openCycle)({date,show,close,header,content,onChange}),onCoach:()=>openCoach({date,show,close,header,content,onChange,onReport:day=>{reportOptions={...reportOptions,from:day,to:day,dayFilter:'all'};tab='report';load();},onSuggest}),onReport:()=>{tab='report';discover();},onFasting:(intent='fasting')=>{tab=intent;discover();},onWeight:()=>mountRecordEditor({kind:'biometric',date:date(),show,close,header,content,onChange:async()=>{await onChange();await dashboard?.reload();}})});return;
+   dashboard=mountDashboard({root:panel,date,show,close,header,content,onChange,onDiary,onReady:()=>{if(panel.isConnected&&tab==='dashboard')renderHeader();},onHealth:kind=>(kind==='glucose'?openGlucose:openCycle)({date,show,close,header,content,onChange}),onCoach:()=>openCoach({date,show,close,header,content,onChange,onReport:day=>{reportOptions={...reportOptions,from:day,to:day,dayFilter:'all'};tab='report';data=undefined;discover();},onSuggest}),onReport:()=>select('report'),onFasting:(intent='fasting')=>{tab=intent;discover();},onWeight:()=>mountRecordEditor({kind:'biometric',date:date(),show,close,header,content,onChange:async()=>{await onChange();await dashboard?.reload();}})});return;
   }
   mobileReport=mountMobileReport({root:panel,value:data,onApply:async options=>{
    const id=++serial,result=await request('/api/nutrition-report?'+new URLSearchParams(options));
@@ -47,5 +54,5 @@ export function mountNutrition({page,headerRoot,date,show,close,header,content,o
    data=result;reportOptions={...result.report.options};return result;
   },onPrint:options=>openPrintReport({initialOptions:options,show,header,content})});
  }
- load();return {reload:load,dispose(){disposed=true;serial++;dashboard?.dispose();snapshots?.dispose();charts?.dispose();fasting?.dispose();mobileReport?.dispose();}};
+ discover();return {reload(){data=undefined;discover();},dispose(){disposed=true;cancelReport();dashboard?.dispose();snapshots?.dispose();charts?.dispose();fasting?.dispose();mobileReport?.dispose();}};
 }

@@ -23,7 +23,7 @@ test('Report All Time uses source record dates and the canonical 3660-day bound'
 });
 
 test('Discover headers route Newsfeed and settings per tab; source Report renders and applies options',async()=>{
- const state=initialState(),requests=[];
+ const state=initialState(),requests=[];let reportWait=null,releaseReport,failNextReport=false;
  state.foods=[{id:'oats',name:'Fixture oats',serving:'100 g',grams:100,nutrients:{calories:389,protein:16.9,carbs:66.3,fat:6.9}}];
  state.entries=[{id:'entry',foodId:'oats',date,time:'12:00',amount:1,group:'Lunch',kind:'food'}];
  const server=createServer(async(req,res)=>{
@@ -31,7 +31,7 @@ test('Discover headers route Newsfeed and settings per tab; source Report render
    const url=new URL(req.url,'http://fixture'),path=url.pathname;
    res.setHeader('Content-Type','application/json');
   if(packagedAssets.has(path)){const asset=packagedAssets.get(path);res.setHeader('Content-Type',asset.type);return res.end(asset.body);}
-   if(path==='/api/nutrition-report'){const options=Object.fromEntries(url.searchParams);options.includeToday=options.includeToday==='true';options.includeSupplements=options.includeSupplements==='true';requests.push(options);return res.end(JSON.stringify(reportView(state,options,clock)));}
+   if(path==='/api/nutrition-report'){const options=Object.fromEntries(url.searchParams);options.includeToday=options.includeToday==='true';options.includeSupplements=options.includeSupplements==='true';requests.push(options);if(reportWait)await reportWait;if(failNextReport){failNextReport=false;res.statusCode=503;return res.end(JSON.stringify({error:'Report unavailable. Try again.'}));}return res.end(JSON.stringify(reportView(state,options,clock)));}
    if(path==='/api/dashboard')return res.end(JSON.stringify({...dashboardView(state,{date},clock),news:{version:1,items:[{id:'fixture-news',title:'Fixture News',body:'Header action test.'}]}}));
    if(path==='/api/charts')return res.end(JSON.stringify(chartSurfaceView(state,Object.fromEntries(url.searchParams),clock)));
    if(path==='/api/snapshots')return res.end(JSON.stringify({items:[],revision:'fixture'}));
@@ -39,7 +39,7 @@ test('Discover headers route Newsfeed and settings per tab; source Report render
     res.setHeader('Content-Type','text/html');res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'");
     return res.end('<link rel="stylesheet" href="/mobile-theme.css"><link rel="stylesheet" href="/diary.css"><link rel="stylesheet" href="/shell-source/discover.css"><link rel="stylesheet" href="/app-shell.css"><link rel="stylesheet" href="/report-mobile.css"><link rel="stylesheet" href="/charts.css"><body class="discover-mobile dark discover-home"><header id="header" class="app-header topbar"></header><main></main><dialog id="sheet"><div></div></dialog><script type="module" src="/fixture.js"></script>');
    }
-   if(path==='/fixture.js'){res.setHeader('Content-Type','text/javascript');return res.end(`import {mountNutrition} from '/nutrition.js';const sheet=document.querySelector('#sheet'),content=sheet.querySelector('div');const close=()=>{sheet.close();content.replaceChildren()};sheet.addEventListener('click',event=>{if(event.target.closest('[data-close]'))close()});window.panel=mountNutrition({page:document.querySelector('main'),headerRoot:document.querySelector('#header'),mode:'discover',initialTab:'report',date:()=>'${date}',header:title=>'<h2>'+title+'</h2><button type="button" data-close>Close</button>',show:html=>{content.innerHTML=html;if(!sheet.open)sheet.showModal()},close,content,onChange:async()=>{}});`);}
+   if(path==='/fixture.js'){res.setHeader('Content-Type','text/javascript');return res.end(`import {mountNutrition} from '/nutrition.js';const sheet=document.querySelector('#sheet'),content=sheet.querySelector('div');const close=()=>{sheet.close();content.replaceChildren()};sheet.addEventListener('click',event=>{if(event.target.closest('[data-close]'))close()});window.panel=mountNutrition({page:document.querySelector('main'),headerRoot:document.querySelector('#header'),mode:'discover',initialTab:'dashboard',date:()=>'${date}',header:title=>'<h2>'+title+'</h2><button type="button" data-close>Close</button>',show:html=>{content.innerHTML=html;if(!sheet.open)sheet.showModal()},close,content,onChange:async()=>{}});`);}
    if(!/^\/[a-zA-Z0-9/_.-]+\.(?:js|mjs|css|svg|woff2)$/.test(path)||path.includes('..'))return res.writeHead(404).end();
    res.setHeader('Content-Type',/\.m?js$/.test(path)?'text/javascript':path.endsWith('.css')?'text/css':path.endsWith('.svg')?'image/svg+xml':'font/woff2');res.end(readFileSync(new URL('../public'+path,import.meta.url)));
   }catch(error){res.writeHead(400,{'Content-Type':'application/json'}).end(JSON.stringify({error:error.message}));}
@@ -47,7 +47,15 @@ test('Discover headers route Newsfeed and settings per tab; source Report render
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));let browser;
  try{
   browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.setDefaultTimeout(15000);page.on('pageerror',error=>{errors.push(error.message);console.error(error.message)});page.on('console',message=>{if(message.text().includes('Content Security Policy'))errors.push(message.text());});
-  await page.goto(`http://127.0.0.1:${server.address().port}`);await page.locator('.mobile-report-toolbar').waitFor();await page.waitForFunction(()=>Object.keys(window.Chart?.instances??{}).length===2);
+  await page.goto(`http://127.0.0.1:${server.address().port}`);await page.locator('.cloud-dashboard').waitFor();
+  assert.equal(requests.length,0,'Dashboard does not load the full Report');
+  await page.getByRole('button',{name:'Dashboard',exact:true}).click();assert.equal(requests.length,0);
+  await page.getByRole('button',{name:'Charts',exact:true}).click();await page.locator('[data-manage]').waitFor();assert.equal(requests.length,0,'Charts does not load the full Report');
+  reportWait=new Promise(resolve=>releaseReport=resolve);const started=page.waitForRequest(r=>new URL(r.url()).pathname==='/api/nutrition-report');
+  await page.getByRole('button',{name:'Report',exact:true}).click();await started;
+  const cancelled=page.waitForEvent('requestfailed',{predicate:r=>new URL(r.url()).pathname==='/api/nutrition-report'});
+  await page.getByRole('button',{name:'Charts',exact:true}).click();await cancelled;releaseReport();reportWait=null;await page.locator('[data-manage]').waitFor();assert.equal(await page.locator('.mobile-report-toolbar').count(),0);
+  failNextReport=true;await page.getByRole('button',{name:'Report',exact:true}).click();await page.locator('[data-retry]').waitFor();await page.locator('[data-retry]').click();await page.locator('.mobile-report-toolbar').waitFor();assert.equal(requests.length,3);await page.waitForFunction(()=>Object.keys(window.Chart?.instances??{}).length===2);
   assert.equal(await page.locator('[data-report-energy-kind=consumed]').count(),1);assert.equal(await page.locator('[data-report-energy-kind=expenditure]').count(),1);assert.ok(await page.locator('[data-mobile-category]').count()>3);assert.equal(await page.locator('.report-filters').count(),0);
   assert.equal(await page.locator('[data-report-energy-kind=consumed] .report-energy-center strong').textContent(),'389');
   await page.screenshot({path:'.local/report-source-with-data.png',fullPage:true});
@@ -63,5 +71,5 @@ test('Discover headers route Newsfeed and settings per tab; source Report render
   await page.getByRole('button',{name:'Charts',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('[aria-label="Manage Charts"]').disabled);await page.getByRole('button',{name:'Manage Charts',exact:true}).first().click();await page.getByRole('heading',{name:'Manage Charts',exact:true}).waitFor();await page.getByRole('button',{name:'Close',exact:true}).click();await page.getByRole('button',{name:'Newsfeed',exact:true}).click();await page.getByText('Fixture News',{exact:true}).waitFor();await page.getByRole('button',{name:'Close',exact:true}).click();
   await page.getByRole('button',{name:'Snapshots',exact:true}).click();assert.equal(await page.locator('#header [data-discover=shell-settings]').count(),0);assert.equal(await page.getByRole('button',{name:'Newsfeed',exact:true}).count(),1);
   await page.getByRole('button',{name:'Report',exact:true}).click();await page.locator('.mobile-report-toolbar').waitFor();await page.waitForFunction(()=>Object.keys(window.Chart?.instances??{}).length===2);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(errors,[]);await page.screenshot({path:'.local/report-source-restored.png',fullPage:true});
- }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
+ }finally{releaseReport?.();await browser?.close();await new Promise(resolve=>server.close(resolve));}
 });

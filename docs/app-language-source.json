@@ -300,7 +300,7 @@
     },
     {
       "output": "public/nutrition.js",
-      "outputSha256": "cd0e19f3508ed141128d189eeb655ceb7aef6309fe8284cb6dd2d1e847c3259b"
+      "outputSha256": "0a80ec8ba34dba2611ac934b3901e25aec00c0af9e0c0b2a7d4baecb86fcc425"
     },
     {
       "output": "public/offline-controls.js",
