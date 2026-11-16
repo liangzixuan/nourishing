@@ -2,6 +2,7 @@ import {act,prepareRecordSelection,captureRecordSelection,previewRecordCopy,prev
 import {orderDiaryEntries,diaryGroupOrders} from './domain/diary-order.mjs';
 import {parseEnergyUnit,convertEnergy} from './domain/energy-units.mjs';
 import {digest} from './data-codec.mjs';
+import {diaryRecordPresentation} from './diary-record-presentation.mjs';
 
 const fail=message=>{throw Object.assign(Error(message),{status:400,code:400,publicMessage:message});};
 function exact(input,fields){if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(key=>!fields.includes(key)))fail('Invalid diary action.');}
@@ -50,5 +51,5 @@ export function diaryToolsPresentation(state,view){
  const orders=diaryGroupOrders(state.settings),mode=state.settings.diarySort??'source',entries=[];
  for(const group of [...new Set([...view.groups,...view.entries.map(row=>row.group)])])entries.push(...orderDiaryEntries(view.entries.filter(row=>row.group===group),orders.get(group)??mode));
  const energy=diaryEnergy(state,view.summary.energy?.consumed??view.summary.totals?.calories);
- return {...view,energyUnit:energy.unit,consumedEnergy:energy.value,diarySort:mode,groupOrders:Object.fromEntries(orders),entries:entries.map(row=>({...row,energyValue:diaryEnergy(state,row.kind==='exercise'?row.caloriesBurned:row.facts?.nutrients?.calories).value}))};
+ return {...view,recordDisplay:diaryRecordPresentation(state.settings,{...view,entries}),energyUnit:energy.unit,consumedEnergy:energy.value,diarySort:mode,groupOrders:Object.fromEntries(orders),entries:entries.map(row=>({...row,energyValue:diaryEnergy(state,row.kind==='exercise'?row.caloriesBurned:row.facts?.nutrients?.calories).value}))};
 }

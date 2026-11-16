@@ -9,7 +9,7 @@ Acceptance:
 - Each deployed increment has appropriate automated and live-browser verification with disposable fixtures; owner data remains unchanged.
 - Device-only checks and deferred password-recovery email checks are explicitly identified and requested only when they become the remaining blocker.
 
-Completed increments: rich food search, source food-entry layout, compact Photo Log nutrition review, and multi-add with recipe creation and safe retry, deployed and verified on November 16. Next: Food entry Edit a copy and Photo Log Create, then the remaining child editors listed in docs/ui-parity.md. The platform goal remains active; its older APK objective text is superseded by this user-approved PWA scope because the available goal API cannot edit objective text.
+Completed increments: rich food search, source food-entry layout, compact Photo Log nutrition review, multi-add with recipe creation and safe retry, Food entry Edit a copy, and Photo Log Create Meal/Recipe, deployed and verified on November 16. Next: mixed Diary records within meal groups, then the remaining child editors listed in docs/ui-parity.md. The platform goal remains active; its older APK objective text is superseded by this user-approved PWA scope because the available goal API cannot edit objective text.
 
 ---
 
@@ -294,3 +294,10 @@ Deployment `6afaa0a216b486d21e89` is active at https://nourishing.app, runtime r
 Hosted food checks passed category search (1,875 beverage matches), favorites, preview, add/reload/edit/delete, day completion, notes, dismissal, sign-out and phone-width overflow. Main-screen checks passed with no browser, HTTP or CSP errors. The owner workspace head remained unchanged; both disposable accounts and their records were removed. Food Search and entry screenshots were visually inspected. Evidence is retained in ignored `.local/diary-browser-verification.json`, `.local/ui-restoration-hosted/result.json` and their captures. These are desktop Chrome checks at phone width, not installed-Pixel verification.
 
 Next increment: restore source multi-add for mixed foods, recipes and meals. Use a canonical preview plus one existing workspace transaction for all rows and the receipt. Keep catalog identity and quantities explicit, preserve account-scoped retry after uncertain saves, and enable multi-add only in the main Diary picker. Ingredient/Photo/Text pickers stay single-select. The original `food-multi-add.js` and `food-multi-add.mjs` provide the reference; no new schema, credential or phone is needed.
+
+
+## Copy and Photo Log library release, November 16
+
+Deployment `6afaa8bf3b6de9aec0ec`, revision `8f4f01cd5052d9f9ed5caf5c6f366c83932a2cb7`, is active. All 458 tests and the build passed; publication checks found no private artifacts or credentials and confirmed source hashes. Hosted copy checks passed cancellation with restored input, new custom-food creation, preserved source provenance/portions, original-food integrity, and no diary writes. Hosted Photo Log Create checks passed canonical meal/recipe quantities and yield, unknown nutrients, private source-photo access with second-account denial, and exact retry after a lost successful response. Recognition was replaced with signed synthetic evidence for this check; no Gemini call was made.
+
+Both reports confirm unchanged owner data, no browser/CSP errors or horizontal overflow, and full fixture cleanup. Screenshots were inspected. The copy Cancel button still uses a default style in this deployed revision; a small CSS correction is staged for the next Diary release. Evidence: `.local/food-copy-hosted-result.json`, `.local/photo-create-hosted-result.json`. The previous main-screen release check also passed all navigation/header/settings checks after multi-add.

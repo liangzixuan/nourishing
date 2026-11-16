@@ -1,0 +1,64 @@
+// Production mobile diary and HTTP/command/store boundaries; local fixture database only.
+import assert from 'node:assert/strict';
+import {createServer} from 'node:http';
+import {readFileSync,readdirSync,writeFileSync} from 'node:fs';
+import {chromium} from 'playwright-core';
+import {initialState,act} from '../server/domain/workspace.mjs';
+import {createDataRepository} from '../server/data-repository.mjs';
+import {createWorkspaceStore} from '../server/workspace-store.mjs';
+import {recordOptions,recordView} from '../server/record-views.mjs';
+import {diaryToolsReview} from '../server/diary-tools.mjs';
+import {createWebHandler} from '../server/http.mjs';
+import {diaryStoreFixture} from '../tests/fixtures/diary-store.mjs';
+const date=new Date().toLocaleDateString('en-CA'),owner='fixture',state=initialState();state.settings.groups.unshift('Uncategorized');
+const food=act(state,'food.save',{name:'Fixture rice',serving:'100 g',grams:100,nutrients:{calories:100,protein:2,carbs:20,fat:1}});
+for(const time of ['18:00','08:00'])act(state,'entry.add',{foodId:food.id,date,time,group:'Lunch',amount:1});
+act(state,'note.add',{date,group:'Lunch',time:'23:00',text:'Lunch note'});
+act(state,'biometric.add',{date,group:'Lunch',time:'01:00',type:'weight',value:70,unit:'kg'});
+act(state,'note.add',{date,text:'Ungrouped photo'});state.notes[1].imageId='a'.repeat(64);
+act(state,'note.add',{date,group:'Uncategorized',text:'Explicit category'});
+act(state,'biometric.add',{date,group:null,type:'weight',value:71,unit:'kg'});
+state.notes[0].id=state.biometrics[0].id=state.entries[0].id;
+const collision=state.entries[0].id,initial=structuredClone(state);
+const fixture=diaryStoreFixture(state),repository=createDataRepository(fixture.db,owner),store=createWorkspaceStore(fixture.db,owner),context={owner,asOf:new Date().toISOString(),timeZone:'UTC'},assets=new Map();
+function visit(dir,prefix=''){for(const entry of readdirSync(dir,{withFileTypes:true})){if(entry.isDirectory())visit(dir+'/'+entry.name,prefix+'/'+entry.name);else assets.set(prefix+'/'+entry.name,{body:readFileSync(dir+'/'+entry.name),type:/\.m?js$/.test(entry.name)?'text/javascript':entry.name.endsWith('.css')?'text/css':entry.name.endsWith('.svg')?'image/svg+xml':entry.name.endsWith('.html')?'text/html':'application/octet-stream'});}}visit('dist/client');visit('public');assets.set('/diary',assets.get('/diary.html'));
+let base,handler;const server=createServer(async(req,res)=>{try{const response=await handler(new Request(base+req.url,{method:req.method,headers:req.headers,...(req.method==='GET'?{}:{body:req,duplex:'half'})}));res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));}catch(error){res.writeHead(500).end(error.message);}});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));base='http://127.0.0.1:'+server.address().port;
+const current=async secret=>{if(secret!==owner)throw {code:401};return {id:owner};};let lostReply=true;
+handler=createWebHandler({config:{origin:base},assets,service:{current,recordOptions:async(_,day)=>recordOptions(await repository.readState(),day),recordItem:async(_,input)=>recordView(await repository.readState(),input),readDiary:async(secret,day)=>{await current(secret);return repository.diary(day);},diaryToolsReview:async(secret,input)=>{await current(secret);try{return diaryToolsReview(await repository.readState(),input);}catch(error){if(error.status)throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}},workspaceCommand:async(secret,input)=>{await current(secret);const saved=await store.command(input,async()=>null,context);if(input.type==='records.copy'&&lostReply){lostReply=false;throw {code:503,publicMessage:'Connection interrupted. Try again.'};}return saved;}}});
+let browser;try{
+ browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+ const page=await browser.newPage({viewport:{width:412,height:915},isMobile:true,hasTouch:true,extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}});page.setDefaultTimeout(10000);
+ const errors=[];page.on('pageerror',error=>errors.push(error.message));
+ await page.route('**/api/media?**',route=>route.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6P6YAAAAASUVORK5CYII=','base64')}));
+ await page.goto(base+'/diary');await page.locator('[data-md-group=Lunch]').waitFor().catch(async error=>{console.error(JSON.stringify({errors,body:await page.locator('body').innerText()}));throw error;});
+ const lunch=()=>page.locator('[data-md-group=Lunch]'),rows=()=>lunch().locator('[data-diary-record]');
+ assert.deepEqual(await rows().evaluateAll(rows=>rows.map(row=>row.dataset.collection)),['notes','biometrics','entries','entries']);
+ assert.equal(await page.locator('.record-section').count(),0);assert.equal(await page.locator('[data-md-group=Uncategorized] [data-diary-record]').count(),3);
+ assert.equal(await page.getByAltText('Note photo').count(),1);
+ const menu=()=>page.getByRole('button',{name:'Diary actions',exact:true}).click(),close=()=>page.locator('#sheet').getByRole('button',{name:'Close',exact:true}).click();
+ const save=async()=>{await page.locator('#sheet').getByRole('button',{name:'Save',exact:true}).click();await page.locator('#sheet').waitFor({state:'hidden'});};
+ const context=collection=>lunch().locator(`[data-diary-record][data-collection=${collection}][data-id="${collision}"]`).getByRole('button',{name:/actions$/}).click();
+ await context('notes');await page.getByRole('button',{name:'Edit',exact:true}).click();await page.getByRole('textbox',{name:'Note',exact:true}).waitFor();assert.equal(await page.getByRole('textbox',{name:'Note',exact:true}).inputValue(),'Lunch note');await close();
+ await context('biometrics');await page.getByRole('button',{name:'Edit',exact:true}).click();await page.locator('input[name=value]').waitFor();assert.equal(await page.locator('input[name=value]').inputValue(),'70');await page.locator('input[name=value]').fill('72');await page.getByRole('button',{name:'Save changes',exact:true}).click();await page.locator('#sheet').waitFor({state:'hidden'});
+ assert.equal(fixture.state().biometrics.find(row=>row.id===collision).value,72);assert.deepEqual(fixture.state().entries,initial.entries);assert.deepEqual(fixture.state().notes,initial.notes);
+ await page.getByRole('button',{name:'Open note photo',exact:true}).click();await page.getByRole('textbox',{name:'Note',exact:true}).waitFor();assert.equal(await page.getByRole('textbox',{name:'Note',exact:true}).inputValue(),'Ungrouped photo');await close();
+ // Collapse is owned by the same source session that handles toggles, including redraws.
+ await lunch().locator('summary').click({position:{x:170,y:15}});await page.waitForFunction(()=>!document.querySelector('[data-md-group=Lunch]').open);
+ await menu();await page.getByRole('button',{name:'Select entries',exact:true}).click();assert.equal(await lunch().getAttribute('open'),null);await page.locator('.diary-selection-tools').getByRole('button',{name:'Done',exact:true}).click();assert.equal(await lunch().getAttribute('open'),null);
+ await lunch().locator('summary').click({position:{x:170,y:15}});
+ await menu();await page.getByRole('button',{name:'Entry order',exact:true}).click();await page.locator('select[name=mode]').selectOption('time');await save();
+ assert.deepEqual(await rows().locator('.food-meta').allTextContents(),['23:00','01:00','08:00 · 1 servings','18:00 · 1 servings']);
+ await page.screenshot({path:'.local/diary-mixed-records-mobile.png',fullPage:true});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ await page.getByRole('button',{name:'Uncategorized actions',exact:true}).click();await page.getByRole('button',{name:'Select group',exact:true}).click();assert.match(await page.locator('.diary-selection-tools').innerText(),/3 selected/);
+ assert.ok(await page.locator('.diary-selection-tools').getByRole('button',{name:'Time',exact:true}).isDisabled());assert.ok(await page.locator('.diary-selection-tools').getByRole('button',{name:'Create meal',exact:true}).isDisabled());
+ await page.locator('.diary-selection-tools').getByRole('button',{name:'Move',exact:true}).click();await page.locator('select[name=group]').selectOption('Dinner');await save();assert.equal(await page.locator('[data-md-group=Dinner] [data-diary-record]').count(),3);
+ // Copy a mixed group, including a lost reply; entry quantities and group membership remain intact.
+ await page.getByRole('button',{name:'Lunch actions',exact:true}).click();await page.getByRole('button',{name:'Copy group',exact:true}).click();await page.locator('#sheet').waitFor({state:'hidden'});
+ await menu();await page.getByRole('button',{name:'Paste',exact:true}).click();await page.locator('input[name=date]').fill('2026-12-02');await page.locator('select[name=group]').selectOption('Lunch');await page.getByRole('button',{name:'Continue',exact:true}).click();await page.getByRole('button',{name:'Copy',exact:true}).click();await page.getByRole('status').filter({hasText:'Connection interrupted'}).waitFor();await page.getByRole('button',{name:'Copy',exact:true}).click();await page.locator('#sheet').waitFor({state:'hidden'});
+ assert.equal(fixture.state().entries.filter(row=>row.date==='2026-12-02').length,2);assert.equal(fixture.state().notes.filter(row=>row.date==='2026-12-02').length,1);assert.equal(fixture.state().biometrics.filter(row=>row.date==='2026-12-02').length,1);
+ await context('notes');await page.getByRole('button',{name:'Delete',exact:true}).click();await page.getByRole('button',{name:'Delete',exact:true}).click();await page.locator('#sheet').waitFor({state:'hidden'});
+ assert.ok(!fixture.state().notes.some(row=>row.id===collision));assert.ok(fixture.state().entries.some(row=>row.id===collision));assert.ok(fixture.state().biometrics.some(row=>row.id===collision));
+ assert.equal((await repository.diary(date)).consumedEnergy,200);assert.deepEqual(errors,[]);
+ const result={status:'passed',checks:['source mixed record ordering in production Diary','typed collision context edit/delete','biometric correction preserves other collections','photo-note thumbnail opens note editor','collapsed group survives redraw','time order sorts entries only','Uncategorized selects and moves explicit and null groups','mixed selection disables food-only actions','mixed group copy retries without duplication','nutrition totals unchanged','mobile bounds'],persistence:'production HTTP and transactional command adapter with local fixture database; no cloud writes'};
+ writeFileSync('.local/diary-mixed-records-local.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result));
+}finally{await browser?.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
