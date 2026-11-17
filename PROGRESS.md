@@ -10,7 +10,7 @@ The domain switch, Appwrite migration and PWA installation are complete. The own
 
 ### Scrolled Discover swipe header (November 16)
 
-Reproduced on the Pixel: content snapshots painted over the fixed header and bottom navigation after a vertical scroll followed by a swipe. Both navigation surfaces now have separate transition layers above content. A visual regression fails on the old CSS and passes with the fix in both directions; all 11 affected browser checks and the production build passed. Publication and final installed-PWA checks are pending.
+Reproduced on the Pixel: content snapshots painted over the fixed header and bottom navigation after a vertical scroll followed by a swipe. Both navigation surfaces now have separate transition layers above content. A visual regression fails on the old CSS and passes with the fix in both directions; all 11 affected browser checks and the production build passed. Runtime commit `0792051` is live in Appwrite deployment `6afbdf86484eb18228ef`. Verified the installed Pixel PWA uses the deployed CSS without temporary styles. Four transitions after scrolling and two additional Snapshots transitions preserved the header and bottom navigation pixels; rapid consecutive swipes also passed. Restored the original phone awake and rotation settings. See `docs/discover-scroll-swipe-acceptance-20261116.json`.
 
 ### More account name (November 16)
 
