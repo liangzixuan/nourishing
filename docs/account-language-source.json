@@ -91,7 +91,7 @@
     },
     {
       "target": "public/offline-session.js",
-      "outputSha256": "4b840006069fcf74270cbfc7aee83e67603ca82475eb93087196edd88a33f7b7"
+      "outputSha256": "18417bbfaee8bc9291f497dc1033e1837edcf31c90e077061243fda4e2c0f491"
     },
     {
       "target": "public/offline-store.js",

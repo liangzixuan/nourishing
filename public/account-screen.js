@@ -1,3 +1,4 @@
+import {accountDisplay,accountDisplayKey,cacheAccountDisplay} from './account-display.js';
 import {cachedRead} from './device-requests.js';
 import {request as diaryRequest} from './diary-api.js';
 import {readDeviceCache,invalidateDeviceCache} from './device-cache.js';
@@ -11,7 +12,7 @@ import {rememberOfflineAccount,lockCurrentOffline,leaveOfflineAccount} from './o
 import {disconnectCurrentPush} from './reminders.js';
 import {installButton,refreshInstallButton} from './pwa.js';
 import {createAccountDeletion} from './account-deletion.js';
-export function mountAccount({root,embedded=false}){
+export function mountAccount({root,embedded=false,onIdentity=()=>{}}){
 let disposed=false,profileSerial=0;const lifetime=new AbortController();
 const alive=()=>!disposed&&root.isConnected;
 root.classList.add('account-surface');
@@ -54,14 +55,17 @@ function verification(){
 }
 async function profile(knownUser=null){
   const serial=++profileSerial;
-  let user;try{user=knownUser?.id?knownUser:embedded?await cachedRead('/api/account?view=display',async signal=>{
+  let user;try{user=knownUser?.id?knownUser:embedded?await cachedRead(accountDisplayKey,async signal=>{
     const value=await api('/api/account',null,'GET',signal);
-    const {ticket}=await readDeviceCache('/api/account?view=display');
+    const {ticket}=await readDeviceCache(accountDisplayKey);
     if(ticket&&ticket.ownerId!==value.id)throw new DOMException('Account changed.','AbortError');
-    return {id:value.id,name:value.name,email:value.email,emailVerified:value.emailVerified,profile:{timeZone:value.profile.timeZone,units:value.profile.units}};
+    return accountDisplay(value);
   },lifetime.signal,{onRefresh:value=>{if(alive()&&serial===profileSerial&&!root.querySelector('dialog[open]')&&!root.querySelector('form:focus-within'))void profile(value);}}):await api('/api/account',null,'GET');}catch(error){if(!alive()||serial!==profileSerial)return;if(error.status===401){await lockCurrentOffline();if(!await deletion.recover())accountForm('login');return;}root.innerHTML=`<h1>${m("mobileMore.account")}</h1>${notice()}<button id="retry">${m("mobileSuggest.retry")}</button>`;message(error.message,true);root.querySelector('#retry').onclick=profile;return;}
   if(!alive()||serial!==profileSerial)return;
   if(!embedded)await rememberOfflineAccount(user);
+  else if(knownUser){const {ticket}=await readDeviceCache(accountDisplayKey);await cacheAccountDisplay(user,ticket);}
+  if(!alive()||serial!==profileSerial)return;
+  onIdentity(accountDisplay(user));
   const display=await (embedded?diaryRequest('/api/display',undefined,lifetime.signal):api('/api/display',null,'GET')).catch(()=>null);if(!alive()||serial!==profileSerial)return;if(display?.settings?.appLanguage)applyAppLanguage(display.settings.appLanguage);applyTheme(display?.settings?.theme);applyFontPreferences(display?.settings);
   const zone=user.profile.timeZone==='UTC'?Intl.DateTimeFormat().resolvedOptions().timeZone:user.profile.timeZone;
   root.innerHTML=`${embedded?'':`<h1>${m("mobileMore.account")}</h1>`}${installButton()}<section class="card account-identity"><button type="button" class="account-row" data-account-edit="name" aria-label="${m("accountCloud.editName")}"><span>${m("settings.name")}</span><span class="muted">${escape(user.name)}</span><span aria-hidden="true">&#8250;</span></button><button type="button" class="account-row" data-account-edit="email" aria-label="${m("accountCloud.changeEmail")}"><span>${m("clients.email")}</span><span class="muted">${escape(user.email)}</span><span aria-hidden="true">&#8250;</span></button><button type="button" class="account-row" data-account-edit="password" aria-label="${m("accountCloud.changePassword")}"><span>${m("accountCloud.password")}</span><span class="muted">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</span><span aria-hidden="true">&#8250;</span></button><p class="account-verification">${user.emailVerified?m("accountCloud.emailVerified"):m("accountCloud.emailNotVerified")}</p>${user.emailVerified?'':`<button class="secondary" id="verify">${m("accountCloud.sendVerificationEmail")}</button>`}</section><form><label>${m("reminders.zone")}<input name="timeZone" value="${escape(zone)}" required maxlength="100"></label><label>${m("mobileWeightGoal.units")}<select name="units"><option value="metric">${m("accountCloud.metricUnits")}</option><option value="imperial">${m("accountCloud.imperial")}</option></select></label><button>${m("accountCloud.saveSettings")}</button></form>${notice()}<button class="secondary signout" id="signout">${m("accountCloud.signOut")}</button><button type="button" class="delete-account" id="delete-account">${m("accountCloud.deleteAccount")}</button>`;

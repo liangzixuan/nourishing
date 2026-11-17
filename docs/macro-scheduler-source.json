@@ -38,7 +38,7 @@
     },
     {
       "target": "public/diary.js",
-      "outputSha256": "2ad762c757110ccb73940f99a91409605a5d6a923d73464ffe83c812c23e7f9a"
+      "outputSha256": "8e6bb0948eb3cdd8c4771776e5ecd6ae0391ce8df5969f581c1d199d5a50c5b1"
     },
     {
       "target": "server/target-policy-view.mjs",

@@ -1,8 +1,9 @@
 import {request} from './diary-api.js';
-import {resumeDeviceCache,hasCurrentDeviceCache} from './device-cache.js';
+import {resumeDeviceCache,hasCurrentDeviceCache,readDeviceCache} from './device-cache.js';
 import {rememberOfflineAccount,lockCurrentOffline} from './offline-session.js';
+import {accountDisplayKey,cacheAccountDisplay} from './account-display.js';
 
-export async function openDiarySession(){
+export async function openDiarySession({onAccount=()=>{}}={}){
  const signal=AbortSignal.timeout(15000);
  let context=document.querySelector('meta[name="nourishing-session"]')?.content;
  if(!context){
@@ -13,12 +14,17 @@ export async function openDiarySession(){
  const verify=()=>request('/api/account',undefined,signal);
  if(ticket){
   // Saved display data can render now. Every server operation still authenticates.
+  const cached=await readDeviceCache(accountDisplayKey);
   void verify().then(async account=>{
-   if(await hasCurrentDeviceCache(ticket)&&(account.id!==ticket.ownerId||account.sessionContext!==context)){
+   if(!await hasCurrentDeviceCache(ticket))return;
+   if(account.id!==ticket.ownerId||account.sessionContext!==context){
     await lockCurrentOffline(ticket);document.querySelector('#page')?.replaceChildren();document.querySelector('#sheet-content')?.replaceChildren();location.replace('/login');
+    return;
    }
+   await cacheAccountDisplay(account,ticket);
+   if(await hasCurrentDeviceCache(ticket))onAccount(account);
   }).catch(()=>{}); // A 401 already locks and clears through the request owner.
-  return {id:ticket.ownerId};
+  return cached.value?.id===ticket.ownerId?cached.value:{id:ticket.ownerId};
  }
  const account=await verify();await rememberOfflineAccount(account);return account;
 }

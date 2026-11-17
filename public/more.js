@@ -18,12 +18,13 @@ const main=()=>[['account',t('mobileMore.account'),'account-cog'],['profile',t('
 const tools=()=>[['reminders',t('nav.reminders')],['offline',t('nav.offline')],['repeats',t('mobileRepeat.title')],['glucose',t('nav.glucose-timeline')],['cycle',coreText('cycle.title')],['imports',coreText('more.importCSV')],['export',coreText('more.export')],['backup',coreText('more.backup')]];
 
 /** Adapts the existing More layout to authenticated cloud features. */
-export function mountMore({page,headerRoot,date,show,close,header,content,onChange=async()=>{},onDiary,onFoods,onDiscover,identity=coreText('more.workspace')}){
+export function mountMore({page,headerRoot,date,show,close,header,content,onChange=async()=>{},onDiary,onFoods,onDiscover,identity='',onAccount=()=>{}}){
  let disposed=false,child=null,screen='home',query='',scroll=0,version=0;
  const events=new AbortController(),signal=events.signal,root=document.createElement('section');root.className='more-page';page.replaceChildren(root);
  document.body.classList.add('more-mobile');
  const ui={date,show,close,header,content,onChange,onDiary};
  const alive=()=>!disposed&&root.isConnected;
+ function setIdentity(name){identity=name||'';if(screen==='home'&&alive()){const label=headerRoot.querySelector('.mm-identity');if(label)label.textContent=identity;}}
  const reset=()=>{version++;child?.dispose();child=null;};
  function heading(title){headerRoot.innerHTML=moreBackHeader(title);document.body.classList.add('more-destination');}
  function home(){
@@ -42,7 +43,7 @@ export function mountMore({page,headerRoot,date,show,close,header,content,onChan
  function section(id,title,markup){reset();screen=id;heading(title);root.innerHTML=markup;window.scrollTo(0,0);}
  function open(id){
   if(screen==='home')scroll=window.scrollY;
-  if(id==='account')return childView(id,t('mobileMore.account'),host=>mountAccount({root:host,embedded:true}));
+  if(id==='account')return childView(id,t('mobileMore.account'),host=>mountAccount({root:host,embedded:true,onIdentity:value=>{setIdentity(value.name);onAccount(value);}}));
   if(id==='profile')return childView(id,t('mobileMore.profile'),host=>mountProfile({...ui,page:host,headerRoot,onExit:home}));
   if(id==='reminders')return childView(id,t('nav.reminders'),host=>mountReminders({root:host,...ui}));
   if(id==='glucose')return void openGlucose(ui);
@@ -63,5 +64,5 @@ export function mountMore({page,headerRoot,date,show,close,header,content,onChan
  const click=event=>{const button=event.target.closest('[data-more-open]');if(button){event.preventDefault();open(button.dataset.moreOpen);}else if(event.target.closest('[data-more-back]')){event.preventDefault();if(!child?.back?.())home();}};
  headerRoot.addEventListener('click',click,{signal});root.addEventListener('click',click,{signal});
  headerRoot.addEventListener('input',event=>{if(event.target.matches('[data-more-search]')){query=event.target.value;scroll=0;filter();}},{signal});
- home();return {refreshLanguage(){if(screen==='home')home();else open(screen);},back(){if(screen==='home')return false;if(child?.back?.())return true;home();return true;},dispose(){disposed=true;reset();events.abort();document.body.classList.remove('more-mobile','more-destination');}};
+ home();return {setIdentity,refreshLanguage(){if(screen==='home')home();else open(screen);},back(){if(screen==='home')return false;if(child?.back?.())return true;home();return true;},dispose(){disposed=true;reset();events.abort();document.body.classList.remove('more-mobile','more-destination');}};
 }

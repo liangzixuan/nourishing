@@ -52,7 +52,7 @@ sheet.addEventListener('cancel',event=>{event.preventDefault();if(!pickerCleanup
 async function load({reuseUnchanged=false}={}){
  const id=++loadId;notice.textContent='';page.setAttribute('aria-busy','true');
  try{
-  if(!accountReady){account=await openDiarySession();accountReady=true;startDeviceSync(account.id);startPrivateImages();}
+  if(!accountReady){account=await openDiarySession({onAccount:value=>{account=value;more?.setIdentity(value.name);}});accountReady=true;startDeviceSync(account.id);startPrivateImages();}
   const result=await request('/api/diary?date='+date,undefined,undefined,{onRefresh:next=>{if(id!==loadId||document.querySelector('dialog[open]'))return;applyDiary(next);}});if(id!==loadId)return;
   // Revalidate the current in-memory snapshot without replacing live controls.
   // A pending editor keeps its captured revision; its save still uses the server guard.
@@ -132,7 +132,7 @@ function navigate(next,initialTab='dashboard',reportDate){
  const common={page,headerRoot,date:()=>date,show,close,header,content,onChange:load,onDiary:nextDate=>{date=nextDate;return navigate('diary');}};
  if(next==='diary'){selectTab('diary-tab');const reuseUnchanged=diary?.date===date;if(reuseUnchanged)render();return load({reuseUnchanged});}
  if(next==='foods'){selectTab('foods-tab');library=mountLibrary({...common,openEntry:(kind,id)=>edit(null,id,kind)});return;}
- if(next==='more'){selectTab('settings-tab');more=mountMore({...common,identity:account?.name||coreText('more.workspace'),onFoods:()=>navigate('foods'),onDiscover:tab=>navigate('discover',tab)});return;}
+ if(next==='more'){selectTab('settings-tab');more=mountMore({...common,identity:account?.name,onAccount:value=>{account={...account,...value};},onFoods:()=>navigate('foods'),onDiscover:tab=>navigate('discover',tab)});return;}
  selectTab('discover-tab');nutrition=mountNutrition({...common,mode:'discover',initialTab,reportDate,onSuggest:day=>{date=day;return openInsights('suggestions',day);}});
 }
 function sourceTargets(){pickerCleanup=mountTargetsSheet({date:()=>date,show,close,header,content,onChange:load});}

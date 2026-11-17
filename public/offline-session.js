@@ -2,7 +2,12 @@ import {offlineErrorMessage} from './offline-errors.js';
 import {accountMessage as m} from './account-cloud-messages.js';
 import {activateOfflineAccount,lockOfflineAccount,clearOfflineAccount} from './offline-store.js';
 import {initializeDeviceCache} from './device-cache.js';
-export async function rememberOfflineAccount(account){if(globalThis.indexedDB)await initializeDeviceCache(account.id,{sessionContext:account.sessionContext}).catch(()=>activateOfflineAccount(account.id));}
+import {cacheAccountDisplay} from './account-display.js';
+export async function rememberOfflineAccount(account){
+ if(!globalThis.indexedDB)return;
+ const ticket=await initializeDeviceCache(account.id,{sessionContext:account.sessionContext}).catch(()=>activateOfflineAccount(account.id));
+ await cacheAccountDisplay(account,ticket);
+}
 export async function lockCurrentOffline(ticket){if(globalThis.indexedDB)await lockOfflineAccount(ticket);}
 export async function leaveOfflineAccount(root){
  if(!globalThis.indexedDB)return true;
