@@ -1,0 +1,19 @@
+{
+  "date": "2026-11-16",
+  "runtimeCommit": "d9dcff3",
+  "deploymentId": "6afbdb8464852b23778a",
+  "scope": "More displays the account name on cached startup and after account edits",
+  "validation": {
+    "originalFailureReproduced": true,
+    "affectedBrowserChecks": 12,
+    "buildPassed": true,
+    "hostedModulesMatch": 6,
+    "physicalDevice": "Not connected"
+  },
+  "publicationAudit": {
+    "privateArtifactsAbsent": true,
+    "availableKnownCredentialsAndOwnerIdentityAbsent": true,
+    "manifestHashesMatch": true,
+    "limitation": "The historical schema key file is no longer present for direct value comparison."
+  }
+}

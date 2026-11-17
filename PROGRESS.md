@@ -10,7 +10,7 @@ The domain switch, Appwrite migration and PWA installation are complete. The own
 
 ### More account name (November 16)
 
-More shows the signed-in account name after cached startup and updates after an account rename. Startup and Account share the existing private display projection; no credentials enter the display cache. Twelve affected browser checks and the production build passed. Publication is pending.
+More shows the signed-in account name after cached startup and updates after an account rename. Startup and Account share the existing private display projection; no credentials enter the display cache. Twelve affected browser checks and the production build passed. Runtime commit `d9dcff3` is live in Appwrite deployment `6afbdb8464852b23778a`; all six changed browser modules match the tested source. The Pixel was disconnected, so this update was checked in browser fixtures and against hosted assets.
 
 ### Startup and first Discover swipe
 
