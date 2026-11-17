@@ -4,6 +4,7 @@ import {createServer} from 'node:http';
 import {readFileSync,existsSync} from 'node:fs';
 import {resolve,extname} from 'node:path';
 import {chromium} from 'playwright-core';
+import sharp from 'sharp';
 import {barcodeAssets} from '../scripts/package-barcode-assets.mjs';
 import {createWebHandler} from '../server/http.mjs';
 import {initialState} from '../server/domain/workspace.mjs';
@@ -53,5 +54,23 @@ test('More reflects a saved account name immediately and after reopening from ca
   await page.locator('[data-account-edit=name]').filter({hasText:'Alice Updated'}).waitFor();await page.locator('[data-more-back]').click();assert.equal(await page.locator('.mm-identity').textContent(),'Alice Updated');
   await page.locator('#diary-tab').click();await page.locator('.md-diary').waitFor();f.hold();await page.reload({waitUntil:'domcontentloaded'});await page.locator('.md-diary').waitFor({timeout:1500});await page.locator('#settings-tab').click();assert.equal(await page.locator('.mm-identity').textContent(),'Alice Updated');f.release();
   assert.deepEqual(f.errors,[]);
+ }finally{await f.close();}
+});
+
+
+test('scrolling immediately before a Discover swipe keeps fixed navigation visually stable',async()=>{
+ const f=await fixture();try{const {page}=f;await page.goto(f.base+'/diary');await page.locator('.md-diary').waitFor();await page.locator('#discover-tab').click();await page.locator('.cloud-dashboard').waitFor();const cdp=await page.context().newCDPSession(page);
+  async function touch(from,to){await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[from]});for(let i=1;i<=5;i++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:from.x+(to.x-from.x)*i/5,y:from.y+(to.y-from.y)*i/5}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}
+  for(const [from,to,dx] of [['dashboard','charts',-180],['charts','dashboard',180]]){
+   await page.waitForFunction(()=>!document.documentElement.classList.contains('discover-transition'));assert.equal(await page.locator('[data-tab='+from+']').getAttribute('aria-current'),'page');await page.evaluate(()=>scrollTo(0,0));
+   await page.evaluate(()=>{window.heldSwipe=false;function hold(){const animations=document.getAnimations().filter(a=>a.effect?.pseudoElement?.includes('discover-content'));if(animations.length){animations.forEach(a=>{a.pause();a.currentTime=100;});window.heldSwipe=true;}else requestAnimationFrame(hold);}requestAnimationFrame(hold);});
+   await touch({x:200,y:650},{x:200,y:480});await touch({x:dx<0?280:100,y:450},{x:dx<0?100:280,y:450});await page.waitForFunction(()=>window.heldSwipe);assert.ok(await page.evaluate(()=>scrollY>0));
+   const clips=await page.evaluate(()=>['.app-header','.app-nav'].map(selector=>{const r=document.querySelector(selector).getBoundingClientRect();return {x:r.x+12,y:r.y+8,width:r.width-24,height:r.height-16};}));
+   const during=await Promise.all(clips.map(clip=>page.screenshot({clip})));
+   await page.evaluate(()=>document.getAnimations().forEach(a=>a.play()));await page.waitForFunction(()=>!document.documentElement.classList.contains('discover-transition'));assert.equal(await page.locator('[data-tab='+to+']').getAttribute('aria-current'),'page');
+   for(let i=0;i<clips.length;i++){
+    const actual=await sharp(during[i]).removeAlpha().raw().toBuffer(),expected=await sharp(await page.screenshot({clip:clips[i]})).removeAlpha().raw().toBuffer();assert.equal(actual.length,expected.length);let changed=0;for(let p=0;p<actual.length;p++)if(Math.abs(actual[p]-expected[p])>20)changed++;assert.ok(changed/actual.length<.01,(i?'bottom navigation':'header')+' changed during scrolled '+from+' -> '+to+' swipe: '+changed/actual.length);
+   }
+  }assert.deepEqual(f.errors,[]);
  }finally{await f.close();}
 });

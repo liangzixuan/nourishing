@@ -9,3 +9,13 @@
 .discover-transition::view-transition-image-pair(discover-content){isolation:isolate;overflow:clip}
 .discover-transition::view-transition-old(discover-content),
 .discover-transition::view-transition-new(discover-content){height:100%;object-fit:none;object-position:left top}
+
+/* Fixed navigation stays above the scrolled content snapshot. */
+.discover-transition .app-header{view-transition-name:discover-header}
+.discover-transition .app-nav{view-transition-name:discover-nav}
+.discover-transition::view-transition-group(discover-header),
+.discover-transition::view-transition-group(discover-nav){z-index:1}
+.discover-transition::view-transition-old(discover-header),
+.discover-transition::view-transition-old(discover-nav){display:none}
+.discover-transition::view-transition-new(discover-header),
+.discover-transition::view-transition-new(discover-nav){animation:none;mix-blend-mode:normal}

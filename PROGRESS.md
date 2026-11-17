@@ -8,6 +8,10 @@ The domain switch, Appwrite migration and PWA installation are complete. The own
 
 ## Current checkpoint
 
+### Scrolled Discover swipe header (November 16)
+
+Reproduced on the Pixel: content snapshots painted over the fixed header and bottom navigation after a vertical scroll followed by a swipe. Both navigation surfaces now have separate transition layers above content. A visual regression fails on the old CSS and passes with the fix in both directions; all 11 affected browser checks and the production build passed. Publication and final installed-PWA checks are pending.
+
 ### More account name (November 16)
 
 More shows the signed-in account name after cached startup and updates after an account rename. Startup and Account share the existing private display projection; no credentials enter the display cache. Twelve affected browser checks and the production build passed. Runtime commit `d9dcff3` is live in Appwrite deployment `6afbdb8464852b23778a`; all six changed browser modules match the tested source. The Pixel was disconnected, so this update was checked in browser fixtures and against hosted assets.
