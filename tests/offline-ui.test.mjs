@@ -8,11 +8,12 @@ import {initialState,act} from '../server/domain/workspace.mjs';
 import {digest} from '../server/data-codec.mjs';
 import {createWorkspaceStore} from '../server/workspace-store.mjs';
 import {diaryStoreFixture} from './fixtures/diary-store.mjs';
+import {barcodeAssets} from '../scripts/package-barcode-assets.mjs';
 import {buildOfflineAssets} from '../scripts/package-offline-assets.mjs';
 test('installed shell restarts offline, keeps immutable queued edits, syncs and isolates accounts',async()=>{
- const manifest=await buildOfflineAssets();assert.equal(manifest.files.includes('/pwa-update.js'),false);assert.equal(manifest.files.includes('/pwa-update.css'),false);const state=initialState();state.foods=[];const food=act(state,'food.save',{name:'Rice',serving:'100 g',grams:100,nutrients:{calories:130}});act(state,'entry.add',{foodId:food.id,date:'2026-11-15',group:'Lunch',amount:1});
+ const vendor=new Map((await barcodeAssets()).map(asset=>['/'+asset.path,asset]));const manifest=await buildOfflineAssets();assert.equal(manifest.files.includes('/pwa-update.js'),false);assert.equal(manifest.files.includes('/pwa-update.css'),false);const state=initialState();state.foods=[];const food=act(state,'food.save',{name:'Rice',serving:'100 g',grams:100,nutrients:{calories:130}});act(state,'entry.add',{foodId:food.id,date:'2026-11-15',group:'Lunch',amount:1});
  const f=diaryStoreFixture(state),store=createWorkspaceStore(f.db,'fixture');let owner='fixture',expired=false,lose=false,browser;const sent=[];
- const publicRoot=resolve('public'),server=createServer(async(req,res)=>{try{const path=new URL(req.url,'http://localhost').pathname;
+ const publicRoot=resolve('public'),server=createServer(async(req,res)=>{try{const path=new URL(req.url,'http://localhost').pathname;if(vendor.has(path)){const asset=vendor.get(path);res.setHeader('Content-Type',asset.type);return res.end(asset.body);}
   if(path==='/'){res.setHeader('Content-Type','text/html');return res.end('<script src="/setup.js"></script><a href="/offline.html">Offline</a>');}
   if(path==='/setup.js'){res.setHeader('Content-Type','text/javascript');return res.end('navigator.serviceWorker.register("/sw.js");');}
   if(path.startsWith('/api/')){res.setHeader('Content-Type','application/json');if(expired)throw {status:401,message:'Please sign in.'};if(path==='/api/account')return res.end(JSON.stringify({id:owner}));if(path==='/api/offline')return res.end(JSON.stringify(await store.offlineSnapshot()));if(path==='/api/offline/commands'){let body='';for await(const chunk of req)body+=chunk;const input=JSON.parse(body);sent.push(input);const reply=await store.offlineCommand(input,{asOf:'2026-11-15T12:00:00Z',timeZone:'UTC'});if(lose){lose=false;throw {status:503,message:'Lost reply'};}return res.end(JSON.stringify(reply));}throw {status:404};}

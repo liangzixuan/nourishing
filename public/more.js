@@ -59,7 +59,7 @@ export function mountMore({page,headerRoot,date,show,close,header,content,onChan
   if(id==='reports')return onDiscover?.('report');
   if(id==='sharing')return section(id,t('mobileMore.sharing'),group((onFoods?row('foods',t('mobileMore.foods')):'')+(onDiscover?row('reports',t('mobileMore.reports')):'')+row('backup',coreText('more.backup'))+row('export',coreText('more.export'))));
   if(id==='support')return section(id,t('mobileMore.support'),group(link(t('mobileMore.manual'),'https://support.cronometer.com/hc/en-us/categories/360001062451-Mobile-App',true)+row('backup',coreText('more.backup'))+row('reminders',t('nav.reminders'))));
-  if(id==='about')return section(id,t('mobileMore.about'),'<div class="mm-about"><img src="/favicon.svg" alt=""><h2>Nourishing</h2><p>'+e(coreText('more.version',{version:'1.0'}))+'</p></div>'+group(row('account',t('mobileMore.account'))+row('backup',coreText('more.yourData'))));
+  if(id==='about')return section(id,t('mobileMore.about'),'<div class="mm-about"><img src="/favicon.svg" alt=""><h2>Nourishing</h2><p>'+e(coreText('more.version',{version:'1.0.1'}))+'</p></div>'+group(row('account',t('mobileMore.account'))+row('backup',coreText('more.yourData'))));
  }
  const click=event=>{const button=event.target.closest('[data-more-open]');if(button){event.preventDefault();open(button.dataset.moreOpen);}else if(event.target.closest('[data-more-back]')){event.preventDefault();if(!child?.back?.())home();}};
  headerRoot.addEventListener('click',click,{signal});root.addEventListener('click',click,{signal});

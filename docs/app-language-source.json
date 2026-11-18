@@ -296,7 +296,7 @@
     },
     {
       "output": "public/more.js",
-      "outputSha256": "90a812472a53170f3e0e7ada676bc7b4fe8376a7be5570255bac2bc3022f9057"
+      "outputSha256": "cd4d600301acae55a6940f4065ca7fbac7d3d7c93a6fd00ea3fa83c54ecdebbf"
     },
     {
       "output": "public/nutrient-detail.js",

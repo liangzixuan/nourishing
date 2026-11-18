@@ -8,6 +8,10 @@ The domain switch, Appwrite migration and PWA installation are complete. The own
 
 ## Current checkpoint
 
+### Prepare the diary before update Reload (November 18)
+
+The owner reported a loading stall after accepting an update. The Pixel had recovered before inspection; a cached reload rendered in 768 ms with no startup error. The release cache prepared the offline graph but omitted the main diary. The build now follows diary entry imports and includes shared CSS, fonts and icons before the worker offers Reload. The regression holds a diary dependency during installation, checks the old diary remains usable without a Reload offer, then blocks that download after readiness and verifies the new diary opens from cache. Eleven related browser checks passed. Version 1.0.1 publication and the physical update check are pending.
+
 ### Version 1.0 and Photo Log edit target (November 18)
 
 More > About displays Version 1.0 from the installed release. The Photo Log food row opens the amount editor from its name, nutrition line, or padding; Replace and Remove remain separate buttons. Replace now uses straight swap arrows. Three focused browser checks and the production build passed, including keyboard activation, edit cancellation, and the About label. Runtime `212b9ed` is live in Appwrite deployment `6afd4b02764b92495864`. All four changed public files match the tested source. The final Photo Log browser checks and production build also passed after visual verification of the swap icon. The installed phone cache was not inspected for this release.

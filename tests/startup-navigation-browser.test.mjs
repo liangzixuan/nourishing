@@ -5,6 +5,7 @@ import {readFileSync,existsSync} from 'node:fs';
 import {resolve,extname} from 'node:path';
 import {chromium} from 'playwright-core';
 import sharp from 'sharp';
+import {buildOfflineAssets} from '../scripts/package-offline-assets.mjs';
 import {barcodeAssets} from '../scripts/package-barcode-assets.mjs';
 import {createWebHandler} from '../server/http.mjs';
 import {initialState} from '../server/domain/workspace.mjs';
@@ -14,16 +15,17 @@ import {dashboardView} from '../server/dashboard-view.mjs';
 import {chartSurfaceView} from '../server/dashboard-pinned-charts.mjs';
 import {reportView} from '../server/nutrition-views.mjs';
 
-async function fixture(){
+async function fixture({updates=false}={}){
+ const manifest=updates?await buildOfflineAssets():null;let releaseVersion=0,assetHold=null,releaseAsset,assetHits=0;
  const state=initialState(),data=diaryStoreFixture(state),repository=createDataRepository(data.db,'fixture'),clock={now:new Date(),timeZone:'UTC'};
  let hold=null,denied=false,omitDocumentCookie=false,base,handle;
  const names={alice:'Alice Example',bob:'Bob Example'},identity=id=>({id,name:names[id],email:id+'@example.com',emailVerified:true,profile:{timeZone:'UTC',units:'metric'}});
  const service={current:async secret=>{await hold;if(denied)throw {code:401};return identity(secret);},display:async()=>({settings:{theme:'dark'}}),updateAccount:async(id,input)=>{names[id]=input.name;return {ok:true,account:identity(id)};},readDiary:async(_,day)=>repository.diary(day,clock),dashboard:async(_,date)=>dashboardView(state,{date},clock),charts:async(_,input)=>chartSurfaceView(state,input,clock),nutritionReport:async(_,input)=>reportView(state,input,clock),snapshots:async()=>({items:[]})};
  const vendor=new Map((await barcodeAssets()).map(a=>['/'+a.path,a])),root=resolve('public');
  const assets={get(path){if(vendor.has(path))return vendor.get(path);if(path==='/login')return {type:'text/html',body:'<!doctype html><title>Sign in</title>'};const file=resolve(root,'.'+(path==='/diary'?'/diary.html':path)),ext=extname(file);if((file.startsWith(root+'/')||file.startsWith(root+'\\'))&&existsSync(file)&&['.html','.js','.mjs','.css','.svg','.woff2'].includes(ext))return {body:readFileSync(file),type:ext==='.html'?'text/html':ext==='.css'?'text/css':ext==='.svg'?'image/svg+xml':ext==='.woff2'?'font/woff2':'text/javascript'};}};
- const server=createServer(async(req,res)=>{const requestHeaders={...req.headers};if(omitDocumentCookie&&req.url==='/diary')delete requestHeaders.cookie;const response=await handle(new Request(base+req.url,{method:req.method,headers:requestHeaders,...(req.method==='GET'?{}:{body:req,duplex:'half'})}));res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));});await new Promise(r=>server.listen(0,'127.0.0.1',r));base='http://127.0.0.1:'+server.address().port;handle=createWebHandler({config:{origin:base},service,assets});
+ const server=createServer(async(req,res)=>{if(updates&&req.url==='/offline-assets.js'){res.writeHead(200,{'Content-Type':'text/javascript','Cache-Control':'no-store'});return res.end('self.NOURISHING_OFFLINE='+JSON.stringify({...manifest,cache:manifest.cache+'-test-'+releaseVersion})+';');}if(updates&&req.url==='/more.js'){assetHits++;await assetHold;}const requestHeaders={...req.headers};if(omitDocumentCookie&&req.url==='/diary')delete requestHeaders.cookie;const response=await handle(new Request(base+req.url,{method:req.method,headers:requestHeaders,...(req.method==='GET'?{}:{body:req,duplex:'half'})}));res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));});await new Promise(r=>server.listen(0,'127.0.0.1',r));base='http://127.0.0.1:'+server.address().port;handle=createWebHandler({config:{origin:base},service,assets});
  const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true}),context=await browser.newContext({viewport:{width:412,height:915},isMobile:true,hasTouch:true,extraHTTPHeaders:{Cookie:'__Host-nourishing_session=alice'}}),page=await context.newPage();page.setDefaultTimeout(8000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
- let release;return {page,context,base,errors,omitDocumentCookie(){omitDocumentCookie=true;},hold(){hold=new Promise(r=>release=r);},release(){release?.();hold=null;},deny(){denied=true;},close:async()=>{release?.();await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}};
+ let release;return {page,context,base,errors,manifest,update(){releaseVersion++;},holdAsset(){assetHold=new Promise(r=>releaseAsset=r);},releaseAsset(){releaseAsset?.();assetHold=null;},assetHits:()=>assetHits,omitDocumentCookie(){omitDocumentCookie=true;},hold(){hold=new Promise(r=>release=r);},release(){release?.();hold=null;},deny(){denied=true;},close:async()=>{releaseAsset?.();release?.();await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}};
 }
 
 test('saved diary renders before delayed session revalidation, while changed and revoked sessions cannot retain it',async()=>{
@@ -72,5 +74,26 @@ test('scrolling immediately before a Discover swipe keeps fixed navigation visua
     const actual=await sharp(during[i]).removeAlpha().raw().toBuffer(),expected=await sharp(await page.screenshot({clip:clips[i]})).removeAlpha().raw().toBuffer();assert.equal(actual.length,expected.length);let changed=0;for(let p=0;p<actual.length;p++)if(Math.abs(actual[p]-expected[p])>20)changed++;assert.ok(changed/actual.length<.01,(i?'bottom navigation':'header')+' changed during scrolled '+from+' -> '+to+' swipe: '+changed/actual.length);
    }
   }assert.deepEqual(f.errors,[]);
+ }finally{await f.close();}
+});
+
+
+test('Reload waits for the full diary release and starts from cache when startup downloads stall',{timeout:30000},async()=>{
+ const f=await fixture({updates:true});try{
+  assert.ok(f.manifest.precache.includes('/diary.js'),'Diary startup must be prepared before offering Reload');
+  assert.ok(f.manifest.precache.includes('/more.js'),'Transitive startup modules must be prepared');
+  const {page}=f;await page.goto(f.base+'/diary');await page.locator('.md-diary').waitFor();
+  await page.waitForFunction(async()=>!!(await navigator.serviceWorker.getRegistration())?.active,{},{timeout:10000});await page.reload();await page.locator('.md-diary').waitFor();
+  f.holdAsset();const before=f.assetHits();f.update();await page.evaluate(async()=>{void(await navigator.serviceWorker.getRegistration()).update();});
+  for(let i=0;i<40&&f.assetHits()===before;i++)await new Promise(r=>setTimeout(r,50));
+  assert.ok(f.assetHits()>before,'Update downloads the main app dependency before readiness');
+  assert.equal(await page.getByRole('button',{name:'Reload',exact:true}).count(),0);
+  assert.equal(await page.locator('.md-diary').count(),1,'Current diary remains usable while update downloads');
+  f.releaseAsset();await page.getByRole('button',{name:'Reload',exact:true}).waitFor();
+  f.holdAsset();const downloaded=f.assetHits();await page.getByRole('button',{name:'Reload',exact:true}).click();
+  await page.waitForFunction(()=>!document.querySelector('.pwa-update'));await page.locator('.md-diary').waitFor({timeout:2000});
+  assert.equal(f.assetHits(),downloaded,'Reload must not download an uncached startup dependency');
+  await page.locator('#settings-tab').click();assert.equal(await page.locator('.mm-identity').textContent(),'Alice Example');
+  assert.deepEqual(f.errors,[]);
  }finally{await f.close();}
 });

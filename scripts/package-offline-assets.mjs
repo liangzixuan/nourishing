@@ -3,27 +3,34 @@ import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {posix} from 'node:path';
 import {init,parse} from 'es-module-lexer';
+import {load} from 'cheerio';
 import {barcodeAssets} from './package-barcode-assets.mjs';
 const publicRoot=new URL('../public/',import.meta.url);
 export async function buildOfflineAssets(){
- await init;const contents=new Map();
+ await init;const contents=new Map(),vendor=new Map((await barcodeAssets()).map(asset=>['/'+asset.path,asset.body]));
  async function visit(path){
   if(!path.startsWith('/')||path.includes('..')||path.startsWith('/api/')||/[?#]/.test(path))throw Error('Offline assets must be public static paths.');
   if(contents.has(path))return;
-  const bytes=await readFile(new URL(path.slice(1),publicRoot));contents.set(path,bytes);
+  const bytes=vendor.get(path)??await readFile(new URL(path.slice(1),publicRoot));contents.set(path,bytes);
   if(!/\.(m?js)$/.test(path))return;
   for(const row of parse(bytes.toString('utf8'))[0]){
-   if(row.type==='import-meta')continue;
-   if(row.type!=='static')throw Error('Offline asset imports must be static: '+path);
+   if(row.type==='import-meta'||(row.type==='dynamic'&&row.glob))continue; // Runtime-selected optional vendors stay on demand.
+   if(!['static','dynamic'].includes(row.type)||typeof row.specifier!=='string')throw Error('Offline asset imports must use literal local paths: '+path);
    const spec=row.specifier;
    if(!spec.startsWith('.')&&!spec.startsWith('/'))throw Error('Offline dependency must be locally packaged: '+spec);
    await visit(spec.startsWith('/')?spec:posix.resolve(posix.dirname(path),spec));
   }
  }
  for(const path of ['/offline.html','/offline.css','/offline-diary.css','/favicon.svg','/offline-page.js'])await visit(path);
- const precache=[...contents.keys()].sort();
- // The complete public asset inventory is versioned, but only the offline shell
- // is eagerly downloaded. Each online screen is cached as it is first used.
+ // Prepare every module in the authenticated diary entry graph before the
+ // worker can become waiting and offer Reload. The HTML itself stays network-only.
+ const diary=load(await readFile(new URL('diary.html',publicRoot),'utf8'));
+ for(const script of diary('script[src]').toArray()){
+  const path=diary(script).attr('src');if(path!=='/pwa-update.js')await visit(path);
+ }
+ const startup=new Set(contents.keys());
+ // Styles and their fonts/icons are small shared presentation assets. Cache the
+ // full inventory so nested CSS imports cannot stall the updated shell.
  async function inventory(prefix=''){
   for(const row of await readdir(new URL('.'+prefix+'/',publicRoot),{withFileTypes:true})){
    const path=prefix+'/'+row.name;
@@ -32,8 +39,11 @@ export async function buildOfflineAssets(){
    if(!contents.has(path))contents.set(path,await readFile(new URL(path.slice(1),publicRoot)));
   }
  }
- await inventory();for(const asset of await barcodeAssets())contents.set('/'+asset.path,asset.body);
- const hash=createHash('sha256'),files=[...contents.keys()].sort();for(const file of files){hash.update(file+'\0');hash.update(contents.get(file));}
+ await inventory();for(const [path,body] of vendor)contents.set(path,body);
+ const hash=createHash('sha256'),files=[...contents.keys()].sort();
+ const precache=files.filter(file=>startup.has(file)||/\.(?:css|woff2?|svg)$/.test(file));
+ hash.update(JSON.stringify(precache));
+ for(const file of files){hash.update(file+'\0');hash.update(contents.get(file));}
  const manifest={cache:'nourishing-public-offline-'+hash.digest('hex').slice(0,20),files,precache};
  await writeFile(new URL('offline-assets.js',publicRoot),'self.NOURISHING_OFFLINE='+JSON.stringify(manifest)+';\n');return manifest;
 }
