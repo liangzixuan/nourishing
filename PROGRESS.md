@@ -10,7 +10,7 @@ The domain switch, Appwrite migration and PWA installation are complete. The own
 
 ### Photo Log cancel leaves Add to Diary available (November 18)
 
-Reproduced a cancelled optional-food selection leaving an unmatched row in the meal and disabling Add to Diary. Optional additions now remain separate from review rows until Done commits the selection and amount. Browser regression covers Back from the picker, Back after changing an amount, replacement cancellation, and confirming an addition with its original suggestion identity. All 14 affected checks and the production build passed. Publication is pending.
+Reproduced a cancelled optional-food selection leaving an unmatched row in the meal and disabling Add to Diary. Optional additions now remain separate from review rows until Done commits the selection and amount. Browser regression covers Back from the picker, Back after changing an amount, replacement cancellation, and confirming an addition with its original suggestion identity. All 14 affected checks and the production build passed. Runtime commit `59f08a3` is live in Appwrite deployment `6afd4260000ce25440da`; the hosted Photo Log module matches the tested source. No physical phone session was used for this fix.
 
 ### Scrolled Discover swipe header (November 16)
 
