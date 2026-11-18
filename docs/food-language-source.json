@@ -84,7 +84,7 @@
     },
     {
       "output": "public/photo-log.js",
-      "outputSha256": "8ad780b4577ce8d498de74c902dd19760976b72e6e49b0d3b53b3941b46bc489"
+      "outputSha256": "d916744c19c294aa1bdd13c014bc2a8c316cd19cc7d5b3a7598e0b9c1b6cb267"
     },
     {
       "output": "public/photo-create.js",

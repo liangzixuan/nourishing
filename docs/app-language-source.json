@@ -100,7 +100,7 @@
     },
     {
       "output": "public/core-cloud-messages.js",
-      "outputSha256": "440425e950f726ce2139127af21ed2f5382738e71885e19ad6a7d941548c1bd5"
+      "outputSha256": "1008b203fc465edd3a9acdab3aac0bfab2c02b9f3841547cfd7edd0ff797c784"
     },
     {
       "output": "public/custom-chart-editor.js",
@@ -296,7 +296,7 @@
     },
     {
       "output": "public/more.js",
-      "outputSha256": "79959c30c2baa8e86a4403cc842c54be9e7905ead36bf193fa52e3ae81cae1ed"
+      "outputSha256": "90a812472a53170f3e0e7ada676bc7b4fe8376a7be5570255bac2bc3022f9057"
     },
     {
       "output": "public/nutrient-detail.js",
@@ -360,7 +360,7 @@
     },
     {
       "output": "public/photo-log.js",
-      "outputSha256": "8ad780b4577ce8d498de74c902dd19760976b72e6e49b0d3b53b3941b46bc489"
+      "outputSha256": "d916744c19c294aa1bdd13c014bc2a8c316cd19cc7d5b3a7598e0b9c1b6cb267"
     },
     {
       "output": "public/photo-nutrition.js",

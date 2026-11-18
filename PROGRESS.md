@@ -8,6 +8,10 @@ The domain switch, Appwrite migration and PWA installation are complete. The own
 
 ## Current checkpoint
 
+### Version 1.0 and Photo Log edit target (November 18)
+
+More > About displays Version 1.0 from the installed release. The Photo Log food row opens the amount editor from its name, nutrition line, or padding; Replace and Remove remain separate buttons. Replace now uses straight swap arrows. Three focused browser checks and the production build passed, including keyboard activation, edit cancellation, and the About label. Production publication is pending.
+
 ### Photo Log cancel leaves Add to Diary available (November 18)
 
 Reproduced a cancelled optional-food selection leaving an unmatched row in the meal and disabling Add to Diary. Optional additions now remain separate from review rows until Done commits the selection and amount. Browser regression covers Back from the picker, Back after changing an amount, replacement cancellation, and confirming an addition with its original suggestion identity. All 14 affected checks and the production build passed. Runtime commit `59f08a3` is live in Appwrite deployment `6afd4260000ce25440da`; the hosted Photo Log module matches the tested source. No physical phone session was used for this fix.

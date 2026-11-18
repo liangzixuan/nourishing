@@ -1,5 +1,6 @@
 import {createUITranslator} from './app-language.js';
 const rows={
+ 'more.version':['Version {{version}}','Version {{version}}','Version {{version}}','Versão {{version}}'],
  'diary.recipeCreated':['Recipe created','Recette créée','Rezept erstellt','Receita criada'],
  'diary.itemsAdded':['Items added to diary','Éléments ajoutés au journal','Einträge zum Tagebuch hinzugefügt','Itens adicionados ao diário'],
  'more.search':['Search More','Rechercher dans Plus','Mehr durchsuchen','Pesquisar em Mais'],
