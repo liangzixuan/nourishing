@@ -65,7 +65,7 @@ export function mountPhotoLog({show, close, header, content, date, groups, initi
     body.querySelectorAll('[data-replace]').forEach(button => button.onclick = () => chooseFood(Number(button.dataset.replace)));
     body.querySelectorAll('[data-remove]').forEach(button => button.onclick = () => {rows.splice(Number(button.dataset.remove), 1);review();});
     body.querySelector('[data-add]').onclick = () => chooseFood();
-    body.querySelectorAll('[data-addition]').forEach(button => button.onclick = () => {const suggestion = additions.find(row => row.additionIndex === Number(button.dataset.addition)), candidate = suggestion.candidates.find(row => row.ref.id === suggestion.selection?.id);rows.push(makeRow(suggestion, candidate));if (candidate) review();else chooseFood(rows.length - 1);});
+    body.querySelectorAll('[data-addition]').forEach(button => button.onclick = () => {const suggestion = additions.find(row => row.additionIndex === Number(button.dataset.addition)), candidate = suggestion.candidates.find(row => row.ref.id === suggestion.selection?.id);const draft=makeRow(suggestion,candidate);if(candidate){rows.push(draft);review();}else chooseFood(undefined,draft);});
     const saveButton = body.querySelector('[data-save]');saveButton.onclick = async () => {
       const status=body.querySelector('[role=status]');status.textContent='';
       try{await commit();}catch(error){if(alive()&&status.isConnected)status.textContent=error.message;}
@@ -103,17 +103,17 @@ export function mountPhotoLog({show, close, header, content, date, groups, initi
       const retry=document.createElement('button');retry.type='button';retry.className='more-results';retry.textContent=fc("retryNutrition");retry.onclick=updateNutrition;summary.append(retry);
     }
   }
-  function chooseFood(index) {
+  function chooseFood(index, draft = rows[index] ?? {}) {
     replace(`<div class="photo-food-picker"></div><button type="button" class="more-results" data-back>${e(fc("backToPhoto"))}</button>`);
     body.querySelector('[data-back]').onclick = review;
     const pickerRoot = body.querySelector('.photo-food-picker');
     pickerCleanup = mountFoodPicker(pickerRoot, {allowMeals: false, allowRecipes: false, onPick: async (kind, id) => {
       if (kind !== 'food') return;
-      editQuantity(index, id);
+      editQuantity(index, id, draft);
     }});
   }
-  async function editQuantity(index, replacementId = null) {
-    replace(`<p class="empty">${e(t("mobileNutrientDetail.loading"))}</p>`);const loading = body.querySelector('.empty'), row = rows[index] ?? {}, replacing = replacementId !== null;
+  async function editQuantity(index, replacementId = null, row = rows[index] ?? {}) {
+    replace(`<p class="empty">${e(t("mobileNutrientDetail.loading"))}</p>`);const loading = body.querySelector('.empty'), replacing = replacementId !== null;
     try {
       const item = await request('/api/library/item?' + new URLSearchParams({kind: 'food', id: replacementId ?? row.foodId}));
       if (!alive() || !loading.isConnected) return;

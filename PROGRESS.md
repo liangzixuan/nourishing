@@ -8,6 +8,10 @@ The domain switch, Appwrite migration and PWA installation are complete. The own
 
 ## Current checkpoint
 
+### Photo Log cancel leaves Add to Diary available (November 18)
+
+Reproduced a cancelled optional-food selection leaving an unmatched row in the meal and disabling Add to Diary. Optional additions now remain separate from review rows until Done commits the selection and amount. Browser regression covers Back from the picker, Back after changing an amount, replacement cancellation, and confirming an addition with its original suggestion identity. All 14 affected checks and the production build passed. Publication is pending.
+
 ### Scrolled Discover swipe header (November 16)
 
 Reproduced on the Pixel: content snapshots painted over the fixed header and bottom navigation after a vertical scroll followed by a swipe. Both navigation surfaces now have separate transition layers above content. A visual regression fails on the old CSS and passes with the fix in both directions; all 11 affected browser checks and the production build passed. Runtime commit `0792051` is live in Appwrite deployment `6afbdf86484eb18228ef`. Verified the installed Pixel PWA uses the deployed CSS without temporary styles. Four transitions after scrolling and two additional Snapshots transitions preserved the header and bottom navigation pixels; rapid consecutive swipes also passed. Restored the original phone awake and rotation settings. See `docs/discover-scroll-swipe-acceptance-20261116.json`.
