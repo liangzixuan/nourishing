@@ -50,6 +50,7 @@ test('photo recognition flows into compact macros, editable amounts and discard-
   await page.locator('.photo-macros').click();await page.getByRole('button',{name:'Back',exact:true}).click();await page.locator('.photo-macros').filter({hasText:'100 kcal'}).waitFor();assert.equal(previews,2,'unchanged reviewed amount reuses preview');
   await page.locator('[data-quantity]').click({position:{x:5,y:5}});await page.getByRole('button',{name:'Back',exact:true}).click();
   await page.locator('[data-quantity]').focus();await page.keyboard.press('Enter');await page.getByRole('button',{name:'Back',exact:true}).click();
+  assert.equal(await page.locator('[data-replace] svg').count(),1);
   // Cancelling a suggested addition must not leave an unmatched row blocking save.
   await page.locator('[data-addition]').click();await page.locator('[data-back]').click();assert.equal(await page.locator('[data-save]').isEnabled(),true);assert.equal(await page.locator('.photo-food-row').count(),1);
   await page.locator('[data-addition]').click();await page.locator('.mfs-result').click();await page.getByRole('spinbutton',{name:'Amount',exact:true}).fill('25');await page.getByRole('button',{name:'Back',exact:true}).click();assert.equal(await page.locator('[data-save]').isEnabled(),true);assert.equal(await page.locator('.photo-food-row').count(),1);
