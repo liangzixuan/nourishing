@@ -46,3 +46,21 @@ test('localized reminders keep user schedule names while controls follow the act
   await page.evaluate(async()=>{window.reminders.dispose();const {applyAppLanguage}=await import('/app-language.js');applyAppLanguage('de');const {mountReminders}=await import('/reminders.js');window.reminders=mountReminders({root:document.querySelector('#app')});});await page.getByRole('button',{name:'Erinnerung hinzufügen',exact:true}).waitFor();assert.equal(await page.getByText('Breakfast',{exact:true}).count(),1);assert.deepEqual(errors,[]);
  }finally{await browser?.close();await host.close();}
 });
+
+
+test('signup requires matching passwords and sends only one password to registration',async()=>{
+ const submissions=[];const host=await fixture({register:async input=>{submissions.push(input);throw {code:409};}});let browser;
+ try{browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+  for(const locale of ['en','fr','de','pt-BR']){
+   const context=await browser.newContext({locale,viewport:{width:412,height:915}}),page=await context.newPage();page.setDefaultTimeout(5000);
+   await page.goto(host.origin+'/register');const confirm=page.getByLabel(accountCloudMessages[locale]['accountCloud.confirmPassword'],{exact:true});await confirm.waitFor();
+   assert.equal(await confirm.getAttribute('type'),'password');assert.equal(await confirm.getAttribute('autocomplete'),'new-password');
+   await page.locator('[name=name]').fill('Example');await page.locator('[name=email]').fill('example@example.com');await page.locator('[name=password]').fill('fixture-password');
+   const before=submissions.length;await page.locator('[type=submit]').click();assert.equal(await confirm.evaluate(el=>el.validity.valueMissing),true);assert.equal(submissions.length,before);
+   await confirm.fill('different-password');await page.locator('[type=submit]').click();await page.getByRole('status').filter({hasText:accountCloudMessages[locale]['accountCloud.passwordsDoNotMatch']}).waitFor();assert.equal(submissions.length,before);assert.equal(await confirm.evaluate(el=>el===document.activeElement),true);
+   await confirm.fill('fixture-password');await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/auth/register')),page.locator('[type=submit]').click()]);
+   assert.equal(submissions.length,before+1);assert.deepEqual(submissions.at(-1),{name:'Example',email:'example@example.com',password:'fixture-password'});
+   await page.goto(host.origin+'/login');assert.equal(await page.locator('[name=confirmPassword]').count(),0);await context.close();
+  }
+ }finally{await browser?.close();await host.close();}
+});

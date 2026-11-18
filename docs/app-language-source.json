@@ -28,7 +28,7 @@
   "assets": [
     {
       "output": "public/account-cloud-messages.js",
-      "outputSha256": "302d0d9d2cc4b754e208c7e16798109b4b9e24ac43882434b066e231a1efef4a"
+      "outputSha256": "1026daf024478890fb7ea17ff8ea56f48145f3ff85c20bdfe67c01ab656dea70"
     },
     {
       "output": "public/account-deletion.js",
@@ -296,7 +296,7 @@
     },
     {
       "output": "public/more.js",
-      "outputSha256": "cd4d600301acae55a6940f4065ca7fbac7d3d7c93a6fd00ea3fa83c54ecdebbf"
+      "outputSha256": "76978e0eb045091f6dd33e77ad0b8ef2e1aecfaab690d8514a95d5791d52def6"
     },
     {
       "output": "public/nutrient-detail.js",

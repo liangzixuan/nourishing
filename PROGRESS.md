@@ -8,6 +8,10 @@ The domain switch, Appwrite migration and PWA installation are complete. The own
 
 ## Current checkpoint
 
+### Signup password confirmation (November 18)
+
+Signup requires a second masked password field with new-password autocomplete. Empty confirmation uses native required validation; a mismatch shows a localized error and focuses confirmation without sending a registration request. A match sends the original password only. Login and recovery remain unchanged. Four account/language browser checks passed, including confirmation cases in all four languages. Version 1.0.2 publication is pending.
+
 ### Prepare the diary before update Reload (November 18)
 
 The owner reported a loading stall after accepting an update. The Pixel had recovered before inspection; a cached reload rendered in 768 ms with no startup error. The release cache prepared the offline graph but omitted the main diary. The build now follows diary entry imports and includes shared CSS, fonts and icons before the worker offers Reload. The regression holds a diary dependency during installation, checks the old diary remains usable without a Reload offer, then blocks that download after readiness and verifies the new diary opens from cache. Eleven related browser checks passed. Version 1.0.1 runtime `848e4f5` is live in deployment `6afd505e27d4a8a2733f`. The Pixel retained its usable diary during installation and offered Reload only after all 775 prepared files were cached. Acceptance caused one reload, rendered the diary without errors, and showed Version 1.0.1 in About. The first reload took 4,671 ms, including a 4,030 ms server-document wait; subsequent reloads rendered in 674 and 794 ms. Closing and reopening the installed PWA also passed. No diary data was edited. The phone wake setting was restored and its USB debugging forward removed. The original stall was not captured; server cold-start latency remains. See `docs/pwa-update-startup-acceptance-20261118.json`.

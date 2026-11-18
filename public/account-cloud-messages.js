@@ -1,6 +1,8 @@
 import {createUITranslator,t} from './app-language.js';
 export const accountCloudMessages={
   "en": {
+    "accountCloud.confirmPassword": "Confirm password",
+    "accountCloud.passwordsDoNotMatch": "Passwords do not match.",
     "accountCloud.password": "Password",
     "accountCloud.createAccount": "Create account",
     "accountCloud.newPassword": "New password",
@@ -250,6 +252,8 @@ export const accountCloudMessages={
     "accountCloud.pleaseWait": "Please wait…"
   },
   "fr": {
+    "accountCloud.confirmPassword": "Confirmer le mot de passe",
+    "accountCloud.passwordsDoNotMatch": "Les mots de passe ne correspondent pas.",
     "accountCloud.password": "Mot de passe",
     "accountCloud.createAccount": "Créer un compte",
     "accountCloud.newPassword": "Nouveau mot de passe",
@@ -499,6 +503,8 @@ export const accountCloudMessages={
     "accountCloud.pleaseWait": "Veuillez patienter…"
   },
   "de": {
+    "accountCloud.confirmPassword": "Passwort bestätigen",
+    "accountCloud.passwordsDoNotMatch": "Die Passwörter stimmen nicht überein.",
     "accountCloud.password": "Passwort",
     "accountCloud.createAccount": "Konto erstellen",
     "accountCloud.newPassword": "Neues Passwort",
@@ -748,6 +754,8 @@ export const accountCloudMessages={
     "accountCloud.pleaseWait": "Bitte warten…"
   },
   "pt-BR": {
+    "accountCloud.confirmPassword": "Confirmar senha",
+    "accountCloud.passwordsDoNotMatch": "As senhas não coincidem.",
     "accountCloud.password": "Senha",
     "accountCloud.createAccount": "Criar conta",
     "accountCloud.newPassword": "Nova senha",

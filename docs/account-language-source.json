@@ -43,7 +43,7 @@
   "assets": [
     {
       "target": "public/account-cloud-messages.js",
-      "outputSha256": "302d0d9d2cc4b754e208c7e16798109b4b9e24ac43882434b066e231a1efef4a"
+      "outputSha256": "1026daf024478890fb7ea17ff8ea56f48145f3ff85c20bdfe67c01ab656dea70"
     },
     {
       "target": "public/account-deletion.js",
