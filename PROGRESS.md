@@ -10,7 +10,7 @@ The domain switch, Appwrite migration and PWA installation are complete. The own
 
 ### Version 1.0 and Photo Log edit target (November 18)
 
-More > About displays Version 1.0 from the installed release. The Photo Log food row opens the amount editor from its name, nutrition line, or padding; Replace and Remove remain separate buttons. Replace now uses straight swap arrows. Three focused browser checks and the production build passed, including keyboard activation, edit cancellation, and the About label. Production publication is pending.
+More > About displays Version 1.0 from the installed release. The Photo Log food row opens the amount editor from its name, nutrition line, or padding; Replace and Remove remain separate buttons. Replace now uses straight swap arrows. Three focused browser checks and the production build passed, including keyboard activation, edit cancellation, and the About label. Runtime `212b9ed` is live in Appwrite deployment `6afd4b02764b92495864`. All four changed public files match the tested source. The final Photo Log browser checks and production build also passed after visual verification of the swap icon. The installed phone cache was not inspected for this release.
 
 ### Photo Log cancel leaves Add to Diary available (November 18)
 

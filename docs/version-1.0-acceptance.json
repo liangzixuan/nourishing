@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "runtimeCommit": "212b9ed",
+  "deploymentId": "6afd4b02764b92495864",
+  "checks": {
+    "moreBrowser": "passed",
+    "photoLogBrowser": "passed: food name, nutrition, padding, keyboard, separate replacement, cancel and save",
+    "productionBuild": "passed",
+    "publicationAudit": "passed",
+    "hostedFiles": [
+      {
+        "file": "more.js",
+        "sha256": "90a812472a53170f3e0e7ada676bc7b4fe8376a7be5570255bac2bc3022f9057"
+      },
+      {
+        "file": "core-cloud-messages.js",
+        "sha256": "1008b203fc465edd3a9acdab3aac0bfab2c02b9f3841547cfd7edd0ff797c784"
+      },
+      {
+        "file": "photo-log.js",
+        "sha256": "f8ffb48b54b4e8183efc1cd0aa7d867e7df87ec7271413ed3c02f5c380d29b40"
+      },
+      {
+        "file": "photo-log.css",
+        "sha256": "ef44a3726ac7fdd06d9125d9894e419120078e9784e5a0e97ae60bf044e84baf"
+      }
+    ]
+  },
+  "limitations": [
+    "Installed phone cache not inspected; browser tests used fixtures."
+  ]
+}
