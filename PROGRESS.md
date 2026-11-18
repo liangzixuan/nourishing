@@ -10,7 +10,7 @@ The domain switch, Appwrite migration and PWA installation are complete. The own
 
 ### Signup password confirmation (November 18)
 
-Signup requires a second masked password field with new-password autocomplete. Empty confirmation uses native required validation; a mismatch shows a localized error and focuses confirmation without sending a registration request. A match sends the original password only. Login and recovery remain unchanged. Four account/language browser checks passed, including confirmation cases in all four languages. Version 1.0.2 publication is pending.
+Signup requires a second masked password field with new-password autocomplete. Empty confirmation uses native required validation; a mismatch shows a localized error and focuses confirmation without sending a registration request. A match sends the original password only. Login and recovery remain unchanged. Four account/language browser checks passed, including confirmation cases in all four languages. Version 1.0.2 runtime `1fe596c` is live in deployment `6afd52a751fe89df300b`. The About check and production build passed. All three changed public modules match the hosted release. The live signup form showed confirmation and rejected mismatched passwords without a registration request; no account was created.
 
 ### Prepare the diary before update Reload (November 18)
 

@@ -1,0 +1,14 @@
+{
+  "version": "1.0.2",
+  "runtimeCommit": "1fe596c",
+  "deploymentId": "6afd52a751fe89df300b",
+  "accountBrowserChecks": 4,
+  "aboutBrowserCheck": "passed",
+  "build": "passed",
+  "hosted": {
+    "hostedFilesMatch": 3,
+    "confirmationVisible": true,
+    "mismatchBlocked": true,
+    "registrationRequests": 0
+  }
+}
