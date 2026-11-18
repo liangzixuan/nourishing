@@ -1,0 +1,39 @@
+{
+  "runtimeCommit": "848e4f5",
+  "deploymentId": "6afd505e27d4a8a2733f",
+  "version": "1.0.1",
+  "verification": {
+    "relatedBrowserChecks": 11,
+    "regression": "Passed with a startup dependency held during update installation and blocked after readiness",
+    "build": "passed",
+    "hostedPreparedAssetList": "matches",
+    "pixel": {
+      "version": "1.0.1",
+      "preparedAssets": 775,
+      "updateNavigations": 1,
+      "updateRenderMs": 4671,
+      "updateTtfbMs": 4030,
+      "networkStartupAssets": [
+        "/pwa-update.js",
+        "/pwa-update.css"
+      ],
+      "warmMeasures": [
+        {
+          "renderMs": 674,
+          "ttfbMs": 103
+        },
+        {
+          "renderMs": 794,
+          "ttfbMs": 185
+        }
+      ],
+      "errors": [],
+      "fullReopenReady": true
+    }
+  },
+  "limitations": [
+    "Original reported stall had recovered before inspection. The demonstrated cause is incomplete app precaching after update.",
+    "One post-deployment navigation waited 4030 ms for the server document; this change does not remove server cold-start latency.",
+    "No iOS device test in this pass."
+  ]
+}
