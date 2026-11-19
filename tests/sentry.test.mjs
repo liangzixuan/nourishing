@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {parseSentryDsn, buildSentryEnvelope, captureServerError} from '../server/sentry.mjs';
+import {createWebHandler} from '../server/http.mjs';
 
 test('parseSentryDsn validates HTTPS Sentry DSNs and rejects invalid values', () => {
   const parsed = parseSentryDsn('https://abc123@o12345.ingest.us.sentry.io/67890');
@@ -66,4 +67,35 @@ test('buildSentryEnvelope includes parsed stack frames in bottom-to-top order', 
   const frames = event.exception.values[0].stacktrace?.frames ?? [];
   assert.ok(frames.length > 0);
   assert.equal(typeof frames.at(-1).lineno, 'number');
+});
+
+test('POST /api/client-error enforces auth, origin, and allowlisted fields', async () => {
+  const origin = 'https://nourishing.example';
+  const handle = createWebHandler({config: {origin}, service: {}});
+  const validBody = JSON.stringify({name: 'TypeError', message: 'Cannot read property', stack: 'at /diary.js:10:2', source: '/diary'});
+
+  // Requires session cookie
+  const unauth = await handle(new Request(origin + '/api/client-error', {
+    method: 'POST',
+    headers: {Origin: origin, 'Content-Type': 'application/json'},
+    body: validBody,
+  }));
+  assert.equal(unauth.status, 401);
+
+  // Rejects extra fields
+  const bad = await handle(new Request(origin + '/api/client-error', {
+    method: 'POST',
+    headers: {Origin: origin, 'Content-Type': 'application/json', Cookie: '__Host-nourishing_session=fixture'},
+    body: JSON.stringify({name: 'Error', message: 'x', stack: '', source: '/diary', extra: 1}),
+  }));
+  assert.equal(bad.status, 400);
+
+  // Accepts valid scrubbed report
+  const ok = await handle(new Request(origin + '/api/client-error', {
+    method: 'POST',
+    headers: {Origin: origin, 'Content-Type': 'application/json', Cookie: '__Host-nourishing_session=fixture'},
+    body: validBody,
+  }));
+  assert.equal(ok.status, 200);
+  assert.deepEqual(await ok.json(), {ok: true});
 });

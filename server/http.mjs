@@ -12,6 +12,17 @@ const ALLOWED_METHODS = new Set(['GET', 'POST', 'PUT']);
 const STATUS_CODES = new Set([400, 401, 403, 404, 405, 409, 413, 415, 429, 499, 502, 503, 504, 507]);
 const DEFAULT_BODY_BYTES = 16384;
 const MB = 1024 * 1024;
+let clientErrorWindow = 0;
+let clientErrorCount = 0;
+
+function allowClientErrorReport() {
+  const minute = Math.floor(Date.now() / 60_000);
+  if (minute !== clientErrorWindow) {
+    clientErrorWindow = minute;
+    clientErrorCount = 0;
+  }
+  return ++clientErrorCount <= 10;
+}
 
 const CSP_HEADER =
   "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
@@ -182,6 +193,23 @@ function registerAccountRoutes(add) {
     handler: async ({api, body, json}) => {
       fields(body, ['userId', 'secret']);
       await api.verifyEmail({userId: string(body.userId, 1, 36), secret: string(body.secret, 1, 4096)});
+      return json(200, {ok: true});
+    },
+  });
+  add('POST', '/api/client-error', {
+    auth: 'secret',
+    noSearch: 'Invalid error report.',
+    maxBytes: 8192,
+    handler: async ({body, json}) => {
+      fields(body, ['name', 'message', 'stack', 'source']);
+      const err = Object.assign(Error(string(body.message, 1, 500)), {
+        name: string(body.name, 1, 100),
+        stack: string(body.stack, 0, 4000),
+      });
+      const source = string(body.source, 1, 200);
+      if (allowClientErrorReport()) {
+        void captureServerError(err, {service: 'client', path: source.startsWith('/') ? source : '/', status: 500});
+      }
       return json(200, {ok: true});
     },
   });

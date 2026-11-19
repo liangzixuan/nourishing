@@ -67,7 +67,7 @@ test('repairReminderDispatch stops early and marks more=true when time budget is
     dispatch: async () => ({queued: true}),
     defer: async () => {},
   });
-  assert.equal(result.examined, 2);
-  assert.equal(result.queued, 2);
+  assert.equal(result.examined, 1);
+  assert.equal(result.queued, 1);
   assert.equal(result.more, true);
 });

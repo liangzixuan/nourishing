@@ -25,7 +25,7 @@ import {nutrientDetail, reportNutrientDetail} from './nutrient-detail.mjs';
 import {diaryToolsReview, diaryEnergy} from './diary-tools.mjs';
 import {printReportOptions, previewPrintReport} from './print-report.mjs';
 import {lookupBarcode, searchBranded, previewBarcode, validateBarcodeLookup, validateBrandedSearch} from './barcode.mjs';
-import {takeBrandedBudget} from './provider-budget.mjs';
+import {takeBrandedBudget, takePhotoAnalyzeBudget, takeRecipeImportBudget} from './provider-budget.mjs';
 import {entryAdjustmentView, previewEntryAdjustment} from './entry-adjustments.mjs';
 import {exportLibraryItem, previewSharedImport, previewFoodPrint} from './library-sharing.mjs';
 import {coachView, coachAnswer} from './coach-view.mjs';
@@ -288,6 +288,7 @@ function buildMediaAndPhotoMethods(ctx) {
     },
     analyzePhoto: async (secret, input, signal) => {
       const {owner, repository} = await data(secret);
+      await takePhotoAnalyzeBudget(new TablesDB(elevated()), {database: ctx.config.database, owner});
       await createWorkspaceStore(new TablesDB(elevated()), owner).create();
       const state = await repository.readState();
       return createCloudPhotoAnalyzer().analyze(input, {
@@ -432,7 +433,13 @@ function buildLibraryAndSearchMethods(ctx) {
     searchCatalog: async (secret, input) => (await data(secret)).repository.search(input),
     foodSearch: (secret, input) => insights(secret, input, searchCloudFoods),
     readCatalogFood: async (secret, id) => (await data(secret)).repository.food(id),
-    importRecipe: (secret, input) => insights(secret, input, importRecipeUrl),
+    importRecipe: async (secret, input) => {
+      if (typeof input?.url === 'string' && input.url.trim()) {
+        const {owner} = await data(secret);
+        await takeRecipeImportBudget(new TablesDB(elevated()), {database: config.database, owner});
+      }
+      return insights(secret, input, importRecipeUrl);
+    },
     recipeImportDraft: (secret, input) => insights(secret, input, prepareRecipeImportDraft),
     previewRecipeImport: (secret, input) => insights(secret, input, previewRecipeImport),
     foodInsightOptions: secret => readView(secret, state => foodInsightOptions(state)),

@@ -1,3 +1,4 @@
+import './client-errors.js';
 import {startDeviceSync, warmDeviceViews} from './device-sync.js';
 import {startPrivateImages} from './private-images.js';
 import {sameDiarySnapshot, presentDiarySnapshot} from './diary-snapshot.js';
