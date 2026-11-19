@@ -204,11 +204,7 @@ export function mountMore({
       return section(
         id,
         t('mobileMore.support'),
-        group(
-          link(t('mobileMore.manual'), 'https://support.cronometer.com/hc/en-us/categories/360001062451-Mobile-App', true) +
-            row('backup', coreText('more.backup')) +
-            row('reminders', t('nav.reminders')),
-        ),
+        group(row('backup', coreText('more.backup')) + row('reminders', t('nav.reminders'))),
       );
     }
     if (id === 'about') {
