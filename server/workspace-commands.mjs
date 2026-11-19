@@ -1,121 +1,317 @@
-import {pauseLifeCommandFields,preparePauseLifeCommand} from './pause-life-settings.mjs';
-import {displayCommandFields,prepareDisplayCommand} from './display-settings.mjs';
-import {libraryDraftFields,validateLibraryDraft,prepareLibraryDraft,libraryDraftRows} from './library-drafts.mjs';
-import {validateLibraryEdit,applyLibraryEdit} from './library-edit.mjs';
+import {pauseLifeCommandFields, preparePauseLifeCommand} from './pause-life-settings.mjs';
+import {displayCommandFields, prepareDisplayCommand} from './display-settings.mjs';
+import {libraryDraftFields, validateLibraryDraft, prepareLibraryDraft, libraryDraftRows} from './library-drafts.mjs';
+import {validateLibraryEdit, applyLibraryEdit} from './library-edit.mjs';
 import {recipePreview} from './library-view.mjs';
-import {validateFoodCopy,applyFoodCopy} from './food-copy.mjs';
+import {validateFoodCopy, applyFoodCopy} from './food-copy.mjs';
 import {foodEditorLabelView} from './food-editor.mjs';
-import {validateFoodMultiInput,foodMultiCatalogReferences,applyFoodMultiAdd} from './food-multi-add.mjs';
+import {validateFoodMultiInput, foodMultiCatalogReferences, applyFoodMultiAdd} from './food-multi-add.mjs';
 import {parseAddMenu} from './domain/add-menu.mjs';
-import {diaryDisplayCommandFields,prepareDiaryDisplayCommand} from './diary-display-settings.mjs';
-import {healthCommandFields,applyHealthCommand} from './health-controls.mjs';
-import {chartDisplayCommandFields,applyChartDisplayCommand} from './dashboard-pinned-charts.mjs';
-import {librarySharingCommandFields,validateSharedImport,applySharedImport} from './library-sharing.mjs';
-import {coachCommandFields,applyCoachCommand} from './coach-view.mjs';
-import {textLogCommandFields,validateTextLog,applyTextLog} from './text-log.mjs';
-import {libraryExtrasCommandFields,prepareLibraryExtrasCommand,libraryExtrasCatalogReferences} from './library-extras.mjs';
-import {notePhotoCommandFields,validateNotePhotoAction,applyNotePhotoCommand} from './note-photos.mjs';
-import {diaryToolCommandFields,applyDiaryToolsCommand} from './diary-tools.mjs';
-import {barcodeCommandFields,validateBarcodeAction,applyBarcodeLog} from './barcode.mjs';
-import {dashboardCommandFields,applyDashboardCommand} from './dashboard-view.mjs';
-import {entryAdjustmentFields,validateEntryAdjustmentAction,prepareEntryAdjustmentCommand} from './entry-adjustments.mjs';
+import {diaryDisplayCommandFields, prepareDiaryDisplayCommand} from './diary-display-settings.mjs';
+import {healthCommandFields, applyHealthCommand} from './health-controls.mjs';
+import {chartDisplayCommandFields, applyChartDisplayCommand} from './dashboard-pinned-charts.mjs';
+import {librarySharingCommandFields, validateSharedImport, applySharedImport} from './library-sharing.mjs';
+import {coachCommandFields, applyCoachCommand} from './coach-view.mjs';
+import {textLogCommandFields, validateTextLog, applyTextLog} from './text-log.mjs';
+import {libraryExtrasCommandFields, prepareLibraryExtrasCommand, libraryExtrasCatalogReferences} from './library-extras.mjs';
+import {notePhotoCommandFields, validateNotePhotoAction, applyNotePhotoCommand} from './note-photos.mjs';
+import {diaryToolCommandFields, applyDiaryToolsCommand} from './diary-tools.mjs';
+import {barcodeCommandFields, validateBarcodeAction, applyBarcodeLog} from './barcode.mjs';
+import {dashboardCommandFields, applyDashboardCommand} from './dashboard-view.mjs';
+import {entryAdjustmentFields, validateEntryAdjustmentAction, prepareEntryAdjustmentCommand} from './entry-adjustments.mjs';
 import {libraryToolCommandFields} from './library-tools.mjs';
-import {profileSettingsCommandFields,applyProfileSettingsCommand} from './profile-settings.mjs';
-import {snapshotCommandFields,validateSnapshotAction,applySnapshotCommand} from './snapshots.mjs';
-import {fastingCommandFields,applyFastingCommand} from './fasting.mjs';
-import {foodInsightCommandFields,prepareFoodInsightCommand} from './food-insights.mjs';
-import {validateMealLog,applyMealLog} from './meal-commands.mjs';
-import {photoCommandFields,validatePhotoAction,applyPhotoLog} from './photo-commands.mjs';
-import {act,captureCatalogFood,previewLibraryDraft} from './domain/workspace.mjs';
-import {repeatCommandFields,validateRepeatAction} from './repeat-commands.mjs';
-import {recordCommandFields,applyRecordCommand} from './record-commands.mjs';
-import {targetPolicyCommandFields,prepareTargetPolicyCommand} from './target-policy-commands.mjs';
+import {profileSettingsCommandFields, applyProfileSettingsCommand} from './profile-settings.mjs';
+import {snapshotCommandFields, validateSnapshotAction, applySnapshotCommand} from './snapshots.mjs';
+import {fastingCommandFields, applyFastingCommand} from './fasting.mjs';
+import {foodInsightCommandFields, prepareFoodInsightCommand} from './food-insights.mjs';
+import {validateMealLog, applyMealLog} from './meal-commands.mjs';
+import {photoCommandFields, validatePhotoAction, applyPhotoLog} from './photo-commands.mjs';
+import {act, captureCatalogFood, previewLibraryDraft} from './domain/workspace.mjs';
+import {repeatCommandFields, validateRepeatAction} from './repeat-commands.mjs';
+import {recordCommandFields, applyRecordCommand} from './record-commands.mjs';
+import {targetPolicyCommandFields, prepareTargetPolicyCommand} from './target-policy-commands.mjs';
 import {invalid} from './request-errors.mjs';
-const fields={
- ...pauseLifeCommandFields,...displayCommandFields,...diaryDisplayCommandFields,...healthCommandFields,...chartDisplayCommandFields,...librarySharingCommandFields,...coachCommandFields,...textLogCommandFields,...libraryExtrasCommandFields,...notePhotoCommandFields,...diaryToolCommandFields,...barcodeCommandFields,...dashboardCommandFields,...entryAdjustmentFields,...libraryToolCommandFields,...profileSettingsCommandFields,...snapshotCommandFields,...repeatCommandFields,...recordCommandFields,...targetPolicyCommandFields,...photoCommandFields,...foodInsightCommandFields,...fastingCommandFields,
- 'addMenu.save':['addMenu'],
- 'food.copy':['selection','sourceFingerprint','changes'],
- 'food.multi.add':['destination','rows','reviewToken','confirmed'],
- 'meal.log':['date','time','group','rows'],
- 'chart.save':['version','id','name','primary','secondary','days','visible','cycleOverlay'],
- 'chart.delete':['id'],
- 'chart.visibility':['id','visible'],
- 'nutrientTarget.patch':['date','id','changes'],
- 'nutrientTarget.setCustom':['date','id','custom'],
- 'preferences.patch':['theme'],
- 'entry.add':['foodId','recipeId','mealId','date','time','group','amount','quantity','unit','portionId'],
- 'entry.update':['id','date','time','group','amount','quantity','unit','portionId'],
- 'entry.delete':['id'],
- 'day.complete':['date','completed'],
- 'group.rename':['from','to'],
- 'note.add':['date','time','group','text'],
- 'note.delete':['id'],
- 'food.save':libraryDraftFields.food,
- 'recipe.save':libraryDraftFields.recipe,
- 'meal.save':libraryDraftFields.meal,
- 'library.edit':['kind','draft','reviewToken','mode','confirmed'],
- 'food.delete':['id'],'recipe.delete':['id'],'meal.delete':['id']
+
+const COMMAND_FIELDS = {
+  ...pauseLifeCommandFields,
+  ...displayCommandFields,
+  ...diaryDisplayCommandFields,
+  ...healthCommandFields,
+  ...chartDisplayCommandFields,
+  ...librarySharingCommandFields,
+  ...coachCommandFields,
+  ...textLogCommandFields,
+  ...libraryExtrasCommandFields,
+  ...notePhotoCommandFields,
+  ...diaryToolCommandFields,
+  ...barcodeCommandFields,
+  ...dashboardCommandFields,
+  ...entryAdjustmentFields,
+  ...libraryToolCommandFields,
+  ...profileSettingsCommandFields,
+  ...snapshotCommandFields,
+  ...repeatCommandFields,
+  ...recordCommandFields,
+  ...targetPolicyCommandFields,
+  ...photoCommandFields,
+  ...foodInsightCommandFields,
+  ...fastingCommandFields,
+  'addMenu.save': ['addMenu'],
+  'food.copy': ['selection', 'sourceFingerprint', 'changes'],
+  'food.multi.add': ['destination', 'rows', 'reviewToken', 'confirmed'],
+  'meal.log': ['date', 'time', 'group', 'rows'],
+  'chart.save': ['version', 'id', 'name', 'primary', 'secondary', 'days', 'visible', 'cycleOverlay'],
+  'chart.delete': ['id'],
+  'chart.visibility': ['id', 'visible'],
+  'nutrientTarget.patch': ['date', 'id', 'changes'],
+  'nutrientTarget.setCustom': ['date', 'id', 'custom'],
+  'preferences.patch': ['theme'],
+  'entry.add': ['foodId', 'recipeId', 'mealId', 'date', 'time', 'group', 'amount', 'quantity', 'unit', 'portionId'],
+  'entry.update': ['id', 'date', 'time', 'group', 'amount', 'quantity', 'unit', 'portionId'],
+  'entry.delete': ['id'],
+  'day.complete': ['date', 'completed'],
+  'group.rename': ['from', 'to'],
+  'note.add': ['date', 'time', 'group', 'text'],
+  'note.delete': ['id'],
+  'food.save': libraryDraftFields.food,
+  'recipe.save': libraryDraftFields.recipe,
+  'meal.save': libraryDraftFields.meal,
+  'library.edit': ['kind', 'draft', 'reviewToken', 'mode', 'confirmed'],
+  'food.delete': ['id'],
+  'recipe.delete': ['id'],
+  'meal.delete': ['id'],
 };
-export function validateAction(input){
- if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!['type','payload'].includes(k)))invalid('Invalid diary action.');
- const allowed=Object.hasOwn(fields,input.type)?fields[input.type]:null,p=input.payload;
- if(!allowed||!p||typeof p!=='object'||Array.isArray(p)||Object.keys(p).some(k=>!allowed.includes(k)))invalid('Invalid diary fields.');
- if(Object.hasOwn(entryAdjustmentFields,input.type))validateEntryAdjustmentAction(input);
- if(Object.hasOwn(snapshotCommandFields,input.type))validateSnapshotAction(input);
- if(input.type==='note.photo.save')validateNotePhotoAction(input);
- if(input.type==='barcode.log')validateBarcodeAction(input);
- if(input.type==='photo.log')validatePhotoAction(input);
- if(input.type==='food.copy')validateFoodCopy(p);
- if(input.type==='library.edit')validateLibraryEdit(p,{saving:true});
- if(['food.save','recipe.save','meal.save'].includes(input.type))validateLibraryDraft(input.type.split('.')[0],p);
- if(input.type==='food.multi.add')validateFoodMultiInput(p,{saving:true});
- if(input.type==='meal.log')validateMealLog(p);
- if(input.type==='text.log')validateTextLog(p);
- if(input.type==='share.import')validateSharedImport(p);
- if(Object.hasOwn(repeatCommandFields,input.type))validateRepeatAction(input);
- if(input.type==='preferences.patch'&&(!Object.keys(p).length||!['light','dark','system'].includes(p.theme)))invalid('Choose a theme.');
- if(input.type!=='note.photo.save'&&p.id!==undefined&&(typeof p.id!=='string'||!p.id||p.id.length>1000))invalid('Choose a record.');
- if(input.type.endsWith('.delete')&&allowed.includes('id')&&!p.id)invalid('Choose a record.');
- if(input.type==='addMenu.save'){if(!p.addMenu)invalid('Choose menu settings.');parseAddMenu(p.addMenu);}
- if(input.type==='entry.add'&&['foodId','recipeId','mealId'].filter(k=>typeof p[k]==='string'&&p[k].length>0).length!==1)invalid('Choose a food.');
- if(['entry.update','entry.delete','note.delete'].includes(input.type)&&(typeof p.id!=='string'||!p.id||p.id.length>1000))invalid('Choose a record.');
- return input;
+
+const LIBRARY_SAVE_TYPES = new Set(['food.save', 'recipe.save', 'meal.save']);
+const REQUIRED_ID_TYPES = new Set(['entry.update', 'entry.delete', 'note.delete']);
+const SKIP_CAPTURE_TYPES = new Set(['food.multi.add', 'food.copy', 'library.edit']);
+
+const isPlainObject = value => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+const isValidRecordId = value => typeof value === 'string' && value.length > 0 && value.length <= 1000;
+
+function rethrowDomainError(error) {
+  if ([400, 404, 409].includes(error.status)) {
+    throw Object.assign(error, {code: error.status, publicMessage: error.message});
+  }
+  throw error;
 }
-export function parseCommand(input){
- if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!['requestId','revision','type','payload'].includes(k)))invalid('Invalid diary action.');
- if(typeof input.requestId!=='string'||typeof input.revision!=='string'||!/^[a-zA-Z0-9-]{16,64}$/.test(input.requestId)||!/^[a-f0-9]{64}$/.test(input.revision))invalid('Refresh the diary and try again.');
- validateAction({type:input.type,payload:input.payload});return input;
+
+const ACTION_VALIDATORS = {
+  'note.photo.save': input => validateNotePhotoAction(input),
+  'barcode.log': input => validateBarcodeAction(input),
+  'photo.log': input => validatePhotoAction(input),
+  'food.copy': ({payload}) => validateFoodCopy(payload),
+  'library.edit': ({payload}) => validateLibraryEdit(payload, {saving: true}),
+  'food.save': ({payload}) => validateLibraryDraft('food', payload),
+  'recipe.save': ({payload}) => validateLibraryDraft('recipe', payload),
+  'meal.save': ({payload}) => validateLibraryDraft('meal', payload),
+  'food.multi.add': ({payload}) => validateFoodMultiInput(payload, {saving: true}),
+  'meal.log': ({payload}) => validateMealLog(payload),
+  'text.log': ({payload}) => validateTextLog(payload),
+  'share.import': ({payload}) => validateSharedImport(payload),
+  'preferences.patch': ({payload}) => {
+    if (!Object.keys(payload).length || !['light', 'dark', 'system'].includes(payload.theme)) {
+      invalid('Choose a theme.');
+    }
+  },
+  'addMenu.save': ({payload}) => {
+    if (!payload.addMenu) invalid('Choose menu settings.');
+    parseAddMenu(payload.addMenu);
+  },
+  'entry.add': ({payload}) => {
+    const targets = ['foodId', 'recipeId', 'mealId'].filter(k => typeof payload[k] === 'string' && payload[k].length > 0);
+    if (targets.length !== 1) invalid('Choose a food.');
+  },
+};
+
+const GROUP_VALIDATORS = [
+  [entryAdjustmentFields, validateEntryAdjustmentAction],
+  [snapshotCommandFields, validateSnapshotAction],
+  [repeatCommandFields, validateRepeatAction],
+];
+
+export function validateAction(input) {
+  if (!isPlainObject(input) || Object.keys(input).some(k => !['type', 'payload'].includes(k))) {
+    invalid('Invalid diary action.');
+  }
+  const allowed = Object.hasOwn(COMMAND_FIELDS, input.type) ? COMMAND_FIELDS[input.type] : null;
+  const payload = input.payload;
+  if (!allowed || !isPlainObject(payload) || Object.keys(payload).some(k => !allowed.includes(k))) {
+    invalid('Invalid diary fields.');
+  }
+
+  for (const [group, validate] of GROUP_VALIDATORS) {
+    if (Object.hasOwn(group, input.type)) validate(input);
+  }
+  if (Object.hasOwn(ACTION_VALIDATORS, input.type)) {
+    ACTION_VALIDATORS[input.type](input);
+  }
+
+  if (input.type !== 'note.photo.save' && payload.id !== undefined && !isValidRecordId(payload.id)) {
+    invalid('Choose a record.');
+  }
+  if (input.type.endsWith('.delete') && allowed.includes('id') && !payload.id) {
+    invalid('Choose a record.');
+  }
+  if (REQUIRED_ID_TYPES.has(input.type) && !isValidRecordId(payload.id)) {
+    invalid('Choose a record.');
+  }
+  return input;
 }
-export function applyWorkspaceCommand(state,input,context={}){
- validateAction(input);
- try{if(Object.hasOwn(pauseLifeCommandFields,input.type)){const prepared=preparePauseLifeCommand(state,input);return act(state,prepared.type,prepared.payload);}if(Object.hasOwn(displayCommandFields,input.type)){const prepared=prepareDisplayCommand(state,input);return act(state,prepared.type,prepared.payload);}if(input.type==='library.edit')return applyLibraryEdit(state,input.payload,context);if(input.type==='food.copy')return applyFoodCopy(state,input.payload,context);if(input.type==='food.multi.add')return applyFoodMultiAdd(state,input.payload,context);if(input.type==='addMenu.save')return act(state,'settings.save',{addMenu:parseAddMenu(input.payload.addMenu)});if(Object.hasOwn(diaryDisplayCommandFields,input.type)){const prepared=prepareDiaryDisplayCommand(state,input);return act(state,prepared.type,prepared.payload);}const health=applyHealthCommand(state,input);if(health.handled)return health.result;const chartDisplay=applyChartDisplayCommand(state,input);if(chartDisplay.handled)return chartDisplay.result;if(input.type==='share.import')return applySharedImport(state,input.payload);const coach=applyCoachCommand(state,input);if(coach.handled)return coach.result;if(Object.hasOwn(libraryExtrasCommandFields,input.type)){const prepared=prepareLibraryExtrasCommand(state,input);return act(state,prepared.type,prepared.payload);}const notePhoto=applyNotePhotoCommand(state,input,context);if(notePhoto.handled)return notePhoto.result;const diaryTools=applyDiaryToolsCommand(state,input);if(diaryTools.handled)return diaryTools.result;if(input.type==='barcode.log')return applyBarcodeLog(state,input.payload,context);const dashboard=applyDashboardCommand(state,input,context);if(dashboard.handled)return dashboard.result;if(Object.hasOwn(entryAdjustmentFields,input.type)){const prepared=prepareEntryAdjustmentCommand(state,input);return act(state,prepared.type,prepared.payload);}if(Object.hasOwn(profileSettingsCommandFields,input.type))return applyProfileSettingsCommand(state,input);const snapshot=applySnapshotCommand(state,input,context);if(snapshot.handled)return snapshot.result;const fasting=applyFastingCommand(state,input,context);if(fasting.handled)return fasting.result;if(Object.hasOwn(foodInsightCommandFields,input.type)){const prepared=prepareFoodInsightCommand(state,input);return act(state,prepared.type,prepared.payload);}if(input.type==='text.log')return applyTextLog(state,input.payload);if(input.type==='meal.log')return applyMealLog(state,input.payload);if(input.type==='photo.log')return applyPhotoLog(state,input.payload,context);if(Object.hasOwn(targetPolicyCommandFields,input.type)){const prepared=prepareTargetPolicyCommand(state,input,context);return act(state,prepared.type,prepared.payload);}const record=applyRecordCommand(state,input);if(record.handled)return record.result;return act(state,input.type==='preferences.patch'?'settings.save':input.type,libraryPayload(state,input));}catch(error){if([400,404,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
+
+export function parseCommand(input) {
+  const keys = ['requestId', 'revision', 'type', 'payload'];
+  if (!isPlainObject(input) || Object.keys(input).some(k => !keys.includes(k))) {
+    invalid('Invalid diary action.');
+  }
+  const validId = typeof input.requestId === 'string' && /^[a-zA-Z0-9-]{16,64}$/.test(input.requestId);
+  const validRev = typeof input.revision === 'string' && /^[a-f0-9]{64}$/.test(input.revision);
+  if (!validId || !validRev) invalid('Refresh the diary and try again.');
+  validateAction({type: input.type, payload: input.payload});
+  return input;
 }
-function libraryPayload(state,{type,payload}){
- return ['food.save','recipe.save','meal.save'].includes(type)?prepareLibraryDraft(state,type.split('.')[0],payload):payload;
+
+const DIRECT_APPLIERS = {
+  'library.edit': (state, payload, context) => applyLibraryEdit(state, payload, context),
+  'food.copy': (state, payload, context) => applyFoodCopy(state, payload, context),
+  'food.multi.add': (state, payload, context) => applyFoodMultiAdd(state, payload, context),
+  'addMenu.save': (state, payload) => act(state, 'settings.save', {addMenu: parseAddMenu(payload.addMenu)}),
+  'share.import': (state, payload) => applySharedImport(state, payload),
+  'barcode.log': (state, payload, context) => applyBarcodeLog(state, payload, context),
+  'text.log': (state, payload) => applyTextLog(state, payload),
+  'meal.log': (state, payload) => applyMealLog(state, payload),
+  'photo.log': (state, payload, context) => applyPhotoLog(state, payload, context),
+};
+
+const GROUP_PREPARERS = [
+  [pauseLifeCommandFields, preparePauseLifeCommand],
+  [displayCommandFields, prepareDisplayCommand],
+  [diaryDisplayCommandFields, prepareDiaryDisplayCommand],
+  [libraryExtrasCommandFields, prepareLibraryExtrasCommand],
+  [entryAdjustmentFields, prepareEntryAdjustmentCommand],
+  [foodInsightCommandFields, prepareFoodInsightCommand],
+  [targetPolicyCommandFields, prepareTargetPolicyCommand],
+];
+
+const HANDLED_APPLIERS = [
+  applyHealthCommand,
+  applyChartDisplayCommand,
+  applyCoachCommand,
+  applyNotePhotoCommand,
+  applyDiaryToolsCommand,
+  applyDashboardCommand,
+  applySnapshotCommand,
+  applyFastingCommand,
+  applyRecordCommand,
+];
+
+function dispatchCommand(state, input, context) {
+  if (Object.hasOwn(DIRECT_APPLIERS, input.type)) {
+    return DIRECT_APPLIERS[input.type](state, input.payload, context);
+  }
+  if (Object.hasOwn(profileSettingsCommandFields, input.type)) {
+    return applyProfileSettingsCommand(state, input);
+  }
+  for (const [group, prepare] of GROUP_PREPARERS) {
+    if (Object.hasOwn(group, input.type)) {
+      const prepared = prepare(state, input, context);
+      return act(state, prepared.type, prepared.payload);
+    }
+  }
+  for (const apply of HANDLED_APPLIERS) {
+    const outcome = apply(state, input, context);
+    if (outcome.handled) return outcome.result;
+  }
+  const domainType = input.type === 'preferences.patch' ? 'settings.save' : input.type;
+  return act(state, domainType, libraryPayload(state, input));
 }
-function actionFoodRows({type,payload}){
- return type==='library.edit'?libraryDraftRows(payload.kind,payload.draft):['entry.add','repeat.save'].includes(type)?[payload]:['photo.log','meal.log','text.log'].includes(type)?(payload.rows??[]):type==='recipe.save'?(payload.ingredients??[]):['meal.save','entry.ingredients.adjust'].includes(type)?(payload.items??[]):[];
+
+export function applyWorkspaceCommand(state, input, context = {}) {
+  validateAction(input);
+  try {
+    return dispatchCommand(state, input, context);
+  } catch (error) {
+    rethrowDomainError(error);
+  }
 }
-export function catalogReferences(action){if(action.type==='food.copy')return action.payload.selection.kind==='catalog'?[action.payload.selection.id]:[];if(action.type==='food.multi.add')return [...new Set(foodMultiCatalogReferences(action.payload))];return [...new Set([...actionFoodRows(action).map(row=>row.foodId).filter(id=>typeof id==='string'),...libraryExtrasCatalogReferences(action)])];}
-export async function readActionFoods(input,readCatalog){
- const ids=catalogReferences(input),foods=new Map();
- for(let i=0;i<ids.length;i+=4){for(const [id,food] of await Promise.all(ids.slice(i,i+4).map(async id=>[id,await readCatalog(id)])))foods.set(id,food);}
- return foods;
+
+function libraryPayload(state, {type, payload}) {
+  return LIBRARY_SAVE_TYPES.has(type) ? prepareLibraryDraft(state, type.split('.')[0], payload) : payload;
 }
-export function captureActionFoods(state,input,foods){
- if(['food.multi.add','food.copy','library.edit'].includes(input.type))return structuredClone(input);
- const action=structuredClone(input),replacements=new Map();
- for(const id of catalogReferences(action)){const food=foods.get(id);if(food)replacements.set(id,captureCatalogFood(state,food).id);}
- for(const row of actionFoodRows(action))if(replacements.has(row.foodId))row.foodId=replacements.get(row.foodId);
- if(action.type==='favorite.set'&&action.payload.kind==='food'&&replacements.has(action.payload.id))action.payload.id=replacements.get(action.payload.id);
- return action;
+
+function actionFoodRows({type, payload}) {
+  if (type === 'library.edit') return libraryDraftRows(payload.kind, payload.draft);
+  if (type === 'entry.add' || type === 'repeat.save') return [payload];
+  if (type === 'photo.log' || type === 'meal.log' || type === 'text.log') return payload.rows ?? [];
+  if (type === 'recipe.save') return payload.ingredients ?? [];
+  if (type === 'meal.save' || type === 'entry.ingredients.adjust') return payload.items ?? [];
+  return [];
 }
-export function validateLibraryPreview(input){
- if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(key=>!['kind','draft','date','quantity','labelView'].includes(key))||!['food','recipe','meal'].includes(input.kind)||input.labelView!==undefined&&input.kind!=='food')invalid('Choose a library item.');
- if(input.labelView!==undefined&&(!input.labelView||typeof input.labelView!=='object'||Array.isArray(input.labelView)))invalid('Choose a label view.');
- return validateLibraryDraft(input.kind,input.draft,{editing:true});
+
+export function catalogReferences(action) {
+  if (action.type === 'food.copy') {
+    return action.payload.selection.kind === 'catalog' ? [action.payload.selection.id] : [];
+  }
+  if (action.type === 'food.multi.add') {
+    return [...new Set(foodMultiCatalogReferences(action.payload))];
+  }
+  const rowIds = actionFoodRows(action)
+    .map(row => row.foodId)
+    .filter(id => typeof id === 'string');
+  return [...new Set([...rowIds, ...libraryExtrasCatalogReferences(action)])];
 }
-export function previewLibrary(state,input){
- const action=validateLibraryPreview(input);
- try{const {labelView,...preview}=input,result=previewLibraryDraft(state,{...preview,draft:libraryPayload(state,action)});return {...result,...(input.kind==='recipe'?{recipe:recipePreview(state,result.resource,input.quantity)}:{}),...(labelView?{labelView:foodEditorLabelView(result.resource,labelView)}:{})};}catch(error){if([400,404,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}
+
+export async function readActionFoods(input, readCatalog) {
+  const ids = catalogReferences(input);
+  const foods = new Map();
+  for (let i = 0; i < ids.length; i += 4) {
+    const batch = await Promise.all(ids.slice(i, i + 4).map(async id => [id, await readCatalog(id)]));
+    for (const [id, food] of batch) foods.set(id, food);
+  }
+  return foods;
+}
+
+export function captureActionFoods(state, input, foods) {
+  if (SKIP_CAPTURE_TYPES.has(input.type)) return structuredClone(input);
+  const action = structuredClone(input);
+  const replacements = new Map();
+  for (const id of catalogReferences(action)) {
+    const food = foods.get(id);
+    if (food) replacements.set(id, captureCatalogFood(state, food).id);
+  }
+  for (const row of actionFoodRows(action)) {
+    if (replacements.has(row.foodId)) row.foodId = replacements.get(row.foodId);
+  }
+  if (action.type === 'favorite.set' && action.payload.kind === 'food' && replacements.has(action.payload.id)) {
+    action.payload.id = replacements.get(action.payload.id);
+  }
+  return action;
+}
+
+export function validateLibraryPreview(input) {
+  const allowedKeys = ['kind', 'draft', 'date', 'quantity', 'labelView'];
+  const validKind = ['food', 'recipe', 'meal'].includes(input?.kind);
+  const invalidLabelTarget = input?.labelView !== undefined && input.kind !== 'food';
+  if (!isPlainObject(input) || Object.keys(input).some(k => !allowedKeys.includes(k)) || !validKind || invalidLabelTarget) {
+    invalid('Choose a library item.');
+  }
+  if (input.labelView !== undefined && !isPlainObject(input.labelView)) {
+    invalid('Choose a label view.');
+  }
+  return validateLibraryDraft(input.kind, input.draft, {editing: true});
+}
+
+export function previewLibrary(state, input) {
+  const action = validateLibraryPreview(input);
+  try {
+    const {labelView, ...preview} = input;
+    const result = previewLibraryDraft(state, {...preview, draft: libraryPayload(state, action)});
+    return {
+      ...result,
+      ...(input.kind === 'recipe' ? {recipe: recipePreview(state, result.resource, input.quantity)} : {}),
+      ...(labelView ? {labelView: foodEditorLabelView(result.resource, labelView)} : {}),
+    };
+  } catch (error) {
+    rethrowDomainError(error);
+  }
 }
