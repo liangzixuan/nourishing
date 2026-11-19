@@ -9,9 +9,9 @@ export const calciumAbsorptionInputs=Object.freeze(['calcium','oxalate','phytate
   return Object.freeze({id,name:nutrient.name,unit:nutrient.unit});
 }));
 const formula=Object.freeze({
-  id:'cronometer-calcium-absorption-manual-0.0946',
+  id:'calcium-absorption-manual-0.0946',
   expression:'A = C × (0.889 − 0.0946 × ln(C) − O − 0.060 × P); C in mg, O and P in g',
-  sourceUrl:'https://support.cronometer.com/hc/en-us/articles/360042110112-Nutrition-Scores',
+  sourceUrl:'https://ods.od.nih.gov/factsheets/Calcium-HealthProfessional/',
   researchUrl:'https://doi.org/10.1016/j.tjnut.2023.12.005',
   coefficientDiscrepancy:'The reference formula uses 0.0946; the cited research equation uses 0.0964. This estimate uses the 0.0946 coefficient.',
 });

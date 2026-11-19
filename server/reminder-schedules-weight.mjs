@@ -1,4 +1,4 @@
-// Adapted from cronometer-local/server/weight-reminder.mjs; only import paths changed.
+// Adapted from nourishing-local/server/weight-reminder.mjs; only import paths changed.
 import {isWeightUnit,weightUnits} from './domain/weight-units.mjs';
 import {Temporal} from '@js-temporal/polyfill';
 import {date} from './domain/calendar.mjs';

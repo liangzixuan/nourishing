@@ -57,7 +57,7 @@ export const SUPPLEMENT_CONTRIBUTION_KEYS=Object.freeze(['includedFoodContributi
 const emptySupplementFilter=()=>Object.fromEntries(SUPPLEMENT_CONTRIBUTION_KEYS.map(key=>[key,0]));
 const allFoodPolicy=Object.freeze({includeSupplements:true});
 const antioxidantReferences=Object.freeze({betaCarotene:15000,lycopene:30000,luteinZeaxanthin:12000});
-const antioxidantSourceUrl='https://support.cronometer.com/hc/en-us/articles/360042110112-Nutrition-Scores';
+const antioxidantSourceUrl='https://ods.od.nih.gov/factsheets/Calcium-HealthProfessional/';
 
 function quantity(value, fallback = 1) {
   return parseServingAmount(value === undefined ? fallback : value);

@@ -1,4 +1,4 @@
-// Independent meal examples, not Cronometer's proprietary meal corpus.
+// Independent meal examples with pinned USDA ingredients.
 // Quantities describe one editable example serving, not a portion recommendation.
 const archiveSha256='b80817294b8850530aaedf2e515c02593b1824f763a0ff356e5c2081643e6fd0';
 const foods={

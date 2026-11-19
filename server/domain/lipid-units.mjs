@@ -5,7 +5,7 @@ export const lipidDefinitions=Object.freeze([
  ['total cholesterol','Total Cholesterol','0.02586'],['hdl cholesterol','HDL Cholesterol','0.02586'],
  ['ldl cholesterol','LDL Cholesterol','0.02586'],['triglycerides','Triglycerides','0.01129'],
 ].map(([type,name,mmolLPerMgDl])=>Object.freeze({type,name,mmolLPerMgDl})));
-// CDC NHANES conversion conventions, not a claim about Cronometer's internal precision.
+// CDC NHANES conversion conventions.
 export const lipidConversionSources=Object.freeze([
  'https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2001/DataFiles/L13_2_B.htm',
  'https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/TRIGLY_L.htm',

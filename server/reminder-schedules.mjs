@@ -1,4 +1,4 @@
-// Schedule validation and due-event semantics adapted from cronometer-local/server/reminders.mjs.
+// Schedule validation and due-event semantics adapted from nourishing-local/server/reminders.mjs.
 import {createHash,randomUUID} from 'node:crypto';
 import {Temporal} from '@js-temporal/polyfill';
 import {activeScheduledFastStart,fastingScheduleView} from './domain/fasting-schedules.mjs';

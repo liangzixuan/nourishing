@@ -1,4 +1,4 @@
-// Canonical local search membership and ranking adapter; source: cronometer-local/server/food-search.mjs.
+// Canonical local search membership and ranking adapter; source: nourishing-local/server/food-search.mjs.
 import {catalogQuery,matchesCatalogQuery} from './domain/usda-catalog.mjs';
 import {catalogIdentity,catalogSourceAliases,compactFoodSource} from './domain/catalog-source.mjs';
 import {isActiveLibraryItem} from './domain/library-status.mjs';

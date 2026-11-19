@@ -2,9 +2,9 @@ import {completenessGuidance} from './../../server/completeness-guidance.mjs';
 const rows=[
  [
   "daily.local",
-  "Il s’agit de la complétude locale des données alimentaires, pas de la confiance des données de Cronometer ni d’un score de qualité des sources. Aucun poids de source n’est appliqué.",
-  "Dies ist lokale Vollständigkeit der Lebensmitteldaten, nicht Cronometers Datenkonfidenz oder ein Qualitätswert der Quellen. Quellen werden nicht gewichtet.",
-  "Isto é completude local dos dados alimentares, não a confiança dos dados do Cronometer nem uma pontuação de qualidade das fontes. Nenhum peso de fonte é aplicado."
+  "Il s’agit de la complétude locale des données alimentaires basée sur vos aliments enregistrés. Aucun poids de source n’est appliqué.",
+  "Dies ist die lokale Vollständigkeit der Lebensmitteldaten basierend auf Ihren erfassten Lebensmitteln. Quellen werden nicht gewichtet.",
+  "Isto é a completude local dos dados alimentares com base nos seus alimentos registrados. Nenhum peso de fonte é aplicado."
  ],
  [
   "daily.occurrences",
@@ -64,7 +64,7 @@ const rows=[
   "period.scope",
   "Cette méthode locale de complétude n’applique aucun poids de source. Les filtres enregistrés de dates, jours, jour courant et compléments régissent chaque ligne.",
   "Diese lokale Vollständigkeitsmethode gewichtet keine Quellen. Die erfassten Filter für Datum, Tage, heutigen Tag und Nahrungsergänzungsmittel gelten für jede Zeile.",
-  "Este método local de completude não aplica pesos de fonte nem reproduz a confiança dos dados do Cronometer. Os filtros registrados de datas, dias, dia atual e suplementos regem cada linha."
+  "Este método local de completude não aplica pesos de fonte. Os filtros registrados de datas, dias, dia atual e suplementos regem cada linha."
  ]
 ];
 export const completenessGuidanceMessages=Object.freeze(Object.fromEntries(['en','fr','de','pt-BR'].map((language,index)=>[language,Object.freeze(Object.fromEntries(rows.map(([key,...values])=>['completenessGuidance.'+key,index===0?completenessGuidance[key]:values[index-1]])))])));

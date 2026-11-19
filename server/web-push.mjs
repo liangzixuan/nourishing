@@ -1,4 +1,4 @@
-// Web Push boundary and transport adapted from cronometer-local/server/reminders.mjs.
+// Web Push boundary and transport adapted from nourishing-local/server/reminders.mjs.
 // SQLite, native Android transports and local-origin restrictions are not part of this module.
 import {createECDH,ECDH} from 'node:crypto';
 import webPush from 'web-push';

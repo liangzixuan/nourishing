@@ -32406,8 +32406,8 @@ var Li = (e) => typeof e == "object" && !!e && !Array.isArray(e) && Object.keys(
 ], Yi = [
 	"The reference formula uses 0.0946; the cited research equation uses 0.0964. This estimate uses the 0.0946 coefficient.",
 	"La formule de référence utilise 0,0946 ; l’équation de l’étude citée utilise 0,0964. Cette estimation utilise le coefficient 0,0946.",
-	"Das Cronometer-Handbuch verwendet 0,0946; die Gleichung der zitierten Studie verwendet 0,0964. Diese Schätzung verwendet den Handbuchkoeffizienten.",
-	"O manual do Cronometer usa 0,0946; a equação da pesquisa citada usa 0,0964. Esta estimativa usa o coeficiente do manual."
+	"Die Referenzformel verwendet 0,0946; die Gleichung der zitierten Studie verwendet 0,0964. Diese Schätzung verwendet den Koeffizienten 0,0946.",
+	"A fórmula de referência usa 0,0946; a equação da pesquisa citada usa 0,0964. Esta estimativa usa o coeficiente 0,0946."
 ], Xi = Object.freeze(Object.fromEntries([
 	"en",
 	"fr",
@@ -32556,9 +32556,9 @@ var Li = (e) => typeof e == "object" && !!e && !Array.isArray(e) && Object.keys(
 }), ea = (e) => !!(e && typeof e == "object" && !Array.isArray(e) && Object.keys(e).length === 2 && Object.hasOwn(e, "code") && Object.hasOwn(e, "text") && typeof e.code == "string" && e.code.length && typeof e.text == "string" && e.text.length), ta = [
 	[
 		"daily.local",
-		"Il s’agit de la complétude locale des données alimentaires, pas de la confiance des données de Cronometer ni d’un score de qualité des sources. Aucun poids de source n’est appliqué.",
-		"Dies ist lokale Vollständigkeit der Lebensmitteldaten, nicht Cronometers Datenkonfidenz oder ein Qualitätswert der Quellen. Quellen werden nicht gewichtet.",
-		"Isto é completude local dos dados alimentares, não a confiança dos dados do Cronometer nem uma pontuação de qualidade das fontes. Nenhum peso de fonte é aplicado."
+		"Il s’agit de la complétude locale des données alimentaires basée sur vos aliments enregistrés. Aucun poids de source n’est appliqué.",
+		"Dies ist die lokale Vollständigkeit der Lebensmitteldaten basierend auf Ihren erfassten Lebensmitteln. Quellen werden nicht gewichtet.",
+		"Isto é a completude local dos dados alimentares com base nos seus alimentos registrados. Nenhum peso de fonte é aplicado."
 	],
 	[
 		"daily.occurrences",
@@ -32618,7 +32618,7 @@ var Li = (e) => typeof e == "object" && !!e && !Array.isArray(e) && Object.keys(
 		"period.scope",
 		"Cette méthode locale de complétude n’applique aucun poids de source. Les filtres enregistrés de dates, jours, jour courant et compléments régissent chaque ligne.",
 		"Diese lokale Vollständigkeitsmethode gewichtet keine Quellen. Die erfassten Filter für Datum, Tage, heutigen Tag und Nahrungsergänzungsmittel gelten für jede Zeile.",
-		"Este método local de completude não aplica pesos de fonte nem reproduz a confiança dos dados do Cronometer. Os filtros registrados de datas, dias, dia atual e suplementos regem cada linha."
+		"Este método local de completude não aplica pesos de fonte. Os filtros registrados de datas, dias, dia atual e suplementos regem cada linha."
 	]
 ], na = Object.freeze(Object.fromEntries([
 	"en",
@@ -32812,8 +32812,8 @@ var Li = (e) => typeof e == "object" && !!e && !Array.isArray(e) && Object.keys(
 	[
 		"method.local",
 		"Il s’agit d’une progression locale basée sur vos objectifs nutritionnels.",
-		"Dies ist lokaler Zielfortschritt, nicht die proprietäre Ernährungsformel von Cronometer.",
-		"Isto é progresso local em relação às metas, não a fórmula proprietária de pontuação nutricional do Cronometer."
+		"Dies ist lokaler Zielfortschritt basierend auf Ihren Ernährungszielen.",
+		"Isto é progresso local com base nas suas metas nutricionais."
 	],
 	[
 		"components.overall",
@@ -34509,10 +34509,10 @@ var Aa = Object.fromEntries([
 	],
 	[
 		"scoreReport.method",
-		"Mean of known daily local scores. Unknown days are excluded. This is not a score calculated from average intake or the proprietary Cronometer range formula.",
-		"Moyenne des scores locaux quotidiens connus. Les jours inconnus sont exclus. Ce score n’est calculé ni à partir de l’apport moyen ni avec la formule propriétaire de Cronometer pour une période.",
+		"Mean of known daily local scores. Unknown days are excluded. This score is not calculated from average intake across the range.",
+		"Moyenne des scores locaux quotidiens connus. Les jours inconnus sont exclus. Ce score n’est pas calculé à partir de l’apport moyen sur la période.",
 		"Mittelwert der bekannten täglichen lokalen Ernährungswerte. Unbekannte Tage werden ausgeschlossen. Dieser Wert wird weder aus der mittleren Aufnahme noch mit der proprietären Referenzformel für Zeiträume berechnet.",
-		"Média das pontuações locais diárias conhecidas. Dias desconhecidos são excluídos. A pontuação não é calculada a partir do consumo médio nem da fórmula proprietária de intervalo do Cronometer."
+		"Média das pontuações locais diárias conhecidas. Dias desconhecidos são excluídos. A pontuação não é calculada a partir do consumo médio no período."
 	],
 	[
 		"scoreReport.region",
@@ -34867,9 +34867,9 @@ var Ua = (e) => typeof e == "string" && Object.hasOwn(Va, e), Wa = (e) => typeof
 ], Ka = [
 	[
 		"consumed-allocation",
-		"Les parts caloriques des macronutriments sont estimées par aliment avec les facteurs USDA complets, sinon avec des facteurs généraux et l’estimation des glucides la plus proche, avec ou sans fibres. Les quatre parts, alcool compris, sont normalisées aux calories enregistrées avant application de la quantité signée. Les composantes négatives conservent leur valeur sans pourcentage. Les macronutriments manquants ou facteurs publiés incomplets laissent des calories non attribuées. Les mesures nutritionnelles restent inchangées. Ce calcul local ne constitue pas une reproduction vérifiée du serveur ou de la normalisation de l’alcool de Cronometer.",
-		"Die Kalorienanteile werden je Lebensmittel anhand vollständiger USDA-Faktoren geschätzt, sonst anhand allgemeiner Faktoren und der näheren Kohlenhydratschätzung mit oder ohne Ballaststoffe. Alle vier Anteile einschließlich Alkohol werden vor Anwendung der vorzeichenbehafteten Menge auf die erfassten Kalorien normiert. Negative Komponenten behalten ihren Wert ohne Prozentangabe. Fehlende Makronährstoffe oder unvollständige veröffentlichte Faktoren lassen Energie unzugeordnet. Nährstoffmesswerte bleiben unverändert. Diese lokale Berechnung ist keine verifizierte Nachbildung der Serverberechnung oder Alkoholnormalisierung von Cronometer.",
-		"As parcelas calóricas são estimadas por alimento com fatores USDA completos, quando disponíveis; caso contrário, usam fatores gerais e a estimativa de carboidratos mais próxima, com ou sem fibras. As quatro parcelas, incluindo álcool, são normalizadas às calorias registradas antes de aplicar a quantidade com sinal. Componentes negativos mantêm seus valores sem percentuais. Macronutrientes ausentes ou fatores publicados incompletos deixam energia não atribuída. As medidas nutricionais não mudam. Este cálculo local não é uma reprodução verificada do servidor ou da normalização de álcool do Cronometer."
+		"Les parts caloriques des macronutriments sont estimées par aliment avec les facteurs USDA complets, sinon avec des facteurs généraux et l’estimation des glucides la plus proche, avec ou sans fibres. Les quatre parts, alcool compris, sont normalisées aux calories enregistrées avant application de la quantité signée. Les composantes négatives conservent leur valeur sans pourcentage. Les macronutriments manquants ou facteurs publiés incomplets laissent des calories non attribuées. Les mesures nutritionnelles restent inchangées.",
+		"Die Kalorienanteile werden je Lebensmittel anhand vollständiger USDA-Faktoren geschätzt, sonst anhand allgemeiner Faktoren und der näheren Kohlenhydratschätzung mit oder ohne Ballaststoffe. Alle vier Anteile einschließlich Alkohol werden vor Anwendung der vorzeichenbehafteten Menge auf die erfassten Kalorien normiert. Negative Komponenten behalten ihren Wert ohne Prozentangabe. Fehlende Makronährstoffe oder unvollständige veröffentlichte Faktoren lassen Energie unzugeordnet. Nährstoffmesswerte bleiben unverändert.",
+		"As parcelas calóricas são estimadas por alimento com fatores USDA completos, quando disponíveis; caso contrário, usam fatores gerais e a estimativa de carboidratos mais próxima, com ou sem fibras. As quatro parcelas, incluindo álcool, são normalizadas às calorias registradas antes de aplicar a quantidade com sinal. Componentes negativos mantêm seus valores sem percentuais. Macronutrientes ausentes ou fatores publicados incompletos deixam energia não atribuída. As medidas nutricionais não mudam."
 	],
 	[
 		"independent-means",
@@ -57666,7 +57666,7 @@ function nl(e, t = "en") {
 }
 function rl(e, t = "en") {
 	if (!e || typeof e.coefficientDiscrepancy != "string") throw Error("Incomplete calcium formula explanation.");
-	return t === "en" || e.id !== "cronometer-calcium-absorption-manual-0.0946" ? e.coefficientDiscrepancy : O(t, "balanceGuidance.coefficient");
+	return t === "en" || e.id !== "calcium-absorption-manual-0.0946" ? e.coefficientDiscrepancy : O(t, "balanceGuidance.coefficient");
 }
 // public/report-source/server/catalog-source.mjs
 function il(...e) {
@@ -59175,9 +59175,9 @@ Object.freeze([
 		unit: t.unit
 	});
 })), Object.freeze({
-	id: "cronometer-calcium-absorption-manual-0.0946",
+	id: "calcium-absorption-manual-0.0946",
 	expression: "A = C × (0.889 − 0.0946 × ln(C) − O − 0.060 × P); C in mg, O and P in g",
-	sourceUrl: "https://support.cronometer.com/hc/en-us/articles/360042110112-Nutrition-Scores",
+	sourceUrl: "https://ods.od.nih.gov/factsheets/Calcium-HealthProfessional/",
 	researchUrl: "https://doi.org/10.1016/j.tjnut.2023.12.005",
 	coefficientDiscrepancy: "The reference formula uses 0.0946; the cited research equation uses 0.0964. This estimate uses the 0.0946 coefficient."
 });
@@ -59295,7 +59295,7 @@ function jl(e, t) {
 		M(t) && !Al.some((e) => !Number.isSafeInteger(t[e]) || t[e] < 0) && Object.keys(t).length === Al.length && t.used + t.unknown + t.partial + t.nonPositiveCalcium + t.outOfRange + t.nonFinite === t.eligible && ["no-valid-days", null].includes(e.reason) && t.used === 0 == (e.reason === "no-valid-days") || n();
 	} else (e.reason === "no-valid-days" || Object.hasOwn(e, "days")) && n();
 	let r = e.formula;
-	M(r) && r.id === "cronometer-calcium-absorption-manual-0.0946" && typeof r.expression == "string" && Tl(r.sourceUrl) && Tl(r.researchUrl) && typeof r.coefficientDiscrepancy == "string" && r.coefficientDiscrepancy || n();
+	M(r) && r.id === "calcium-absorption-manual-0.0946" && typeof r.expression == "string" && Tl(r.sourceUrl) && Tl(r.researchUrl) && typeof r.coefficientDiscrepancy == "string" && r.coefficientDiscrepancy || n();
 }
 function Ml(e, { scope: t = "day", date: n, from: r, to: i } = {}) {
 	let a = t === "period";
@@ -59328,7 +59328,7 @@ function Ml(e, { scope: t = "day", date: n, from: r, to: i } = {}) {
 		"potassium",
 		"magnesium",
 		"calcium"
-	].includes(e?.id)) || !M(o.formula) || o.formula.id !== "cronometer-pral-2018" || typeof o.formula.expression != "string" || !Tl(o.formula.sourceUrl) || !Tl(o.formula.researchUrl)) throw new k("balancePral");
+	].includes(e?.id)) || !M(o.formula) || o.formula.id !== "pral-2018" || typeof o.formula.expression != "string" || !Tl(o.formula.sourceUrl) || !Tl(o.formula.researchUrl)) throw new k("balancePral");
 	for (let e of o.inputs) if (El(e), !yl(e.coefficient) || !bl(e.contribution)) throw new k("balanceContribution");
 	if (a) for (let t of [...e.pairs, e.pral]) {
 		let e = t.days;
@@ -76127,9 +76127,9 @@ Object.freeze({
 		-.013
 	]
 ]), Object.freeze({
-	id: "cronometer-pral-2018",
+	id: "pral-2018",
 	expression: "0.49 × protein(g) + 0.037 × phosphorus(mg) − 0.021 × potassium(mg) − 0.026 × magnesium(mg) − 0.013 × calcium(mg)",
-	sourceUrl: "https://cronometer.com/blog/alkaline-diet/",
+	sourceUrl: "https://pmc.ncbi.nlm.nih.gov/articles/PMC3946957/",
 	researchUrl: "https://pmc.ncbi.nlm.nih.gov/articles/PMC3946957/"
 }), [
 	[

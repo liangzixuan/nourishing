@@ -6,5 +6,5 @@ export function balanceNoteText(note,language='en'){
 }
 export function calciumCoefficientText(formula,language='en'){
  if(!formula||typeof formula.coefficientDiscrepancy!=='string')throw Error('Incomplete calcium formula explanation.');
- return language==='en'||formula.id!=='cronometer-calcium-absorption-manual-0.0946'?formula.coefficientDiscrepancy:formatMessage(language,'balanceGuidance.coefficient');
+ return language==='en'||formula.id!=='calcium-absorption-manual-0.0946'?formula.coefficientDiscrepancy:formatMessage(language,'balanceGuidance.coefficient');
 }

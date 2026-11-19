@@ -10,9 +10,9 @@ const nutrients=new Map(catalog.map(nutrient=>[nutrient.id,nutrient]));
 const Decimal=Big();Decimal.DP=340;
 const labels=new Map(nutrientBalanceOptions.map(option=>[option.id,option.label]));
 const references=Object.freeze({'calcium-magnesium':[1.7,2.8,true],'potassium-sodium':[2,10,true],'zinc-copper':[8,15,true],'omega6-omega3':[1,4,true],'calcium-oxalate':[1.3,null,false]});
-const referenceSource='https://support.cronometer.com/hc/en-us/articles/360018348631-Nutrient-Balances';
+const referenceSource='https://ods.od.nih.gov/HealthInformation/nutrientrecommendations.aspx';
 const pralInputs=Object.freeze([['protein','g',0.49],['phosphorus','mg',0.037],['potassium','mg',-0.021],['magnesium','mg',-0.026],['calcium','mg',-0.013]]);
-const pralFormula=Object.freeze({id:'cronometer-pral-2018',expression:'0.49 × protein(g) + 0.037 × phosphorus(mg) − 0.021 × potassium(mg) − 0.026 × magnesium(mg) − 0.013 × calcium(mg)',sourceUrl:'https://cronometer.com/blog/alkaline-diet/',researchUrl:'https://pmc.ncbi.nlm.nih.gov/articles/PMC3946957/'});
+const pralFormula=Object.freeze({id:'pral-2018',expression:'0.49 × protein(g) + 0.037 × phosphorus(mg) − 0.021 × potassium(mg) − 0.026 × magnesium(mg) − 0.013 × calcium(mg)',sourceUrl:'https://pmc.ncbi.nlm.nih.gov/articles/PMC3946957/',researchUrl:'https://pmc.ncbi.nlm.nih.gov/articles/PMC3946957/'});
 const pairs=[['calcium-magnesium','calcium','magnesium','mg'],['potassium-sodium','potassium','sodium','mg'],['zinc-copper','zinc','copper','mg'],['omega6-omega3','omega6','omega3','g'],['calcium-oxalate','calcium','oxalate','mg']].map(([id,numerator,denominator,unit])=>{
   const left=nutrients.get(numerator),right=nutrients.get(denominator);
   if(!left||!right||left.unit!==unit||right.unit!==unit)fail('Nutrient ratio inputs must have established matching catalog units.');

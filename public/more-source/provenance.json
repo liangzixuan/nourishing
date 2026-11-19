@@ -1,5 +1,5 @@
 {
-  "source": "cronometer-local/public",
+  "source": "nourishing-local/public",
   "extraction": {
     "source": "mobile-more.js",
     "sourceSha256": "02a25ed0edb5e3ee60c6b74c56c7ce27278732fcc41e1c78d2b74cfedc9e8f97",

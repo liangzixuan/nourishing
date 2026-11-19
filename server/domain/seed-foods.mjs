@@ -1,6 +1,6 @@
 /** Approximate illustrative values per listed serving, for local app testing.
  * These records are not a licensed nutrition database and are not measurements
- * taken from Cronometer. Missing keys mean unknown. Replace with verified labels
+ * Missing keys mean unknown. Replace with verified labels
  * or an authorized dataset before using this workspace to track actual intake.
  */
 const samples = [

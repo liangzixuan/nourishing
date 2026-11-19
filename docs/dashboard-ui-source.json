@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source": "../cronometer-local",
+  "source": "../nourishing-local",
   "files": [
     {
       "source": "public/discover-ui.js",

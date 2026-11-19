@@ -3,7 +3,7 @@ import {nutrientDisplayName} from './report-source/public/nutrient-language.js';
 import {biometricCatalogLabel} from './record-source/biometric-catalog-language.js';
 import {dc,chartText as cm} from './discover-cloud-messages.js';
 import {uiLanguage,t} from './app-language.js';
-// Presentation extracted from cronometer-local/public/mobile-charts.js:
+// Presentation extracted from nourishing-local/public/mobile-charts.js:
 // MobileCharts.title, seriesLabel, targetLabel, dateLabel and cardMarkup.
 // Cloud adapters keep server-owned values and use SVG swatches for the site CSP.
 import {escape as e} from './html.js';

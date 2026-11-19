@@ -1,4 +1,4 @@
-// Palette and y thresholds traced from retained Cronometer xCc/ACc; see stage cgm-plot-source evidence.
+// Palette and y thresholds for CGM glucose timeline plotting.
 export const cgmColors=Object.freeze({glucose:'#3CC26E',insulin:'#005C5C',outside:'#FFBA24',extreme:'#EA3B04'});
 export function cgmGlucoseColor(value,range){
  if(value<range.outerLow||value>range.outerHigh)return cgmColors.extreme;

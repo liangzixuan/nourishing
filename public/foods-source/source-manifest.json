@@ -1,11 +1,11 @@
 [
   {
-    "source": "../cronometer-local/public/mobile-foods-home.js",
+    "source": "../nourishing-local/public/mobile-foods-home.js",
     "target": "public/foods-source/mobile-foods-home.js",
     "sha256": "e9bd4e7fcb6c58e8dd308f5710c7cbafd95453d556f6cece5ac7b172a980cee4"
   },
   {
-    "source": "../cronometer-local/public/mobile-foods-home.css",
+    "source": "../nourishing-local/public/mobile-foods-home.css",
     "target": "public/foods-source/mobile-foods-home.css",
     "sha256": "c706117b69c3489c616a18c13ff16f56829560b335a7869e195d8864c96bf114",
     "sourceSha256": "c706117b69c3489c616a18c13ff16f56829560b335a7869e195d8864c96bf114",
@@ -15,12 +15,12 @@
     ]
   },
   {
-    "source": "../cronometer-local/public/mobile-library.js",
+    "source": "../nourishing-local/public/mobile-library.js",
     "target": "public/foods-source/mobile-library.js",
     "sha256": "69da857aae4a2e492501ef781d785993c32da7d07944e01a8008b7b54c591d30"
   },
   {
-    "source": "../cronometer-local/public/mobile-library.css",
+    "source": "../nourishing-local/public/mobile-library.css",
     "target": "public/foods-source/mobile-library.css",
     "sha256": "6d3e4878c4fee345d2fab8ce32dce5ed6e31a91c2fb58ad579185377b426aebf",
     "sourceSha256": "6d3e4878c4fee345d2fab8ce32dce5ed6e31a91c2fb58ad579185377b426aebf",
@@ -30,22 +30,22 @@
     ]
   },
   {
-    "source": "../cronometer-local/public/locales/mobile-foods-home.js",
+    "source": "../nourishing-local/public/locales/mobile-foods-home.js",
     "target": "public/foods-source/locales/mobile-foods-home.js",
     "sha256": "c324b70d4800b537c9a538d35c478b1628a61e32b6355402dde8a9060b32230e"
   },
   {
-    "source": "../cronometer-local/public/locales/mobile-library.js",
+    "source": "../nourishing-local/public/locales/mobile-library.js",
     "target": "public/foods-source/locales/mobile-library.js",
     "sha256": "99aba4f2f293d8c2d94d11c0398dffffd198dcb1b8fa23690e3d48ef503aa00c"
   },
   {
-    "source": "../cronometer-local/public/locales/library-view.js",
+    "source": "../nourishing-local/public/locales/library-view.js",
     "target": "public/foods-source/locales/library-view.js",
     "sha256": "2e85c6e0ad2a34c5364e82e3863e534b7c9da994b2785d142ba46b29103ca3b8"
   },
   {
-    "source": "../cronometer-local/public/locales/library-lifecycle.js",
+    "source": "../nourishing-local/public/locales/library-lifecycle.js",
     "target": "public/foods-source/locales/library-lifecycle.js",
     "sha256": "019fdb36367001b2f201b3f733a351a5b9d027672a61bb4ad10b0833a8cbafe0",
     "sourceSha256": "019fdb36367001b2f201b3f733a351a5b9d027672a61bb4ad10b0833a8cbafe0",
