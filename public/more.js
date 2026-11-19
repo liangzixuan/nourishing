@@ -1,4 +1,5 @@
 import {mountAccount} from './account-screen.js';
+import {pushBackHandler} from './back-history.js';
 import {t} from './app-language.js';
 import {coreText} from './core-cloud-messages.js';
 import {escape as e} from './html.js';
@@ -57,9 +58,7 @@ export function mountMore({
   let screen = 'home';
   let query = '';
   let scroll = 0;
-  let historyPushed = false;
-  let pendingBackPops = 0;
-  let navToken = 0;
+  let backHandle = null;
 
   const events = new AbortController();
   const signal = events.signal;
@@ -84,20 +83,21 @@ export function mountMore({
     child = null;
   }
 
-  function pushDestinationHistory(id) {
-    const state = {nourishingMore: id, token: ++navToken};
-    if (historyPushed) history.replaceState(state, '');
-    else {
-      history.pushState(state, '');
-      historyPushed = true;
-    }
+  function pushDestinationHistory() {
+    if (backHandle) return;
+    backHandle = pushBackHandler(() => {
+      if (!alive() || screen === 'home') return;
+      if (child?.back?.()) return 'keep';
+      backHandle = null;
+      renderHome();
+    });
   }
 
-  function popDestinationHistory() {
-    if (!historyPushed) return;
-    historyPushed = false;
-    pendingBackPops++;
-    history.back();
+  function popDestinationHistory({popHistory = true} = {}) {
+    if (!backHandle) return;
+    const handle = backHandle;
+    backHandle = null;
+    handle.release({popHistory});
   }
 
   function heading(title) {
@@ -216,20 +216,17 @@ export function mountMore({
         id,
         t('mobileMore.about'),
         '<div class="mm-about"><img src="/favicon.svg" alt=""><h2>Nourishing</h2><p>' +
-          e(coreText('more.version', {version: '1.0.2'})) +
+          e(coreText('more.version', {version: '1.0.3'})) +
           '</p></div>' +
           group(row('account', t('mobileMore.account')) + row('backup', coreText('more.yourData'))),
       );
     }
   }
 
-  function stepBack({fromPopState = false} = {}) {
+  function stepBack() {
     if (screen === 'home') return false;
-    if (child?.back?.()) {
-      if (fromPopState) pushDestinationHistory(screen);
-      return true;
-    }
-    exitToHome({fromPopState});
+    if (child?.back?.()) return true;
+    exitToHome();
     return true;
   }
 
@@ -243,20 +240,6 @@ export function mountMore({
       stepBack();
     }
   };
-
-  window.addEventListener(
-    'popstate',
-    () => {
-      if (pendingBackPops > 0) {
-        pendingBackPops--;
-        return;
-      }
-      if (!alive() || screen === 'home') return;
-      historyPushed = false;
-      stepBack({fromPopState: true});
-    },
-    {signal},
-  );
 
   headerRoot.addEventListener('click', click, {signal});
   root.addEventListener('click', click, {signal});
@@ -286,10 +269,7 @@ export function mountMore({
       disposed = true;
       reset();
       events.abort();
-      if (historyPushed) {
-        historyPushed = false;
-        history.replaceState(null, '');
-      }
+      popDestinationHistory({popHistory: false});
       document.body.classList.remove('more-mobile', 'more-destination');
     },
   };

@@ -1,4 +1,5 @@
 import './client-errors.js';
+import {pushBackHandler} from './back-history.js';
 import {startDeviceSync, warmDeviceViews} from './device-sync.js';
 import {startPrivateImages} from './private-images.js';
 import {sameDiarySnapshot, presentDiarySnapshot} from './diary-snapshot.js';
@@ -88,20 +89,41 @@ let diary = null;
 let loadId = 0;
 let searchId = 0;
 let group = 'Uncategorized';
+let sheetBackHandle = null;
+let tabBackHandle = null;
+let repeatsBackHandle = null;
+
+function handleSheetBack() {
+  if (!sheet.open) return;
+  const event = new CustomEvent('nourishing-back', {cancelable: true});
+  window.dispatchEvent(event);
+  if (event.defaultPrevented) return sheet.open ? 'keep' : undefined;
+  if (pickerCleanup?.back?.()) return 'keep';
+  sheetBackHandle = null;
+  close({popHistory: false});
+}
 
 function show(html) {
   pickerCleanup?.();
   pickerCleanup = null;
   searchId++;
   content.innerHTML = html;
-  if (!sheet.open) sheet.showModal();
+  if (!sheet.open) {
+    sheet.showModal();
+    if (!sheetBackHandle) sheetBackHandle = pushBackHandler(handleSheetBack);
+  }
   sheet.scrollTop = 0;
 }
 
-function close() {
+function close({popHistory = true} = {}) {
   pickerCleanup?.();
   pickerCleanup = null;
   searchId++;
+  if (sheetBackHandle) {
+    const handle = sheetBackHandle;
+    sheetBackHandle = null;
+    handle.release({popHistory});
+  }
   sheet.close();
   content.replaceChildren();
 }
@@ -200,6 +222,10 @@ function selectTab(id) {
 function leaveView() {
   diaryCalendar?.close();
   diaryTools.reset();
+  if (repeatsBackHandle) {
+    repeatsBackHandle.release({popHistory: false});
+    repeatsBackHandle = null;
+  }
   summaryPanel?.dispose();
   summaryPanel = null;
   library?.dispose();
@@ -410,10 +436,22 @@ function openRepeatsView() {
   leaveView();
   view = 'repeats';
   selectTab('foods-tab');
+  repeatsBackHandle = pushBackHandler(() => {
+    if (view !== 'repeats') return;
+    repeatsBackHandle = null;
+    navigate('foods');
+  });
   library = mountRepeats({
     page,
     headerRoot,
-    onExit: () => navigate('foods'),
+    onExit: () => {
+      if (repeatsBackHandle) {
+        const handle = repeatsBackHandle;
+        repeatsBackHandle = null;
+        handle.release();
+      }
+      navigate('foods');
+    },
     show,
     close,
     header,
@@ -498,10 +536,21 @@ function navigate(next, initialTab = 'dashboard', reportDate) {
     },
   };
   if (next === 'diary') {
+    if (tabBackHandle) {
+      tabBackHandle.release({popHistory: false});
+      tabBackHandle = null;
+    }
     selectTab('diary-tab');
     const reuseUnchanged = diary?.date === date;
     if (reuseUnchanged) render();
     return load({reuseUnchanged});
+  }
+  if (!tabBackHandle) {
+    tabBackHandle = pushBackHandler(() => {
+      if (view === 'diary') return;
+      tabBackHandle = null;
+      navigate('diary');
+    });
   }
   if (next === 'foods') {
     selectTab('foods-tab');
@@ -826,11 +875,15 @@ window.addEventListener('pagehide', () => {
   diaryTools.dispose();
   loadId++;
   leaveView();
+  if (tabBackHandle) {
+    tabBackHandle.release({popHistory: false});
+    tabBackHandle = null;
+  }
   view = 'diary';
   pendingNavigation = null;
   clearPending();
   diary = null;
-  close();
+  close({popHistory: false});
   page.replaceChildren();
 });
 
