@@ -7,7 +7,7 @@ let warmedDate;
 export function warmDeviceViews(date){
  if(warmedDate===date)return;warmedDate=date;
  const from=new Date(date+'T12:00:00Z');from.setUTCDate(from.getUTCDate()-6);
- const paths=['/api/dashboard?'+new URLSearchParams({date}),'/api/charts?'+new URLSearchParams({to:date}),'/api/library','/api/snapshots','/api/nutrition-report?'+new URLSearchParams({from:from.toISOString().slice(0,10),to:date,dayFilter:'nonempty',includeToday:true,includeSupplements:true})];
+ const paths=['/api/dashboard?'+new URLSearchParams({date}),'/api/charts?'+new URLSearchParams({to:date}),'/api/library','/api/snapshots','/api/nutrition-report?'+new URLSearchParams({from:from.toISOString().slice(0,10),to:date,dayFilter:'nonempty',includeToday:true,includeSupplements:true}),'/api/display','/api/profile-settings?'+new URLSearchParams({date}),'/api/targets?'+new URLSearchParams({date}),'/api/fasting?'+new URLSearchParams({date})];
  // Two background reads at a time keep initial navigation responsive without
  // opening every view or serializing the full set of server round trips.
  const warm=async()=>{while(paths.length){const path=paths.shift();await request(path).catch(()=>{});}};

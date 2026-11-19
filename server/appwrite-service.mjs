@@ -252,7 +252,7 @@ function buildAuthAndLifecycleMethods(ctx) {
 }
 
 function buildMediaAndPhotoMethods(ctx) {
-  const {data, readView, elevated, catalogReader} = ctx;
+  const {data, readView, readStateEnsured, elevated, catalogReader} = ctx;
   return {
     snapshots: secret => readView(secret, snapshotsView),
     prepareNotePhoto: async (secret, input) => {
@@ -289,9 +289,8 @@ function buildMediaAndPhotoMethods(ctx) {
     analyzePhoto: async (secret, input, signal) => {
       const {owner, repository, storage} = await data(secret);
       await takePhotoAnalyzeBudget(new TablesDB(elevated()), {database: ctx.config.database, owner});
-      await createWorkspaceStore(new TablesDB(elevated()), owner).create();
       const [state, catalogHead] = await Promise.all([
-        repository.readState(),
+        readStateEnsured(owner, repository),
         new TablesDB(ctx.session(secret))
           .getRow({databaseId: ctx.config.database, tableId: 'catalog_heads', rowId: 'active'})
           .catch(() => null),
@@ -472,7 +471,7 @@ function buildLibraryAndSearchMethods(ctx) {
 }
 
 function buildDiaryAndViewMethods(ctx) {
-  const {data, readView, calendarContext, resolveAccount, ensureProfile, elevated, catalogReader, pushStore, reminderStore, csvImports, backups} = ctx;
+  const {data, readView, readStateEnsured, calendarContext, resolveAccount, ensureProfile, elevated, catalogReader, pushStore, reminderStore, csvImports, backups} = ctx;
   return {
     nutrientDetail: (secret, input) => readView(secret, state => nutrientDetail(state, input)),
     reportNutrientDetail: async (secret, input) => {
@@ -513,9 +512,9 @@ function buildDiaryAndViewMethods(ctx) {
     coachPreferences: secret => readView(secret, coachView),
     coachAnswer: (secret, input) => readView(secret, state => coachAnswer(state, input)),
     dashboard: async (secret, date) => {
-      const {owner} = await data(secret);
-      const context = await calendarContext(secret, owner);
-      return readView(secret, state => dashboardView(state, {date}, context));
+      const {owner, repository} = await data(secret);
+      const [state, context] = await Promise.all([readStateEnsured(owner, repository), calendarContext(secret, owner)]);
+      return dashboardView(state, {date}, context);
     },
     offlineSnapshot: async secret => {
       const {owner} = await data(secret);
@@ -545,20 +544,24 @@ function buildDiaryAndViewMethods(ctx) {
     restoreBackup: async (secret, input) => (await backups(secret)).restore(input),
     profileSettings: (secret, date) => readView(secret, state => profileSettingsView(state, date)),
     fasting: async (secret, input) => {
-      const {owner} = await data(secret);
-      const context = await calendarContext(secret, owner);
-      return readView(secret, state => fastingView(state, context, input));
+      const {owner, repository} = await data(secret);
+      const [state, context] = await Promise.all([readStateEnsured(owner, repository), calendarContext(secret, owner)]);
+      return fastingView(state, context, input);
     },
     previewTargetPolicy: async (secret, input) => {
-      const {owner} = await data(secret);
-      const context = await calendarContext(secret, owner);
-      return readView(secret, state => previewTargetPolicy(state, input, context));
+      const {owner, repository} = await data(secret);
+      const [state, context] = await Promise.all([readStateEnsured(owner, repository), calendarContext(secret, owner)]);
+      try {
+        return previewTargetPolicy(state, input, context);
+      } catch (error) {
+        mapViewError(error);
+      }
     },
     targetTemplatePreview: (secret, input) => readView(secret, state => previewMacroTemplate(state, input)),
     targetPolicies: async (secret, date) => {
-      const {owner} = await data(secret);
-      const context = await calendarContext(secret, owner);
-      return readView(secret, state => targetPolicyView(state, date, context));
+      const {owner, repository} = await data(secret);
+      const [state, context] = await Promise.all([readStateEnsured(owner, repository), calendarContext(secret, owner)]);
+      return targetPolicyView(state, date, context);
     },
     repeats: (secret, date) => readView(secret, state => repeatView(state, date)),
     exerciseCatalog: async secret => {
@@ -575,28 +578,32 @@ function buildDiaryAndViewMethods(ctx) {
     },
     exerciseEstimate: (secret, input) => readView(secret, state => exerciseEstimateView(state, input)),
     charts: async (secret, input) => {
-      const {owner} = await data(secret);
-      const calendar = await calendarContext(secret, owner);
-      return readView(secret, state => chartSurfaceView(state, input, {now: new Date(calendar.asOf), timeZone: calendar.timeZone}));
+      const {owner, repository} = await data(secret);
+      const [state, calendar] = await Promise.all([readStateEnsured(owner, repository), calendarContext(secret, owner)]);
+      try {
+        return chartSurfaceView(state, input, {now: new Date(calendar.asOf), timeZone: calendar.timeZone});
+      } catch (error) {
+        mapViewError(error);
+      }
     },
     exportReport: (secret, input) => readView(secret, state => csvReport(state, input)),
     nutrientTargets: (secret, date) => readView(secret, state => nutrientTargetsView(state, date)),
     targets: async (secret, date) => {
       const {owner, repository} = await data(secret);
-      await createWorkspaceStore(new TablesDB(elevated()), owner).create();
-      return targetView(await repository.readState(), date);
+      return targetView(await readStateEnsured(owner, repository), date);
     },
     nutritionReport: async (secret, options) => {
       const {owner, repository} = await data(secret);
-      await createWorkspaceStore(new TablesDB(elevated()), owner).create();
-      const profile = await ensureProfile(secret, await resolveAccount(secret));
-      return reportView(await repository.readState(), options, {timeZone: profile.timeZone});
+      const [state, profile] = await Promise.all([
+        readStateEnsured(owner, repository),
+        ensureProfile(secret, await resolveAccount(secret)),
+      ]);
+      return reportView(state, options, {timeZone: profile.timeZone});
     },
     readDiary: async (secret, date) => {
       const {owner, repository} = await data(secret);
-      await createWorkspaceStore(new TablesDB(elevated()), owner).create();
-      const calendar = await calendarContext(secret, owner);
-      return repository.diary(date, {now: new Date(calendar.asOf), timeZone: calendar.timeZone});
+      const [state, calendar] = await Promise.all([readStateEnsured(owner, repository), calendarContext(secret, owner)]);
+      return repository.diaryFromState(state, date, {now: new Date(calendar.asOf), timeZone: calendar.timeZone});
     },
     workspaceCommand: async (secret, input) => {
       const {owner, repository} = await data(secret);
@@ -683,11 +690,21 @@ export function createAppwriteService(config, key, userAgent = '') {
     }
   };
 
+  async function readStateEnsured(owner, repository) {
+    try {
+      return await repository.readState();
+    } catch (error) {
+      if (error?.code !== 404) throw error;
+      await createWorkspaceStore(new TablesDB(elevated()), owner).create();
+      return repository.readState();
+    }
+  }
+
   async function readView(secret, project) {
     const {owner, repository} = await data(secret);
-    await createWorkspaceStore(new TablesDB(elevated()), owner).create();
+    const state = await readStateEnsured(owner, repository);
     try {
-      return await project(await repository.readState());
+      return await project(state);
     } catch (error) {
       mapViewError(error);
     }
@@ -732,9 +749,8 @@ export function createAppwriteService(config, key, userAgent = '') {
 
   async function insights(secret, input, project) {
     const {owner, repository, storage} = await data(secret);
-    await createWorkspaceStore(new TablesDB(elevated()), owner).create();
     const [state, head] = await Promise.all([
-      repository.readState(),
+      readStateEnsured(owner, repository),
       new TablesDB(session(secret)).getRow({databaseId: config.database, tableId: 'catalog_heads', rowId: 'active'}),
     ]);
     const catalog = await loadCatalogIndex({storage, head, namespace: config.endpoint + '/' + config.project});
@@ -784,6 +800,7 @@ export function createAppwriteService(config, key, userAgent = '') {
     resolveAccount,
     data,
     catalogReader,
+    readStateEnsured,
     readView,
     ensureProfile,
     calendarContext,

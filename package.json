@@ -1,6 +1,6 @@
 {
   "name": "nourishing",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "type": "module",
   "engines": {
@@ -8,6 +8,7 @@
   },
   "scripts": {
     "start": "node dist/server/entry.mjs",
+    "pretest": "node scripts/package-diary-bundle.mjs",
     "test": "node --test tests/*.test.mjs",
     "build": "astro build",
     "dev": "astro dev"

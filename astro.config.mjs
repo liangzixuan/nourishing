@@ -1,6 +1,7 @@
 import {defineConfig} from 'astro/config';
 import node from '@astrojs/node';
 import {diaryStylesPackaging} from './scripts/package-diary-styles.mjs';
+import {diaryBundlePackaging} from './scripts/package-diary-bundle.mjs';
 import {offlinePackaging} from './scripts/package-offline-assets.mjs';
 import {barcodePackaging} from './scripts/package-barcode-assets.mjs';
 import {pwaPackaging} from './scripts/package-pwa-icons.mjs';
@@ -13,6 +14,7 @@ export default defineConfig({
   adapter: node({mode: 'standalone', bodySizeLimit: 0}),
   integrations: [
     diaryStylesPackaging(),
+    diaryBundlePackaging(),
     offlinePackaging(),
     pwaPackaging(),
     recipeWorkerPackaging(),

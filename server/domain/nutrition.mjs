@@ -57,7 +57,7 @@ export const SUPPLEMENT_CONTRIBUTION_KEYS=Object.freeze(['includedFoodContributi
 const emptySupplementFilter=()=>Object.fromEntries(SUPPLEMENT_CONTRIBUTION_KEYS.map(key=>[key,0]));
 const allFoodPolicy=Object.freeze({includeSupplements:true});
 const antioxidantReferences=Object.freeze({betaCarotene:15000,lycopene:30000,luteinZeaxanthin:12000});
-const antioxidantSourceUrl='https://ods.od.nih.gov/factsheets/Calcium-HealthProfessional/';
+const antioxidantSourceUrl='https://ods.od.nih.gov/factsheets/VitaminA-HealthProfessional/';
 
 function quantity(value, fallback = 1) {
   return parseServingAmount(value === undefined ? fallback : value);

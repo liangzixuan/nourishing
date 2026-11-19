@@ -17,5 +17,6 @@ coverage/
 *.aab
 public/pwa-icons/
 
-# Generated public offline asset graph
+# Generated public offline asset graph and diary JS bundle
 /public/offline-assets.js
+/public/diary-bundle.js

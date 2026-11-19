@@ -18,9 +18,11 @@ export function createDataRepository(db,ownerId){
    throw Object.assign(Error('The diary is being updated. Try again.'),{code:409,publicMessage:'The diary is being updated. Try again.'});
  }
  async function catalogHead(){try{return await get('catalog_heads','active');}catch(error){if(error.code===404)throw Object.assign(Error('Food catalog is being prepared.'),{code:503,publicMessage:'Food catalog is being prepared.'});throw error;}}
+ const diaryFromState=(state,date,clock)=>{const summary=calculateSummary(state,date);return diaryToolsPresentation(state,{date,cycleDays:diaryCycleDays(state,date,clock),revision:digest(state),theme:state.settings.theme??'dark',groups:state.settings.groups,completed:state.settings.completedDays?.includes(date)??false,entries:state.entries.filter(r=>r.date===date).map(row=>({...row,facts:entryFacts(state,row)})),biometrics:state.biometrics.filter(r=>r.date===date),notes:state.notes.filter(r=>r.date===date),summary,presentation:diarySummaryPresentation(state,summary,clock)});};
  return {
    readState,
-   async diary(date,clock){const state=await readState(),summary=calculateSummary(state,date);return diaryToolsPresentation(state,{date,cycleDays:diaryCycleDays(state,date,clock),revision:digest(state),theme:state.settings.theme??'dark',groups:state.settings.groups,completed:state.settings.completedDays?.includes(date)??false,entries:state.entries.filter(r=>r.date===date).map(row=>({...row,facts:entryFacts(state,row)})),biometrics:state.biometrics.filter(r=>r.date===date),notes:state.notes.filter(r=>r.date===date),summary,presentation:diarySummaryPresentation(state,summary,clock)});},
+   diaryFromState,
+   async diary(date,clock){return diaryFromState(await readState(),date,clock);},
    async catalogStatus(){const h=await catalogHead(),metadata=JSON.parse(h.metadata);return {available:true,count:h.count,datasets:metadata.datasets};},
    async search({query='',offset=0,limit=25}){
      const h=await catalogHead(),terms=searchTerms(query);if(query.trim()&&!terms.length)return {items:[],total:0,offset,nextOffset:null};
