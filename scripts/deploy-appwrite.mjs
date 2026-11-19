@@ -119,7 +119,7 @@ async function main() {
       },
       {
         name: 'account-cleanup',
-        functionId: process.env.APPWRITE_CLEANUP_FUNCTION_ID || 'account-cleanup',
+        functionId: process.env.APPWRITE_CLEANUP_FUNCTION_ID || 'nourishing-account-cleanup',
         packagerScript: 'scripts/package-account-cleanup.mjs',
         stageFile: '.local/account-cleanup-stage.json',
         entrypoint: 'server/account-cleanup-entry.mjs',
