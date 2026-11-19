@@ -4,6 +4,7 @@ import {BARCODE_BODY_BYTES} from './barcode.mjs';
 import {CSV_BODY_BYTES} from './csv-import.mjs';
 import {deletionCookie, readDeletionTicket} from './deletion-cookie.mjs';
 import {readCloudFoodSearchQuery} from './food-search.mjs';
+import {captureServerError} from './sentry.mjs';
 import {readSession, sessionCookie, clearSession, sessionContext} from './session-cookie.mjs';
 
 const SPA_PATHS = new Set(['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/account']);
@@ -894,6 +895,7 @@ export function createWebHandler({config, service, serviceForRequest, assets = n
       const {status, payload} = formatErrorResponse(error, path);
       if (status >= 500 && !STATUS_CODES.has(error.code)) {
         console.error('[http]', req.method, path, status, error?.stack ?? error?.message ?? error);
+        void captureServerError(error, {service: 'web', method: req.method, path, status});
       }
       return json(status, payload);
     }

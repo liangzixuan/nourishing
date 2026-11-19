@@ -6,6 +6,7 @@ import {runCloudScheduler} from './cloud-scheduler.mjs';
 import {createFastingDispatcher,parseSchedulerRequest} from './scheduler-dispatch.mjs';
 import {createReminderDispatcher} from './reminder-schedules-dispatch.mjs';
 import {createWorkspaceStore} from './workspace-store.mjs';
+import {captureServerError} from './sentry.mjs';
 
 /** Private one-shot wakeups plus hourly repair. Public execute permissions stay empty. */
 export default async function schedulerEntry({req,res,log=()=>{},error=()=>{}}){
@@ -31,5 +32,5 @@ export default async function schedulerEntry({req,res,log=()=>{},error=()=>{}}){
   }
   const safe={enabled:true,examined:result.examined??1,queued:result.queued??false,changed:result.changed??false,stale:result.stale??false,failed:result.failed??0,more:result.more??false};
   log(JSON.stringify(safe));return res.json({ok:safe.failed===0,...safe},safe.failed?500:200);
- }catch{error('Scheduled fasting could not complete.');return res.json({ok:false,error:'Scheduled fasting could not complete.'},500);}
+ }catch(caught){error('Scheduled fasting could not complete.');await captureServerError(caught,{service:'nourishing-scheduler',status:500});return res.json({ok:false,error:'Scheduled fasting could not complete.'},500);}
 }

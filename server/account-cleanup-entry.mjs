@@ -3,6 +3,7 @@ import {TablesDB,Storage,Users} from 'node-appwrite';
 import {createAccountLifecycle} from './account-lifecycle.mjs';
 import {createAccountDeletion} from './account-deletion.mjs';
 import {runAccountCleanup} from './account-cleanup-worker.mjs';
+import {captureServerError} from './sentry.mjs';
 
 export function parseCleanupRequest(body){
  if(body===undefined||body==='')return {};
@@ -23,5 +24,5 @@ export default async function accountCleanupEntry({req,res,log=()=>{},error=()=>
   const client=new AccountOperationClient().setEndpoint(endpoint).setProject(project).setKey(key),db=new TablesDB(client),storage=new Storage(client),users=new Users(client),database=process.env.APPWRITE_DATABASE_ID||'nourishing';
   const lifecycle=createAccountLifecycle({db,database}),deletion=createAccountDeletion({db,storage,users,lifecycle,database});
   const result=await runAccountCleanup({db,deletion,lifecycle,database,enabled:true,...selection});log(JSON.stringify(result));return res.json({ok:result.failed===0,...result},result.failed?500:200);
- }catch{error('Account cleanup could not complete.');return res.json({ok:false,error:'Account cleanup could not complete.'},500);}
+ }catch(caught){error('Account cleanup could not complete.');await captureServerError(caught,{service:'nourishing-account-cleanup',status:500});return res.json({ok:false,error:'Account cleanup could not complete.'},500);}
 }
