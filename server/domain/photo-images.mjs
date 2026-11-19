@@ -144,6 +144,15 @@ export async function normalizePhoto(dataUrl) {
   } catch (error) { decodeFailure(error); }
 }
 
+export async function prepareVisionImage(photo, maxEdge = 1024) {
+  if (!photo?.bytes || (photo.width <= maxEdge && photo.height <= maxEdge)) return photo.base64;
+  const bytes = await sharp(photo.bytes)
+    .resize({width: maxEdge, height: maxEdge, fit: 'inside', withoutEnlargement: true})
+    .jpeg({quality: 78})
+    .toBuffer();
+  return bytes.toString('base64');
+}
+
 export async function validateStoredPhoto(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value) || typeof value.id !== 'string' || !/^[a-f0-9]{64}$/u.test(value.id)) invalid('Stored photo ID must be a SHA-256 digest from an exported backup.');
   const {mime, bytes} = decodeDataUrl(value.dataUrl, MAX_STORED_PHOTO_BYTES);

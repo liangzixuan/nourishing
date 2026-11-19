@@ -1,5 +1,5 @@
 import {createHmac, timingSafeEqual} from 'node:crypto';
-import {normalizePhoto} from './domain/photo-images.mjs';
+import {normalizePhoto, prepareVisionImage} from './domain/photo-images.mjs';
 import {photoAnalysis} from './domain/photo-records.mjs';
 import {MEAL_PHOTO_SCHEMA, MEAL_PHOTO_PROMPT, mealResult} from './domain/meal-photo-contract.mjs';
 import {parseIngredientLine} from './domain/recipe-ingredients.mjs';
@@ -78,13 +78,14 @@ export function createCloudPhotoAnalyzer({apiKey = process.env.GEMINI_API_KEY, r
       let photo;
       try { photo = await normalizePhoto(input.image); } catch (error) { throw failure(error.message, error.status ?? 400); }
       identity(owner, photo.id);
+      const visionBase64 = await prepareVisionImage(photo);
       const timeout = AbortSignal.timeout(timeoutMs), requestSignal = signal ? AbortSignal.any([signal, timeout]) : timeout, started = performance.now();
       let response;
       try {
         const client = await clientFactory(apiKey);
         // Retry only explicit temporary-overload responses, within the same total deadline.
         // Do not replay quota, authentication, validation or ambiguous transport failures.
-        response = await client.interactions.create({model, store: false, input: [{type: 'user_input', content: [{type: 'text', text: MEAL_PHOTO_PROMPT + ' Use the best-supported likely food name. Keep reasons brief. Return concise JSON only.'}, {type: 'image', mime_type: 'image/jpeg', data: photo.base64}]}], response_format: {type: 'text', mime_type: 'application/json', schema: responseSchema}, generation_config: {thinking_level: 'minimal', max_output_tokens: 4096}}, {signal: requestSignal, retry_codes: ['503'], retries: {strategy: 'attempt-count-backoff', maxRetries: 2, retryConnectionErrors: false, backoff: {initialInterval: 500, maxInterval: 1000, exponent: 2}}});
+        response = await client.interactions.create({model, store: false, input: [{type: 'user_input', content: [{type: 'text', text: MEAL_PHOTO_PROMPT + ' Use the best-supported likely food name. Keep reasons brief. Return concise JSON only.'}, {type: 'image', mime_type: 'image/jpeg', data: visionBase64}]}], response_format: {type: 'text', mime_type: 'application/json', schema: responseSchema}, generation_config: {thinking_level: 'minimal', max_output_tokens: 4096}}, {signal: requestSignal, retry_codes: ['503'], retries: {strategy: 'attempt-count-backoff', maxRetries: 2, retryConnectionErrors: false, backoff: {initialInterval: 500, maxInterval: 1000, exponent: 2}}});
       } catch (error) {
         if (signal?.aborted) throw failure('Photo recognition cancelled.', 499);
         if (timeout.aborted) throw failure('Recognition took too long. Try again.', 504);

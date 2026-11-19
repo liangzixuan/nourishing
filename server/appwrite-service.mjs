@@ -34,7 +34,7 @@ import {libraryToolsView} from './library-tools.mjs';
 import {createBackupStore} from './backup-store.mjs';
 import {profileSettingsView} from './profile-settings.mjs';
 import {snapshotsView, prepareSnapshot, SNAPSHOT_MEDIA_NAMESPACE} from './snapshots.mjs';
-import {importRecipeUrl, previewRecipeImport, prepareRecipeImportDraft} from './recipe-import.mjs';
+import {importRecipeUrl, previewRecipeImport, prepareRecipeImportDraft, recipeImportCatalog} from './recipe-import.mjs';
 import {fastingView} from './fasting.mjs';
 import {createCloudPhotoAnalyzer} from './cloud-photo.mjs';
 import {validateStoredPhoto} from './domain/photo-images.mjs';
@@ -287,15 +287,34 @@ function buildMediaAndPhotoMethods(ctx) {
       );
     },
     analyzePhoto: async (secret, input, signal) => {
-      const {owner, repository} = await data(secret);
+      const {owner, repository, storage} = await data(secret);
       await takePhotoAnalyzeBudget(new TablesDB(elevated()), {database: ctx.config.database, owner});
       await createWorkspaceStore(new TablesDB(elevated()), owner).create();
-      const state = await repository.readState();
+      const [state, catalogHead] = await Promise.all([
+        repository.readState(),
+        new TablesDB(ctx.session(secret))
+          .getRow({databaseId: ctx.config.database, tableId: 'catalog_heads', rowId: 'active'})
+          .catch(() => null),
+      ]);
+      let search = (query, {limit}) => repository.search({query, limit, offset: 0});
+      if (catalogHead) {
+        try {
+          const catalog = await loadCatalogIndex({
+            storage,
+            head: catalogHead,
+            namespace: ctx.config.endpoint + '/' + ctx.config.project,
+          });
+          const fastCatalog = recipeImportCatalog(catalog);
+          search = (query, {limit}) => fastCatalog.search(query, {limit, offset: 0});
+        } catch {
+          // Fall back to TablesDB search if the compact catalog index is unavailable.
+        }
+      }
       return createCloudPhotoAnalyzer().analyze(input, {
         owner,
         foods: state.foods,
         signal,
-        search: (query, {limit}) => repository.search({query, limit, offset: 0}),
+        search,
       });
     },
     savePhoto: async (secret, input) => {

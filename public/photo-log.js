@@ -8,9 +8,36 @@ import {mountFoodPicker} from './food-picker.js';
 import {quantityFields, quantityValue} from './quantity.js';
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const CLIENT_MAX_EDGE = 1280;
+const CLIENT_SKIP_BYTES = 300 * 1024;
+const CLIENT_JPEG_QUALITY = 0.8;
 const num = value => Number.isFinite(value) ? value.toLocaleString(uiLanguage(), {maximumFractionDigits: 1}) : '—';
 const quantityLabel = row => `${num(row.quantity ?? row.amount ?? 1)} ${row.unit === 'portion' ? row.portionLabel ?? foodQuantityUnit('portions') : foodQuantityUnit(row.unit ?? 'servings')}`;
 const fileData = file => new Promise((resolve, reject) => {const reader = new FileReader();reader.onload = () => resolve(reader.result);reader.onerror = () => reject(Error(fc("photoOpenFailed")));reader.readAsDataURL(file);});
+
+async function prepareUploadImage(file) {
+  if (typeof createImageBitmap !== 'function') return fileData(file);
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+    const maxDim = Math.max(bitmap.width, bitmap.height);
+    if (maxDim <= CLIENT_MAX_EDGE && file.size <= CLIENT_SKIP_BYTES) return fileData(file);
+    const scale = Math.min(1, CLIENT_MAX_EDGE / maxDim);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return fileData(file);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', CLIENT_JPEG_QUALITY);
+  } catch {
+    return fileData(file);
+  } finally {
+    bitmap?.close?.();
+  }
+}
 
 /** Save is injected by the authenticated cloud owner; no photo draft is persisted. */
 export function mountPhotoLog({show, close, header, content, date, groups, initialGroup, save, onChange = async () => {}}) {
@@ -29,7 +56,7 @@ export function mountPhotoLog({show, close, header, content, date, groups, initi
   shell.querySelectorAll('input[type=file]').forEach(input => {input.onchange = async () => {const file = input.files?.[0];input.value = '';if (!file) return;
     const id = ++serial;abort?.abort();analysis = null;originalImage = null;rows = [];
     if (file.size > MAX_IMAGE_BYTES) return errorView(fc('photoTooLarge'));
-    try {const image = await fileData(file);if (!alive() || id !== serial) return;originalImage = image;analyze();} catch (error) {if (alive() && id === serial) errorView(error.message);}
+    try {const image = await prepareUploadImage(file);if (!alive() || id !== serial) return;originalImage = image;analyze();} catch (error) {if (alive() && id === serial) errorView(error.message);}
   };});
   function start() {replace(`<div class="photo-start"><button type="button" class="primary" data-camera>${e(t("mobilePhoto.capture"))}</button><button type="button" class="more-results" data-gallery>${e(t("mobilePhoto.gallery"))}</button></div>`);body.querySelector('[data-camera]').onclick = () => picker(true);body.querySelector('[data-gallery]').onclick = () => picker(false);}
   function errorView(message) {replace(`<div class="photo-error"><p class="sheet-message" role="status">${e(message)}</p>${originalImage ? `<button class="primary" type="button" data-retry>${e(t("mobileSuggest.retry"))}</button>` : ''}<button class="more-results" type="button" data-gallery>${e(t("mobilePhoto.gallery"))}</button></div>`);body.querySelector('[data-gallery]').onclick = () => picker(false);if (originalImage) body.querySelector('[data-retry]').onclick = analyze;}
