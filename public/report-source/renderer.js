@@ -3966,10 +3966,10 @@ var Ue = Object.fromEntries([
 		"Sobre as classificações"
 	],
 	helpText: [
-		"Rank foods by measured nutrient density or a published serving. Cronometer’s learned Oracle ranking is not available here.",
-		"Classez les aliments par densité nutritionnelle mesurée ou par portion publiée. Le classement personnalisé de Cronometer est indisponible ici.",
-		"Sortiere Lebensmittel nach gemessener Nährstoffdichte oder veröffentlichter Portion. Cronometers lernende Oracle-Sortierung ist hier nicht verfügbar.",
-		"Ordene alimentos pela densidade nutricional medida ou porção publicada. A classificação personalizada do Cronometer não está disponível aqui."
+		"Rank foods by measured nutrient density or a published serving.",
+		"Classez les aliments par densité nutritionnelle mesurée ou par portion publiée.",
+		"Sortiere Lebensmittel nach gemessener Nährstoffdichte oder veröffentlichter Portion.",
+		"Ordene alimentos pela densidade nutricional medida ou porção publicada."
 	],
 	unknown: [
 		"Unknown",
@@ -11500,10 +11500,10 @@ var Ue = Object.fromEntries([
 		"Resolva o salvamento de alimento pendente antes de ajustar uma refeição."
 	],
 	"guidance.independent": [
-		"Ten independent meal examples use explicit pinned USDA ingredients. This is not Cronometer meal data or ranking.",
-		"Dix exemples de repas indépendants utilisent des ingrédients USDA précisément définis et figés. Il ne s’agit pas des repas ou du classement de Cronometer.",
-		"Zehn unabhängige Mahlzeitbeispiele verwenden ausdrücklich festgelegte USDA-Zutaten. Dies sind keine Mahlzeitdaten oder Rangfolgen von Cronometer.",
-		"Dez exemplos independentes de refeições usam ingredientes USDA explicitamente fixados. Estes não são os dados de refeições nem a classificação do Cronometer."
+		"Ten independent meal examples use explicit pinned USDA ingredients.",
+		"Dix exemples de repas indépendants utilisent des ingrédients USDA précisément définis et figés.",
+		"Zehn unabhängige Mahlzeitbeispiele verwenden ausdrücklich festgelegte USDA-Zutaten.",
+		"Dez exemplos independentes de refeições usam ingredientes USDA explicitamente fixados."
 	],
 	"guidance.quantities": [
 		"Example quantities are editable. Added sauces, seasonings and preparation changes must be entered separately.",
@@ -32293,14 +32293,14 @@ var Li = (e) => typeof e == "object" && !!e && !Array.isArray(e) && Object.keys(
 	"day.ratios": "Daily ratios divide unrounded recorded nutrient totals with matching source units. Display formatting can round these raw values.",
 	"day.unavailable": "A ratio is withheld when an input is unknown or partial, its denominator is zero, or division has no finite result.",
 	"day.zeros": "Completion-confirmed zeros with no measured contributions are labeled separately. Missing food measurements remain unknown after completion.",
-	"day.references": "Ratio bands are Cronometer's published reference ranges, not personalized targets or clinical advice.",
+	"day.references": "Ratio bands are published reference ranges, not personalized targets or clinical advice.",
 	"day.pral": "PRAL estimates dietary acid load from recorded food nutrients. It does not measure blood pH or kidney function.",
 	"day.pral-inputs": "PRAL is withheld when any required input is unknown or partial. Signed values and exact decimal cancellation are retained.",
 	"period.dates": "Each balance uses only dates with complete measurements for all its required inputs. Unknown, partial and non-finite dates are excluded together, in that order.",
 	"period.ratios": "Ratios divide pooled unrounded input sums, equivalent to the ratio of means over the same used dates. They are not means of daily ratios. Complete zero-denominator dates remain in the pool.",
 	"period.inputs": "Input amounts are daily means over the same used dates for that balance. Coverage counts sum the food contributions on those dates. Completion-confirmed zero dates are counted separately.",
 	"period.pral": "PRAL is the mean complete daily estimate, with signed values and decimal cancellation retained. Different balances may use different sets of dates.",
-	"period.references": "Ratio bands are Cronometer's published reference ranges, not personalized targets or clinical advice. PRAL does not measure blood pH or kidney function.",
+	"period.references": "Ratio bands are published reference ranges, not personalized targets or clinical advice. PRAL does not measure blood pH or kidney function.",
 	"calcium.estimate": "This published-equation estimate does not measure individual calcium absorption and does not change dietary calcium targets.",
 	"calcium.study": "The cited study used food or test-meal quantities. It does not establish that the equation is valid for all daily totals or individual diets.",
 	"calcium.missing": "Missing or partial required measurements withhold the estimate. Unknown oxalate or phytate is not assumed to be zero.",
@@ -32327,9 +32327,9 @@ var Li = (e) => typeof e == "object" && !!e && !Array.isArray(e) && Object.keys(
 	],
 	[
 		"day.references",
-		"Les bandes des rapports sont les plages de référence publiées par Cronometer, pas des objectifs personnalisés ni des conseils cliniques.",
-		"Die Verhältnisbereiche sind von Cronometer veröffentlichte Referenzbereiche, keine persönlichen Ziele oder klinischen Empfehlungen.",
-		"As faixas das razões são referências publicadas pelo Cronometer, não metas personalizadas nem orientações clínicas."
+		"Les bandes des rapports sont des plages de référence publiées, pas des objectifs personnalisés ni des conseils cliniques.",
+		"Die Verhältnisbereiche sind veröffentlichte Referenzbereiche, keine persönlichen Ziele oder klinischen Empfehlungen.",
+		"As faixas das razões são referências publicadas, não metas personalizadas nem orientações clínicas."
 	],
 	[
 		"day.pral",
@@ -32369,9 +32369,9 @@ var Li = (e) => typeof e == "object" && !!e && !Array.isArray(e) && Object.keys(
 	],
 	[
 		"period.references",
-		"Les bandes des rapports sont les plages de référence publiées par Cronometer, pas des objectifs personnalisés ni des conseils cliniques. Le PRAL ne mesure ni le pH sanguin ni la fonction rénale.",
-		"Die Verhältnisbereiche sind von Cronometer veröffentlichte Referenzbereiche, keine persönlichen Ziele oder klinischen Empfehlungen. PRAL misst weder den Blut-pH-Wert noch die Nierenfunktion.",
-		"As faixas das razões são referências publicadas pelo Cronometer, não metas personalizadas nem orientações clínicas. O PRAL não mede o pH do sangue nem a função renal."
+		"Les bandes des rapports sont des plages de référence publiées, pas des objectifs personnalisés ni des conseils cliniques. Le PRAL ne mesure ni le pH sanguin ni la fonction rénale.",
+		"Die Verhältnisbereiche sind veröffentlichte Referenzbereiche, keine persönlichen Ziele oder klinischen Empfehlungen. PRAL misst weder den Blut-pH-Wert noch die Nierenfunktion.",
+		"As faixas das razões são referências publicadas, não metas personalizadas nem orientações clínicas. O PRAL não mede o pH do sangue nem a função renal."
 	],
 	[
 		"calcium.estimate",
@@ -32404,8 +32404,8 @@ var Li = (e) => typeof e == "object" && !!e && !Array.isArray(e) && Object.keys(
 		"Os valores do período são médias das estimativas e frações diárias aceitas, não a equação aplicada aos dados agrupados. As médias dos dados usam exatamente as mesmas datas aceitas."
 	]
 ], Yi = [
-	"The Cronometer manual uses 0.0946; the cited research equation uses 0.0964. This estimate uses the manual coefficient.",
-	"Le manuel de Cronometer utilise 0,0946 ; l’équation de l’étude citée utilise 0,0964. Cette estimation utilise le coefficient du manuel.",
+	"The reference formula uses 0.0946; the cited research equation uses 0.0964. This estimate uses the 0.0946 coefficient.",
+	"La formule de référence utilise 0,0946 ; l’équation de l’étude citée utilise 0,0964. Cette estimation utilise le coefficient 0,0946.",
 	"Das Cronometer-Handbuch verwendet 0,0946; die Gleichung der zitierten Studie verwendet 0,0964. Diese Schätzung verwendet den Handbuchkoeffizienten.",
 	"O manual do Cronometer usa 0,0946; a equação da pesquisa citada usa 0,0964. Esta estimativa usa o coeficiente do manual."
 ], Xi = Object.freeze(Object.fromEntries([
@@ -32542,7 +32542,7 @@ var Li = (e) => typeof e == "object" && !!e && !Array.isArray(e) && Object.keys(
 	"de",
 	"pt-BR"
 ].map((e, t) => [e, Object.freeze(Object.fromEntries(Zi.map(([e, ...n]) => ["completenessReport." + e, n[t]])))]))), $i = Object.freeze({
-	"daily.local": "This is local food-data completeness, not Cronometer Data Confidence or a source-quality score. No source weights are applied.",
+	"daily.local": "This is local food-data completeness based on available nutrient measurements. No source weights are applied.",
 	"daily.occurrences": "Counts are food or ingredient occurrences, including repeated occurrences and zero quantities. Serving size changes intake, not these counts.",
 	"daily.water": "Water logs are excluded; water reported within food is included. Missing measurements count as unavailable; measured zero counts as known.",
 	"daily.membership": "Group membership comes from each score calculation and can include components with missing or disabled targets. Overall excludes hidden nutrients; other groups retain their score-specific selection rules. Highlights do not change membership.",
@@ -32552,7 +32552,7 @@ var Li = (e) => typeof e == "object" && !!e && !Array.isArray(e) && Object.keys(
 	"period.membership": "Group and overall membership uses each date’s effective targets and configured score limits. Membership can vary; exact daily membership is retained. Current workspace rules apply to historical dates, not archived settings.",
 	"period.counts": "Counts describe food or ingredient occurrences, including repeated and zero-quantity inputs. Serving size changes intake, not counts. Separate water logs are excluded; water reported in food counts. Measured zero is known.",
 	"period.identities": "All nutrient and group rows are captured regardless of display selection. Overall group membership excludes hidden nutrients; other groups follow their own selection rules. Total and Net use independent food availability and captured methods; switching the tracked choice does not change these rows. The plant iron factor does not change availability.",
-	"period.scope": "This local food-data completeness method applies no source weights and does not reproduce Cronometer Data Confidence. The captured report date, day, today and supplement filters govern every row."
+	"period.scope": "This local food-data completeness method applies no source weights. The captured report date, day, today and supplement filters govern every row."
 }), ea = (e) => !!(e && typeof e == "object" && !Array.isArray(e) && Object.keys(e).length === 2 && Object.hasOwn(e, "code") && Object.hasOwn(e, "text") && typeof e.code == "string" && e.code.length && typeof e.text == "string" && e.text.length), ta = [
 	[
 		"daily.local",
@@ -32616,8 +32616,8 @@ var Li = (e) => typeof e == "object" && !!e && !Array.isArray(e) && Object.keys(
 	],
 	[
 		"period.scope",
-		"Cette méthode locale de complétude n’applique aucun poids de source et ne reproduit pas la confiance des données de Cronometer. Les filtres enregistrés de dates, jours, jour courant et compléments régissent chaque ligne.",
-		"Diese lokale Vollständigkeitsmethode gewichtet keine Quellen und bildet Cronometers Datenkonfidenz nicht nach. Die erfassten Filter für Datum, Tage, heutigen Tag und Nahrungsergänzungsmittel gelten für jede Zeile.",
+		"Cette méthode locale de complétude n’applique aucun poids de source. Les filtres enregistrés de dates, jours, jour courant et compléments régissent chaque ligne.",
+		"Diese lokale Vollständigkeitsmethode gewichtet keine Quellen. Die erfassten Filter für Datum, Tage, heutigen Tag und Nahrungsergänzungsmittel gelten für jede Zeile.",
 		"Este método local de completude não aplica pesos de fonte nem reproduz a confiança dos dados do Cronometer. Os filtros registrados de datas, dias, dia atual e suplementos regem cada linha."
 	]
 ], na = Object.freeze(Object.fromEntries([
@@ -32775,7 +32775,7 @@ var Li = (e) => typeof e == "object" && !!e && !Array.isArray(e) && Object.keys(
 	"calcium.precision": "Food source rows use diary display precision; the calculation uses unrounded group inputs.",
 	"calcium.separate": "The separate manual-equation absorbed-calcium estimate uses a different coefficient and availability rule. These two outputs are not interchangeable.",
 	"method.public": "Weights and component rules are derived from public web source. Target inputs come from this workspace; authenticated and mobile equivalence are unverified.",
-	"method.local": "This is local target progress, not the proprietary Cronometer nutrition-score formula.",
+	"method.local": "This is local target progress based on your configured nutrient targets.",
 	"components.overall": "Each source-available identity with a visible positive effective target has equal weight. Total and Net are separate. Hidden and unavailable targets are excluded; missing measured intake keeps its weight and contributes zero. No maximum penalty applies.",
 	"components.keto": "The fixed denominator is 16: fat has weight 10, Net carbohydrate 0 and each other component 1. Missing or disabled components contribute zero credit without being labeled measured. Partial recorded totals can contribute and may understate maximum penalties.",
 	"components.oral": "The six component weights stay in the denominator. Ordinary target credit becomes 90% above both target and maximum. Sugar credit is max(0, 1 - recorded sugar / maximum). The default score reference is 100 g, used only without a custom sugar target or maximum.",
@@ -32811,7 +32811,7 @@ var Li = (e) => typeof e == "object" && !!e && !Array.isArray(e) && Object.keys(
 	],
 	[
 		"method.local",
-		"Il s’agit d’une progression locale vers les objectifs, pas de la formule propriétaire de score nutritionnel de Cronometer.",
+		"Il s’agit d’une progression locale basée sur vos objectifs nutritionnels.",
 		"Dies ist lokaler Zielfortschritt, nicht die proprietäre Ernährungsformel von Cronometer.",
 		"Isto é progresso local em relação às metas, não a fórmula proprietária de pontuação nutricional do Cronometer."
 	],
@@ -34511,7 +34511,7 @@ var Aa = Object.fromEntries([
 		"scoreReport.method",
 		"Mean of known daily local scores. Unknown days are excluded. This is not a score calculated from average intake or the proprietary Cronometer range formula.",
 		"Moyenne des scores locaux quotidiens connus. Les jours inconnus sont exclus. Ce score n’est calculé ni à partir de l’apport moyen ni avec la formule propriétaire de Cronometer pour une période.",
-		"Mittelwert der bekannten täglichen lokalen Ernährungswerte. Unbekannte Tage werden ausgeschlossen. Dieser Wert wird weder aus der mittleren Aufnahme noch mit der proprietären Cronometer-Formel für Zeiträume berechnet.",
+		"Mittelwert der bekannten täglichen lokalen Ernährungswerte. Unbekannte Tage werden ausgeschlossen. Dieser Wert wird weder aus der mittleren Aufnahme noch mit der proprietären Referenzformel für Zeiträume berechnet.",
 		"Média das pontuações locais diárias conhecidas. Dias desconhecidos são excluídos. A pontuação não é calculada a partir do consumo médio nem da fórmula proprietária de intervalo do Cronometer."
 	],
 	[
@@ -34731,7 +34731,7 @@ var Aa = Object.fromEntries([
 	"weight-goal-approximation": "The weight-goal energy adjustment uses a linear 3,500 kcal per pound approximation; it is not a recommended intake or a prediction of weight change.",
 	"target-negative": "The calculated calorie target is negative; review the adjustment."
 }), Ha = Object.freeze({
-	"consumed-allocation": "Macro calorie shares are estimates allocated per food using complete USDA source factors when available, otherwise general factors and the closer total/fiber-adjusted carbohydrate estimate. All four weights, including alcohol, are normalized to recorded calories before signed portion scaling. Negative components retain their values without percentages. Missing macros or incomplete published factors leave energy unattributed. Nutrient measurements are unchanged. This local calculation does not reproduce verified Cronometer server or alcohol normalization behavior.",
+	"consumed-allocation": "Macro calorie shares are estimates allocated per food using complete USDA source factors when available, otherwise general factors and the closer total/fiber-adjusted carbohydrate estimate. All four weights, including alcohol, are normalized to recorded calories before signed portion scaling. Negative components retain their values without percentages. Missing macros or incomplete published factors leave energy unattributed. Nutrient measurements are unchanged.",
 	"independent-means": "Each energy mean uses its own known dates. Remaining and balance use only dates with known intake and the corresponding target or expenditure; compare their day counts before comparing means.",
 	"estimated-expenditure": "Expenditure is an estimate under the current energy policy. Device activity may include workouts; in device mode recorded exercise is shown separately and is not added again.",
 	"device-and-filter-coverage": "Device query windows do not prove continuous device coverage. Missing expenditure stays unknown. Supplement filtering changes consumed energy, remaining and balance; it does not remove expenditure inputs or food used to estimate the thermic effect."
@@ -42913,10 +42913,10 @@ var Ua = (e) => typeof e == "string" && Object.hasOwn(Va, e), Wa = (e) => typeof
 	],
 	[
 		"stoolSource",
-		"Cronometer Bristol stool guide",
-		"Guide des selles de Bristol de Cronometer",
-		"Bristol-Stuhlformen von Cronometer",
-		"Guia de fezes de Bristol do Cronometer"
+		"Bristol stool guide",
+		"Guide des selles de Bristol",
+		"Bristol-Stuhlformen",
+		"Guia de fezes de Bristol"
 	],
 	[
 		"stoolLabel.1",
@@ -43653,10 +43653,10 @@ var Ua = (e) => typeof e == "string" && Object.hasOwn(Va, e), Wa = (e) => typeof
 	],
 	[
 		"calcium",
-		"Published Cronometer calcium-absorption estimate",
-		"Estimation publiée de l’absorption du calcium de Cronometer",
-		"Veröffentlichte Cronometer-Schätzung der Calciumabsorption",
-		"Estimativa publicada de absorção de cálcio do Cronometer"
+		"Published calcium-absorption estimate",
+		"Estimation publiée de l’absorption du calcium",
+		"Veröffentlichte Schätzung der Calciumabsorption",
+		"Estimativa publicada de absorção de cálcio"
 	],
 	[
 		"meanSuffix",
@@ -43814,10 +43814,10 @@ var Ua = (e) => typeof e == "string" && Object.hasOwn(Va, e), Wa = (e) => typeof
 	],
 	[
 		"reference",
-		"Cronometer’s published reference range:",
-		"Plage de référence publiée par Cronometer :",
-		"Von Cronometer veröffentlichter Referenzbereich:",
-		"Faixa de referência publicada pelo Cronometer:"
+		"Published reference range:",
+		"Plage de référence publiée :",
+		"Veröffentlichter Referenzbereich:",
+		"Faixa de referência publicada:"
 	],
 	[
 		"referenceAria",
@@ -44017,10 +44017,10 @@ var Ua = (e) => typeof e == "string" && Object.hasOwn(Va, e), Wa = (e) => typeof
 	],
 	[
 		"formulaLink",
-		"Cronometer formula",
-		"Formule Cronometer",
-		"Cronometer-Formel",
-		"Fórmula do Cronometer"
+		"Reference formula",
+		"Formule de référence",
+		"Referenzformel",
+		"Fórmula de referência"
 	],
 	[
 		"researchLink",
@@ -46778,10 +46778,10 @@ var Ua = (e) => typeof e == "string" && Object.hasOwn(Va, e), Wa = (e) => typeof
 	],
 	[
 		"manual",
-		"Cronometer mobile manual",
-		"Manuel mobile de Cronometer",
-		"Cronometer-Handbuch für Mobilgeräte",
-		"Manual móvel do Cronometer"
+		"Mobile manual",
+		"Manuel mobile",
+		"Handbuch für Mobilgeräte",
+		"Manual móvel"
 	],
 	[
 		"recovery",
@@ -52237,10 +52237,10 @@ var Ua = (e) => typeof e == "string" && Object.hasOwn(Va, e), Wa = (e) => typeof
 	],
 	[
 		"scores.description",
-		"Transparent local formulas with measurement coverage. These are not Cronometer scores.",
-		"Formules locales transparentes avec couverture des mesures. Ce ne sont pas les scores de Cronometer.",
-		"Transparente lokale Formeln mit Messwertabdeckung. Dies sind keine Cronometer-Bewertungen.",
-		"Fórmulas locais transparentes com cobertura das medições. Estas não são as pontuações do Cronometer."
+		"Transparent local formulas with measurement coverage.",
+		"Formules locales transparentes avec couverture des mesures.",
+		"Transparente lokale Formeln mit Messwertabdeckung.",
+		"Fórmulas locais transparentes com cobertura das medições."
 	],
 	[
 		"macroScheduler.name",
@@ -52419,10 +52419,10 @@ var Ua = (e) => typeof e == "string" && Object.hasOwn(Va, e), Wa = (e) => typeof
 	],
 	[
 		"coach.description",
-		"Optional Codex CLI answers with referenced diary facts and a local rules helper. Independent of Cronometer.",
-		"Réponses facultatives de Codex CLI avec références aux faits du journal et assistant à règles locales. Indépendant de Cronometer.",
-		"Optionale Codex-CLI-Antworten mit Tagebuchbelegen und lokaler Regelhilfe. Unabhängig von Cronometer.",
-		"Respostas opcionais do Codex CLI com referências aos fatos do diário e assistente de regras locais. Independente do Cronometer."
+		"Optional assistant answers with referenced diary facts and a local rules helper.",
+		"Réponses facultatives avec références aux faits du journal et assistant à règles locales.",
+		"Optionale Antworten mit Tagebuchbelegen und lokaler Regelhilfe.",
+		"Respostas opcionais com referências aos fatos do diário e assistente de regras locais."
 	],
 	[
 		"integrations.name",
@@ -52475,10 +52475,10 @@ var Ua = (e) => typeof e == "string" && Object.hasOwn(Va, e), Wa = (e) => typeof
 	],
 	[
 		"database.description",
-		"Local food catalog and custom foods, with optional Open Food Facts searches. Independent of Cronometer’s database.",
-		"Catalogue alimentaire local et aliments personnalisés, avec recherches Open Food Facts facultatives. Indépendant de la base de Cronometer.",
-		"Lokaler Lebensmittelkatalog und eigene Lebensmittel mit optionaler Open-Food-Facts-Suche. Unabhängig von der Cronometer-Datenbank.",
-		"Catálogo local e alimentos personalizados, com buscas opcionais no Open Food Facts. Independente da base do Cronometer."
+		"Local food catalog and custom foods, with optional Open Food Facts searches.",
+		"Catalogue alimentaire local et aliments personnalisés, avec recherches Open Food Facts facultatives.",
+		"Lokaler Lebensmittelkatalog und eigene Lebensmittel mit optionaler Open-Food-Facts-Suche.",
+		"Catálogo local e alimentos personalizados, com buscas opcionais no Open Food Facts."
 	],
 	[
 		"professional.name",
@@ -52503,10 +52503,10 @@ var Ua = (e) => typeof e == "string" && Object.hasOwn(Va, e), Wa = (e) => typeof
 	],
 	[
 		"enterprise.description",
-		"No hosted organization service, single sign-on or Cronometer administration.",
-		"Aucun service hébergé pour organisations, authentification unique ou administration Cronometer.",
-		"Kein gehosteter Organisationsdienst, Single Sign-on oder Cronometer-Verwaltung.",
-		"Sem serviço hospedado para organizações, login único ou administração do Cronometer."
+		"No hosted organization service or single sign-on administration.",
+		"Aucun service hébergé pour organisations ou authentification unique.",
+		"Kein gehosteter Organisationsdienst oder Single Sign-on.",
+		"Sem serviço hospedado para organizações ou login único."
 	],
 	[
 		"mobile.name",
@@ -59160,7 +59160,7 @@ var cl = Object.freeze([
 	category: e
 })))), ll = Object.freeze({
 	id: "calcium-absorption",
-	label: "Published Cronometer calcium-absorption estimate"
+	label: "Published calcium-absorption estimate"
 });
 Object.freeze([
 	"calcium",
@@ -59179,7 +59179,7 @@ Object.freeze([
 	expression: "A = C × (0.889 − 0.0946 × ln(C) − O − 0.060 × P); C in mg, O and P in g",
 	sourceUrl: "https://support.cronometer.com/hc/en-us/articles/360042110112-Nutrition-Scores",
 	researchUrl: "https://doi.org/10.1016/j.tjnut.2023.12.005",
-	coefficientDiscrepancy: "The Cronometer manual uses 0.0946; the cited research equation uses 0.0964. This estimate uses the manual coefficient."
+	coefficientDiscrepancy: "The reference formula uses 0.0946; the cited research equation uses 0.0964. This estimate uses the 0.0946 coefficient."
 });
 var ul = Dc();
 ul.DP = 340;

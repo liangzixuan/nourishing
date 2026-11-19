@@ -2,7 +2,7 @@ export const scoreLimitations=Object.freeze({
  'calcium.precision':'Food source rows use diary display precision; the calculation uses unrounded group inputs.',
  'calcium.separate':'The separate manual-equation absorbed-calcium estimate uses a different coefficient and availability rule. These two outputs are not interchangeable.',
  'method.public':'Weights and component rules are derived from public web source. Target inputs come from this workspace; authenticated and mobile equivalence are unverified.',
- 'method.local':'This is local target progress, not the proprietary Cronometer nutrition-score formula.',
+ 'method.local':'This is local target progress based on your configured nutrient targets.',
  'components.overall':'Each source-available identity with a visible positive effective target has equal weight. Total and Net are separate. Hidden and unavailable targets are excluded; missing measured intake keeps its weight and contributes zero. No maximum penalty applies.',
  'components.keto':'The fixed denominator is 16: fat has weight 10, Net carbohydrate 0 and each other component 1. Missing or disabled components contribute zero credit without being labeled measured. Partial recorded totals can contribute and may understate maximum penalties.',
  'components.oral':'The six component weights stay in the denominator. Ordinary target credit becomes 90% above both target and maximum. Sugar credit is max(0, 1 - recorded sugar / maximum). The default score reference is 100 g, used only without a custom sugar target or maximum.',

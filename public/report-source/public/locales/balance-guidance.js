@@ -20,9 +20,9 @@ const rows=[
  ],
  [
   "day.references",
-  "Les bandes des rapports sont les plages de référence publiées par Cronometer, pas des objectifs personnalisés ni des conseils cliniques.",
-  "Die Verhältnisbereiche sind von Cronometer veröffentlichte Referenzbereiche, keine persönlichen Ziele oder klinischen Empfehlungen.",
-  "As faixas das razões são referências publicadas pelo Cronometer, não metas personalizadas nem orientações clínicas."
+  "Les bandes des rapports sont des plages de référence publiées, pas des objectifs personnalisés ni des conseils cliniques.",
+  "Die Verhältnisbereiche sind veröffentlichte Referenzbereiche, keine persönlichen Ziele oder klinischen Empfehlungen.",
+  "As faixas das razões são referências publicadas, não metas personalizadas nem orientações clínicas."
  ],
  [
   "day.pral",
@@ -62,9 +62,9 @@ const rows=[
  ],
  [
   "period.references",
-  "Les bandes des rapports sont les plages de référence publiées par Cronometer, pas des objectifs personnalisés ni des conseils cliniques. Le PRAL ne mesure ni le pH sanguin ni la fonction rénale.",
-  "Die Verhältnisbereiche sind von Cronometer veröffentlichte Referenzbereiche, keine persönlichen Ziele oder klinischen Empfehlungen. PRAL misst weder den Blut-pH-Wert noch die Nierenfunktion.",
-  "As faixas das razões são referências publicadas pelo Cronometer, não metas personalizadas nem orientações clínicas. O PRAL não mede o pH do sangue nem a função renal."
+  "Les bandes des rapports sont des plages de référence publiées, pas des objectifs personnalisés ni des conseils cliniques. Le PRAL ne mesure ni le pH sanguin ni la fonction rénale.",
+  "Die Verhältnisbereiche sind veröffentlichte Referenzbereiche, keine persönlichen Ziele oder klinischen Empfehlungen. PRAL misst weder den Blut-pH-Wert noch die Nierenfunktion.",
+  "As faixas das razões são referências publicadas, não metas personalizadas nem orientações clínicas. O PRAL não mede o pH do sangue nem a função renal."
  ],
  [
   "calcium.estimate",
@@ -97,5 +97,5 @@ const rows=[
   "Os valores do período são médias das estimativas e frações diárias aceitas, não a equação aplicada aos dados agrupados. As médias dos dados usam exatamente as mesmas datas aceitas."
  ]
 ];
-const coefficient=["The Cronometer manual uses 0.0946; the cited research equation uses 0.0964. This estimate uses the manual coefficient.", "Le manuel de Cronometer utilise 0,0946 ; l’équation de l’étude citée utilise 0,0964. Cette estimation utilise le coefficient du manuel.", "Das Cronometer-Handbuch verwendet 0,0946; die Gleichung der zitierten Studie verwendet 0,0964. Diese Schätzung verwendet den Handbuchkoeffizienten.", "O manual do Cronometer usa 0,0946; a equação da pesquisa citada usa 0,0964. Esta estimativa usa o coeficiente do manual."];
+const coefficient=["The reference formula uses 0.0946; the cited research equation uses 0.0964. This estimate uses the 0.0946 coefficient.", "La formule de référence utilise 0,0946 ; l’équation de l’étude citée utilise 0,0964. Cette estimation utilise le coefficient 0,0946.", "Das Cronometer-Handbuch verwendet 0,0946; die Gleichung der zitierten Studie verwendet 0,0964. Diese Schätzung verwendet den Handbuchkoeffizienten.", "O manual do Cronometer usa 0,0946; a equação da pesquisa citada usa 0,0964. Esta estimativa usa o coeficiente do manual."];
 export const balanceGuidanceMessages=Object.freeze(Object.fromEntries(['en','fr','de','pt-BR'].map((language,index)=>[language,Object.freeze({...Object.fromEntries(rows.map(([key,...values])=>['balanceGuidance.'+key,index===0?balanceGuidance[key]:values[index-1]])),'balanceGuidance.coefficient':coefficient[index]})])));

@@ -440,7 +440,7 @@ export function calculateSummary(state, date) {
     energy,consumedEnergy:day.foodFacts.consumedEnergy,expenditureBreakdown:captureExpenditureBreakdown([{energy:rawEnergy}]),macroTargets,targetAssignment,nutrientDisplay,diaryDisplay,diaryTable,dataCompleteness,dataQuality,
     scores, suggestions, oracle,
     entries: foodEntries.map((entry, index) => namedEntry(state, entry, foodResults[index])), biometrics,
-    limitations: ['Total and Net carbohydrate are resolved separately on each food using its recorded measurements and declared method. Missing deductions remain unknown.', 'Targets are editable sample defaults, not personal dietary advice.', 'Sample food measurements are illustrative. Missing measurements do not mean zero.', 'Scores and suggestions use transparent local formulas; they do not reproduce Cronometer algorithms.']};
+    limitations: ['Total and Net carbohydrate are resolved separately on each food using its recorded measurements and declared method. Missing deductions remain unknown.', 'Targets are editable sample defaults, not personal dietary advice.', 'Sample food measurements are illustrative. Missing measurements do not mean zero.', 'Scores and suggestions use transparent local formulas.']};
 }
 
 export function* iterateTrendDays(state, from, to) {

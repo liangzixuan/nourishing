@@ -2,7 +2,7 @@ import {captureBalanceGuidance} from './balance-guidance.mjs';
 import Big from 'big.js';
 import {catalog} from './nutrient-catalog.mjs';
 
-export const calciumAbsorptionIdentity=Object.freeze({id:'calcium-absorption',label:'Published Cronometer calcium-absorption estimate'});
+export const calciumAbsorptionIdentity=Object.freeze({id:'calcium-absorption',label:'Published calcium-absorption estimate'});
 export const calciumAbsorptionInputs=Object.freeze(['calcium','oxalate','phytate'].map(id=>{
   const nutrient=catalog.find(row=>row.id===id);
   if(nutrient?.unit!=='mg')throw Error('Calcium absorption inputs must use canonical milligrams.');
@@ -13,7 +13,7 @@ const formula=Object.freeze({
   expression:'A = C × (0.889 − 0.0946 × ln(C) − O − 0.060 × P); C in mg, O and P in g',
   sourceUrl:'https://support.cronometer.com/hc/en-us/articles/360042110112-Nutrition-Scores',
   researchUrl:'https://doi.org/10.1016/j.tjnut.2023.12.005',
-  coefficientDiscrepancy:'The Cronometer manual uses 0.0946; the cited research equation uses 0.0964. This estimate uses the manual coefficient.',
+  coefficientDiscrepancy:'The reference formula uses 0.0946; the cited research equation uses 0.0964. This estimate uses the 0.0946 coefficient.',
 });
 const Decimal=Big();Decimal.DP=340;
 const copyInput=({id,name,unit,value,coverage,status})=>({id,name,unit,value,coverage:{known:coverage.known,total:coverage.total,complete:coverage.complete},status});

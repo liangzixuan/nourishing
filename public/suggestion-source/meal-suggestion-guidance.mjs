@@ -1,5 +1,5 @@
 export const mealSuggestionGuidance=Object.freeze({
-  "independent": "Ten independent meal examples use explicit pinned USDA ingredients. This is not Cronometer meal data or ranking.",
+  "independent": "Ten independent meal examples use explicit pinned USDA ingredients.",
   "quantities": "Example quantities are editable. Added sauces, seasonings and preparation changes must be entered separately.",
   "tags": "Diet and exclusion tags cover the listed ingredients only. They do not establish package, cross-contact or allergy suitability.",
   "unknownTags": "Unknown tags are excluded when filters apply unless you explicitly include them. Changed saved ingredients invalidate reviewed tags.",

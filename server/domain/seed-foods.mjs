@@ -46,7 +46,7 @@ const samples = [
   ['water', 'Water', '1 glass (250 mL)', 250, {calories:0,protein:0,carbs:0,fat:0,fiber:0,sugar:0,sodium:0,water:250}],
 ];
 
-export const seedFoodNotice = 'Illustrative sample values, rounded for software testing. These records are not Cronometer food data. Replace them with verified food labels or an authorized nutrient dataset before tracking actual intake.';
+export const seedFoodNotice = 'Illustrative sample values, rounded for software testing. Replace them with verified food labels or an authorized nutrient dataset before tracking actual intake.';
 export function seedFoods() {
   return samples.map(([key, name, serving, grams, nutrients]) => ({id: `sample-${key}`, name, serving, grams, nutrients: {...nutrients}, source: seedFoodNotice, sample: true}));
 }

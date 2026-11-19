@@ -504,10 +504,10 @@ const rows={
     "Resolva o salvamento de alimento pendente antes de ajustar uma refeição."
   ],
   "guidance.independent": [
-    "Ten independent meal examples use explicit pinned USDA ingredients. This is not Cronometer meal data or ranking.",
-    "Dix exemples de repas indépendants utilisent des ingrédients USDA précisément définis et figés. Il ne s’agit pas des repas ou du classement de Cronometer.",
-    "Zehn unabhängige Mahlzeitbeispiele verwenden ausdrücklich festgelegte USDA-Zutaten. Dies sind keine Mahlzeitdaten oder Rangfolgen von Cronometer.",
-    "Dez exemplos independentes de refeições usam ingredientes USDA explicitamente fixados. Estes não são os dados de refeições nem a classificação do Cronometer."
+    "Ten independent meal examples use explicit pinned USDA ingredients.",
+    "Dix exemples de repas indépendants utilisent des ingrédients USDA précisément définis et figés.",
+    "Zehn unabhängige Mahlzeitbeispiele verwenden ausdrücklich festgelegte USDA-Zutaten.",
+    "Dez exemplos independentes de refeições usam ingredientes USDA explicitamente fixados."
   ],
   "guidance.quantities": [
     "Example quantities are editable. Added sauces, seasonings and preparation changes must be entered separately.",

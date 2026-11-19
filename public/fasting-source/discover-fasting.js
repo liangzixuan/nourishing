@@ -18,8 +18,8 @@ export function scheduledFastMarkup(schedules,language='en',timeZone){
   return '<section class="dc-scheduled-item"><p><strong>'+e(item.label)+'</strong> '+b(e(t('edit')),'edit-schedule','dc-link','data-id="'+e(item.id)+'"')+'</p><p>'+e(duration)+' - '+e(repeat)+(!item.enabled?' · '+e(t('paused')):'')+'</p><div class="dc-scheduled-times"><div>'+e(t('startTime'))+'<strong>'+(item.nextStart?timestamp(item.nextStart,'start'):e(t('noStart')))+'</strong></div><div>'+e(t('endTime'))+'<strong>'+(item.goalHours===null?e(t('openEnded')):end?timestamp(end,'end'):e(t('noEnd')))+'</strong></div></div></section>';
  }).join('')+(rows.length?'':b(e(t('schedule')),'schedule-fast','dc-link'))+'</div>';
 }
-export function fastingHelpLink(language='en'){
- return '<a class="dc-button dc-icon dc-fasting-help" href="https://support.cronometer.com/hc/en-us/articles/360036016612-Mobile-Fasting" target="_blank" rel="noopener noreferrer" aria-label="'+e(message(language,'help'))+'">'+icon('help')+'</a>';
+export function fastingHelpLink(){
+ return '';
 }
 export function fastingScreenMarkup({preferences:p,widgets,askToStopFast,history,schedules,language='en',timeZone}){
  const t=(key,values)=>message(language,key,values);

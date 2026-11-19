@@ -46,7 +46,7 @@ const rows=[
  ["stoolGuide", "Bristol stool guide", "Guide des selles de Bristol", "Bristol-Stuhlformen", "Guia de fezes de Bristol"],
  ["stoolTypeNumber", "Type {{value}}", "Type {{value}}", "Typ {{value}}", "Tipo {{value}}"],
  ["illustrations", "Illustrations:", "Illustrations :", "Abbildungen:", "Ilustrações:"],
- ["stoolSource", "Cronometer Bristol stool guide", "Guide des selles de Bristol de Cronometer", "Bristol-Stuhlformen von Cronometer", "Guia de fezes de Bristol do Cronometer"],
+ ["stoolSource", "Bristol stool guide", "Guide des selles de Bristol", "Bristol-Stuhlformen", "Guia de fezes de Bristol"],
  ["stoolLabel.1", "Severe constipation", "Constipation sévère", "Starke Verstopfung", "Constipação grave"],
  ["stoolLabel.2", "Mild constipation", "Constipation légère", "Leichte Verstopfung", "Constipação leve"],
  ["stoolLabel.3", "Normal", "Normal", "Normal", "Normal"],

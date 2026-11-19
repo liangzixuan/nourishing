@@ -62,8 +62,8 @@ const rows=[
  ],
  [
   "period.scope",
-  "Cette méthode locale de complétude n’applique aucun poids de source et ne reproduit pas la confiance des données de Cronometer. Les filtres enregistrés de dates, jours, jour courant et compléments régissent chaque ligne.",
-  "Diese lokale Vollständigkeitsmethode gewichtet keine Quellen und bildet Cronometers Datenkonfidenz nicht nach. Die erfassten Filter für Datum, Tage, heutigen Tag und Nahrungsergänzungsmittel gelten für jede Zeile.",
+  "Cette méthode locale de complétude n’applique aucun poids de source. Les filtres enregistrés de dates, jours, jour courant et compléments régissent chaque ligne.",
+  "Diese lokale Vollständigkeitsmethode gewichtet keine Quellen. Die erfassten Filter für Datum, Tage, heutigen Tag und Nahrungsergänzungsmittel gelten für jede Zeile.",
   "Este método local de completude não aplica pesos de fonte nem reproduz a confiança dos dados do Cronometer. Os filtros registrados de datas, dias, dia atual e suplementos regem cada linha."
  ]
 ];

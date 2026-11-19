@@ -1,5 +1,5 @@
 export const completenessGuidance=Object.freeze({
-  "daily.local": "This is local food-data completeness, not Cronometer Data Confidence or a source-quality score. No source weights are applied.",
+  "daily.local": "This is local food-data completeness based on available nutrient measurements. No source weights are applied.",
   "daily.occurrences": "Counts are food or ingredient occurrences, including repeated occurrences and zero quantities. Serving size changes intake, not these counts.",
   "daily.water": "Water logs are excluded; water reported within food is included. Missing measurements count as unavailable; measured zero counts as known.",
   "daily.membership": "Group membership comes from each score calculation and can include components with missing or disabled targets. Overall excludes hidden nutrients; other groups retain their score-specific selection rules. Highlights do not change membership.",
@@ -9,7 +9,7 @@ export const completenessGuidance=Object.freeze({
   "period.membership": "Group and overall membership uses each date’s effective targets and configured score limits. Membership can vary; exact daily membership is retained. Current workspace rules apply to historical dates, not archived settings.",
   "period.counts": "Counts describe food or ingredient occurrences, including repeated and zero-quantity inputs. Serving size changes intake, not counts. Separate water logs are excluded; water reported in food counts. Measured zero is known.",
   "period.identities": "All nutrient and group rows are captured regardless of display selection. Overall group membership excludes hidden nutrients; other groups follow their own selection rules. Total and Net use independent food availability and captured methods; switching the tracked choice does not change these rows. The plant iron factor does not change availability.",
-  "period.scope": "This local food-data completeness method applies no source weights and does not reproduce Cronometer Data Confidence. The captured report date, day, today and supplement filters govern every row."
+  "period.scope": "This local food-data completeness method applies no source weights. The captured report date, day, today and supplement filters govern every row."
 });
 export const captureCompletenessGuidance=scope=>{if(!['daily','period'].includes(scope))throw Error('Choose a completeness guidance scope.');return Object.entries(completenessGuidance).filter(([code])=>code.startsWith(scope+'.')).map(([code,text])=>({code,text}));};
 export const isCompletenessGuidance=note=>Boolean(note&&typeof note==='object'&&!Array.isArray(note)&&Object.keys(note).length===2&&Object.hasOwn(note,'code')&&Object.hasOwn(note,'text')&&typeof note.code==='string'&&note.code.length&&typeof note.text==='string'&&note.text.length);
