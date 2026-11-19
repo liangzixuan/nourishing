@@ -818,7 +818,7 @@ export function createAppwriteService(config, key, userAgent = '') {
               const result = await lifecycle().run(account.$id, name, operation =>
                 withinAccountOperation(operation, () => method(secret, ...input)),
               );
-              await dispatchPostMutationJobs({config, key, accountId: account.$id, name, input});
+              void dispatchPostMutationJobs({config, key, accountId: account.$id, name, input});
               return result;
             };
             return requestScope.getStore()

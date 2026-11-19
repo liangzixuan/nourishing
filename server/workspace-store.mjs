@@ -158,38 +158,44 @@ export function createWorkspaceStore(db, owner) {
 
   async function stageDispatch(state, generation, transactionId, context = {}) {
     const now = resolveDispatchDate(context);
-    const fasting = await stageFastingDispatch({
-      db,
-      owner,
-      state,
-      generation,
-      transactionId,
-      now,
-      timeZone: context.timeZone ?? 'UTC',
-    });
-    await stageReminderDispatch({db, owner, state, generation, transactionId, now});
+    const [fasting] = await Promise.all([
+      stageFastingDispatch({
+        db,
+        owner,
+        state,
+        generation,
+        transactionId,
+        now,
+        timeZone: context.timeZone ?? 'UTC',
+      }),
+      stageReminderDispatch({db, owner, state, generation, transactionId, now}),
+    ]);
     return fasting;
   }
 
   async function persist(state, before, head, transactionId, context = {}) {
     const packed = packWorkspace(state, owner, head.generation);
     const old = new Map(before.map(row => [row.$id, row]));
+    const writes = [];
     for (const row of packed.rows) {
       const prior = old.get(row.$id);
       old.delete(row.$id);
       if (prior && prior.digest === row.digest && prior.position === row.position && prior.day === row.day) continue;
-      await db[prior ? 'updateRow' : 'createRow']({
-        ...args('workspace_records', row.$id),
-        data: dataOf(row),
-        ...(prior ? {} : {permissions: row.$permissions}),
-        transactionId,
-      });
+      writes.push(
+        db[prior ? 'updateRow' : 'createRow']({
+          ...args('workspace_records', row.$id),
+          data: dataOf(row),
+          ...(prior ? {} : {permissions: row.$permissions}),
+          transactionId,
+        }),
+      );
     }
     for (const id of old.keys()) {
-      await db.deleteRow({...args('workspace_records', id), transactionId});
+      writes.push(db.deleteRow({...args('workspace_records', id), transactionId}));
     }
-    await db.updateRow({...args('workspace_heads', owner), data: packed.head, transactionId});
-    await stageDispatch(state, head.generation, transactionId, context);
+    writes.push(db.updateRow({...args('workspace_heads', owner), data: packed.head, transactionId}));
+    writes.push(stageDispatch(state, head.generation, transactionId, context));
+    await Promise.all(writes);
     return packed.head.digest;
   }
 
@@ -197,11 +203,12 @@ export function createWorkspaceStore(db, owner) {
     const input = parseCommand(raw);
     const receiptId = rowId(owner, input.requestId);
     const fingerprint = digest(input);
-    const existing = await readReceipt(receiptId, fingerprint);
+    const [existing, head] = await Promise.all([
+      readReceipt(receiptId, fingerprint),
+      optional(db, 'workspace_heads', owner),
+    ]);
     if (existing) return existing;
-
-    const head = await readOwnedHead();
-    if (head.digest !== input.revision) conflict();
+    if (!head || head.ownerId !== owner || head.digest !== input.revision) conflict();
     // Resolve catalog facts before opening the short-lived write transaction.
     const catalogFoods = await readActionFoods(input, readCatalog);
 
@@ -217,8 +224,10 @@ export function createWorkspaceStore(db, owner) {
         const commandContext = CATALOG_CONTEXT_TYPES.has(input.type) ? {...context, owner, catalogFoods} : context;
         const saved = applyWorkspaceCommand(state, action, commandContext);
         finishCloudLogging(state, loggingBefore, input.type, calendar);
-        if (context.stageMedia) await context.stageMedia({transactionId, generation: head.generation});
-        const revision = await persist(state, before, head, transactionId, context);
+        const [revision] = await Promise.all([
+          persist(state, before, head, transactionId, context),
+          context.stageMedia ? context.stageMedia({transactionId, generation: head.generation}) : null,
+        ]);
         const result = formatCommandResult(revision, saved);
         await stageReceipt(receiptId, fingerprint, result, transactionId);
         return result;

@@ -16,9 +16,9 @@ export function validateReminderDispatch(row,owner){
 /** The workspace transaction owns this intent; enqueue only after commit. */
 export async function stageReminderDispatch({db,owner,state,generation,transactionId,now,preferences,after=false}){
  if(!id(owner)||!id(transactionId)||!id(generation))fail();at(now);
- const current=await optional(()=>db.getRow(args(owner)));
+ const [current,account]=await Promise.all([optional(()=>db.getRow(args(owner))),preferences?null:optional(()=>db.getRow({databaseId,tableId:'push_accounts',rowId:owner}))]);
  if(current)validateReminderDispatch(current,owner);
- if(!preferences){const account=await optional(()=>db.getRow({databaseId,tableId:'push_accounts',rowId:owner}));if(account){if(account.ownerId!==owner)fail();preferences=JSON.parse(account.payload);}}
+ if(!preferences&&account){if(account.ownerId!==owner)fail();preferences=JSON.parse(account.payload);}
  const parsed=reminderPreferences(preferences),dueAt=preferences?.devices?.length?nextReminderDue(state,parsed,now,{after}):null;
  if(!dueAt){if(current)await db.deleteRow({...args(owner),transactionId});return null;}
  const token=createHash('sha256').update(JSON.stringify({generation,preferences:parsed,devices:preferences.devices.map(row=>row.id).sort(),dueAt})).digest('hex');

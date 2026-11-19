@@ -106,7 +106,8 @@ export function mountPhotoLog({show, close, header, content, date, groups, initi
     body.querySelectorAll('button,input,select').forEach(element=>element.disabled=true);
     try{
       await save({photo:{id:analysis.photo.id,dataUrl:analysis.photo.dataUrl},reviewToken:analysis.reviewToken,date:diaryDate,time,group,...(destination?{destination}:{}),rows:rows.map(({foodId,observationIndex,additionIndex,amount,quantity,unit,portionId})=>({foodId,...(observationIndex!==undefined?{observationIndex}:{}),...(additionIndex!==undefined?{additionIndex}:{}),...(quantity!==undefined?{quantity,unit,...(portionId?{portionId}:{})}:{amount})}))});
-      await onChange();if(alive()&&panel.isConnected){dispose();close();}
+      if(alive()&&panel.isConnected){dispose();close();}
+      void onChange();
     }finally{pendingSave=false;if(alive())body.querySelectorAll('button,input,select').forEach(element=>element.disabled=false);}
   }
 
