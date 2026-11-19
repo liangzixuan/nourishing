@@ -183,326 +183,369 @@ function syncEditorControls({root, panel, session, record, detail, busy, envelop
   if (record && !detail.editable) root.querySelector('[type=submit]')?.setAttribute('hidden', '');
 }
 
-/** Each open sheet owns its draft, pending command and disposable source presentation. */
-export async function mountRecordEditor(args) {
-  const {kind, date, show, close, content, onChange, initialSelection, initialGroup} = args;
-  let record = args.record;
-  if (kind === 'note') return mountNoteEditor(args);
-  if (!Object.hasOwn(COLLECTIONS, kind)) return;
+class RecordEditorController {
+  constructor(args) {
+    this.args = args;
+    this.kind = args.kind;
+    this.date = args.date;
+    this.record = args.record;
+    this.options = null;
+    this.detail = null;
+    this.panel = null;
+    this.session = null;
+    this.disposed = false;
+    this.busy = false;
+    this.envelope = null;
+    this.conflict = false;
+    this.returnTo = null;
+    this.deletePrompt = false;
 
-  ensureRecordStyles();
-  const initialTitle = kind === 'exercise' ? t('exerciseBrowser.root') : t('mobileBiometric.title');
-  show(
-    `<section class="record-surface"><header class="dialog-head"><button type="button" data-record-close aria-label="${t('common.close')}">×</button><h2>${e(initialTitle)}</h2></header><div data-record-content><p class="empty" role="status">${t('mobileNutrientDetail.loading')}</p></div><div class="record-status" role="alert"></div></section>`,
-  );
+    const initialTitle = this.kind === 'exercise' ? t('exerciseBrowser.root') : t('mobileBiometric.title');
+    args.show(
+      `<section class="record-surface"><header class="dialog-head"><button type="button" data-record-close aria-label="${t('common.close')}">×</button><h2>${e(initialTitle)}</h2></header><div data-record-content><p class="empty" role="status">${t('mobileNutrientDetail.loading')}</p></div><div class="record-status" role="alert"></div></section>`,
+    );
 
-  const root = content.querySelector('.record-surface');
-  const sheet = content.closest('dialog');
-  const abort = new AbortController();
-  sheet.classList.add('record-sheet');
-
-  let options, detail, panel, session;
-  let disposed = false;
-  let busy = false;
-  let envelope = null;
-  let conflict = false;
-  let returnTo = null;
-  let deletePrompt = false;
-
-  const alive = () => !disposed && root.isConnected;
-  const status = () => root.querySelector('.record-status');
-  const correction = changes => ({collection: COLLECTIONS[kind], id: record.id, recordRevision: detail.recordRevision, changes});
-
-  function teardown() {
-    panel?.dispose();
-    panel = null;
-    session = null;
-    sheet.classList.remove(...PANEL_CLASSES);
+    this.root = args.content.querySelector('.record-surface');
+    this.sheet = args.content.closest('dialog');
+    this.abort = new AbortController();
+    this.sheet.classList.add('record-sheet');
+    this.observer = new MutationObserver(() => {
+      if (!this.root.isConnected) this.dispose();
+    });
+    this.observer.observe(args.content, {childList: true});
+    this.bindEvents();
   }
 
-  function dispose() {
-    if (disposed) return;
-    disposed = true;
-    teardown();
-    abort.abort();
-    observer.disconnect();
-    sheet.classList.remove('record-sheet');
+  alive() {
+    return !this.disposed && this.root.isConnected;
   }
 
-  function exit() {
-    if (busy) return;
-    dispose();
-    close();
+  status() {
+    return this.root.querySelector('.record-status');
   }
 
-  function closeDeletePrompt() {
-    root.querySelector('.record-delete-confirm')?.remove();
-    deletePrompt = false;
+  correction(changes) {
+    return {collection: COLLECTIONS[this.kind], id: this.record.id, recordRevision: this.detail.recordRevision, changes};
   }
 
-  function back() {
-    if (busy) return;
-    if (deletePrompt) return closeDeletePrompt();
-    const activeMenu = panel?.menu ?? panel?.base?.menu;
+  teardown() {
+    this.panel?.dispose();
+    this.panel = null;
+    this.session = null;
+    this.sheet.classList.remove(...PANEL_CLASSES);
+  }
+
+  dispose() {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.teardown();
+    this.abort.abort();
+    this.observer.disconnect();
+    this.sheet.classList.remove('record-sheet');
+  }
+
+  exit() {
+    if (this.busy) return;
+    this.dispose();
+    this.args.close();
+  }
+
+  closeDeletePrompt() {
+    this.root.querySelector('.record-delete-confirm')?.remove();
+    this.deletePrompt = false;
+  }
+
+  back() {
+    if (this.busy) return;
+    if (this.deletePrompt) return this.closeDeletePrompt();
+    const activeMenu = this.panel?.menu ?? this.panel?.base?.menu;
     if (activeMenu) return activeMenu.close();
-    if (envelope || conflict || record) return exit();
-    if (kind === 'biometric' && panel?.back()) return;
-    if (returnTo) {
-      const next = returnTo;
-      returnTo = null;
+    if (this.envelope || this.conflict || this.record) return this.exit();
+    if (this.kind === 'biometric' && this.panel?.back()) return;
+    if (this.returnTo) {
+      const next = this.returnTo;
+      this.returnTo = null;
       return next();
     }
-    exit();
+    this.exit();
   }
 
-  function frame(title, html) {
-    teardown();
-    root.innerHTML = `<header class="dialog-head"><button type="button" data-action="close-dialog" data-record-close aria-label="${t('discover.back')}">×</button><h2>${e(title)}</h2></header><div data-record-content>${html}</div><div class="record-status" role="alert"></div>`;
-    sheet.scrollTop = 0;
-    return root.querySelector('[data-record-content]');
+  frame(title, html) {
+    this.teardown();
+    this.root.innerHTML = `<header class="dialog-head"><button type="button" data-action="close-dialog" data-record-close aria-label="${t('discover.back')}">×</button><h2>${e(title)}</h2></header><div data-record-content>${html}</div><div class="record-status" role="alert"></div>`;
+    this.sheet.scrollTop = 0;
+    return this.root.querySelector('[data-record-content]');
   }
 
-  function controls() {
-    if (!alive()) return;
-    syncEditorControls({root, panel, session, record, detail, busy, envelope, conflict});
+  controls() {
+    if (!this.alive()) return;
+    syncEditorControls(this);
   }
 
-  function errorView(error) {
-    if (!alive()) return;
-    const messageText = session && !conflict ? '' : e(error.message);
-    const actionButton = conflict
+  errorView(error) {
+    if (!this.alive()) return;
+    const messageText = this.session && !this.conflict ? '' : e(error.message);
+    const actionButton = this.conflict
       ? `<button type="button" data-record-reload>${dc('reloadRecord')}</button>`
-      : envelope && !session
+      : this.envelope && !this.session
         ? `<button type="button" data-record-retry>${t('mobileSuggest.retry')}</button>`
         : '';
-    status().innerHTML = messageText + actionButton;
-    if (!session) return;
-    session.error = error.message;
-    session.unknown = Boolean(envelope) && !conflict;
-    if (conflict) session.readOnly = true;
-    session.notify();
+    this.status().innerHTML = messageText + actionButton;
+    if (!this.session) return;
+    this.session.error = error.message;
+    this.session.unknown = Boolean(this.envelope) && !this.conflict;
+    if (this.conflict) this.session.readOnly = true;
+    this.session.notify();
   }
 
-  async function save(type, payload) {
-    if (busy || conflict || !alive()) return;
-    if (!envelope) {
-      envelope = {
+  async save(type, payload) {
+    if (this.busy || this.conflict || !this.alive()) return;
+    if (!this.envelope) {
+      this.envelope = {
         requestId: crypto.randomUUID(),
-        revision: detail?.revision ?? options.revision,
+        revision: this.detail?.revision ?? this.options.revision,
         type,
         payload: structuredClone(payload),
       };
     }
-    busy = true;
-    status().textContent = '';
-    if (session) {
-      session.pending = 'save';
-      session.error = '';
-      session.notify();
+    this.busy = true;
+    this.status().textContent = '';
+    if (this.session) {
+      this.session.pending = 'save';
+      this.session.error = '';
+      this.session.notify();
     }
-    controls();
+    this.controls();
     try {
-      await request('/api/workspace/command', envelope);
-      if (!alive()) return;
-      await onChange();
-      if (alive()) {
-        busy = false;
-        exit();
+      await request('/api/workspace/command', this.envelope);
+      if (!this.alive()) return;
+      await this.args.onChange();
+      if (this.alive()) {
+        this.busy = false;
+        this.exit();
       }
     } catch (error) {
-      if (!alive()) return;
+      if (!this.alive()) return;
       if (error.status >= 400 && error.status < 500 && error.status !== 408) {
-        envelope = null;
-        conflict = error.status === 409;
+        this.envelope = null;
+        this.conflict = error.status === 409;
       }
-      errorView(error);
+      this.errorView(error);
     } finally {
-      busy = false;
-      if (alive()) {
-        if (session) {
-          session.pending = null;
-          session.notify();
+      this.busy = false;
+      if (this.alive()) {
+        if (this.session) {
+          this.session.pending = null;
+          this.session.notify();
         }
-        controls();
+        this.controls();
       }
     }
   }
 
-  function confirmDelete() {
-    if (busy || envelope || conflict || deletePrompt || !detail?.deletable) return;
-    deletePrompt = true;
-    root.insertAdjacentHTML(
+  confirmDelete() {
+    if (this.busy || this.envelope || this.conflict || this.deletePrompt || !this.detail?.deletable) return;
+    this.deletePrompt = true;
+    this.root.insertAdjacentHTML(
       'beforeend',
       `<section class="record-delete-confirm" role="alertdialog" aria-label="${e(dc('deleteRecord'))}"><p>${dc('deleteRecord')}</p><div><button type="button" data-delete-cancel>${t('common.cancel')}</button><button type="button" data-delete-confirm>${t('libraryLifecycle.deleteButton')}</button></div></section>`,
     );
-    root.querySelector('[data-delete-cancel]').focus();
+    this.root.querySelector('[data-delete-cancel]').focus();
   }
 
-  function savedActions() {
-    if (!record) return;
-    if (!detail.editable) status().textContent = detail.reason;
-    if (detail.deletable) {
-      root.insertAdjacentHTML(
+  savedActions() {
+    if (!this.record) return;
+    if (!this.detail.editable) this.status().textContent = this.detail.reason;
+    if (this.detail.deletable) {
+      this.root.insertAdjacentHTML(
         'beforeend',
         `<button type="button" class="record-delete" data-record-delete>${t('libraryLifecycle.deleteButton')}</button>`,
       );
     }
   }
 
-  function exerciseBrowser(snapshot = {node: 'root', query: '', parent: null}) {
-    const body = frame(message('exerciseBrowser.' + snapshot.node), '');
-    returnTo = snapshot.parent ? () => exerciseBrowser(snapshot.parent) : null;
-    panel = new MobileExerciseBrowser({
+  exerciseBrowser(snapshot = {node: 'root', query: '', parent: null}) {
+    const body = this.frame(message('exerciseBrowser.' + snapshot.node), '');
+    this.returnTo = snapshot.parent ? () => this.exerciseBrowser(snapshot.parent) : null;
+    this.panel = new MobileExerciseBrowser({
       root: body,
-      dialog: sheet,
+      dialog: this.sheet,
       message: key => message('exerciseBrowser.' + key),
-      api: () => request('/api/records/exercise-catalog', null, abort.signal),
+      api: () => request('/api/records/exercise-catalog', null, this.abort.signal),
       snapshot,
-      onNavigate: next => exerciseBrowser(next),
-      onSelect: (activity, choices, titleKey, from) => exerciseEditor({activity, choices, titleKey, from}),
-      onCustom: from => exerciseEditor({from}),
+      onNavigate: next => this.exerciseBrowser(next),
+      onSelect: (activity, choices, titleKey, from) => this.exerciseEditor({activity, choices, titleKey, from}),
+      onCustom: from => this.exerciseEditor({from}),
     });
   }
 
-  function exerciseEditor({activity, choices, titleKey, from, draft} = {}) {
-    const value = record ?? draft ?? {};
-    const unit = options.energyUnit;
-    const group = resolveDefaultGroup(options, record, value, initialGroup);
+  exerciseEditor({activity, choices, titleKey, from, draft} = {}) {
+    const value = this.record ?? draft ?? {};
+    const unit = this.options.energyUnit;
+    const group = resolveDefaultGroup(this.options, this.record, value, this.args.initialGroup);
     const values = {
       id: value.id,
-      date: value.date ?? date,
+      date: value.date ?? this.date,
       name: activity?.description ?? value.name ?? '',
       duration: value.duration ?? 15,
       calories: value.caloriesBurned == null ? '' : convertEnergy(value.caloriesBurned, 'kcal', unit),
       time: value.time ?? clock(),
     };
-    const groupOptions = options.groups.map(g => `<option value="${e(g)}" ${g === group ? 'selected' : ''}>${e(g)}</option>`).join('');
+    const groupOptions = this.options.groups
+      .map(g => `<option value="${e(g)}" ${g === group ? 'selected' : ''}>${e(g)}</option>`)
+      .join('');
     const markup = mobileExerciseMarkup({
       value: values,
       groupOptions,
       unit,
-      limits: {...options.exerciseLimits, maximumEnergy: convertEnergy(options.exerciseLimits.maximumKcal, 'kcal', unit)},
+      limits: {...this.options.exerciseLimits, maximumEnergy: convertEnergy(this.options.exerciseLimits.maximumKcal, 'kcal', unit)},
       message,
-      edit: Boolean(record),
+      edit: Boolean(this.record),
     });
-    const title = record ? dc('editExercise') : activity ? message('exerciseBrowser.' + (titleKey ?? 'root')) : t('activity.customExercise');
-    frame(title, markup);
-    returnTo = from ? () => exerciseBrowser(from) : null;
+    const title = this.record
+      ? dc('editExercise')
+      : activity
+        ? message('exerciseBrowser.' + (titleKey ?? 'root'))
+        : t('activity.customExercise');
+    this.frame(title, markup);
+    this.returnTo = from ? () => this.exerciseBrowser(from) : null;
 
-    panel = activity
+    this.panel = activity
       ? new CatalogExerciseEditor({
-          dialog: sheet,
+          dialog: this.sheet,
           message,
           activity,
           choices,
           titleKey,
-          api: async () => options.exerciseWeight,
-          onCustom: next => exerciseEditor({from, draft: next}),
+          api: async () => this.options.exerciseWeight,
+          onCustom: next => this.exerciseEditor({from, draft: next}),
         })
-      : new MobileExerciseEditor({dialog: sheet, message});
+      : new MobileExerciseEditor({dialog: this.sheet, message});
 
-    const form = root.querySelector('form');
-    if (record) decorateSavedExerciseForm(form, record);
+    const form = this.root.querySelector('form');
+    if (this.record) decorateSavedExerciseForm(form, this.record);
     form.addEventListener(
       'submit',
       event => {
         event.preventDefault();
-        if (busy || envelope || conflict) return;
-        const next = buildExerciseSubmitAction({activity, record, form, unit, correction});
-        void save(next.type, next.payload);
+        if (this.busy || this.envelope || this.conflict) return;
+        const next = buildExerciseSubmitAction({
+          activity,
+          record: this.record,
+          form,
+          unit,
+          correction: changes => this.correction(changes),
+        });
+        void this.save(next.type, next.payload);
       },
-      {signal: abort.signal},
+      {signal: this.abort.signal},
     );
-    savedActions();
-    controls();
+    this.savedActions();
+    this.controls();
   }
 
-  function biometricEditor() {
-    const body = frame(record ? dc('editBiometric') : t('mobileBiometric.title'), '');
-    const {selected, metric, draft} = buildBiometricDraft({options, record, detail, date, initialSelection, initialGroup});
-    session = createBiometricSession({
-      record,
-      detail,
-      options,
+  biometricEditor() {
+    const body = this.frame(this.record ? dc('editBiometric') : t('mobileBiometric.title'), '');
+    const {selected, metric, draft} = buildBiometricDraft({
+      options: this.options,
+      record: this.record,
+      detail: this.detail,
+      date: this.date,
+      initialSelection: this.args.initialSelection,
+      initialGroup: this.args.initialGroup,
+    });
+    this.session = createBiometricSession({
+      record: this.record,
+      detail: this.detail,
+      options: this.options,
       draft,
       metric,
-      hasEnvelope: () => Boolean(envelope),
-      onSave: save,
-      onReconcile: () => save(),
-      correction,
+      hasEnvelope: () => Boolean(this.envelope),
+      onSave: (type, payload) => this.save(type, payload),
+      onReconcile: () => this.save(),
+      correction: changes => this.correction(changes),
     });
-    panel = new MobileBiometricPanel({
+    this.panel = new MobileBiometricPanel({
       root: body,
-      session,
-      date,
+      session: this.session,
+      date: this.date,
       time: draft.time,
       group: draft.group,
-      initialEntry: record ? null : selected,
+      initialEntry: this.record ? null : selected,
     });
-    savedActions();
-    controls();
+    this.savedActions();
+    this.controls();
   }
 
-  const observer = new MutationObserver(() => {
-    if (!root.isConnected) dispose();
-  });
-  observer.observe(content, {childList: true});
-
-  const cancel = event => {
-    if (!alive()) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    back();
-  };
-  sheet.addEventListener('cancel', cancel, {capture: true, signal: abort.signal});
-  window.addEventListener('nourishing-back', cancel, {capture: true, signal: abort.signal});
-  sheet.addEventListener(
-    'click',
-    event => {
-      if (event.target !== sheet) return;
+  bindEvents() {
+    const cancel = event => {
+      if (!this.alive()) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      back();
-    },
-    {capture: true, signal: abort.signal},
-  );
+      this.back();
+    };
+    this.sheet.addEventListener('cancel', cancel, {capture: true, signal: this.abort.signal});
+    window.addEventListener('nourishing-back', cancel, {capture: true, signal: this.abort.signal});
+    this.sheet.addEventListener(
+      'click',
+      event => {
+        if (event.target !== this.sheet) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        this.back();
+      },
+      {capture: true, signal: this.abort.signal},
+    );
 
-  const buttonActions = [
-    ['data-record-close', () => back()],
-    ['data-record-reload', () => { dispose(); void mountRecordEditor(args); }],
-    ['data-record-retry', () => { void save(); }],
-    ['data-record-delete', () => confirmDelete()],
-    ['data-delete-cancel', () => closeDeletePrompt()],
-    ['data-delete-confirm', () => { void save(kind === 'exercise' ? 'entry.delete' : 'biometric.delete', {id: record.id}); }],
-  ];
-  root.addEventListener(
-    'click',
-    event => {
-      const button = event.target.closest('button');
-      if (!button) return;
-      for (const [attr, action] of buttonActions) {
-        if (button.hasAttribute(attr)) action();
-      }
-    },
-    {signal: abort.signal},
-  );
-
-  try {
-    [options, detail] = await Promise.all([
-      request('/api/records/options?' + new URLSearchParams({date: record?.date ?? date}), null, abort.signal),
-      record ? request('/api/records/item?' + new URLSearchParams({collection: COLLECTIONS[kind], id: record.id}), null, abort.signal) : null,
-    ]);
-    if (!alive()) return;
-    if (detail) record = detail.record;
-    if (kind === 'exercise') {
-      if (record) exerciseEditor();
-      else exerciseBrowser();
-    } else {
-      biometricEditor();
-    }
-  } catch (error) {
-    if (alive()) errorView(error);
+    const buttonActions = [
+      ['data-record-close', () => this.back()],
+      ['data-record-reload', () => { this.dispose(); void mountRecordEditor(this.args); }],
+      ['data-record-retry', () => { void this.save(); }],
+      ['data-record-delete', () => this.confirmDelete()],
+      ['data-delete-cancel', () => this.closeDeletePrompt()],
+      ['data-delete-confirm', () => { void this.save(this.kind === 'exercise' ? 'entry.delete' : 'biometric.delete', {id: this.record.id}); }],
+    ];
+    this.root.addEventListener(
+      'click',
+      event => {
+        const button = event.target.closest('button');
+        if (!button) return;
+        for (const [attr, action] of buttonActions) {
+          if (button.hasAttribute(attr)) action();
+        }
+      },
+      {signal: this.abort.signal},
+    );
   }
 
-  return {dispose, back};
+  async load() {
+    try {
+      [this.options, this.detail] = await Promise.all([
+        request('/api/records/options?' + new URLSearchParams({date: this.record?.date ?? this.date}), null, this.abort.signal),
+        this.record
+          ? request('/api/records/item?' + new URLSearchParams({collection: COLLECTIONS[this.kind], id: this.record.id}), null, this.abort.signal)
+          : null,
+      ]);
+      if (!this.alive()) return;
+      if (this.detail) this.record = this.detail.record;
+      if (this.kind === 'exercise') {
+        if (this.record) this.exerciseEditor();
+        else this.exerciseBrowser();
+      } else {
+        this.biometricEditor();
+      }
+    } catch (error) {
+      if (this.alive()) this.errorView(error);
+    }
+  }
+}
+
+/** Each open sheet owns its draft, pending command and disposable source presentation. */
+export async function mountRecordEditor(args) {
+  if (args.kind === 'note') return mountNoteEditor(args);
+  if (!Object.hasOwn(COLLECTIONS, args.kind)) return;
+  ensureRecordStyles();
+  const controller = new RecordEditorController(args);
+  await controller.load();
+  return {dispose: () => controller.dispose(), back: () => controller.back()};
 }

@@ -91,11 +91,7 @@ async function readBody(req, limit = DEFAULT_BODY_BYTES) {
   }
 }
 
-function buildRoutes() {
-  const map = new Map();
-  const add = (method, path, spec) => map.set(`${method} ${path}`, spec);
-
-  // Account & Auth
+function registerAccountRoutes(add) {
   add('GET', '/api/account', {
     auth: 'secret',
     handler: async ({api, secret, json}) => json(200, {...(await api.current(secret)), sessionContext: sessionContext(secret)}),
@@ -188,8 +184,9 @@ function buildRoutes() {
       return json(200, {ok: true});
     },
   });
+}
 
-  // Account Deletion
+function registerDeletionRoutes(add) {
   add('POST', '/api/account/deletion/prepare', {
     auth: 'prebody',
     noSearch: 'Invalid account request.',
@@ -223,8 +220,9 @@ function buildRoutes() {
       return json(200, await api.accountDeletionStatus(ticket));
     },
   });
+}
 
-  // Offline
+function registerOfflineAndReminderRoutes(add) {
   add('GET', '/api/offline', {
     auth: 'secret',
     noSearch: 'Invalid offline request.',
@@ -236,8 +234,6 @@ function buildRoutes() {
     maxBytes: 601_000,
     handler: async ({api, secret, body, json}) => json(200, await api.offlineCommand(secret, body)),
   });
-
-  // Reminders & Web Push
   add('GET', '/api/reminders', {
     auth: 'secret',
     noSearch: 'Invalid notification request.',
@@ -257,8 +253,9 @@ function buildRoutes() {
       handler: async ({api, secret, body, json}) => json(200, await api[method](secret, body)),
     });
   }
+}
 
-  // Glucose & Cycle
+function registerHealthAndSharingRoutes(add) {
   add('GET', '/api/glucose-timeline', {
     auth: 'secret',
     handler: async ({api, secret, url, json}) => {
@@ -298,8 +295,6 @@ function buildRoutes() {
       },
     });
   }
-
-  // Library Sharing & Print
   add('GET', '/api/library/share', {
     auth: 'secret',
     handler: async ({api, secret, url, json}) =>
@@ -329,8 +324,6 @@ function buildRoutes() {
       return json(200, await api.libraryFoodPrint(secret, body));
     },
   });
-
-  // Coach
   add('GET', '/api/coach/preferences', {
     auth: 'secret',
     noSearch: 'Invalid query.',
@@ -344,8 +337,9 @@ function buildRoutes() {
       return json(200, await api.coachAnswer(secret, body));
     },
   });
+}
 
-  // Text Log & CSV Import
+function registerImportAndPhotoRoutes(add) {
   add('POST', '/api/text-log/parse', {
     auth: 'prebody',
     noSearch: 'Invalid text log request.',
@@ -364,8 +358,6 @@ function buildRoutes() {
     maxBytes: CSV_BODY_BYTES,
     handler: async ({api, secret, body, json}) => json(200, await api.importCsv(secret, body)),
   });
-
-  // Photos, Snapshots, Note Photos (authenticate before reading multi-MB base64 payloads)
   for (const [path, method, maxBytes] of [
     ['/api/photos/analyze', 'analyzePhoto', 12 * MB],
     ['/api/photos/save', 'savePhoto', 5 * MB],
@@ -386,8 +378,6 @@ function buildRoutes() {
     noSearch: 'Invalid query.',
     handler: async ({api, secret, json}) => json(200, await api.snapshots(secret)),
   });
-
-  // Recipe Import
   for (const [path, method] of [
     ['/api/recipe-import', 'importRecipe'],
     ['/api/recipe-import/preview', 'previewRecipeImport'],
@@ -400,8 +390,22 @@ function buildRoutes() {
       handler: async ({api, secret, body, json}) => json(200, await api[method](secret, body)),
     });
   }
+  for (const [path, method] of [
+    ['/api/barcode/lookup', 'barcodeLookup'],
+    ['/api/barcode/preview', 'barcodePreview'],
+    ['/api/barcode/save', 'barcodeSave'],
+    ['/api/branded/search', 'brandedSearch'],
+  ]) {
+    add('POST', path, {
+      auth: 'prebody',
+      noSearch: 'Invalid barcode request.',
+      maxBytes: BARCODE_BODY_BYTES,
+      handler: async ({api, secret, body, json}) => json(200, await api[method](secret, body)),
+    });
+  }
+}
 
-  // Backup & Recovery
+function registerBackupAndLibraryRoutes(add) {
   for (const [path, method, maxBytes] of [
     ['/api/backup/inspect', 'inspectBackup', 20_000_000],
     ['/api/backup/media', 'uploadBackupMedia', 5 * MB],
@@ -425,8 +429,6 @@ function buildRoutes() {
     noSearch: 'Invalid backup query.',
     handler: async ({api, secret, json}) => json(200, await api.exportBackup(secret)),
   });
-
-  // Library & Diary Editors
   add('POST', '/api/library/command', {
     auth: 'prebody',
     noSearch: 'Invalid editor request.',
@@ -489,8 +491,9 @@ function buildRoutes() {
       return json(200, await api.foodCopy(secret, {kind: params.kind, id: params.id}));
     },
   });
+}
 
-  // Diary Ingredients, Tools, Nutrient Detail, Preview
+function registerDiaryAndReportRoutes(add) {
   add('GET', '/api/diary/ingredients', {
     auth: 'secret',
     handler: async ({api, secret, url, json}) =>
@@ -559,23 +562,6 @@ function buildRoutes() {
       return json(200, await api.diaryCalendar(secret, {month}));
     },
   });
-
-  // Barcode & Branded Search
-  for (const [path, method] of [
-    ['/api/barcode/lookup', 'barcodeLookup'],
-    ['/api/barcode/preview', 'barcodePreview'],
-    ['/api/barcode/save', 'barcodeSave'],
-    ['/api/branded/search', 'brandedSearch'],
-  ]) {
-    add('POST', path, {
-      auth: 'prebody',
-      noSearch: 'Invalid barcode request.',
-      maxBytes: BARCODE_BODY_BYTES,
-      handler: async ({api, secret, body, json}) => json(200, await api[method](secret, body)),
-    });
-  }
-
-  // Print Report & Export
   add('GET', '/api/print-report/options', {
     auth: 'secret',
     noSearch: 'Invalid report query.',
@@ -591,8 +577,6 @@ function buildRoutes() {
     auth: 'secret',
     handler: async ({api, secret, body, json}) => json(200, await api.exportReport(secret, body)),
   });
-
-  // Fasting
   add('GET', '/api/fasting', {
     auth: 'secret',
     handler: async ({api, secret, url, json}) => {
@@ -606,8 +590,6 @@ function buildRoutes() {
       return json(200, await api.fasting(secret, params));
     },
   });
-
-  // Food Insights
   add('GET', '/api/food-insights/options', {
     auth: 'secret',
     noSearch: 'Invalid food insight query.',
@@ -626,8 +608,9 @@ function buildRoutes() {
       handler: async ({api, secret, body, json}) => json(200, await api[method](secret, body)),
     });
   }
+}
 
-  // Settings & Views
+function registerRecordsAndCatalogRoutes(add) {
   add('GET', '/api/pause-life', {
     auth: 'secret',
     noSearch: 'Invalid query.',
@@ -652,10 +635,7 @@ function buildRoutes() {
   ]) {
     add('GET', path, {
       auth: 'secret',
-      handler: async ({api, secret, url, json}) => {
-        const {date} = requireParams(url.searchParams, ['date']);
-        return json(200, await api[method](secret, date));
-      },
+      handler: async ({api, secret, url, json}) => json(200, await api[method](secret, requireParams(url.searchParams, ['date']).date)),
     });
   }
   add('GET', '/api/nutrition-report', {
@@ -669,8 +649,6 @@ function buildRoutes() {
       return json(200, await api.nutritionReport(secret, input));
     },
   });
-
-  // Repeats & Records
   add('GET', '/api/repeats', {
     auth: 'secret',
     handler: async ({api, secret, url, json}) => json(200, await api.repeats(secret, requireParams(url.searchParams, ['date']).date)),
@@ -707,8 +685,6 @@ function buildRoutes() {
       return json(200, await api.exerciseEstimate(secret, {...params, minutes: Number(params.minutes)}));
     },
   });
-
-  // Workspace Commands & Target Policies
   add('POST', '/api/workspace/command', {
     auth: 'secret',
     handler: async ({api, secret, body, json}) => json(200, await api.workspaceCommand(secret, body)),
@@ -723,8 +699,6 @@ function buildRoutes() {
     noSearch: 'Invalid query.',
     handler: async ({api, secret, body, json}) => json(200, await api.previewTargetPolicy(secret, body)),
   });
-
-  // Food Search, Diary, Catalog & Media
   add('GET', '/api/food-search', {
     auth: 'secret',
     handler: async ({api, secret, url, json}) => {
@@ -794,11 +768,46 @@ function buildRoutes() {
       return new Response(bytes, {headers});
     },
   });
+}
 
+function buildRoutes() {
+  const map = new Map();
+  const add = (method, path, spec) => map.set(`${method} ${path}`, spec);
+  registerAccountRoutes(add);
+  registerDeletionRoutes(add);
+  registerOfflineAndReminderRoutes(add);
+  registerHealthAndSharingRoutes(add);
+  registerImportAndPhotoRoutes(add);
+  registerBackupAndLibraryRoutes(add);
+  registerDiaryAndReportRoutes(add);
+  registerRecordsAndCatalogRoutes(add);
   return map;
 }
 
 const ROUTES = buildRoutes();
+
+function resolveErrorCode(error, path, status) {
+  if (error.errorCode) return error.errorCode;
+  if (path === '/api/auth/login' && status === 401) return 'auth.invalidCredentials';
+  if (path === '/api/auth/register' && status === 409) return 'auth.accountExists';
+  if (['/api/auth/reset', '/api/auth/verify'].includes(path) && [400, 401].includes(status)) return 'auth.invalidLink';
+  return DEFAULT_CODES[status] ?? (status >= 500 ? 'request.unavailable' : 'request.failed');
+}
+
+function resolveErrorDetail(error) {
+  if (typeof error.nutritionLabelCode === 'string') {
+    const keys = ['field', 'nutrientId', 'percent', 'profileId', 'min', 'max'];
+    return {
+      kind: 'nutritionLabel',
+      code: error.nutritionLabelCode,
+      details: Object.fromEntries(keys.filter(key => Object.hasOwn(error.details ?? {}, key)).map(key => [key, error.details[key]])),
+    };
+  }
+  if (typeof error.vitaminActivityCode === 'string') {
+    return {kind: 'vitaminActivity', code: error.vitaminActivityCode};
+  }
+  return undefined;
+}
 
 function formatErrorResponse(error, path) {
   const status = STATUS_CODES.has(error.code) ? error.code : 503;
@@ -807,30 +816,51 @@ function formatErrorResponse(error, path) {
       ? 'An account with these details already exists. Try signing in.'
       : DEFAULT_MESSAGES[409];
   const message = error.publicMessage ?? (status === 409 ? conflictMessage : DEFAULT_MESSAGES[status]) ?? 'Request failed.';
-  const errorCode =
-    error.errorCode ??
-    (path === '/api/auth/login' && status === 401
-      ? 'auth.invalidCredentials'
-      : path === '/api/auth/register' && status === 409
-        ? 'auth.accountExists'
-        : ['/api/auth/reset', '/api/auth/verify'].includes(path) && [400, 401].includes(status)
-          ? 'auth.invalidLink'
-          : DEFAULT_CODES[status] ?? (status >= 500 ? 'request.unavailable' : 'request.failed'));
-  const errorDetail =
-    typeof error.nutritionLabelCode === 'string'
-      ? {
-          kind: 'nutritionLabel',
-          code: error.nutritionLabelCode,
-          details: Object.fromEntries(
-            ['field', 'nutrientId', 'percent', 'profileId', 'min', 'max']
-              .filter(key => Object.hasOwn(error.details ?? {}, key))
-              .map(key => [key, error.details[key]]),
-          ),
-        }
-      : typeof error.vitaminActivityCode === 'string'
-        ? {kind: 'vitaminActivity', code: error.vitaminActivityCode}
-        : undefined;
-  return {status, payload: {error: message, errorCode, ...(errorDetail ? {errorDetail} : {})}};
+  const errorDetail = resolveErrorDetail(error);
+  return {
+    status,
+    payload: {error: message, errorCode: resolveErrorCode(error, path, status), ...(errorDetail ? {errorDetail} : {})},
+  };
+}
+
+function handleStaticOrHealth({req, path, assets, headers, json}) {
+  if (req.method !== 'GET') return null;
+  if (path === '/healthz') return json(200, {status: 'ok', service: 'nourishing-cloud-accounts'});
+  // App launches may omit Strict cookies on navigation; same-origin fetch includes them.
+  if (path === '/api/account/session-context') {
+    return json(200, {sessionContext: sessionContext(readSession(req.headers.get('cookie') ?? ''))});
+  }
+  if (path.startsWith('/api/')) return null;
+  const asset = assets.get(path) || (SPA_PATHS.has(path) ? assets.get('/') : undefined);
+  if (!asset) fail(404, 'Not found.');
+  headers.set('Content-Type', asset.type);
+  const body =
+    path === '/diary'
+      ? String(asset.body).replace(
+          '<head>',
+          '<head><meta name="nourishing-session" content="' + sessionContext(readSession(req.headers.get('cookie') ?? '')) + '">',
+        )
+      : asset.body;
+  return new Response(body, {headers});
+}
+
+function validateMethodAndHeaders(req, config) {
+  if (!ALLOWED_METHODS.has(req.method)) fail(405, 'Method not allowed.');
+  if (req.method === 'GET') return;
+  if (req.headers.get('origin') !== config.origin) fail(403, 'Request origin not allowed.');
+  if (req.headers.get('content-type')?.split(';')[0] !== 'application/json') fail(415, 'Use JSON.');
+}
+
+async function executeMatchedRoute({route, api, secret, req, url, headers, json}) {
+  if (route.auth === 'prebody') {
+    if (!secret) fail(401, 'Please sign in.');
+    await (api.authenticate ?? api.current)(secret);
+  } else if (route.auth === 'secret' && !secret) {
+    fail(401, 'Please sign in.');
+  }
+  if (route.noSearch && url.search) fail(400, route.noSearch);
+  const body = req.method === 'GET' ? null : await readBody(req, route.maxBytes ?? DEFAULT_BODY_BYTES);
+  return route.handler({api, secret, req, url, body, headers, json});
 }
 
 export function createWebHandler({config, service, serviceForRequest, assets = new Map()}) {
@@ -849,53 +879,17 @@ export function createWebHandler({config, service, serviceForRequest, assets = n
     try {
       const url = new URL(req.url, config.origin);
       path = url.pathname;
+      const staticResponse = handleStaticOrHealth({req, path, assets, headers, json});
+      if (staticResponse) return staticResponse;
 
-      if (req.method === 'GET' && path === '/healthz') {
-        return json(200, {status: 'ok', service: 'nourishing-cloud-accounts'});
-      }
-      // App launches may omit Strict cookies on navigation; same-origin fetch includes them.
-      if (req.method === 'GET' && path === '/api/account/session-context') {
-        return json(200, {sessionContext: sessionContext(readSession(req.headers.get('cookie') ?? ''))});
-      }
-      if (req.method === 'GET' && !path.startsWith('/api/')) {
-        const asset = assets.get(path) || (SPA_PATHS.has(path) ? assets.get('/') : undefined);
-        if (!asset) fail(404, 'Not found.');
-        headers.set('Content-Type', asset.type);
-        const body =
-          path === '/diary'
-            ? String(asset.body).replace(
-                '<head>',
-                '<head><meta name="nourishing-session" content="' + sessionContext(readSession(req.headers.get('cookie') ?? '')) + '">',
-              )
-            : asset.body;
-        return new Response(body, {headers});
-      }
-
-      if (!ALLOWED_METHODS.has(req.method)) fail(405, 'Method not allowed.');
-      if (req.method !== 'GET') {
-        if (req.headers.get('origin') !== config.origin) fail(403, 'Request origin not allowed.');
-        if (req.headers.get('content-type')?.split(';')[0] !== 'application/json') fail(415, 'Use JSON.');
-      }
-
+      validateMethodAndHeaders(req, config);
       const route = ROUTES.get(`${req.method} ${path}`);
       if (!route) fail(404, 'Not found.');
 
       const secret = readSession(req.headers.get('cookie') ?? '');
       const api = service ?? serviceForRequest(req);
       const runInScope = typeof api?.withRequest === 'function' ? fn => api.withRequest(fn) : fn => fn();
-
-      return await runInScope(async () => {
-        if (route.auth === 'prebody') {
-          if (!secret) fail(401, 'Please sign in.');
-          await (api.authenticate ?? api.current)(secret);
-          if (route.noSearch && url.search) fail(400, route.noSearch);
-        } else {
-          if (route.auth === 'secret' && !secret) fail(401, 'Please sign in.');
-          if (route.noSearch && url.search) fail(400, route.noSearch);
-        }
-        const body = req.method === 'GET' ? null : await readBody(req, route.maxBytes ?? DEFAULT_BODY_BYTES);
-        return route.handler({api, secret, req, url, body, headers, json});
-      });
+      return await runInScope(() => executeMatchedRoute({route, api, secret, req, url, headers, json}));
     } catch (error) {
       const {status, payload} = formatErrorResponse(error, path);
       if (status >= 500 && !STATUS_CODES.has(error.code)) {
