@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -16,7 +17,7 @@ test('source food search categories, options, debounce, paging and child selecti
   if(!/^\/[a-zA-Z0-9/_.-]+\.(?:js|mjs|css|woff2)$/.test(path)||path.includes('..'))return res.writeHead(404).end();res.setHeader('Content-Type',path.endsWith('.css')?'text/css':path.endsWith('.woff2')?'font/woff2':'text/javascript');res.end(readFileSync(new URL('../public'+path,import.meta.url)));
  }catch(error){res.writeHead(400,{'Content-Type':'application/json'}).end(JSON.stringify({error:error.message}));}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));let browser;
- try{browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.on('pageerror',error=>errors.push(error.message));page.setDefaultTimeout(10000);await page.goto(`http://127.0.0.1:${server.address().port}`);
+ try{browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.on('pageerror',error=>errors.push(error.message));page.setDefaultTimeout(10000);await page.goto(`http://127.0.0.1:${server.address().port}`);
   await page.locator('.mfs-result').first().waitFor();assert.equal(await page.locator('[data-mfs-category]').count(),8);assert.equal(await page.locator('.sheet-header').isVisible(),false);assert.equal(await page.locator('[data-id="usda:sr-legacy-2018-04:1"] .mfs-source').textContent(),'USDA');assert.equal(await page.locator('[data-mfs-multi]').count(),0);
   await page.getByRole('button',{name:/Apple juice/}).click();assert.deepEqual(await page.evaluate(()=>window.picked),{kind:'food',id:foods[0].id,meta:{source:'catalog'}});
   await page.locator('[data-mfs=options]').click();await page.getByRole('dialog',{name:'Food Search Options'}).waitFor();assert.equal(await page.locator('.mfs-content').evaluate(node=>node.inert),true);await page.keyboard.press('Escape');assert.equal(await page.locator('.mfs-overlay').isVisible(),false);assert.equal(await page.evaluate(()=>window.closed??false),false);

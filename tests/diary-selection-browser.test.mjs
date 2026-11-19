@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import {diaryCalendarView} from '../server/diary-calendar-view.mjs';
 import {recordOptions,exerciseCatalogView} from '../server/record-views.mjs';
 import {chooseDiaryDate} from '../scripts/diary-test-navigation.mjs';
@@ -31,7 +32,7 @@ test('Diary selected intake drives all source summary consumers with canceled st
 
 
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});page=await browser.newPage({viewport:{width:412,height:915},colorScheme:'dark',extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.addInitScript(()=>{window.csp=[];document.addEventListener('securitypolicyviolation',e=>window.csp.push(e.violatedDirective));});await page.goto(base+'/diary');await page.locator('.md-diary').waitFor();
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});page=await browser.newPage({viewport:{width:412,height:915},colorScheme:'dark',extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.addInitScript(()=>{window.csp=[];document.addEventListener('securitypolicyviolation',e=>window.csp.push(e.violatedDirective));});await page.goto(base+'/diary');await page.locator('.md-diary').waitFor();
   const ring=amount=>page.waitForFunction(amount=>window.Chart?.getChart(document.querySelector('[data-pause-ring]'))?.data.datasets[0].data.reduce((a,b)=>a+b,0)===amount,amount),selectGroup=async()=>{await page.getByRole('button',{name:'Lunch actions',exact:true}).click();await page.getByRole('button',{name:'Select group',exact:true}).click();};
   await ring(298);await selectGroup();await page.locator('.md-scope').waitFor();await ring(298);await page.getByRole('checkbox',{name:'Select Chicken',exact:true}).uncheck();await ring(133);assert.equal(await page.locator('.md-scope').innerText(),'Selected foods');
   await page.locator('[data-md-page-id=pauseLife] .md-target-protein').click();await page.locator('.nutrient-detail[aria-busy=false]').waitFor();assert.match(await page.locator('.nutrient-detail').innerText(),/Rice/);assert.doesNotMatch(await page.locator('.nutrient-detail').innerText(),/Chicken/);await page.keyboard.press('Escape');

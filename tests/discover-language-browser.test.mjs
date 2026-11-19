@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -35,7 +36,7 @@ test('Discover and Targets render French, German and Portuguese at 320px and ret
  const server=createServer(async(req,res)=>{const result=await handler(new Request(base+req.url,{method:req.method,headers:req.headers,...(req.method==='GET'?{}:{body:req,duplex:'half'})}));res.writeHead(result.status,Object.fromEntries(result.headers));res.end(Buffer.from(await result.arrayBuffer()));});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));base='http://127.0.0.1:'+server.address().port;
  handler=createWebHandler({config:{origin:base},assets,service:{current:async()=>({}),dashboard:async(_,day)=>dashboardView(fixture.state(),{date:day},clock),recordOptions:async(_,day)=>recordOptions(fixture.state(),day),charts:async(_,query)=>chartSurfaceView(fixture.state(),query,clock),targetPolicies:async(_,day)=>targetPolicyView(fixture.state(),day,{today:date}),previewTargetPolicy:async(_,input)=>previewTargetPolicy(fixture.state(),input,{today:date}),coachPreferences:async()=>coachView(fixture.state()),coachAnswer:async(_,input)=>coachAnswer(fixture.state(),input),snapshots:async()=>snapshotsView(fixture.state()),fasting:async(_,query)=>fastingView(fixture.state(),clock,query),workspaceCommand:async(_,input)=>{writes.push(input);return store.command(input,async()=>null,clock);}}});
  let browser;try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});mkdirSync('.local/discover-language',{recursive:true});
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});mkdirSync('.local/discover-language',{recursive:true});
   for(const language of ['fr','de','pt-BR'])await test(language,async()=>{
    const seed=initialState();seed.settings.appLanguage=language;seed.settings.groups.unshift('Uncategorized');seed.settings.coachPreferences={goals:'Custom goal',dietaryPreferences:'Vegetarian',notes:'Original private note'};fixture=diaryStoreFixture(seed);store=createWorkspaceStore(fixture.db,'fixture');writes.length=0;
    const page=await browser.newPage({viewport:{width:320,height:780},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(8000);await page.goto(base+'/?lang='+language);await page.waitForFunction(()=>window.ready);const words=await page.evaluate(()=>window.words);assert.equal(await page.locator('html').getAttribute('lang'),language);

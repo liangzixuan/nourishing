@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -24,7 +25,7 @@ test('dashboard exposes saved health widgets, opens details and follows diary da
  });
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));let browser;
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});
   const page=await browser.newPage({viewport:{width:412,height:915}});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',error=>errors.push(error.message));page.on('response',response=>{if(response.status()>=400&&!response.url().endsWith('favicon.ico'))errors.push(response.status()+' '+response.url());});
   await page.goto(`http://127.0.0.1:${server.address().port}`);try{await page.locator('[data-health-card=glucose]').waitFor();}catch(error){throw Error(JSON.stringify({errors,body:await page.locator('body').innerText()}),{cause:error});}
   await page.locator('[data-discover=health-glucose]').click();await page.locator('[data-health-date]').click();assert.equal(await page.locator('body').getAttribute('data-diary-date'),date);

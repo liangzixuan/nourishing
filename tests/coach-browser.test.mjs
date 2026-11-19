@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -25,7 +26,7 @@ test('Coach phone UI shows recorded facts, preserves custom preferences, and ign
  }catch(error){res.writeHead(error.code??500).end(JSON.stringify({error:error.message}));}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));let browser;
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915}});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.goto(`http://127.0.0.1:${server.address().port}`);
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915}});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.goto(`http://127.0.0.1:${server.address().port}`);
   await page.getByRole('heading',{name:'Protein',exact:true}).waitFor();assert.equal(await page.locator('.coach-preferences').count(),0);assert.equal(await page.locator('.coach-details').getAttribute('open'),null);assert.equal(writes.length,0);
   await page.getByRole('button',{name:'Protein',exact:true}).click();await page.waitForFunction(()=>document.querySelectorAll('.coach-results article').length===1);assert.equal(await page.locator('.coach-value').textContent(),'12 g');
   await page.getByText('Goals & preferences',{exact:true}).click();await page.getByRole('button',{name:'Strength',exact:true}).click();await page.getByLabel('Notes',{exact:true}).fill('Updated note');await page.getByRole('button',{name:'Save',exact:true}).click();await page.locator('[data-coach-edit]').waitFor();await page.waitForFunction(()=>!document.querySelector('[data-coach-edit]').disabled);assert.equal(writes.length,1);assert.equal(state.settings.coachPreferences.goals,'Custom goal, Strength');assert.equal(state.settings.coachPreferences.dietaryPreferences,'Vegetarian');assert.equal(state.settings.targets.protein,100);

@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import {barcodeAssets} from '../scripts/package-barcode-assets.mjs';
 const packagedAssets=new Map((await barcodeAssets()).map(asset=>['/'+asset.path,asset]));
 import test from 'node:test';
@@ -29,7 +30,7 @@ test('Discover opens Coach and follows its selected date into Report and Suggest
  }catch(error){res.writeHead(500).end(JSON.stringify({error:error.message}));}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));let browser;
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915}});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915}});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.goto(`http://127.0.0.1:${server.address().port}`);await page.locator('[data-discover=coach]').click();await page.getByRole('heading',{name:'Energy balance'}).waitFor();
   await page.locator('aside input[type=date]').fill(selected);await page.getByRole('button',{name:'Show records',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('[data-coach-report]').disabled);await page.getByRole('button',{name:'View full report',exact:true}).click();
   await page.locator('[data-tab=report][aria-current=page]').waitFor();await page.locator('.mobile-report-toolbar').waitFor();assert.deepEqual(reportRanges.at(-1),{from:selected,to:selected});assert.equal(await page.locator('aside').textContent(),'');

@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import {importRecipeUrl,previewRecipeImport,prepareRecipeImportDraft} from '../server/recipe-import.mjs';
 import {previewLibraryEdit} from '../server/library-edit.mjs';
 import test from 'node:test';
@@ -35,7 +36,7 @@ test('Recipe Import source child prepares reviewed drafts and one atomic final s
  handler=createWebHandler({config:{origin},service,assets:{get(path){if(assets.has(path))return assets.get(path);const file=resolve(publicRoot,'.'+path),ext=extname(file);if(!file.startsWith(publicRoot+'\\')&&!file.startsWith(publicRoot+'/'))return;if(!existsSync(file)||!['.js','.mjs','.css','.woff2','.svg'].includes(ext))return;return {body:readFileSync(file),type:ext==='.css'?'text/css':ext==='.woff2'?'font/woff2':ext==='.svg'?'image/svg+xml':'text/javascript'};}}});
 
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.on('pageerror',error=>errors.push(error.message));page.setDefaultTimeout(10000);await page.goto(origin);
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.on('pageerror',error=>errors.push(error.message));page.setDefaultTimeout(10000);await page.goto(origin);
   const ready=()=>page.waitForFunction(()=>document.querySelector('[data-mce-next]')?.disabled===false&&document.querySelector('.recipe-editor')?.dataset.recipeBusy==='false'),dialog=()=>page.locator('.mri-dialog');
   // Cancel a child import without losing the unsaved recipe or creating any record.
   await page.locator('[data-action=new-recipe]').click();await page.getByLabel('Recipe Name',{exact:true}).fill('Kept draft');await page.locator('[data-mce-import]').click();await dialog().locator('[name=url]').fill('https://example.com/cancel');await page.keyboard.press('Escape');assert.equal(await dialog().count(),0);assert.equal(await page.getByLabel('Recipe Name',{exact:true}).inputValue(),'Kept draft');assert.equal(attempts.length,0);await page.locator('[data-recipe-close]').click();

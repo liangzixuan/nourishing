@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -21,7 +22,7 @@ test('source Upper Limits previews, preserves overrides, cancels and retries the
  handler=createWebHandler({config:{origin:base},assets,service:{targetPolicies:async(_,day)=>targetPolicyView(state(),day,{today:date}),previewTargetPolicy:async(_,input)=>{if(badPreview){badPreview=false;return {revision:targetPolicyView(state(),date,{today:date}).revision,view:{}};}return previewTargetPolicy(state(),input,{today:date});},workspaceCommand:async(_,input)=>{attempts.push(input);if(rejectSave){rejectSave=false;throw {code:409,publicMessage:'Targets changed. Reload to continue.'};}const result=await store.command(input,async()=>null,context);if(loseReply){loseReply=false;throw {code:503,publicMessage:'Connection interrupted'};}return result;}}});
  let browser;
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));await page.goto(base);
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));await page.goto(base);
   const ready=()=>page.waitForFunction(()=>{const el=document.querySelector('[data-reference-editor]');return el&&!el.disabled;}),open=async()=>{await page.getByRole('button',{name:'More target settings',exact:true}).click();await page.getByRole('menuitem',{name:'Reference Upper Limits',exact:true}).click();await ready();};await open();
   assert.equal(await page.locator('.nutrient-references h2').count(),0);assert.equal(await page.locator('[data-reference-status]').isVisible(),false);assert.equal(await page.locator('[data-reference-refresh]').isVisible(),false);assert.equal(await page.locator('.reference-help').first().getAttribute('open'),null);assert.equal(await page.getByText('Saved reference settings loaded.',{exact:false}).count(),0);
   await page.locator('.reference-help > summary').first().click();assert.equal(await page.locator('.reference-help').first().getAttribute('open'),'');await page.locator('.reference-help > summary').first().click();

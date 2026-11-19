@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -28,7 +29,7 @@ test('custom chart source editor creates and edits canonical axes, discards draf
   }catch(error){res.writeHead(400,{'Content-Type':'application/json'}).end(JSON.stringify({error:error.message}));}
  });await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));let browser;
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));await page.goto(`http://127.0.0.1:${server.address().port}`);let dropReply=false;await page.route('**/api/workspace/command',async route=>{if(!dropReply)return route.continue();dropReply=false;await route.fetch();await route.abort('failed');});
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));await page.goto(`http://127.0.0.1:${server.address().port}`);let dropReply=false;await page.route('**/api/workspace/command',async route=>{if(!dropReply)return route.continue();dropReply=false;await route.fetch();await route.abort('failed');});
   const axis=name=>page.locator(`[data-mce-axis=${name}]`),pick=async(name,field)=>axis(name).locator(`[data-mce-pick=${field}]`).click(),choose=async(label)=>page.locator('.mce-metric-picker').getByRole('button',{name:label,exact:true}).click();
   await page.locator('[data-create]').click();await page.getByRole('heading',{name:'Create Custom Chart'}).waitFor();assert.equal(await page.getByLabel('Chart Name',{exact:true}).inputValue(),'Weight');assert.equal(await page.getByLabel('Chart days').count(),0);
   await pick('primary','metric');await page.getByRole('searchbox',{name:'Search',exact:true}).fill('no such metric');await page.getByText('No matches',{exact:true}).waitFor();await page.keyboard.press('Escape');assert.equal(await page.locator('.mce-metric-picker').count(),0);assert.equal(await page.locator('#sheet').evaluate(node=>node.open),true);

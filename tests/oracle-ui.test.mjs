@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import {diaryCalendarView} from '../server/diary-calendar-view.mjs';
 import {chooseDiaryDate} from '../scripts/diary-test-navigation.mjs';
 import test from 'node:test';
@@ -40,7 +41,7 @@ test('Oracle source flow through real Foods and Diary under production CSP',asyn
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));origin=`http://127.0.0.1:${server.address().port}`;
  const packedAssets=new Map((await barcodeAssets()).map(asset=>['/'+asset.path,asset]));const publicRoot=resolve('public');handler=createWebHandler({config:{origin},service,assets:{get(path){if(path==='/')path='/diary.html';if(packedAssets.has(path))return packedAssets.get(path);const file=resolve(publicRoot,'.'+path),extension=extname(file);if(!file.startsWith(publicRoot+'/')&&!file.startsWith(publicRoot+'\\'))return;const type={'.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.woff2':'font/woff2','.html':'text/html','.webmanifest':'application/manifest+json','.png':'image/png'}[extension];if(!type||!existsSync(file))return;return {body:readFileSync(file),type};}}});
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915},isMobile:true,hasTouch:true,serviceWorkers:'block'});page.setDefaultTimeout(8000);const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915},isMobile:true,hasTouch:true,serviceWorkers:'block'});page.setDefaultTimeout(8000);const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.addInitScript(()=>{window.violations=[];document.addEventListener('securitypolicyviolation',event=>window.violations.push(event.violatedDirective));});
   await page.goto(origin);await page.locator('.md-summary').waitFor();await chooseDiaryDate(page,'2026-11-14');
   await page.locator('#foods-tab').click();await page.locator('[data-food-insight=oracle]').click();await page.locator('[data-mo-nutrient]').waitFor();

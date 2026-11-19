@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -20,7 +21,7 @@ test('source multi-add supports draft review, recipe, immutable recovery and own
   }catch(error){res.writeHead(500,{'Content-Type':'application/json'}).end(JSON.stringify({error:error.message}));}
  });
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const origin=`http://127.0.0.1:${server.address().port}`;let browser;
- try{browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.setDefaultTimeout(15000);page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{if(message.text().includes('Content Security Policy'))errors.push(message.text());});await page.goto(origin);await page.locator('.mfs-result').first().waitFor();
+ try{browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.setDefaultTimeout(15000);page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{if(message.text().includes('Content Security Policy'))errors.push(message.text());});await page.goto(origin);await page.locator('.mfs-result').first().waitFor();
   await page.locator('[data-mfs=options]').click();await page.locator('[data-mfs-multi]').check();await page.keyboard.press('Escape');await page.locator('.mfs-result').nth(0).click();await page.locator('.mfs-result').nth(1).click();await page.locator('.mfs-result').nth(3).click();await page.getByRole('button',{name:'Review Items (3)',exact:true}).click();await page.locator('[data-multi=save]:not(:disabled)').waitFor();assert.deepEqual(previews.at(-1).rows.map(row=>row.selection.kind),['catalog','foods','meals']);
   await page.getByRole('button',{name:'Edit Catalog oats',exact:true}).click();await page.getByRole('button',{name:'Apply',exact:true}).click();await page.locator('[data-multi=save]:not(:disabled)').waitFor();assert.equal(previews.at(-1).rows[0].entry.amount,2);assert.equal(Object.hasOwn(previews.at(-1).rows[0].entry,'foodId'),false);
   await page.keyboard.press('Escape');assert.equal(await page.locator('.multi-overlay:not([hidden])').count(),0);await page.getByRole('button',{name:'Review Items (3)',exact:true}).click();await page.locator('[data-multi=save]:not(:disabled)').waitFor();

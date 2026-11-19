@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -21,7 +22,7 @@ test('Guided Setup uses canonical preview, confirmation, cancellation and same-r
  handler=createWebHandler({config:{origin:base},assets,service:{targetPolicies:async(_,day)=>targetPolicyView(state(),day,{today:date}),previewTargetPolicy:async(_,input)=>{if(badPreview){badPreview=false;return {revision:targetPolicyView(state(),date,{today:date}).revision,view:{}};}return previewTargetPolicy(state(),input,{today:date});},workspaceCommand:async(_,input)=>{attempts.push(input);if(rejectSave){rejectSave=false;throw {code:409,publicMessage:'Targets changed. Reload to continue.'};}const result=await store.command(input,async()=>null,context);if(loseReply){loseReply=false;throw {code:503,publicMessage:'Connection interrupted'};}return result;}}});
  let browser;
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));await page.goto(base);
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));await page.goto(base);
   const ready=()=>page.waitForFunction(()=>document.querySelector('.target-setup')?.dataset.setupReady==='true'),open=async()=>{await page.getByRole('button',{name:'More target settings',exact:true}).click();await page.getByRole('menuitem',{name:'Guided Target Setup',exact:true}).click();await ready();};await open();
   const field=name=>page.locator('[name="'+name+'"]'),preview=async()=>{await page.locator('#target-setup-preview').click();await page.locator('[name=confirmed]').waitFor();},save=async()=>{await field('confirmed').check();await page.locator('#target-setup-apply').click();await page.waitForFunction(()=>!document.querySelector('[name=confirmed]'));await ready();};
   await field('calories').fill('8368');await preview();assert.equal(await page.locator('#target-setup-apply').isDisabled(),true);assert.equal(await page.locator('[data-target-setup-value=calories]').getAttribute('data-value'),'2000');assert.match(await page.locator('[data-target-setup-value=calories]').innerText(),/8,368 kJ/);await save();assert.equal(state().settings.targets.calories,2000);

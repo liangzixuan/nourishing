@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import {libraryToolsView} from '../server/library-tools.mjs';
 import {previewLibraryEdit} from '../server/library-edit.mjs';
 import test from 'node:test';
@@ -35,7 +36,7 @@ test('Retire and Restore source review preserves editor drafts, focus, history a
  handler=createWebHandler({config:{origin},service,assets:{get(path){if(assets.has(path))return assets.get(path);const file=resolve(publicRoot,'.'+path),ext=extname(file);if(!file.startsWith(publicRoot+'\\')&&!file.startsWith(publicRoot+'/'))return;if(!existsSync(file)||!['.js','.mjs','.css','.woff2','.svg'].includes(ext))return;return {body:readFileSync(file),type:ext==='.css'?'text/css':ext==='.woff2'?'font/woff2':ext==='.svg'?'image/svg+xml':'text/javascript'};}}});
 
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(10000);await page.goto(origin);
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(10000);await page.goto(origin);
   const layer=()=>page.locator('.library-retirement'),loaded=()=>layer().locator('[name=confirmed]').waitFor(),recipeReady=()=>page.waitForFunction(()=>document.querySelector('.recipe-editor')?.dataset.recipeBusy==='false'),foodReady=()=>page.waitForFunction(()=>document.querySelector('[data-mfe-submit]')?.disabled===false);
   await page.locator('[data-tab=recipes]').click();await page.locator('[data-library-item=porridge]').click();await recipeReady();await page.getByLabel('Recipe Name',{exact:true}).fill('Unsaved recipe name');await page.locator('.recipe-editor').evaluate(node=>node.dataset.identity='original');
   const recipeAction=async label=>{await page.locator('[data-recipe-menu]').click();await page.getByRole('button',{name:label,exact:true}).click();};

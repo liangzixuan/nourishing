@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -22,7 +23,7 @@ test('mobile glucose sources and reviewed cycle imports/removal work under the a
  }catch(error){res.writeHead(500);res.end(error.message);}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));origin=`http://127.0.0.1:${server.address().port}`;handle=createWebHandler({config:{origin},service});let browser;
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.setDefaultTimeout(15000);page.on('pageerror',error=>errors.push(error.message));page.on('console',msg=>{if(msg.type()==='error')errors.push(msg.text()+" "+msg.location().url);});await page.goto(origin);
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.setDefaultTimeout(15000);page.on('pageerror',error=>errors.push(error.message));page.on('console',msg=>{if(msg.type()==='error')errors.push(msg.text()+" "+msg.location().url);});await page.goto(origin);
   await page.locator('#glucose').click();await page.getByRole('button',{name:'Glucose & insulin sources'}).click();await page.getByLabel('Glucose source',{exact:true}).selectOption('Meter');await page.getByLabel('Insulin source',{exact:true}).selectOption('Dose');await page.getByLabel('Display unit').selectOption('mmol/L');await page.getByRole('button',{name:'Save',exact:true}).click();await page.locator('[data-gt-stat=count]').waitFor();assert.equal(await page.locator('[data-gt-stat=count]').getAttribute('data-value'),'1');assert.equal(fixture.state().settings.glucoseTimeline.insulin.type,'Dose');
   await page.locator('#cycle').click();const packet={format:'nourish-cycle-data',version:1,source:{id:'personal',name:'My observations'},exportedAt:'2026-11-15T18:00:00Z',records:[{id:'phase',date:'2026-11-14',metric:'phase',value:'follicular',observedAt:null}]};
   await page.locator('[data-import]').setInputFiles({name:'cycle.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(packet))});await page.getByRole('heading',{name:'Review Import'}).waitFor();assert.equal(fixture.state().cycleRecords,undefined);await page.getByRole('button',{name:'Import',exact:true}).click();await page.getByRole('heading',{name:'Cycle Tracking'}).waitFor();await page.locator('.health-observations input').waitFor();assert.equal(fixture.state().cycleRecords.length,1);

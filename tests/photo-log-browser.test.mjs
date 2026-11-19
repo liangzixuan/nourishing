@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -42,7 +43,7 @@ test('photo recognition flows into compact macros, editable amounts and discard-
  }catch(error){res.writeHead(500,{'Content-Type':'application/json'}).end(JSON.stringify({error:error.message}));}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));let browser;
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{if(message.text().includes('Content Security Policy'))errors.push(message.text());});
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{if(message.text().includes('Content Security Policy'))errors.push(message.text());});
   await page.goto(`http://127.0.0.1:${server.address().port}`);await page.locator('#open').click();
   const upload=()=>page.locator('[data-photo-gallery]').setInputFiles({name:'meal.png',mimeType:'image/png',buffer:Buffer.from(image.split(',')[1],'base64')});
   await upload();await page.locator('.photo-macros').filter({hasText:'200 kcal'}).waitFor().catch(async error=>{console.log(JSON.stringify({errors,body:await page.locator('body').innerText(),previews}));throw error;});assert.equal(analyses,1);assert.equal(previews,1);assert.equal(await page.getByLabel('Group',{exact:true}).inputValue(),'Uncategorized');

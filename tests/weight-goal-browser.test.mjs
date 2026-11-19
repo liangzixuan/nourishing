@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import {barcodeAssets} from '../scripts/package-barcode-assets.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -30,7 +31,7 @@ for(const empty of [false,true])test('source Weight Goal '+(empty?'empty account
  }});
  let browser;
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));await page.goto(base);
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));await page.goto(base);
   const ready=async()=>{try{await page.locator('[data-mwg-ready]').waitFor()}catch(e){console.log(await page.locator('body').innerText(),errors);throw e}},open=async()=>{await page.getByRole('button',{name:'Targets',exact:true}).click();await page.getByRole('button',{name:'Weight Goal',exact:true}).click();await ready();};await open();
   if(empty){
    assert.match(await page.locator('[data-mwg-current]').textContent(),/\u2014/);await page.locator('[data-mwg-edit]').click();assert.equal(await page.locator('[name=applyToEnergy]').isDisabled(),true);assert.equal(await page.locator('[name=applyToEnergy]').isChecked(),false);assert.equal(await page.locator('[name=startWeight]').inputValue(),'');

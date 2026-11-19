@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -34,7 +35,7 @@ test('source Suggest Food: filters, impact, ingredient review, preferences and i
  }catch(error){json(error.status??500,{error:error.message});}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915},isMobile:true,hasTouch:true});page.setDefaultTimeout(7000);const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915},isMobile:true,hasTouch:true});page.setDefaultTimeout(7000);const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.addInitScript(()=>{window.violations=[];document.addEventListener('securitypolicyviolation',event=>window.violations.push(event.violatedDirective));});await page.goto(`http://127.0.0.1:${server.address().port}`);await page.locator('#launch').click();await page.locator('#meal-custom').waitFor();
   mkdirSync('.local/suggestions-ui',{recursive:true});await page.screenshot({path:'.local/suggestions-ui/filters.png'});
   assert.equal(await page.locator('.ms-chip-group legend').first().textContent(),'Diets (All)');await page.locator('[data-meal-filter="diets"][value="vegan"]').check();await page.locator('[data-meal-filter="categories"][value="dinner"]').check();await page.locator('[data-meal-action="get"]').click();await page.locator('.msc').first().waitFor();

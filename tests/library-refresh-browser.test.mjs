@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -22,7 +23,7 @@ test('library refresh and editor dismissal retain separate ownership of a pendin
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));origin='http://127.0.0.1:'+server.address().port;
  handler=createWebHandler({config:{origin},service,assets:{get(path){if(assets.has(path))return assets.get(path);const file=resolve(publicRoot,'.'+path),mime={'.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.woff2':'font/woff2','.svg':'image/svg+xml'}[extname(file)];if((!file.startsWith(publicRoot+'\\')&&!file.startsWith(publicRoot+'/'))||!mime||!existsSync(file))return;return {body:readFileSync(file),type:mime};}}});
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.on('pageerror',error=>errors.push(error.message));page.setDefaultTimeout(10000);
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.on('pageerror',error=>errors.push(error.message));page.setDefaultTimeout(10000);
   await page.goto(origin);await page.locator('[data-tab=foods]').click();await page.locator(`[data-library-item="${id}"]`).waitFor();
   await t.test('background reload does not cancel the pending editor or its canonical preview',async()=>{
    const read=pending();await page.locator(`[data-library-item="${id}"]`).click();await read.ready;await page.getByText('Loading…',{exact:true}).waitFor();await page.evaluate(()=>window.library.reload());assert.equal(await page.getByText('Loading…',{exact:true}).count(),1);read.release();

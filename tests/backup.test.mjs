@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
@@ -118,7 +119,7 @@ test('mobile backup review precedes writes and restore retry keeps one committed
  }catch(error){res.writeHead(error.code??error.status??500,{'Content-Type':'application/json'});res.end(JSON.stringify({error:error.message}));}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));let browser;
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915},acceptDownloads:true});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.goto(`http://127.0.0.1:${server.address().port}`);
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915},acceptDownloads:true});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.goto(`http://127.0.0.1:${server.address().port}`);
   await page.locator('[data-backup-file]').setInputFiles({name:'synthetic-backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(bundle))});
   const replace=page.getByRole('button',{name:'Replace workspace',exact:true});await replace.waitFor();assert.equal(staged.size,0);assert.equal(commits,0);assert.equal(current.entries.length,0);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));

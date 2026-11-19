@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -23,7 +24,7 @@ test('source chart details share plots, immediate controls, child cancellation a
  handler=createWebHandler({config:{origin:base},assets,service:{dashboard:async(_,date)=>{if(delayedDashboard)await delayedDashboard;return dashboardView(state(),{date},clock);},charts:async(_,input)=>{if(failLoad){failLoad=false;throw {code:503,publicMessage:'Try loading again'};}return chartSurfaceView(state(),input,clock);},workspaceCommand:async(_,input)=>{attempts.push(input);if(reject){reject=false;throw {code:409,publicMessage:'Your data changed'};}const result=await store.command(input,async()=>null,context);if(lost){lost=false;throw {code:503,publicMessage:'Connection interrupted'};}return result;}}});
  let browser;
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));await page.goto(base);
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));await page.goto(base);
   await page.getByRole('button',{name:'Try again',exact:true}).click();await page.locator('[data-chart-open=metric]').waitFor();
   const ready=()=>page.locator('.chart-detail[data-chart-busy=false]').waitFor();
   const pick=async(key,value)=>{await page.locator('[data-chart-pick="'+key+'"]').click();await page.locator('.mcp-picker [data-mcp-choice]').filter({hasText:value}).click();await ready();};

@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import {barcodeAssets} from '../scripts/package-barcode-assets.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -28,7 +29,7 @@ test('source Energy Expenditure preserves policies through edits, preview errors
  }});
  let browser;
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));await page.goto(base);
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));await page.goto(base);
   const ready=()=>page.locator('[data-mee-ready]').waitFor(),open=async()=>{await page.getByRole('button',{name:'Targets',exact:true}).click();await page.getByRole('button',{name:'Energy Expenditure',exact:true}).click();await ready();};await open();
   await page.locator('[data-mee-setup]').click();const dialog=()=>page.locator('.mee-editor'),form=()=>page.locator('[data-mee-form]');
   assert.equal(await page.locator('[name=activityMode]').count(),0);await form().locator('[name=restingChoice]').selectOption('custom');await form().locator('[name=restingKcal]').fill('6694.4');await form().locator('[name=baselineChoice][value="0.2"]').check();await page.locator('[data-mee-done]').click();await ready();

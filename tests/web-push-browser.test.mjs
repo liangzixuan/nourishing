@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -21,7 +22,7 @@ test('notification controls require explicit permission/connect/test clicks and 
  }catch(error){res.writeHead(500).end(JSON.stringify({error:error.message}));}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));let browser;
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915}});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915}});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.addInitScript(({publicKey})=>{
    window.pushEvidence={permissions:0,subscribes:0,unsubscribes:0};let subscription=null;
    Object.defineProperty(window,'Notification',{value:{permission:'default',requestPermission:async()=>{window.pushEvidence.permissions++;return 'granted';}}});Object.defineProperty(window,'PushManager',{value:class{}});

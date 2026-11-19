@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -32,7 +33,7 @@ test('Foods preserves source home cards, collection navigation and item utilitie
  }catch(error){res.statusCode=error.status??500;res.end(JSON.stringify({error:error.message??'Missing fixture route'}));}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915},isMobile:true,hasTouch:true});page.setDefaultTimeout(6000);const errors=[];page.on('pageerror',error=>{errors.push(error.message);console.error(error.message);});page.on('response',response=>{if(response.status()>=400)console.error(response.status(),new URL(response.url()).pathname);});await page.goto('http://127.0.0.1:'+server.address().port);
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915},isMobile:true,hasTouch:true});page.setDefaultTimeout(6000);const errors=[];page.on('pageerror',error=>{errors.push(error.message);console.error(error.message);});page.on('response',response=>{if(response.status()>=400)console.error(response.status(),new URL(response.url()).pathname);});await page.goto('http://127.0.0.1:'+server.address().port);
   await page.getByRole('button',{name:'Create Food',exact:true}).waitFor();await page.waitForFunction(()=>!document.querySelector('[data-action="new-food"]').disabled);
   assert.deepEqual(await page.locator('.mfh-copy strong').allTextContents(),['Custom Meals','Custom Recipes','Custom Foods','Repeat Items','Suggest Food','Oracle Nutrient Search']);assert.equal(await page.locator('.picker-tabs').count(),0);assert.equal(await page.getByRole('heading',{name:'Foods',exact:true}).count(),1);
   for(const [selector,destination] of [['[data-library-repeats]','repeats'],['[data-food-insight="suggestions"]','suggestions'],['[data-food-insight="oracle"]','oracle'],['[aria-label="Search foods"]','search']]){await page.locator(selector).click();assert.equal(await page.evaluate(()=>window.destination),destination);}

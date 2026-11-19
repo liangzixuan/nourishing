@@ -1,0 +1,84 @@
+name: CI & Appwrite Deploy
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Deployment target
+        type: choice
+        default: all
+        options:
+          - all
+          - site
+          - functions
+      activate:
+        description: Activate deployments once built
+        type: boolean
+        default: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Test & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: npm test
+
+      - name: Build Astro SSR bundle
+        run: npm run build
+
+  deploy:
+    name: Deploy to Appwrite
+    needs: ci
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy Site & Functions
+        env:
+          APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
+          APPWRITE_SITE_ID: ${{ vars.APPWRITE_SITE_ID }}
+          APPWRITE_REMINDERS_FUNCTION_ID: ${{ vars.APPWRITE_REMINDERS_FUNCTION_ID }}
+          APPWRITE_SCHEDULER_FUNCTION_ID: ${{ vars.APPWRITE_SCHEDULER_FUNCTION_ID }}
+          APPWRITE_CLEANUP_FUNCTION_ID: ${{ vars.APPWRITE_CLEANUP_FUNCTION_ID }}
+        run: |
+          TARGET="${{ inputs.target || 'all' }}"
+          ACTIVATE="${{ github.event_name == 'workflow_dispatch' && format('{0}', inputs.activate) || 'true' }}"
+          node scripts/deploy-appwrite.mjs --target="$TARGET" --activate="$ACTIVATE"

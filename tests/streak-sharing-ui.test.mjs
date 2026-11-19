@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -28,7 +29,7 @@ test('Dashboard streak image downloads and shares under production CSP, with can
  const server=createServer(async(req,res)=>{try{const headers=new Headers(req.headers);headers.set('cookie','__Host-nourishing_session=fixture');const result=await handler(new Request(origin+req.url,{headers}));res.writeHead(result.status,Object.fromEntries(result.headers));res.end(Buffer.from(await result.arrayBuffer()));}catch(error){res.writeHead(500).end(error.message);}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));origin='http://127.0.0.1:'+server.address().port;handler=createWebHandler({config:{origin},service:{dashboard:async()=>data},assets:fileAssets});
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});
   const page=await browser.newPage({viewport:{width:412,height:915},isMobile:true,hasTouch:true});page.setDefaultTimeout(7000);const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.addInitScript(()=>{const revoke=URL.revokeObjectURL.bind(URL);window.revoked=[];URL.revokeObjectURL=url=>{window.revoked.push(url);revoke(url);};Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>false});});
   await page.goto(origin);await page.getByRole('button',{name:'Share streak',exact:true}).click();

@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -18,7 +19,7 @@ test('mobile health cards open read-only details, page readings and navigate to 
  });
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));let browser;
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915}});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.goto(`http://127.0.0.1:${server.address().port}`);
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915}});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.goto(`http://127.0.0.1:${server.address().port}`);
   await page.locator('[data-discover=health-glucose]').click();assert.equal(await page.locator('#sheet .dc-health-readings li').count(),50);await page.getByRole('button',{name:'Next',exact:true}).click();assert.equal(await page.locator('#sheet .dc-health-readings li').count(),1);await page.getByRole('button',{name:'Previous',exact:true}).click();assert.equal(await page.locator('#sheet .dc-health-readings li').count(),50);
   await page.locator('#sheet [data-health-date]').first().click();assert.equal(await page.locator('body').getAttribute('data-diary-date'),'2026-11-14');assert.equal(await page.locator('#sheet').textContent(),'');
   await page.locator('[data-discover=health-cycle]').click();await page.locator('#sheet').getByText('No cycle observations',{exact:true}).waitFor();assert.deepEqual(errors,[]);assert.equal(requests.some(row=>!row.startsWith('GET ')),false);assert.equal(requests.some(row=>row.includes('/api/')),false);

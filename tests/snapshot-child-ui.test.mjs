@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -36,7 +37,7 @@ test('source snapshot dialogs retain metadata, handle retry, cancel, back and ca
   }catch(error){json(error.code??500,{error:error.message});}
  });await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));let browser;
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true,args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']});const page=await browser.newPage({viewport:{width:412,height:915},isMobile:true,hasTouch:true});page.setDefaultTimeout(7000);const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true,args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']});const page=await browser.newPage({viewport:{width:412,height:915},isMobile:true,hasTouch:true});page.setDefaultTimeout(7000);const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.addInitScript(()=>{window.violations=[];document.addEventListener('securitypolicyviolation',event=>window.violations.push(event.violatedDirective));window.streams=[];const original=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);navigator.mediaDevices.getUserMedia=async options=>{const stream=await original(options);window.streams.push(stream);return stream;};});await page.goto(`http://127.0.0.1:${server.address().port}`);await page.locator('.snapshot-card').waitFor();
   mkdirSync('.local/snapshot-child-ui',{recursive:true});
   await page.getByRole('button',{name:'Add Snapshot',exact:true}).click();assert.deepEqual(await page.locator('.ms-choice strong').allTextContents(),['Camera','Files']);await page.screenshot({path:'.local/snapshot-child-ui/source.png'});await page.mouse.click(2,2);assert.equal(await page.locator('dialog').count(),0);

@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import {barcodeAssets} from '../scripts/package-barcode-assets.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -30,7 +31,7 @@ test('source Macro Energy supports canonical modes, advanced settings, cancellat
  }});
  let browser;
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));await page.goto(base);
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));await page.goto(base);
   const ready=async()=>{try{await page.locator('[data-mte-ready]').waitFor()}catch(e){console.log(await page.locator('body').innerText(),errors);throw e}},open=async()=>{await page.getByRole('button',{name:'Targets',exact:true}).click();await page.getByRole('button',{name:'Macro & Energy Targets',exact:true}).click();await ready();};await open();
   const goal=structuredClone(state().settings.energyPolicy.target),save=()=>page.locator('[data-mte-save]').click(),form=()=>page.locator('[data-mte-form]');
   await page.locator('[data-mte-mode=ratios]').click();await form().locator('[name=protein]').fill('30');await form().locator('[name=carbohydrate]').fill('40');await form().locator('[name=protein]').blur();await save();await ready();assert.equal(state().settings.macroPolicy.mode,'ratios');assert.equal(state().settings.macroPolicy.values.protein,30);assert.deepEqual(state().settings.energyPolicy.target,goal);

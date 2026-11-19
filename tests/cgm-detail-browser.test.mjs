@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -25,7 +26,7 @@ test('source CGM detail renders comparison, settings children, retry and disposa
  handler=createWebHandler({config:{origin:base},assets,service:{dashboard:async(_,date)=>dashboardView(state(),{date},clock),charts:async(_,input)=>chartSurfaceView(state(),input,clock),workspaceCommand:async(_,input)=>{attempts.push(input);const result=await store.command(input,async()=>null,context);if(loseHoursReply&&input.payload.patch.hours===48){loseHoursReply=false;throw {code:503,publicMessage:'Connection interrupted'};}return result;}}});
  let browser;
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));await page.goto(base);
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));await page.goto(base);
   await page.locator('[data-chart-open=cgm]').click();await page.locator('[data-chart-plot=cgm-comparison]').waitFor();
   const ready=()=>page.waitForFunction(()=>document.querySelector('.cgm-detail')?.dataset.cgmBusy==='false'&&!document.querySelector('[data-cgm-retry]'));
   const plots=()=>page.evaluate(()=>Object.values(window.Chart.instances).filter(chart=>chart.canvas.closest('.cgm-detail')).map(chart=>({id:chart.canvas.dataset.chartPlot,min:chart.options.scales.x.min,max:chart.options.scales.x.max,data:chart.data.datasets.map(set=>({label:set.label,values:set.data.map(point=>point.y)}))})));

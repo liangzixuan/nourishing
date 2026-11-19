@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import {barcodeAssets} from '../scripts/package-barcode-assets.mjs';
 const packagedAssets=new Map((await barcodeAssets()).map(asset=>['/'+asset.path,asset]));
 import test from 'node:test';
@@ -46,7 +47,7 @@ test('Discover headers route Newsfeed and settings per tab; source Report render
  });
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));let browser;
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.setDefaultTimeout(15000);page.on('pageerror',error=>{errors.push(error.message);console.error(error.message)});page.on('console',message=>{if(message.text().includes('Content Security Policy'))errors.push(message.text());});
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.setDefaultTimeout(15000);page.on('pageerror',error=>{errors.push(error.message);console.error(error.message)});page.on('console',message=>{if(message.text().includes('Content Security Policy'))errors.push(message.text());});
   await page.goto(`http://127.0.0.1:${server.address().port}`);await page.locator('.cloud-dashboard').waitFor();
   assert.equal(requests.length,0,'Dashboard does not load the full Report');
   await page.getByRole('button',{name:'Dashboard',exact:true}).click();assert.equal(requests.length,0);

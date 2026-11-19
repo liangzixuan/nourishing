@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -12,7 +13,7 @@ async function fixture(){
  const hold=(path,value,status=200)=>{let release,entered;const row={value,status,wait:new Promise(r=>release=r)},seen=new Promise(r=>entered=r);row.entered=entered;routes.set(path,row);gates.push(release);return {release,entered:seen};};
  route('/api/account',{id:'alice'});
  const server=createServer(async(req,res)=>{try{const path=req.url;if(path.startsWith('/api/')){requests.push({path,method:req.method});const row=routes.get(path)??{status:404,value:{error:'Missing fixture'}};row.entered?.();await row.wait;res.writeHead(row.status,{'Content-Type':Buffer.isBuffer(row.value)?'image/png':'application/json'});res.end(Buffer.isBuffer(row.value)?row.value:JSON.stringify(row.value));return;}if(path==='/'||path==='/login'){res.writeHead(200,{'Content-Type':'text/html','Content-Security-Policy':"default-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' blob:; style-src 'self'"});res.end('<!doctype html><title>Request fixture</title><main id="page"></main><div id="sheet-content"></div>');return;}const file=resolve(root,'.'+new URL(path,'http://localhost').pathname);if((!file.startsWith(root+'/')&&!file.startsWith(root+'\\'))||!['.js','.mjs'].includes(extname(file))||!existsSync(file)){res.writeHead(404).end();return;}res.writeHead(200,{'Content-Type':'text/javascript'});res.end(readFileSync(file));}catch{res.writeHead(500).end();}});
- await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true}),page=await browser.newPage(),origin='http://127.0.0.1:'+server.address().port;page.setDefaultTimeout(8000);await page.goto(origin);
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true}),page=await browser.newPage(),origin='http://127.0.0.1:'+server.address().port;page.setDefaultTimeout(8000);await page.goto(origin);
  const imports=()=>page.evaluate(async()=>{window.api=await import('/diary-api.js');window.cache=await import('/device-cache.js');window.session=await import('/offline-session.js');});
  const authenticate=async()=>{await imports();await page.evaluate(async()=>session.rememberOfflineAccount(await api.request('/api/account')));};
  return {page,origin,route,hold,requests,imports,authenticate,close:async()=>{gates.forEach(r=>r());await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}};

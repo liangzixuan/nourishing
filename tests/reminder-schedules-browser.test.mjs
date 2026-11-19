@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -24,7 +25,7 @@ test('schedule editor saves preferences paused and requires explicit resume, wit
  }catch(error){res.writeHead(500).end(JSON.stringify({error:error.message}));}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));let browser;
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915}});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.goto(`http://127.0.0.1:${server.address().port}`);
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915}});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.goto(`http://127.0.0.1:${server.address().port}`);
   await page.getByRole('button',{name:'Add reminder',exact:true}).click();await page.getByLabel('Name',{exact:true}).fill('Breakfast');await page.getByLabel('Send when').selectOption('group:Breakfast');await page.getByRole('button',{name:'Save reminder',exact:true}).click();await page.getByText('Saved. Reminders remain paused.',{exact:true}).waitFor();
   assert.equal(data.paused,true);assert.deepEqual(writes[0].input.schedule.foodCondition,{group:'Breakfast'});assert.equal(writes.some(row=>row.path.endsWith('/settings')),false);const id=data.schedules[0].id;
   await page.getByRole('button',{name:'Edit',exact:true}).click();await page.getByLabel('Type',{exact:true}).selectOption('weight');assert.equal(await page.getByLabel('Send when').isVisible(),false);await page.getByLabel('Weight metric').selectOption(JSON.stringify(metric));await page.getByLabel('Time',{exact:true}).fill('19:15');await page.getByRole('button',{name:'Save reminder',exact:true}).click();await page.getByRole('button',{name:'Resume reminders',exact:true}).waitFor();assert.equal(data.schedules.length,1);assert.equal(data.schedules[0].id,id);assert.equal(data.schedules[0].foodCondition,null);assert.deepEqual(data.schedules[0].weightMetric,metric);

@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -7,7 +8,7 @@ import {chromium} from 'playwright-core';
 
 async function fixture(){
  const base=resolve('public'),server=createServer((req,res)=>{const path=new URL(req.url,'http://localhost').pathname;if(path==='/'){res.setHeader('Content-Type','text/html');res.end('<!doctype html><title>Device cache test</title>');return;}const file=resolve(base,'.'+path);if(!file.startsWith(base+'/')&&!file.startsWith(base+'\\')||!['.js','.mjs'].includes(extname(file))||!existsSync(file)){res.writeHead(404).end();return;}res.setHeader('Content-Type','text/javascript');res.end(readFileSync(file));});await new Promise(r=>server.listen(0,'127.0.0.1',r));
- const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true}),context=await browser.newContext(),origin='http://127.0.0.1:'+server.address().port;
+ const browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true}),context=await browser.newContext(),origin='http://127.0.0.1:'+server.address().port;
  const page=async()=>{const p=await context.newPage();await p.goto(origin);return p;};
  return {page,close:async()=>{await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}};
 }

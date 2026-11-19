@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import {previewLibraryEdit} from '../server/library-edit.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -33,7 +34,7 @@ test('Meal source stages preserve transient ingredients, mixed quantities, metad
  await new Promise(r=>server.listen(0,'127.0.0.1',r));origin='http://127.0.0.1:'+server.address().port;
  handler=createWebHandler({config:{origin},service,assets:{get(path){if(assets.has(path))return assets.get(path);const file=resolve(publicRoot,'.'+path),ext=extname(file);if(!file.startsWith(publicRoot+'\\')&&!file.startsWith(publicRoot+'/'))return;if(!existsSync(file)||!['.js','.mjs','.css','.woff2','.svg'].includes(ext))return;return {body:readFileSync(file),type:ext==='.css'?'text/css':ext==='.woff2'?'font/woff2':ext==='.svg'?'image/svg+xml':'text/javascript'};}}});
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(10000);await page.goto(origin);
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(10000);await page.goto(origin);
   const next=()=>page.getByRole('button',{name:'Next',exact:true}),ready=()=>page.waitForFunction(()=>document.querySelector('[data-meal-next]')?.disabled===false),apply=()=>page.waitForFunction(()=>document.querySelector('[data-mci-apply]')?.disabled===false);
   await page.locator('[data-action=new-meal]').click();await page.getByLabel('Meal Name',{exact:true}).fill('Breakfast bowl');await next().click();await page.getByText('Add a meal item.',{exact:true}).waitFor();assert.equal(attempts.length,0);
   const choose=async query=>{await page.locator('[data-composite-add]').click();await page.locator('.mfs-search input').fill(query);await page.locator('.mfs-result').filter({hasText:query}).first().click();await apply();};

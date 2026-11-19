@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import {initialState} from '../server/domain/workspace.mjs';
 import {displayView} from '../server/display-settings.mjs';
 import {barcodeAssets} from '../scripts/package-barcode-assets.mjs';
@@ -23,7 +24,7 @@ test('source More menu preserves search and back focus, cloud destinations and d
  }catch(error){res.writeHead(500);res.end(error.message);}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));origin=`http://127.0.0.1:${server.address().port}`;let browser;
  try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915},colorScheme:'dark'}),errors=[];page.on('pageerror',error=>{errors.push(error.message);console.error(error.message);});await page.goto(origin);
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915},colorScheme:'dark'}),errors=[];page.on('pageerror',error=>{errors.push(error.message);console.error(error.message);});await page.goto(origin);
   await page.getByRole('heading',{name:'More',exact:true}).waitFor();assert.equal(await page.getByRole('button',{name:'Targets',exact:true}).count(),1);assert.equal(await page.getByRole('button',{name:'Connect Apps & Devices',exact:true}).count(),0);assert.equal(await page.getByRole('button',{name:'Referrals',exact:true}).count(),0);
   await page.getByRole('button',{name:'About',exact:true}).click();await page.getByText('Version 1.0.2',{exact:true}).waitFor();await page.getByRole('button',{name:'Back',exact:true}).click();
   const search=page.getByRole('searchbox',{name:'Search More'});await search.fill('target');assert.equal(await page.getByRole('button',{name:'Profile',exact:true}).isVisible(),false);await page.getByRole('button',{name:'Targets',exact:true}).click();await page.locator('[data-mt-home]').waitFor();assert.equal(await page.getByRole('heading',{name:'Targets & Settings',exact:true}).count(),0);await page.getByRole('button',{name:'Back',exact:true}).click();assert.equal(await search.inputValue(),'target');assert.equal(await search.evaluate(node=>node===document.activeElement),false);

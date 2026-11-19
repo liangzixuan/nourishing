@@ -1,3 +1,4 @@
+import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import {barcodeAssets} from '../scripts/package-barcode-assets.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -30,7 +31,7 @@ test('Profile source summary and record entry preserve exact selections, policie
  }});
 
  let browser;try{
-  browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:412,height:915},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}}),errors=[];page.setDefaultTimeout(8000);page.on('pageerror',error=>errors.push(error.message));await page.goto(base);
+  browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}}),errors=[];page.setDefaultTimeout(8000);page.on('pageerror',error=>errors.push(error.message));await page.goto(base);
   const open=()=>page.getByRole('button',{name:'Profile',exact:true}).click(),ready=()=>page.locator('.profile-page[aria-busy=false] .profile-card').waitFor(),row=id=>page.locator('[data-profile-row="'+id+'"]'),closed=()=>page.waitForFunction(()=>!document.querySelector('[data-profile-editor]')),save=()=>page.locator('.profile-editor [type=submit]').click();
   rejectRead=true;await open();await page.getByText('Profile temporarily unavailable',{exact:true}).waitFor();await page.locator('[data-profile-reload]').click();await ready();assert.match(await row('age').innerText(),/36/);assert.match(await row('weight').innerText(),/180 lb/);assert.match(await row('height').innerText(),/175 cm/);assert.match(await row('bodyFat').innerText(),/20%/);mkdirSync('.local/profile',{recursive:true});await page.evaluate(()=>document.fonts.ready);assert.equal(await page.locator('[data-profile-options]').count(),0);await page.screenshot({path:'.local/profile/summary.png'});
   await row('age').click();await page.getByRole('dialog',{name:'Birthday',exact:true}).waitFor();await page.locator('[data-wheel=year] [data-wheel-value="1991"]').click();loseReply=true;await save();await page.getByRole('button',{name:'Try again',exact:true}).waitFor();assert.equal(await page.locator('.profile-editor-fields').evaluate(n=>n.inert),true);const pending=structuredClone(attempts.at(-1));await page.getByRole('button',{name:'Try again',exact:true}).click();await closed();await ready();assert.deepEqual(attempts.at(-1),pending);assert.match(await row('age').innerText(),/35/);assert.equal(state().settings.energyPolicy.resting.birthDate,'1991-11-15');assert.deepEqual(state().settings.energyPolicy.target,before.settings.energyPolicy.target);
