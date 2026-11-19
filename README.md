@@ -15,6 +15,7 @@ Nourishing is an installable nutrition and health-tracking PWA hosted at [nouris
 - **Runtime**: Astro SSR (`@astrojs/node` standalone adapter) with a single catch-all entrypoint (`src/pages/[...path].js`) backed by `server/http.mjs` and `server/appwrite-service.mjs`.
 - **Storage & Auth**: Appwrite Auth, TablesDB (transactional writes with optimistic concurrency and idempotent `command_receipts`), Storage (`private-media`), Sites, and Functions.
 - **Offline**: Service worker (`public/sw.js`) caches public assets only; private data stays in IndexedDB and is cleared on logout. See [docs/offline-parity.md](docs/offline-parity.md), [docs/device-caching.md](docs/device-caching.md), and [docs/account-lifecycle.md](docs/account-lifecycle.md).
+- **Integration**: AppWrite, Codecov, CodeScene, Sentry.
 
 ## Running Locally
 
