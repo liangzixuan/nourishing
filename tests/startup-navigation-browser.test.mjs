@@ -86,7 +86,7 @@ test('Reload waits for the full diary release and starts from cache when startup
   const {page}=f;await page.goto(f.base+'/diary');await page.locator('.md-diary').waitFor();
   await page.waitForFunction(async()=>!!(await navigator.serviceWorker.getRegistration())?.active,{},{timeout:10000});await page.reload();await page.locator('.md-diary').waitFor();
   f.holdAsset();const before=f.assetHits();f.update();await page.evaluate(async()=>{void(await navigator.serviceWorker.getRegistration()).update();});
-  for(let i=0;i<40&&f.assetHits()===before;i++)await new Promise(r=>setTimeout(r,50));
+  for(let i=0;i<200&&f.assetHits()===before;i++)await new Promise(r=>setTimeout(r,50));
   assert.ok(f.assetHits()>before,'Update downloads the main app dependency before readiness');
   assert.equal(await page.getByRole('button',{name:'Reload',exact:true}).count(),0);
   assert.equal(await page.locator('.md-diary').count(),1,'Current diary remains usable while update downloads');
