@@ -10,6 +10,7 @@ server/domain/data/*
 !server/domain/data/wake-oxalate-v1.json
 output/
 dist/
+coverage/
 .astro/
 *.log
 *.apk
