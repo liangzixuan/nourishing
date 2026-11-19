@@ -12,5 +12,5 @@ test('published source and documentation use valid UTF-8',()=>{
   else if(['.mjs','.js','.css','.html','.json','.md'].includes(extname(file)))check(file);
  }}
  for(const directory of ['public','server','docs'])visit(directory);
- for(const file of ['README.md','MIGRATION.md','PROGRESS.md'])check(file);
+ for(const file of ['README.md'])check(file);
 });

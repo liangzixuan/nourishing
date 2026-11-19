@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="wear_reply_disabled">Ative o acesso ao relógio no Nourishing no seu celular.</string>
-    <string name="wear_reply_changed">O acesso ao relógio mudou. Conecte novamente.</string>
-    <string name="wear_reply_busy">Atualização em andamento. Tente novamente em instantes.</string>
-    <string name="wear_reply_unavailable">Verifique Nourishing e Tailscale no seu celular e atualize.</string>
-</resources>

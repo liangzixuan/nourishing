@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- WebView derives prefers-color-scheme from this device-selected theme. -->
-    <style name="NourishingWorkspaceTheme" parent="android:style/Theme.Material.Light.NoActionBar" />
-</resources>

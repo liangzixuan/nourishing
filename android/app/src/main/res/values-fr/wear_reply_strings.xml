@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="wear_reply_disabled">Activez l’accès à la montre dans Nourishing sur votre téléphone.</string>
-    <string name="wear_reply_changed">L’accès à la montre a changé. Reconnectez-vous.</string>
-    <string name="wear_reply_busy">Actualisation en cours. Réessayez dans un instant.</string>
-    <string name="wear_reply_unavailable">Vérifiez Nourishing et Tailscale sur votre téléphone, puis actualisez.</string>
-</resources>
