@@ -19,3 +19,8 @@
 .more-mobile .mm-targets-status:empty{display:none;}
 .more-mobile .mds-row select{max-width:56%;min-width:0;border:0;background:transparent;text-align:right;}
 .more-mobile .mm-about>img{border-radius:50%;}
+.more-mobile .mm-update-btn{margin-top:14px;min-height:44px;padding:10px 18px;border:1px solid var(--line);border-radius:999px;background:var(--paper);color:var(--ink);font:700 .95rem/1.2 Karla,Lato,sans-serif;cursor:pointer;}
+.more-mobile .mm-update-btn:disabled{opacity:.6;cursor:default;}
+.more-mobile .mm-update-btn:focus-visible{outline:2px solid var(--green);outline-offset:2px;}
+.more-mobile .mm-update-status{margin-top:8px;font-size:.9rem;color:var(--muted,inherit);min-height:1.3em;}
+.more-mobile .mm-update-status:empty{display:none;}

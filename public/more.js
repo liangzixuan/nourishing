@@ -212,10 +212,52 @@ export function mountMore({
         id,
         t('mobileMore.about'),
         '<div class="mm-about"><img src="/favicon.svg" alt=""><h2>Nourishing</h2><p>' +
-          e(coreText('more.version', {version: '1.0.11'})) +
-          '</p></div>' +
+          e(coreText('more.version', {version: '1.0.12'})) +
+          '</p><button type="button" class="mm-update-btn" data-more-check-update>' +
+          e(coreText('more.checkUpdates')) +
+          '</button><p class="mm-update-status" role="status" aria-live="polite"></p></div>' +
           group(row('account', t('mobileMore.account')) + row('backup', coreText('more.yourData'))),
       );
+    }
+  }
+
+  async function checkForUpdates(button) {
+    if (button.disabled) return;
+    const status = root.querySelector('.mm-update-status');
+    button.disabled = true;
+    if (status) status.textContent = coreText('more.checkingUpdates');
+    let result;
+    const manualCheck = globalThis[Symbol.for('nourishing.checkUpdate')];
+    if (typeof manualCheck === 'function') {
+      result = await manualCheck();
+    } else if (!navigator.onLine) {
+      result = {status: 'offline'};
+    } else if ('serviceWorker' in navigator && window.isSecureContext) {
+      try {
+        const reg = await navigator.serviceWorker.getRegistration('/');
+        if (reg) {
+          await reg.update();
+          result = {status: reg.waiting || reg.installing ? 'update' : 'up-to-date'};
+        } else {
+          result = {status: 'up-to-date'};
+        }
+      } catch {
+        result = {status: 'error'};
+      }
+    } else {
+      result = {status: 'up-to-date'};
+    }
+    if (!alive() || !button.isConnected) return;
+    button.disabled = false;
+    if (status) {
+      status.textContent =
+        result?.status === 'update'
+          ? coreText('more.updateReady')
+          : result?.status === 'offline'
+            ? coreText('more.updateOffline')
+            : result?.status === 'up-to-date'
+              ? coreText('more.upToDate')
+              : coreText('more.updateFailed');
     }
   }
 
@@ -228,9 +270,13 @@ export function mountMore({
 
   const click = event => {
     const button = event.target.closest('[data-more-open]');
+    const updateButton = event.target.closest('[data-more-check-update]');
     if (button) {
       event.preventDefault();
       open(button.dataset.moreOpen);
+    } else if (updateButton) {
+      event.preventDefault();
+      void checkForUpdates(updateButton);
     } else if (event.target.closest('[data-more-back]')) {
       event.preventDefault();
       stepBack();

@@ -21,6 +21,29 @@ if(service&&window.isSecureContext){
  }
  function watch(){const worker=registration.installing;worker?.addEventListener('statechange',()=>{if(worker.state==='installed')inspect();});inspect();}
  async function check(){if(!registration||!navigator.onLine||Date.now()-lastCheck<30000)return;lastCheck=Date.now();try{await registration.update();watch();}catch{/* Keep the current cached app available while offline. */}}
+ async function checkNow(){
+  if(!navigator.onLine)return {status:'offline'};
+  lastCheck=Date.now();
+  try{
+   if(!registration){registration=await service.register('/sw.js',{scope:'/',updateViaCache:'none'});registration.addEventListener('updatefound',watch);}
+   await registration.update();
+   if(registration.waiting){dismissed=undefined;inspect();return {status:'update'};}
+   const installing=registration.installing;
+   if(installing){
+    watch();
+    const state=await new Promise(resolve=>{
+     const timer=setTimeout(()=>{installing.removeEventListener('statechange',done);resolve('timeout');},20000);
+     const done=()=>{if(['installed','activated','redundant'].includes(installing.state)){clearTimeout(timer);installing.removeEventListener('statechange',done);resolve(installing.state);}};
+     installing.addEventListener('statechange',done);done();
+    });
+    if(state==='installed'||registration.waiting){dismissed=undefined;inspect();return {status:'update'};}
+    if(state==='activated')return {status:'up-to-date'};
+    return {status:'error'};
+   }
+   return {status:'up-to-date'};
+  }catch{return {status:'error'};}
+ }
+ globalThis[Symbol.for('nourishing.checkUpdate')]=checkNow;
  service.addEventListener('controllerchange',()=>{if(accepted&&!reloading){reloading=true;location.reload();}else if(hadController)show(null);hadController=true;});
  async function start(){try{registration=await service.register('/sw.js',{scope:'/',updateViaCache:'none'});registration.addEventListener('updatefound',watch);watch();void check();}catch{/* Installation must not block the app. */}}
  window.addEventListener('online',check);window.addEventListener('pageshow',check);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void check();});
