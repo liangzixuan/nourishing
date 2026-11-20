@@ -1,4 +1,4 @@
-import {stat} from 'node:fs/promises';
+import {stat,readFile,writeFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {rolldown} from 'rolldown';
 import {buildLocalCharts} from './package-local-charts.mjs';
@@ -10,6 +10,8 @@ const publicRoot = new URL('../public/', import.meta.url);
 const EXTERNAL_DYNAMIC = new Set(['./report-source/renderer.js','./local-chart-projection.js','./local-diary-projection.js']);
 
 export async function buildDiaryBundle() {
+  const {version}=JSON.parse(await readFile(new URL('../package.json',import.meta.url),'utf8'));
+  await writeFile(new URL('app-version.js',publicRoot),'export const appVersion='+JSON.stringify(version)+';\n');
   await buildLocalCharts();
   await buildLocalSettings();
   await buildLocalDiary();

@@ -1,3 +1,4 @@
+import {appVersion} from './app-version.js';
 import {mountAccount} from './account-screen.js';
 import {pushBackHandler} from './back-history.js';
 import {t} from './app-language.js';
@@ -214,7 +215,7 @@ export function mountMore({
         id,
         t('mobileMore.about'),
         '<div class="mm-about"><img src="/favicon.svg" alt=""><h2>Nourishing</h2><p>' +
-          e(coreText('more.version', {version: '1.0.13'})) +
+          e(coreText('more.version', {version: appVersion})) +
           '</p><button type="button" class="mm-update-btn" data-more-check-update>' +
           e(coreText('more.checkUpdates')) +
           '</button><p class="mm-update-status" role="status" aria-live="polite"></p></div>' +
