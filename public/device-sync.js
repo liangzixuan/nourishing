@@ -21,7 +21,6 @@ export function warmDeviceViews(date,{delay=500,force=false}={}){
  const paths=[
   '/api/diary?date='+shiftDate(date,-1),
   '/api/diary?date='+shiftDate(date,1),
-  '/api/diary/calendar?month='+date.slice(0,7),
   '/api/display',
   '/api/library',
   '/api/library/favorites',
