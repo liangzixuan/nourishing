@@ -335,7 +335,9 @@ function render() {
 
   const display = diary.recordDisplay;
   const maps = Object.fromEntries(['entries', 'notes', 'biometrics'].map(col => [col, new Map(diary[col].map(row => [row.id, row]))]));
-  const records = display.groups.flatMap(g => g.records.map(ref => ({...ref, group: g.name, row: maps[ref.collection].get(ref.id)})));
+  const records = display.groups
+    .flatMap(g => g.records.map(ref => ({...ref, group: g.name, row: maps[ref.collection].get(ref.id)})))
+    .filter(item => item.row);
   const groupMarkup = mobileDiaryGroups({
     groups: display.groups.map(g => g.name),
     configuredGroups: diary.groups,
@@ -800,6 +802,25 @@ async function edit({entry = null, id, kind, quantity, returnSearch} = {}) {
   }
 }
 
+function updateRecordDisplay(recordDisplay, {add = [], removeIds = new Set(), move = null} = {}) {
+  if (!recordDisplay?.groups) return recordDisplay;
+  const groups = recordDisplay.groups.map(g => ({
+    ...g,
+    records: g.records.filter(ref => !(ref.collection === 'entries' && (removeIds.has(ref.id) || (move && ref.id === move.id)))),
+  }));
+  const appendTo = (groupName, id) => {
+    let target = groups.find(g => g.name === groupName) ?? groups[0];
+    if (!target) {
+      target = {name: groupName || 'Uncategorized', records: []};
+      groups.push(target);
+    }
+    target.records.push({collection: 'entries', id});
+  };
+  if (move) appendTo(move.group, move.id);
+  for (const row of add) appendTo(row.group, row.id);
+  return {...recordDisplay, groups};
+}
+
 function foodEditor({item, entry, quantity, returnSearch, viewState}) {
   pickerCleanup = mountFoodEntry({
     item,
@@ -824,27 +845,33 @@ function foodEditor({item, entry, quantity, returnSearch, viewState}) {
     onOptimisticCommand: ({type, value, item: targetItem}) => {
       if (diary) {
         if (type === 'entry.delete') {
-          diary = {...diary, entries: diary.entries.filter(row => row.id !== value.id)};
-        } else if (type === 'entry.update') {
           diary = {
             ...diary,
-            entries:
-              value.date === date
-                ? diary.entries.map(row => (row.id === value.id ? {...row, ...value} : row))
-                : diary.entries.filter(row => row.id !== value.id),
+            entries: diary.entries.filter(row => row.id !== value.id),
+            recordDisplay: updateRecordDisplay(diary.recordDisplay, {removeIds: new Set([value.id])}),
+          };
+        } else if (type === 'entry.update') {
+          const sameDay = value.date === date;
+          diary = {
+            ...diary,
+            entries: sameDay
+              ? diary.entries.map(row => (row.id === value.id ? {...row, ...value} : row))
+              : diary.entries.filter(row => row.id !== value.id),
+            recordDisplay: sameDay
+              ? updateRecordDisplay(diary.recordDisplay, {move: {id: value.id, group: value.group}})
+              : updateRecordDisplay(diary.recordDisplay, {removeIds: new Set([value.id])}),
           };
         } else if (type === 'entry.add' && value.date === date) {
+          const added = {
+            id: 'optimistic-entry-' + Date.now(),
+            ...value,
+            name: targetItem?.resource?.name ?? '',
+            facts: targetItem?.facts ?? {name: targetItem?.resource?.name ?? ''},
+          };
           diary = {
             ...diary,
-            entries: [
-              ...diary.entries,
-              {
-                id: 'optimistic-entry-' + Date.now(),
-                ...value,
-                name: targetItem?.resource?.name ?? '',
-                facts: targetItem?.facts ?? {name: targetItem?.resource?.name ?? ''},
-              },
-            ],
+            entries: [...diary.entries, added],
+            recordDisplay: updateRecordDisplay(diary.recordDisplay, {add: [added]}),
           };
         }
         if (view === 'diary') render();
@@ -955,7 +982,11 @@ function photoLog(initialGroup) {
             fat: row.preview?.nutrition?.totals?.fat ?? null,
           },
         }));
-        diary = {...diary, entries: [...diary.entries, ...added]};
+        diary = {
+          ...diary,
+          entries: [...diary.entries, ...added],
+          recordDisplay: updateRecordDisplay(diary.recordDisplay, {add: added}),
+        };
       }
       if (diary) render();
       enqueueWrite({
