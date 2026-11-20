@@ -10,7 +10,7 @@ function shiftDate(date,delta){
 }
 export function warmAdjacentDays(date){
  if(!date)return;
- const paths=['/api/diary?date='+shiftDate(date,-1),'/api/diary?date='+shiftDate(date,1),'/api/diary/calendar?month='+date.slice(0,7)];
+ const paths=['/api/diary?date='+shiftDate(date,-1),'/api/diary?date='+shiftDate(date,1)];
  setTimeout(()=>{for(const path of paths)void request(path).catch(()=>{});},250);
 }
 export function warmDeviceViews(date,{delay=500,force=false}={}){
