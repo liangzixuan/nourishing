@@ -1,5 +1,6 @@
 import './client-errors.js';
 import {enqueueWrite, onWriteQueueStatus} from './async-queue.js';
+import {localLibraryItem} from './local-engine.js';
 import {pushBackHandler} from './back-history.js';
 import {startDeviceSync, warmDeviceViews} from './device-sync.js';
 import {startPrivateImages} from './private-images.js';
@@ -779,6 +780,11 @@ async function edit({entry = null, id, kind, quantity, returnSearch} = {}) {
     show(`${header(coreText('diary.entry'))}<p class="empty">${e(coreText('diary.unsupported'))}</p>`);
     return;
   }
+  const localItem = await localLibraryItem({kind: itemKind, id: itemId, entry});
+  if (localItem) {
+    foodEditor({item: localItem, entry, quantity, returnSearch});
+    return;
+  }
   show(`${header(t('diary.food'))}<p class="empty">${e(coreText('loading'))}</p>`);
   const serial = searchId;
   try {
@@ -814,6 +820,48 @@ function foodEditor({item, entry, quantity, returnSearch, viewState}) {
       await load();
       if (view === 'foods') await library?.reload();
     },
+    onOptimisticCommand: ({type, value, item: targetItem}) => {
+      if (diary) {
+        if (type === 'entry.delete') {
+          diary = {...diary, entries: diary.entries.filter(row => row.id !== value.id)};
+        } else if (type === 'entry.update') {
+          diary = {
+            ...diary,
+            entries:
+              value.date === date
+                ? diary.entries.map(row => (row.id === value.id ? {...row, ...value} : row))
+                : diary.entries.filter(row => row.id !== value.id),
+          };
+        } else if (type === 'entry.add' && value.date === date) {
+          diary = {
+            ...diary,
+            entries: [
+              ...diary.entries,
+              {
+                id: 'optimistic-entry-' + Date.now(),
+                ...value,
+                name: targetItem?.resource?.name ?? '',
+                facts: targetItem?.facts ?? {name: targetItem?.resource?.name ?? ''},
+              },
+            ],
+          };
+        }
+        if (view === 'diary') render();
+      }
+      const label = type === 'entry.delete' ? 'Deleting entry…' : type === 'entry.update' ? 'Saving changes…' : 'Adding to diary…';
+      enqueueWrite({
+        label,
+        run: () => command(diary.revision, type, value),
+        onSuccess: async result => {
+          if (result?.revision && diary) diary = {...diary, revision: result.revision};
+          await load({reuseUnchanged: true});
+          if (view === 'foods') await library?.reload();
+        },
+        onError: async () => {
+          await load();
+        },
+      });
+    },
     onBack: returnSearch ?? search,
     onAdjust: () =>
       openEntryAdjustment({
@@ -837,9 +885,20 @@ function foodEditor({item, entry, quantity, returnSearch, viewState}) {
   });
 }
 
-function copyFood(item, onCancel) {
+async function copyFood(item, onCancel) {
+  let selection = item.copySelection;
+  if (!selection && item?.resource?.id) {
+    try {
+      const full = await request('/api/library/item?' + new URLSearchParams({kind: 'food', id: item.resource.id}));
+      selection = full.copySelection;
+    } catch (error) {
+      notice.textContent = error.message;
+      onCancel?.();
+      return;
+    }
+  }
   pickerCleanup = mountFoodCopy({
-    selection: item.copySelection,
+    selection,
     show,
     content,
     onCancel,
@@ -865,7 +924,19 @@ function photoLog(initialGroup) {
     initialGroup,
     save: saver,
     onOptimisticSave: ({payload, rows: optimisticRows}) => {
-      if (diary && payload.date === date && optimisticRows?.length) {
+      const switchingView = view !== 'diary';
+      if (switchingView) {
+        leaveView();
+        view = 'diary';
+        if (tabBackHandle) {
+          tabBackHandle.release({popHistory: false});
+          tabBackHandle = null;
+        }
+        selectTab('diary-tab');
+      }
+      const sameDate = payload.date === date;
+      if (!sameDate && payload.date) date = payload.date;
+      if (diary && sameDate && optimisticRows?.length) {
         const added = optimisticRows.map((row, idx) => ({
           id: 'optimistic-photo-' + Date.now() + '-' + idx,
           date: payload.date,
@@ -884,8 +955,8 @@ function photoLog(initialGroup) {
           },
         }));
         diary = {...diary, entries: [...diary.entries, ...added]};
-        if (view === 'diary') render();
       }
+      if (diary) render();
       enqueueWrite({
         label: 'Saving photo meal…',
         run: () => saver(payload),
