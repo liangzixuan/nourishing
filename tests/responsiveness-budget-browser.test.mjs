@@ -157,7 +157,7 @@ async function createFixture() {
       } else {
         staticHits.push(pathname);
       }
-      if (res.destroyed || req.destroyed) return;
+      if (res.destroyed) return;
       const response = await handle(
         new Request(base + req.url, {
           method: req.method,
