@@ -78,8 +78,13 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
-      - name: Build Astro SSR bundle
-        run: npm run build
+      - name: Build Appwrite upload package
+        run: |
+          node scripts/package-site.mjs
+          STAGE=$(node -p "JSON.parse(require('fs').readFileSync('.local/site-stage.json', 'utf8')).destination")
+          cd "$STAGE"
+          npm ci
+          npm run build
 
   deploy:
     name: Deploy to Appwrite

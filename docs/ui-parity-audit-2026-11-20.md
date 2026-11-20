@@ -144,7 +144,8 @@ For each change, keep the app working end to end and add a focused check for the
 - Production build: `npm run build` passed after all production changes.
 - Startup packaging and compressed bundle budgets passed. Core cached interactions passed the existing responsiveness check with 1,500 ms API latency.
 - Reconnect coverage confirms that an unsaved food form stays open while seven queued changes sync. Account mismatch and session expiry still lock and clear private views.
-- Complete suite: `node --test --test-concurrency=2 tests/*.test.mjs` passed **628 tests**, with zero failed, skipped or cancelled tests (239 seconds).
+- Complete suite after the Calendar correction: `node --test --test-concurrency=2 tests/*.test.mjs` passed **629 tests**, with zero failed, skipped or cancelled tests (234 seconds). Linux CI passed 626 tests and skipped the three Windows-only backup checks.
 - Staged patch whitespace checks passed. Application sources contain no legacy product-name matches.
 - The master-branch CI workflow repeats test/build checks before deploying the site and functions to Appwrite.
 - The first CI run exposed stale Calendar marker visibility after a Display save. Calendar now shares its presence projection between server and local reads, including pending and acknowledged changes. The new hide/show regression, durable queue tests, Calendar rules and Display browser flow passed (8 tests); the production build passed again. CI repeats the full suite on this correction before deployment.
+- Appwrite then exposed missing build scripts in the source upload allowlist. The upload now includes the four new projection packagers. CI installs dependencies and builds inside the exact staged upload directory; the same standalone staged build passed locally.
