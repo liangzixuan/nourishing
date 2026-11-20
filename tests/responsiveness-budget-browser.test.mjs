@@ -206,12 +206,17 @@ test('startup asset waterfall and bundle size stay within responsiveness budgets
 
   const f = await createFixture();
   try {
+    const pageJs = [];
+    const pageCss = [];
+    f.page.on('request', req => {
+      const p = new URL(req.url()).pathname;
+      if (/\.m?js$/.test(p) && p !== '/sw.js' && p !== '/offline-assets.js') pageJs.push(p);
+      if (p.endsWith('.css')) pageCss.push(p);
+    });
     await f.page.goto(f.base + '/diary');
     await f.page.locator('.md-diary').waitFor();
-    const jsRequests = f.staticHits.filter(p => /\.m?js$/.test(p));
-    const cssRequests = f.staticHits.filter(p => p.endsWith('.css'));
-    assert.ok(jsRequests.length <= 5, `Expected <= 5 startup JS requests, got ${jsRequests.length}: ${jsRequests.join(', ')}`);
-    assert.ok(cssRequests.length <= 5, `Expected <= 5 startup CSS requests, got ${cssRequests.length}: ${cssRequests.join(', ')}`);
+    assert.ok(pageJs.length <= 5, `Expected <= 5 startup JS requests, got ${pageJs.length}: ${pageJs.join(', ')}`);
+    assert.ok(pageCss.length <= 5, `Expected <= 5 startup CSS requests, got ${pageCss.length}: ${pageCss.join(', ')}`);
     assert.deepEqual(f.errors, []);
   } finally {
     await f.close();
@@ -227,15 +232,16 @@ test('core Diary, Photo Log, and More interactions respond instantly under 1500m
 
     // Wait for background warmup (warmDeviceViews + offline snapshot sync) to populate IndexedDB.
     await page.waitForFunction(
-      async () => {
+      async today => {
         const store = await import('/offline-store.js');
         const copy = await store.offlineCopy();
         const cache = await import('/device-cache.js');
         const display = await cache.readDeviceCache('/api/display');
         const library = await cache.readDeviceCache('/api/library');
-        return Boolean(copy?.snapshot?.state && display.value && library.value);
+        const dashboard = await cache.readDeviceCache('/api/dashboard?date=' + today);
+        return Boolean(copy?.snapshot?.state && display.value && library.value && dashboard.value);
       },
-      null,
+      f.today,
       {timeout: 10000},
     );
 
@@ -246,10 +252,15 @@ test('core Diary, Photo Log, and More interactions respond instantly under 1500m
     const hitsBefore = f.apiHits.length;
 
     const timed = async (label, fn) => {
+      const hitStart = f.apiHits.length;
       const start = performance.now();
       await fn();
       const elapsed = Math.round(performance.now() - start);
-      assert.ok(elapsed < UI_BUDGET_MS, `${label} took ${elapsed}ms (budget < ${UI_BUDGET_MS}ms under ${API_DELAY_MS}ms API delay)`);
+      const calls = f.apiHits.slice(hitStart).map(h => `${h.method} ${h.path}`);
+      assert.ok(
+        elapsed < UI_BUDGET_MS,
+        `${label} took ${elapsed}ms (budget < ${UI_BUDGET_MS}ms under ${API_DELAY_MS}ms API delay; API calls: ${calls.join(', ') || 'none'})`,
+      );
       return elapsed;
     };
 

@@ -89,7 +89,7 @@ export async function localLibraryItem({kind, id, entry}) {
       ingredients,
       nutrients: catalog.map(({id: nutrientId, name, unit, category}) => ({id: nutrientId, name, unit, category})),
       energyUnit: state.settings?.energyUnit ?? 'kcal',
-      facts: entryFacts(state, {[kind + 'Id']: resource.id, amount: 1, ...(savedEntry ?? {})}),
+      facts: entryFacts(state, savedEntry ?? {[kind + 'Id']: resource.id, amount: 1}),
       _local: true,
     };
   } catch {
