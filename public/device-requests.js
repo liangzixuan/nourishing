@@ -4,7 +4,7 @@ import {readDeviceCache,writeDeviceCache,hasCurrentDeviceCache} from './device-c
 // remain network-only, as do every write and its exact-retry receipt.
 const reads=new Set(['diary','diary/calendar','dashboard','charts','nutrition-report','snapshots','fasting','library','library/item','library/tools','library/favorites','library/food-copy','food-search','catalog/status','catalog/search','catalog/food','food-insights/options','food-insights/suggestions','food-insights/oracle','display','pause-life','profile-settings','nutrient-targets','targets','target-policies','records/options','records/item','records/exercise-catalog','records/exercise-estimate','repeats','coach/preferences','cycle','glucose-timeline','print-report/options','reminders']);
 export function cacheableRead(path){const url=new URL(path,location.origin);return url.origin===location.origin&&reads.has(url.pathname.slice(5))&&url.pathname.startsWith('/api/');}
-const pending=new Map(),FRESH_MS=120000;
+const pending=new Map(),FRESH_MS=30000;
 const aborted=()=>new DOMException('Request cancelled.','AbortError');
 function wait(promise,signal){
  if(!signal)return promise;if(signal.aborted)return Promise.reject(aborted());
