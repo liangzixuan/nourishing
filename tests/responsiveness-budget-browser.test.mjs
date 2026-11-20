@@ -145,22 +145,32 @@ async function createFixture() {
   let base;
   let handle;
   const server = createServer(async (req, res) => {
-    const pathname = new URL(req.url, 'http://127.0.0.1').pathname;
-    if (pathname.startsWith('/api/')) {
-      apiHits.push({method: req.method, path: pathname});
-      if (apiDelayMs > 0) await new Promise(r => setTimeout(r, apiDelayMs));
-    } else {
-      staticHits.push(pathname);
+    try {
+      const pathname = new URL(req.url, 'http://127.0.0.1').pathname;
+      const chunks = [];
+      if (req.method !== 'GET') {
+        for await (const chunk of req) chunks.push(chunk);
+      }
+      if (pathname.startsWith('/api/')) {
+        apiHits.push({method: req.method, path: pathname});
+        if (apiDelayMs > 0) await new Promise(r => setTimeout(r, apiDelayMs));
+      } else {
+        staticHits.push(pathname);
+      }
+      if (res.destroyed || req.destroyed) return;
+      const response = await handle(
+        new Request(base + req.url, {
+          method: req.method,
+          headers: req.headers,
+          ...(req.method === 'GET' ? {} : {body: Buffer.concat(chunks)}),
+        }),
+      );
+      if (res.destroyed) return;
+      res.writeHead(response.status, Object.fromEntries(response.headers));
+      res.end(Buffer.from(await response.arrayBuffer()));
+    } catch {
+      if (!res.destroyed && !res.headersSent) res.writeHead(500).end();
     }
-    const response = await handle(
-      new Request(base + req.url, {
-        method: req.method,
-        headers: req.headers,
-        ...(req.method === 'GET' ? {} : {body: req, duplex: 'half'}),
-      }),
-    );
-    res.writeHead(response.status, Object.fromEntries(response.headers));
-    res.end(Buffer.from(await response.arrayBuffer()));
   });
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   base = 'http://127.0.0.1:' + server.address().port;
