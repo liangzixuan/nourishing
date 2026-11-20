@@ -346,7 +346,7 @@ test('core Diary, Photo Log, and More interactions respond instantly under 1500m
     const searchHitsBefore = f.apiHits.length;
     await timed('Open Search Food (All)', async () => {
       await page.locator('#add-food').click();
-      await page.getByRole('button', {name: /add food/i}).first().click();
+      await page.locator('.am-sheet').getByRole('button', {name: /add food/i}).first().click();
       await page.locator('.mfs-result').filter({hasText: 'Apple, raw'}).waitFor();
     });
     await timed('Switch Search Food to Common tab', async () => {
