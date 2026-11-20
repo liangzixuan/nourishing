@@ -13,6 +13,7 @@ export function remapWriteReferences(value, identities) {
 export function writeReceiptIdentities(row,result){
  const operation=row.command.operationId,type=row.command.type;
  const entries=result?.records?.entries?.map(item=>item.id)??result?.entryIds??[];
+ if(type==='records.copy')return Object.fromEntries(Object.entries(result?.records??{}).flatMap(([collection,rows])=>rows.map((item,index)=>[`${operation}-${collection}-${index}`,item.id])));
  if(['photo.log','meal.log','entry.expand'].includes(type)||type==='entry.add'&&row.command.payload.mealId&&result?.records?.entries?.some(item=>item.expandedFrom?.parent?.mealId))return Object.fromEntries(entries.map((id,index)=>[`${operation}-${index}`,id]));
  if(['entry.add','water.add','snapshot.add','repeat.save','note.add','note.photo.save','exercise.add'].includes(type)){
   const id=entries[0]??result?.records?.biometrics?.[0]?.id??result?.records?.notes?.[0]?.id??result?.item?.id??result?.id;

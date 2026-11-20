@@ -229,7 +229,7 @@ function dispatchCommand(state, input, context) {
 export function applyWorkspaceCommand(state, input, context = {}) {
   validateAction(input);
   try {
-    const tracked=/^(entry\.|note\.|biometric\.|water\.add|meal\.log|photo\.log)/.test(input.type);
+    const tracked=/^(entry\.|note\.|biometric\.|water\.add|meal\.log|photo\.log|records\.copy$)/.test(input.type);
     const before=tracked?Object.fromEntries(['entries','biometrics','notes'].map(collection=>[collection,new Set(state[collection].map(row=>row.id))])):null;
     const saved=dispatchCommand(state, input, context);
     if(!tracked)return saved;

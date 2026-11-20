@@ -1,6 +1,7 @@
 import './client-errors.js';
 import './pwa.js';
 import {startBackgroundWrites,onBackgroundWriteStatus} from './background-writes.js';
+import {createSyncNotice} from './sync-notice.js';
 import {localLibraryItem, localDiaryView} from './local-engine.js';
 import {pushBackHandler} from './back-history.js';
 import {startDeviceSync, warmDeviceViews, warmAdjacentDays} from './device-sync.js';
@@ -48,25 +49,10 @@ const notice = document.querySelector('#notice');
 const headerRoot = document.querySelector('.app-header');
 const shell = createAppShell({headerRoot, dateBar, navigation: document.querySelector('.app-nav')});
 
-onBackgroundWriteStatus(({error, retry, saved}) => {
-  if(saved)void load({reuseUnchanged:true});
-  if (error) {
-    notice.textContent = '';
-    const msg = document.createElement('span');
-    msg.textContent = (error.message || 'Could not save changes.') + ' ';
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.textContent = coreText('retry');
-    btn.onclick = () => {
-      notice.textContent = '';
-      Promise.resolve(retry?.()).catch(error => {notice.textContent=error.message;});
-    };
-    const review = document.createElement('button');
-    review.type = 'button';
-    review.textContent = coreText('more.storage');
-    review.onclick = async () => {await navigate('more');more?.open('storage');};
-    notice.append(msg, btn, review);
-  }
+const updateSyncNotice=createSyncNotice({notice,review:async()=>{await navigate('more');more?.open('storage');}});
+onBackgroundWriteStatus(event => {
+  if(event.saved)void load({reuseUnchanged:true});
+  updateSyncNotice(event);
 });
 
 const svg = path =>

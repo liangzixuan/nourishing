@@ -52,7 +52,7 @@ export async function flushBackgroundWrites(){
    if(!copy||copy.locked||copy.ownerId!==owner||copy.ticket.epoch!==epoch||!await currentPrivateResponseTicket(copy.ticket))return;
    const row=copy.pending[0];if(!row)return;
    const id=row.command.operationId;
-   if(row.status==='conflict'){emit({error:Error(row.error??'Review this change.'),retry:()=>retry(id)});return;}
+   if(row.status==='conflict'){emit({error:Error(row.error??'Review this change.'),requiresAttention:true,requestId:id,retry:()=>retry(id)});return;}
    try{
     if(row.command.generation!==copy.snapshot?.identity.generation)throw restored();
     let result;
@@ -82,7 +82,7 @@ export async function flushBackgroundWrites(){
    }catch(error){
     const permanent=error.status>=400&&error.status<500&&![401,408,429].includes(error.status);
     await changeBackgroundWrite(copy.ticket,id,current=>{current.status=permanent?'conflict':'unknown';current.error=permanent?error.message:'Sync interrupted. Retry to check this change.';if(error.messageKey)current.messageKey=error.messageKey;else if(!permanent)current.messageKey='accountCloud.offlineError.syncInterrupted';}).catch(()=>{});
-    emit({error,retry:()=>retry(id)});changed();if(!permanent)retryLater();return;
+    emit({error,requiresAttention:permanent,requestId:id,retry:()=>retry(id)});changed();if(!permanent)retryLater();return;
    }
   }
  };

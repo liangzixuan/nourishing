@@ -1,5 +1,7 @@
 import {createUITranslator} from './app-language.js';
 const rows={
+ 'sync.reviewNeeded':['A change needs your review.','Une modification nécessite votre attention.','Eine Änderung muss geprüft werden.','Uma alteração precisa da sua revisão.'],
+ 'sync.review':['Review','Vérifier','Prüfen','Revisar'],
  'more.storage':['Device storage','Stockage sur l’appareil','Gerätespeicher','Armazenamento no dispositivo'],
  'more.version':['Version {{version}}','Version {{version}}','Version {{version}}','Versão {{version}}'],
  'diary.recipeCreated':['Recipe created','Recette créée','Rezept erstellt','Receita criada'],

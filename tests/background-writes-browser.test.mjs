@@ -10,8 +10,9 @@ import {digest} from '../server/data-codec.mjs';
 import {offlineSnapshot} from '../server/offline.mjs';
 import {createWorkspaceStore} from '../server/workspace-store.mjs';
 import {diaryStoreFixture} from './fixtures/diary-store.mjs';
+import {diaryToolsReview} from '../server/diary-tools.mjs';
 
-async function realQueueFixture(state,run,{losePath}={}){
+async function realQueueFixture(state,run,{losePath,rejectWrite}={}){
  const owner='owner-a',date='2026-11-20',fixture=diaryStoreFixture(state,owner),store=createWorkspaceStore(fixture.db,owner),sent=[];let lose=Boolean(losePath);
  const server=createServer(async(req,res)=>{try{
   if(req.url==='/'){res.setHeader('Content-Type','text/html');return res.end('<main></main>');}
@@ -21,6 +22,7 @@ async function realQueueFixture(state,run,{losePath}={}){
    if(req.url==='/api/offline')return res.end(JSON.stringify(await store.offlineSnapshot()));
    if(req.url.startsWith('/api/diary'))return res.end(JSON.stringify({revision:digest(fixture.state())}));
    let raw='';for await(const chunk of req)raw+=chunk;const body=JSON.parse(raw);sent.push({path:req.url,body});
+   const rejected=rejectWrite?.();if(rejected)throw rejected;
    const result=req.url==='/api/offline/commands'?await store.offlineCommand(body):await store.command(body,async()=>null,{owner,asOf:date+'T12:00:00Z',timeZone:'UTC'});
    if(lose&&req.url===losePath){lose=false;throw {code:503,message:'Lost acknowledgement'};}
    return res.end(JSON.stringify(result));
@@ -34,6 +36,68 @@ async function realQueueFixture(state,run,{losePath}={}){
  try{await page.goto('http://127.0.0.1:'+server.address().port);const ticket=await initialize();await page.evaluate(async({snapshot,ticket})=>await(await import('/offline-store.js')).saveOfflineSnapshot(snapshot,ticket),{snapshot:await store.offlineSnapshot(),ticket});await run({page,fixture,store,sent,initialize,flush,date});}
  finally{await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
 }
+
+test('sync retries stay quiet; blocked saves show one review action and clear after recovery',async()=>{
+ let failure={code:503,message:'Unable to connect. Please try again.'};
+ await realQueueFixture(initialState(),async({page,flush,date,sent,fixture})=>{
+  await page.evaluate(async date=>{
+   const {createSyncNotice}=await import('/sync-notice.js');
+   const notice=document.querySelector('main');notice.innerHTML='<span data-editor-error>Keep this editor error</span>';
+   const update=createSyncNotice({notice,review:()=>{window.reviewOpened=true;}});
+   (await import('/background-writes.js')).onBackgroundWriteStatus(update);
+   await(await import('/diary-api.js')).queueCommand('a'.repeat(64),'water.add',{date,amount:250});
+  },date);
+  await flush();await flush();
+  assert.equal(await page.locator('[data-sync-notice]').count(),0);
+  assert.equal((await page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy()).pending)).length,1);
+  failure={code:409,message:'Your data has changed. Please try again.'};
+  await flush();
+  const notice=page.locator('[data-sync-notice]');
+  assert.equal(await notice.innerText(),'A change needs your review. Review');
+  assert.equal(await notice.locator('button').count(),1);
+  const requests=sent.length;await flush();await flush();
+  assert.equal(sent.length,requests);assert.equal(await notice.count(),1);
+  await notice.getByRole('button',{name:'Review',exact:true}).click();assert.equal(await page.evaluate(()=>window.reviewOpened),true);
+  failure=null;
+  await page.evaluate(async()=>{
+   const store=await import('/offline-store.js'),copy=await store.readWriteCopy();
+   await store.changeBackgroundWrite(copy.ticket,copy.pending[0].command.operationId,row=>{row.status='pending';row.error=null;});
+  });
+  await flush();assert.equal(await notice.count(),0);
+  assert.equal(await page.locator('[data-editor-error]').innerText(),'Keep this editor error');
+  assert.equal(fixture.state().biometrics.length,1);
+  assert.equal((await page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy()).pending)).length,0);
+ },{rejectWrite:()=>failure});
+});
+
+test('copied mixed records appear locally and keep edit identities through a lost acknowledgement and restart',async()=>{
+ const state=initialState(),sourceDate='2026-11-19';
+ const food=act(state,'food.save',{name:'Rice',serving:'100 g',grams:100,nutrients:{calories:100}});
+ act(state,'entry.add',{foodId:food.id,date:sourceDate,group:'Lunch',amount:1});
+ act(state,'note.add',{date:sourceDate,text:'Copied note'});
+ act(state,'water.add',{date:sourceDate,amount:250});
+ const review=diaryToolsReview(state,{operation:'copy',selection:{date:sourceDate,scope:'day'},destination:{date:'2026-11-20',group:null}});
+ await realQueueFixture(state,async({page,flush,initialize,fixture,date,sent})=>{
+  const local=await page.evaluate(async({review,date})=>{
+   const {queueCommand}=await import('/diary-api.js'),{readWriteCopy}=await import('/offline-store.js'),{offlineEffectiveState}=await import('/offline-model.js');
+   await queueCommand(review.revision,'records.copy',{selection:review.selection,destination:review.destination,fingerprint:review.fingerprint,confirmed:true});
+   const state=offlineEffectiveState(await readWriteCopy()),entry=state.entries.find(row=>row.date===date),note=state.notes.find(row=>row.date===date);
+   if(!entry||!note||!state.biometrics.some(row=>row.date===date))throw Error('Copy did not project all record collections');
+   await queueCommand(review.revision,'entry.update',{id:entry.id,amount:3});
+   await queueCommand(review.revision,'note.delete',{id:note.id});
+   return {entry:entry.id,note:note.id};
+  },{review,date});
+  await flush();assert.equal(fixture.state().entries.filter(row=>row.date===date).length,1);
+  await page.reload();await initialize();await flush();
+  const copy=await page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy()));
+  assert.equal(copy.pending.length,0);
+  const entries=fixture.state().entries.filter(row=>row.date===date);assert.equal(entries.length,1);assert.equal(entries[0].amount,3);
+  assert.equal(fixture.state().notes.filter(row=>row.date===date).length,0);assert.equal(fixture.state().biometrics.filter(row=>row.date===date).length,1);
+  assert.deepEqual(copy.snapshot.state.entries,fixture.state().entries);
+  assert.ok(sent.filter(row=>row.body.type==='entry.update').every(row=>row.body.payload.id===entries[0].id));
+  assert.notEqual(entries[0].id,local.entry);
+ },{losePath:'/api/workspace/command'});
+});
 
 test('calendar markers reflect local visibility changes before and after sync instead of stale responses',async()=>{
  const state=initialState();act(state,'food.save',{name:'Rice',serving:'100 g',grams:100,nutrients:{calories:100}});

@@ -1,4 +1,5 @@
 import {applyChartPreference} from './chart-display-command.mjs';
+import {copiedDiaryRecords} from './diary-record-copy.mjs';
 import {mergeEntryUpdate} from './entry-update-fields.mjs';
 import {parseProfileDemographics} from './profile-demographics.mjs';
 import {scoreDisplayPatch} from './score-display-controls.mjs';
@@ -498,18 +499,11 @@ function applyRecordCopy(s,p){
   assertDiaryDaysEditable(s,[prepared.destination.date]);
   const additions={entries:0,biometrics:0,notes:0};for(const item of prepared.records)additions[item.collection]++;
   for(const collection of copyCollections)if(s[collection].length+additions[collection]>maxRecordCollectionRows)fail(`Copy would exceed the workspace limit of ${maxRecordCollectionRows} ${collection} records. Remove records before copying.`);
-  const mealCopies=new Map();
-  const copies=prepared.records.map(({collection,row})=>{
-    // Lineage names the immediate source. Import and repeat origins remain facts,
-    // never active identities on the copied record.
-    recordCopyLineage(row,collection);
-    const copiedFrom={version:1,collection,id:exactId(row.id),date:date(row.date)},source=row.source??row.copiedFrom?.source,repeatId=row.repeatId??row.copiedFrom?.repeatId;
-    if(source!==undefined)copiedFrom.source=source;if(repeatId!==undefined)copiedFrom.repeatId=repeatId;
-    const input={...row,date:prepared.destination.date,copiedFrom};delete input.id;delete input.source;delete input.repeatId;
-    if(prepared.destination.group!==null)input.group=prepared.destination.group;
-    if(input.suggestedMeal){const meal=suggestedMealRecord(input.suggestedMeal);if(!mealCopies.has(meal.id))mealCopies.set(meal.id,randomUUID());input.suggestedMeal={...meal,id:mealCopies.get(meal.id)};}
-    const record=collection==='entries'?(row.kind==='exercise'?exerciseRecord(s,{...input,calories:row.caloriesBurned}):entry(s,input)):collection==='biometrics'?parseBiometricRecord(input):parseNoteRecord(input);
-    return {collection,record:{...record,id:randomUUID()}};
+  for(const {collection,row} of prepared.records)recordCopyLineage(row,collection);
+  const copies=copiedDiaryRecords(prepared.records,prepared.destination,()=>randomUUID()).map(({collection,record:input})=>{
+    const id=input.id;delete input.id;
+    const record=collection==='entries'?(input.kind==='exercise'?exerciseRecord(s,{...input,calories:input.caloriesBurned}):entry(s,input)):collection==='biometrics'?parseBiometricRecord(input):parseNoteRecord(input);
+    return {collection,record:{...record,id}};
   });
   for(const {collection,record}of copies)s[collection].push(record);
 }

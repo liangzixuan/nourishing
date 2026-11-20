@@ -1,5 +1,5 @@
 // Serializable local effects for acknowledged and pending background commands.
-import {applyProfileSettingsProjection} from './local-diary-projection.js';
+import {applyProfileSettingsProjection,projectDiaryBulkWrite,copiedDiaryRecords} from './local-diary-projection.js';
 import {renameDiaryGroup} from './local-group-rename.js';
 import {mergeEntryUpdate} from './report-source/server/entry-update-fields.mjs';
 import {expandedDiarySources} from './report-source/server/resource-expansion.mjs';
@@ -7,6 +7,12 @@ export function applyWriteToState(state,row,result){
  const {type,payload:p}=row.command,id=result?.records?.entries?.[0]?.id??result?.records?.biometrics?.[0]?.id??result?.records?.notes?.[0]?.id??result?.item?.id??result?.id??row.command.operationId;
  const replace=(collection,value)=>{state[collection]??=[];const i=state[collection].findIndex(item=>item.id===value.id);if(i<0)state[collection].push(value);else state[collection][i]=value;};
  const remove=(collection,id)=>{state[collection]=(state[collection]??[]).filter(item=>item.id!==id);};
+ projectDiaryBulkWrite(state,row.command);
+ if(type==='records.copy'&&!result?.records){
+  const selection=p.selection;
+  const records=selection.scope==='selected'?selection.records.map(ref=>({collection:ref.collection,row:state[ref.collection]?.find(item=>item.id===ref.id&&item.date===selection.date)})).filter(item=>item.row):['entries','biometrics','notes'].flatMap(collection=>(state[collection]??[]).filter(item=>item.date===selection.date&&(selection.scope==='day'||item.group===selection.group)).map(row=>({collection,row})));
+  for(const {collection,record} of copiedDiaryRecords(records,p.destination,(collection,index)=>`${row.command.operationId}-${collection}-${index}`))replace(collection,{...record,_pending:!result});
+ }
  for(const food of row.projection?.foods??[])if(!(state.foods??[]).some(item=>item.id===food.id))replace('foods',structuredClone(food));
  if(type.startsWith('profileSettings.')){const record=applyProfileSettingsProjection(state,row.command,id);if(record)record._pending=!result;}
  if(type==='entry.add'&&!result?.records?.entries){

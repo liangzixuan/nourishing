@@ -1,6 +1,28 @@
 import {calculateSummary,entryFacts} from './domain/nutrition.mjs';
 import {diarySummaryPresentation} from './diary-summary.mjs';
 import {diaryToolsPresentation} from './diary-presentation.mjs';
+import {mergeEntryUpdate} from './domain/entry-update-fields.mjs';
+import {setDiaryGroupOrder} from './domain/diary-order.mjs';
+export {copiedDiaryRecords} from './domain/diary-record-copy.mjs';
+
+/** Replay already-prepared bulk commands over the retained account baseline.
+ * Server validation remains authoritative; projection must also work after an
+ * acknowledgement, when the server returns no changed-record payload. */
+export function projectDiaryBulkWrite(state,{type,payload:p}){
+ if(type==='diary.order'){state.settings.diarySort=p.mode;return;}
+ if(type==='group.order'){setDiaryGroupOrder(state,p);return;}
+ if(type==='records.move-group'||type==='records.set-time'){
+  const field=type==='records.move-group'?'group':'time';
+  for(const ref of p.records){const row=state[ref.collection]?.find(row=>row.id===ref.id&&row.date===p.date);if(row)row[field]=p[field];}
+  return;
+ }
+ if(type!=='records.delete'&&type!=='records.clear-amounts')return;
+ const selected=p.selection;
+ const includes=(collection,row)=>row.date===selected.date&&(selected.scope==='day'||selected.scope==='group'&&row.group===selected.group||selected.scope==='selected'&&selected.records.some(ref=>ref.collection===collection&&ref.id===row.id));
+ if(type==='records.delete'){
+  for(const collection of ['entries','notes','biometrics'])state[collection]=(state[collection]??[]).filter(row=>!includes(collection,row));
+ }else state.entries=(state.entries??[]).map(row=>includes('entries',row)&&row.kind!=='exercise'?mergeEntryUpdate(row,{id:row.id,...(row.quantity!==undefined?{quantity:0}:{amount:0})}):row);
+}
 
 /** Shared diary projection; transport owns revision and captured cycle metadata. */
 export function projectLocalDiary(state,date,template={},clock={now:new Date()}){

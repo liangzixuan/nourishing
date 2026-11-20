@@ -4,6 +4,8 @@ Baseline: `master`, `c55fd4d61319f02a7fe499a2ad769258f3774304`, PWA 1.0.12.
 
 ## Release 1.0.13 closure
 
+**Scope correction:** this release closed the issues listed below, not full interface parity. The Diary day menu and selection menu were missed. The [full interface audit](full-interface-audit-2026-11-20.md) records the expanded state coverage, new gaps, and remaining verification. Treat its explicit statuses as the current coverage record.
+
 The confirmed gaps R1–R3 and G1–G9 below are implemented in version 1.0.13. The original findings describe version 1.0.12; they are retained as the comparison baseline. Local release validation is recorded at the end of this document. CI and deployment are tracked by the release workflow.
 
 | Scope | Result | Verification |
