@@ -1,4 +1,5 @@
 import './client-errors.js';
+import './pwa.js';
 import {enqueueWrite, onWriteQueueStatus} from './async-queue.js';
 import {localLibraryItem} from './local-engine.js';
 import {pushBackHandler} from './back-history.js';

@@ -231,8 +231,9 @@ test('core Diary, Photo Log, and More interactions respond instantly under 1500m
     await page.locator('.md-record').filter({hasText: 'Fixture Oats'}).waitFor();
 
     // Wait for background warmup (warmDeviceViews + offline snapshot sync) to populate IndexedDB.
-    await page.waitForFunction(
-      async today => {
+    let warmed = false;
+    for (let i = 0; i < 100 && !warmed; i++) {
+      warmed = await page.evaluate(async today => {
         const store = await import('/offline-store.js');
         const copy = await store.offlineCopy();
         const cache = await import('/device-cache.js');
@@ -240,10 +241,10 @@ test('core Diary, Photo Log, and More interactions respond instantly under 1500m
         const library = await cache.readDeviceCache('/api/library');
         const dashboard = await cache.readDeviceCache('/api/dashboard?date=' + today);
         return Boolean(copy?.snapshot?.state && display.value && library.value && dashboard.value);
-      },
-      f.today,
-      {timeout: 10000},
-    );
+      }, f.today);
+      if (!warmed) await new Promise(r => setTimeout(r, 100));
+    }
+    assert.ok(warmed, 'Background warmup did not populate IndexedDB within 10s');
 
     // Enable 1500ms artificial API latency — any UI that waits on the network will fail the < 800ms budget.
     const API_DELAY_MS = 1500;
