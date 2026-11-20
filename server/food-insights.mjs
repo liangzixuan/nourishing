@@ -39,8 +39,30 @@ export function createInsightCatalog(foods,{metadata={},sourceFactDigests={},nut
   return Object.fromEntries(entries);
  }
  const searchIndex=createCatalogSearchIndex(foods,metadata,valuesFor);
+ let cachedClientIndex=null;
+ function clientSearchIndex(){
+  if(cachedClientIndex)return cachedClientIndex;
+  const sources=[],sourceMap=new Map(),catIds=[],catMap=new Map(),rows=[];
+  for(const food of foods){
+   if(food.sample===true)continue;
+   const src=compactFoodSource(food.source);
+   const srcKey=JSON.stringify([src?.datasetId??'',src?.dataset??'',src?.provider??'',src?.name??'']);
+   let srcIdx=sourceMap.get(srcKey);
+   if(srcIdx===undefined){srcIdx=sources.length;sourceMap.set(srcKey,srcIdx);sources.push({datasetId:src?.datasetId??'',dataset:src?.dataset??'',provider:src?.provider??'',name:src?.name??''});}
+   const catId=food.category?.id??'';
+   let catIdx=catMap.get(catId);
+   if(catIdx===undefined){catIdx=catIds.length;catMap.set(catId,catIdx);catIds.push(catId);}
+   const aliases=[...(food.translations??[]).map(r=>r.name),...catalogSourceAliases(food.source)].filter(Boolean).join(' ');
+   const priority=src?.datasetId==='usda-foundation'?0:src?.datasetId==='usda-sr-legacy'?1:2;
+   rows.push([food.id,food.name,food.serving??'',srcIdx,catIdx,priority,aliases]);
+  }
+  const datasets=(metadata.datasets??[]).filter(d=>d.foodCount>0).map(({id,name})=>({id,name}));
+  cachedClientIndex={version:1,generation:metadata.generation??'',datasets,sources,categories:catIds,rows};
+  return cachedClientIndex;
+ }
  return {
   searchWorkspace(query,options){if(searchVersion!==1)throw Object.assign(Error('Food search is being prepared.'),{code:503,publicMessage:'Food search is being prepared.'});return searchIndex.search(query,options);},
+  clientSearchIndex,
   disposeSearch:()=>searchIndex.dispose(),
   get(id){const food=index.get(id);return !food?null:Array.isArray(food.nutrients)?{...food,nutrients:valuesFor(food)}:food;},
   status:()=>({...metadata,available:true,foodCount:foods.length}),

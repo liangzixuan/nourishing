@@ -1,6 +1,7 @@
 import {request} from './diary-api.js';
 import {readDeviceCache} from './device-cache.js';
 import {saveOfflineSnapshot,onOfflineChange} from './offline-store.js';
+import {warmLocalCatalogIndex} from './local-search.js';
 
 let started=false,timer,running=false,again=false;
 let warmedDate,warmTimer,warmGeneration=0;
@@ -24,7 +25,7 @@ export function warmDeviceViews(date,{delay=500,force=false}={}){
  ];
  // Two background reads at a time keep menus instant without starving foreground requests.
  const warm=async()=>{while(paths.length&&generation===warmGeneration){const path=paths.shift();await request(path).catch(()=>{});}};
- warmTimer=setTimeout(()=>{if(generation!==warmGeneration)return;void warm();void warm();},delay);
+ warmTimer=setTimeout(()=>{if(generation!==warmGeneration)return;void warmLocalCatalogIndex();void warm();void warm();},delay);
 }
 export function startDeviceSync(ownerId){
  if(started||!globalThis.indexedDB)return;started=true;

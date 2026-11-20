@@ -80,6 +80,17 @@ async function createFixture() {
     charts: async (_, input) => chartSurfaceView(state, input, clock),
     nutritionReport: async (_, input) => reportView(state, input, clock),
     snapshots: async () => ({items: []}),
+    catalogSearchIndex: async () => ({
+      version: 1,
+      generation: 'cat-1',
+      datasets: [{id: 'usda-foundation', name: 'USDA Foundation'}],
+      sources: [{datasetId: 'usda-foundation', dataset: 'USDA Foundation', provider: 'usda', name: 'USDA Foundation'}],
+      categories: ['usda-category:09'],
+      rows: [
+        ['usda:apple', 'Apple, raw', '100 g', 0, 0, 0, 'fruit'],
+        ['usda:banana', 'Banana, raw', '100 g', 0, 0, 0, 'fruit'],
+      ],
+    }),
     workspaceCommand: async (_, input) => {
       applyWorkspaceCommand(state, {type: input.type, payload: input.payload});
       return {revision: digest(state)};
@@ -250,7 +261,9 @@ test('core Diary, Photo Log, and More interactions respond instantly under 1500m
         const display = await cache.readDeviceCache('/api/display');
         const library = await cache.readDeviceCache('/api/library');
         const dashboard = await cache.readDeviceCache('/api/dashboard?date=' + today);
-        return Boolean(copy?.snapshot?.state && display.value && library.value && dashboard.value);
+        const search = await import('/local-search.js');
+        const localAll = await search.localFoodSearch(new URLSearchParams({category: 'all', sort: 'best', offset: '0', limit: '25'}));
+        return Boolean(copy?.snapshot?.state && display.value && library.value && dashboard.value && localAll?.items?.length);
       }, f.today);
       if (!warmed) await new Promise(r => setTimeout(r, 100));
     }
@@ -328,6 +341,24 @@ test('core Diary, Photo Log, and More interactions respond instantly under 1500m
       await page.locator('.md-diary').waitFor();
       await page.locator('.md-record').filter({hasText: 'Fixture Oats'}).waitFor();
     });
+
+    // 7. + -> Search Food (All, Common, and live typing) runs 100% locally in < 800ms with 0 /api/food-search calls.
+    const searchHitsBefore = f.apiHits.length;
+    await timed('Open Search Food (All)', async () => {
+      await page.locator('#add-food').click();
+      await page.getByRole('button', {name: /add food/i}).first().click();
+      await page.locator('.mfs-result').filter({hasText: 'Apple, raw'}).waitFor();
+    });
+    await timed('Switch Search Food to Common tab', async () => {
+      await page.locator('[data-mfs-category="common"]').click();
+      await page.locator('.mfs-result').filter({hasText: 'Banana, raw'}).waitFor();
+    });
+    await timed('Type search query in Search Food', async () => {
+      await page.locator('#food-search').fill('apple');
+      await page.locator('.mfs-result').filter({hasText: 'Apple, raw'}).waitFor();
+    });
+    const foodSearchCalls = f.apiHits.slice(searchHitsBefore).filter(h => h.path === '/api/food-search');
+    assert.equal(foodSearchCalls.length, 0, `Expected 0 /api/food-search calls, got: ${JSON.stringify(foodSearchCalls)}`);
 
     assert.deepEqual(f.errors, []);
   } finally {

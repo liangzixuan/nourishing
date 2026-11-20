@@ -493,6 +493,16 @@ function buildLibraryAndSearchMethods(ctx) {
     catalogStatus: async secret => (await data(secret)).repository.catalogStatus(),
     searchCatalog: async (secret, input) => (await data(secret)).repository.search(input),
     foodSearch: (secret, input) => insights(secret, input, searchCloudFoods),
+    catalogSearchIndex: async secret => {
+      const {storage} = await data(secret);
+      const head = await new TablesDB(ctx.session(secret)).getRow({
+        databaseId: config.database,
+        tableId: 'catalog_heads',
+        rowId: 'active',
+      });
+      const catalog = await loadCatalogIndex({storage, head, namespace: config.endpoint + '/' + config.project});
+      return {...catalog.clientSearchIndex(), generation: head.generation};
+    },
     readCatalogFood: async (secret, id) => (await data(secret)).repository.food(id),
     importRecipe: async (secret, input) => {
       if (typeof input?.url === 'string' && input.url.trim()) {

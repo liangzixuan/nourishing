@@ -763,6 +763,11 @@ function registerRecordsAndCatalogRoutes(add) {
     noSearch: 'Invalid query.',
     handler: async ({api, secret, json}) => json(200, await api.catalogStatus(secret)),
   });
+  add('GET', '/api/catalog/search-index', {
+    auth: 'secret',
+    noSearch: 'Invalid query.',
+    handler: async ({api, secret, json}) => json(200, await api.catalogSearchIndex(secret)),
+  });
   add('GET', '/api/catalog/search', {
     auth: 'secret',
     handler: async ({api, secret, url, json}) => {
