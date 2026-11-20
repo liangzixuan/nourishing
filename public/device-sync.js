@@ -1,10 +1,27 @@
 import {request} from './diary-api.js';
 import {readDeviceCache} from './device-cache.js';
-import {saveOfflineSnapshot,onOfflineChange} from './offline-store.js';
+import {saveOfflineSnapshot,onOfflineChange,readWriteCopy} from './offline-store.js';
 import {warmLocalCatalogIndex} from './local-search.js';
 
 let started=false,timer,running=false,again=false;
 let warmedDate,warmTimer,warmGeneration=0;
+let snapshotRead;
+/** Share the initial account snapshot across startup and local editors. */
+export async function ensureDeviceSnapshot({refresh=false,ownerId}={}){
+ const cached=await readDeviceCache('/api/diary'),ticket=cached.ticket;
+ if(!ticket||ownerId&&ticket.ownerId!==ownerId)return null;
+ const copy=await readWriteCopy();
+ if(copy&&(copy.ownerId!==ticket.ownerId||copy.ticket.epoch!==ticket.epoch))return null;
+ if(!refresh&&copy?.snapshot?.state&&!copy.locked)return copy;
+ const key=JSON.stringify([ticket.ownerId,ticket.epoch]);
+ if(snapshotRead?.key===key)return snapshotRead.promise;
+ const promise=(async()=>{
+  const snapshot=await request('/api/offline');
+  return saveOfflineSnapshot(snapshot,{ownerId:ticket.ownerId,epoch:ticket.epoch,...(copy?{revision:copy.revision}:{})});
+ })();
+ snapshotRead={key,promise};
+ try{return await promise;}finally{if(snapshotRead?.promise===promise)snapshotRead=null;}
+}
 function shiftDate(date,delta){
  const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+delta);return d.toISOString().slice(0,10);
 }
@@ -47,10 +64,7 @@ export function startDeviceSync(ownerId){
  async function save(){
   if(running){again=true;return;}running=true;
   try{
-   const cached=await readDeviceCache('/api/diary');if(cached.ticket?.ownerId!==ownerId)return;
-   // The full workspace copy preserves the existing offline command queue.
-   const ticket={ownerId,epoch:cached.ticket.epoch};
-   const snapshot=await request('/api/offline');await saveOfflineSnapshot(snapshot,ticket);
+   await ensureDeviceSnapshot({refresh:true,ownerId});
   }catch{/* Online use still works if device storage is full or unavailable. */}
   finally{running=false;if(again){again=false;schedule();}}
  }
@@ -60,5 +74,5 @@ export function startDeviceSync(ownerId){
  });
  window.addEventListener('nourishing-data-changed',()=>{schedule();rewarm();});
  window.addEventListener('online',schedule);
- window.addEventListener('pagehide',()=>{clearTimeout(timer);clearTimeout(warmTimer);});schedule();
+ window.addEventListener('pagehide',()=>{clearTimeout(timer);clearTimeout(warmTimer);});void save();
 }

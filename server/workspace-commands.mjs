@@ -229,7 +229,17 @@ function dispatchCommand(state, input, context) {
 export function applyWorkspaceCommand(state, input, context = {}) {
   validateAction(input);
   try {
-    return dispatchCommand(state, input, context);
+    const tracked=/^(entry\.|note\.|biometric\.|water\.add|meal\.log|photo\.log)/.test(input.type);
+    const before=tracked?Object.fromEntries(['entries','biometrics','notes'].map(collection=>[collection,new Set(state[collection].map(row=>row.id))])):null;
+    const saved=dispatchCommand(state, input, context);
+    if(!tracked)return saved;
+    const records={};
+    for(const collection of ['entries','biometrics','notes']){
+      const added=state[collection].filter(row=>!before[collection].has(row.id));
+      const updated=((input.type==='entry.update'&&collection==='entries')||(input.type==='note.photo.save'&&collection==='notes'))?state[collection].filter(row=>row.id===input.payload.id):[];
+      if(added.length||updated.length)records[collection]=[...added,...updated];
+    }
+    return {...saved,records};
   } catch (error) {
     rethrowDomainError(error);
   }

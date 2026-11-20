@@ -2,7 +2,8 @@ import {privateImageAttributes} from './private-images.js';
 import {dc} from './discover-cloud-messages.js';
 import {uiLanguage,t} from './app-language.js';
 import {snapshotListMarkup} from './snapshot-view.js';
-import {request,command} from './diary-api.js';
+import {request,queueCommand} from './diary-api.js';
+import {queueBackgroundWrite} from './background-writes.js';
 import {escape as e} from './html.js';
 import {bottomNavigation} from './dashboard-source/discover-ui.js';
 import {MobileDiaryCalendar} from './snapshot-source/mobile-diary-calendar.js';
@@ -11,7 +12,7 @@ import {createMessageFormatter} from './dashboard-source/message-formatter.js';
 import {snapshotMessages} from './snapshot-source/snapshot-messages.js';
 const format=createMessageFormatter(snapshotMessages),m=(key)=>format(uiLanguage(),key);
 const icon=name=>`<img src="/snapshot-source/${name}.svg" alt="">`;
-const media=row=>'/api/media?'+new URLSearchParams({namespace:'progress_photos',id:row.imageId});
+const media=row=>row.localPhoto??'/api/media?'+new URLSearchParams({namespace:'progress_photos',id:row.imageId});
 const dateLabel=day=>new Date(day+'T12:00:00Z').toLocaleDateString(uiLanguage(),{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'});
 const number=value=>Number.isFinite(value)?value.toLocaleString(uiLanguage(),{maximumFractionDigits:1}):'';
 const metadata=row=>Object.fromEntries(['date','time','title','note','vitals'].filter(key=>Object.hasOwn(row,key)).map(key=>[key,structuredClone(row[key])]));
@@ -27,7 +28,7 @@ export function mountSnapshots({root,date,onChange=async()=>{},onReady}){
  const today=()=>typeof date==='function'?date():date??new Date().toLocaleDateString('en-CA');
  function message(text,retry=false){if(!alive())return;status.textContent=text;if(retry){const button=document.createElement('button');button.type='button';button.textContent=m('retry');button.onclick=()=>pending?upload():pendingMutation?mutate(...pendingMutation):load();status.append(button);}}
  function setBusy(value){busy=value;const add=shell.querySelector('[data-snapshot-add]');if(add)add.disabled=value||pending!==null;list.querySelectorAll('[data-snapshot-options]').forEach(button=>button.disabled=value);}
- function facts(row){const v=row.vitals;return [[t('printDocument.stored.age'),v.age],[t('measurementCatalog.metric.weight'),v.weight?number(v.weight.value)+' '+(v.weight.unit==='lb'?'lbs':v.weight.unit):null],[t('printDocument.profile.bmi'),row.bmi===undefined?null:Number(row.bmi).toLocaleString(uiLanguage(),{maximumFractionDigits:0})],[t('bodyPanel.bodyFat'),v.bodyFat===undefined?null:number(v.bodyFat)+'%']].filter(([,value])=>value!==undefined&&value!==null).map(([label,value])=>`<div><dt>${label}:</dt><dd>${e(value)}</dd></div>`).join('');}
+ function facts(row){const v=row.vitals??{};return [[t('printDocument.stored.age'),v.age],[t('measurementCatalog.metric.weight'),v.weight?number(v.weight.value)+' '+(v.weight.unit==='lb'?'lbs':v.weight.unit):null],[t('printDocument.profile.bmi'),row.bmi===undefined?null:Number(row.bmi).toLocaleString(uiLanguage(),{maximumFractionDigits:0})],[t('bodyPanel.bodyFat'),v.bodyFat===undefined?null:number(v.bodyFat)+'%']].filter(([,value])=>value!==undefined&&value!==null).map(([label,value])=>`<div><dt>${label}:</dt><dd>${e(value)}</dd></div>`).join('');}
  function render(){list.innerHTML=snapshotListMarkup(rows,{busy:busy||pending!==null,media,dateLabel,facts});list.querySelectorAll('img').forEach(img=>img.onerror=()=>img.replaceWith(Object.assign(document.createElement('span'),{className:'snapshot-missing',textContent:dc('photoUnavailable')})));}
  async function load(){const serial=++readSerial;message(m('loading'));try{const apply=result=>{if(!alive()||serial!==readSerial)return;rows=result.items;revision=result.revision;render();message('');onReady?.();};apply(await request('/api/snapshots',undefined,abort.signal,{onRefresh:result=>{if(!document.querySelector('dialog[open]'))apply(result);}}));}catch(error){if(alive()&&serial===readSerial&&error.name!=='AbortError'){message(error.message,true);onReady?.(false);}}}
  function back(){if(calendar){calendar.close();return true;}camera?.dispose();camera=null;if(!dialog)return false;dialog.close();dialog.remove();dialog=null;if(focus?.isConnected)focus.focus({preventScroll:true});return true;}
@@ -58,8 +59,9 @@ export function mountSnapshots({root,date,onChange=async()=>{},onReady}){
    operation.prepared??=await request('/api/snapshots/prepare',Object.fromEntries(Object.entries(operation).filter(([key])=>!['prepared','body'].includes(key))),abort.signal);
    if(!alive()||pending!==operation)return;
    operation.body??={requestId:crypto.randomUUID(),revision:operation.prepared.revision,photo:operation.prepared.photo,...operation.prepared.metadata};
-   await request('/api/snapshots/save',operation.body,abort.signal);pending=null;
-   await onChange();if(alive())await load();
+   const local={...operation.prepared.metadata,id:operation.body.requestId,imageId:operation.prepared.photo.id,createdAt:new Date().toISOString(),vitals:operation.prepared.metadata.vitals??{},localPhoto:operation.prepared.photo.dataUrl};
+   const items=[local,...rows];await queueBackgroundWrite('/api/snapshots/save',operation.body,{snapshots:[local],responses:{'/api/snapshots':{items,revision}}});pending=null;
+   if(alive()){readSerial++;rows=items;render();message('');}void onChange();
   }catch(error){if(alive()&&error.name!=='AbortError'){if(error.status===409){operation.prepared=null;operation.body=null;}message(error.message,true);}}
   finally{if(alive())setBusy(false);}
  }
@@ -84,10 +86,11 @@ export function mountSnapshots({root,date,onChange=async()=>{},onReady}){
  }
  async function mutate(type,payload,owner=null){
   if(!alive()||busy)return;setBusy(true);const output=owner?.querySelector('[role=alert]');if(output)output.textContent='';owner?.querySelectorAll('button:not([data-snapshot-back]),textarea').forEach(node=>node.disabled=true);
-  try{await command(revision,type,payload);pendingMutation=null;if(!alive())return;if(dialog===owner)back();await onChange();if(alive())await load();}
+  try{const items=(type==='snapshot.delete'?rows.filter(row=>row.id!==payload.id):rows.map(row=>row.id===payload.id?{...row,...payload}:row)).sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt.localeCompare(a.createdAt));await queueCommand(revision,type,payload,{projection:{responses:{'/api/snapshots':{items,revision}}}});pendingMutation=null;if(!alive())return;readSerial++;rows=items;if(dialog===owner)back();render();message('');void onChange();}
   catch(error){if(!alive())return;const target=output?.isConnected?output:null;if(target)target.textContent=error.message;else{pendingMutation=[type,payload];message(error.message,true);}if(error.status===409){pendingMutation=null;const target=output?.isConnected?output:status,reload=document.createElement('button');reload.type='button';reload.textContent=dc('refreshSnapshots');reload.onclick=()=>{back();void load();};target.append(reload);}}
   finally{if(alive())setBusy(false);owner?.querySelectorAll('button,textarea').forEach(node=>node.disabled=false);}
  }
+ window.addEventListener('nourishing-data-changed',()=>{if(alive()&&!dialog&&!calendar&&!busy)void load();},{signal:abort.signal});
  void load();
  return {refresh:load,back,dispose(){disposed=true;readSerial++;abort.abort();back();pending=null;pendingMutation=null;root.replaceChildren();}};
 }

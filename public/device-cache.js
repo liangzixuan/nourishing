@@ -1,4 +1,4 @@
-import {activateOfflineAccount,resumePrivateResponses,readPrivateResponse,writePrivateResponse,invalidatePrivateResponses,invalidatePrivateResponsePaths,currentPrivateResponseTicket} from './offline-store.js';
+import {activateOfflineAccount,resumePrivateResponses,resumeOfflinePrivateResponses,bindPrivateResponseSession,readPrivateResponse,writePrivateResponse,invalidatePrivateResponses,invalidatePrivateResponsePaths,currentPrivateResponseTicket} from './offline-store.js';
 
 const state=(globalThis[Symbol.for('nourishing.deviceCache')]??={verified:null,initialization:0});
 const miss=()=>({value:undefined,savedAt:null,ticket:null});
@@ -41,4 +41,18 @@ export async function resumeDeviceCache(context){
  const current=++state.initialization;state.verified=null;if(!globalThis.indexedDB)return null;
  const ticket=await resumePrivateResponses(context);if(current!==state.initialization||!ticket)return null;
  state.verified=ticket;return {...ticket};
+}
+
+/** Public offline shells may reopen only the last unlocked, verified account. */
+export async function resumeOfflineDeviceCache(){
+ const current=++state.initialization;state.verified=null;if(!globalThis.indexedDB)return null;
+ const ticket=await resumeOfflinePrivateResponses();if(current!==state.initialization||!ticket)return null;
+ state.verified=ticket;return {...ticket};
+}
+
+export async function bindDeviceCacheSession(context,ticket){
+ if(!state.verified||!same(state.verified,ticket))return null;
+ const current=state.initialization,bound=await bindPrivateResponseSession(ticket,context);
+ if(current!==state.initialization||!same(state.verified,ticket)||!bound)return null;
+ state.verified=bound;return {...bound};
 }

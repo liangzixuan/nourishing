@@ -1,3 +1,4 @@
+import {recordEditorData,saveRecordCommand} from './record-local.js';
 import {dc} from './discover-cloud-messages.js';
 import {uiLanguage, t} from './app-language.js';
 import {request} from './diary-api.js';
@@ -317,19 +318,18 @@ class RecordEditorController {
     }
     this.controls();
     try {
-      await request('/api/workspace/command', this.envelope);
+      await saveRecordCommand(this.envelope.revision,this.envelope.type,this.envelope.payload);
       if (!this.alive()) return;
-      await this.args.onChange();
-      if (this.alive()) {
-        this.busy = false;
-        this.exit();
-      }
+      this.busy = false;
+      this.exit();
+      void Promise.resolve(this.args.onChange()).catch(()=>{});
     } catch (error) {
       if (!this.alive()) return;
       if (error.status >= 400 && error.status < 500 && error.status !== 408) {
         this.envelope = null;
         this.conflict = error.status === 409;
       }
+      this.envelope=null;
       this.errorView(error);
     } finally {
       this.busy = false;
@@ -520,12 +520,7 @@ class RecordEditorController {
 
   async load() {
     try {
-      [this.options, this.detail] = await Promise.all([
-        request('/api/records/options?' + new URLSearchParams({date: this.record?.date ?? this.date}), null, this.abort.signal),
-        this.record
-          ? request('/api/records/item?' + new URLSearchParams({collection: COLLECTIONS[this.kind], id: this.record.id}), null, this.abort.signal)
-          : null,
-      ]);
+      [this.options,this.detail]=await recordEditorData(this.record?.date??this.date,COLLECTIONS[this.kind],this.record?.id,this.abort.signal);
       if (!this.alive()) return;
       if (this.detail) this.record = this.detail.record;
       if (this.kind === 'exercise') {

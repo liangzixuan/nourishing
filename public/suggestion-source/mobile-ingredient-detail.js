@@ -1,3 +1,5 @@
+import {photoNutritionSummary} from '../photo-nutrition.js';
+import {convertEnergy} from '../report-source/server/energy-units.mjs';
 import {escape as e} from './ui.js';
 import {formatMessage} from '../report-source/public/message-format.js';
 import {FoodNutritionView} from '../food-entry-source/food-nutrition-view.js';
@@ -5,10 +7,11 @@ import {quantityFields,readQuantityFields,resetQuantityUnit} from './quantity-fi
 
 /** Owns an unsaved quantity, its nutrition preview, and explicit draft application. */
 export class MobileIngredientDetail{
- constructor({root,resource,kind,source,context={},language,unit,catalog,sourceLabel,applyLabel,preview,normalize=value=>value,onApply,positiveOnly=false}){
-  Object.assign(this,{root,language,preview,normalize,onApply,positiveOnly});this.abort=new AbortController();this.generation=0;this.ready=false;this.open=new Map();
+ constructor({root,resource,kind,source,context={},language,unit,catalog,sourceLabel,applyLabel,preview,normalize=value=>value,onApply,positiveOnly=false,compact=false}){
+  Object.assign(this,{root,language,preview,normalize,onApply,positiveOnly});this.compact=compact;this.energyUnit=unit;this.abort=new AbortController();this.generation=0;this.ready=false;this.open=new Map();
   this.message=key=>formatMessage(language,'mobileFood.'+key);
   root.innerHTML=`<form class="mci-detail"><header class="mf-header"><button type="button" data-mci-back aria-label="${e(this.message('close'))}">×</button><h2>${e(resource.name)}</h2></header><section class="mf-controls">${quantityFields(kind,resource,source,{prefix:'ingredient-',unitId:'mci-unit',context,language})}</section><div class="mf-source"><div data-mci-count></div><div>${e(this.message('dataSource'))}: ${e(sourceLabel)}</div><strong data-mci-basis></strong></div><p data-mci-error role="alert" hidden></p><div class="mf-preview" data-mci-nutrition></div><footer class="mf-footer"><button type="submit" data-mci-apply disabled>${e(applyLabel)}</button></footer></form>`;
+  if(compact){root.classList.add('mci-compact');const nutrition=root.querySelector('[data-mci-nutrition]'),details=document.createElement('details');details.className='mci-all-nutrients';const caption=document.createElement('summary');caption.textContent=formatMessage(language,'mobileFoodEditor.nutrition');details.append(caption);nutrition.before(details);details.append(nutrition);const summary=document.createElement('details');summary.className='photo-nutrition-summary';summary.open=true;summary.dataset.mciSummary='';details.before(summary);}
   root.querySelector('.quantity-details')?.remove();
   for(const [index,label] of [...root.querySelectorAll('[data-quantity-fields]>label')].entries()){const field=label.querySelector('input,select');label.replaceChildren();const caption=document.createElement('span');caption.textContent=this.message(index===0?'amount':'serving');label.append(caption,field);}
   this.form=root.querySelector('form');this.button=root.querySelector('[data-mci-apply]');this.target=root.querySelector('[data-mci-nutrition]');
@@ -38,6 +41,7 @@ export class MobileIngredientDetail{
    const count=Object.values(result.nutrition.totals).filter(Number.isFinite).length,field=this.root.querySelector('[data-quantity-value]'),serving=this.root.querySelector('[data-quantity-unit]')?.selectedOptions[0]?.textContent||this.message('servings');
    this.root.querySelector('[data-mci-count]').textContent=formatMessage(this.language,'mobileFood.count',{count});
    this.root.querySelector('[data-mci-basis]').textContent=formatMessage(this.language,'mobileFood.per',{amount:new Intl.NumberFormat(this.language,{maximumFractionDigits:3}).format(Number(field.value)),serving})+(Number.isFinite(result.row?.grams)?' · '+new Intl.NumberFormat(this.language,{maximumFractionDigits:2}).format(result.row.grams)+' g':'');
+   if(this.compact){const calories=result.nutrition.totals.calories;this.root.querySelector('[data-mci-summary]').innerHTML=photoNutritionSummary([{nutrition:result.nutrition,energy:{value:Number.isFinite(calories)?convertEnergy(calories,'kcal',this.energyUnit):null,unit:this.energyUnit}}]);}
    await this.view.render(result.nutrition,{open:this.open,isCurrent:()=>this.current(generation),showHighlights:true});
    if(this.current(generation)){this.reviewed=structuredClone(quantity);this.reviewedResult=result;this.ready=true;this.button.disabled=false;}
   }catch(error){if(this.current(generation))this.error(error);}

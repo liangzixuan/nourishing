@@ -588,19 +588,19 @@ const rows={
     "Sobremesa"
   ],
   "choice.snack": [
-    "Snack",
+    "Snacks",
     "Collation",
     "Snack",
     "Lanche"
   ],
   "choice.milk": [
-    "Milk",
+    "Dairy",
     "Lait",
     "Milch",
     "Leite"
   ],
   "choice.egg": [
-    "Egg",
+    "Eggs",
     "Œuf",
     "Ei",
     "Ovo"
@@ -618,7 +618,7 @@ const rows={
     "Crustáceos e moluscos"
   ],
   "choice.peanut": [
-    "Peanut",
+    "Peanuts",
     "Arachide",
     "Erdnuss",
     "Amendoim"

@@ -1,4 +1,5 @@
 import {parseReferencedQuantity} from './resource-quantity.mjs';
+import {parseFoodDiaryFields} from './diary-record-fields.mjs';
 
 const fail=message=>{throw Object.assign(Error(message),{status:400});};
 
@@ -25,4 +26,18 @@ export function expandResourceQuantity(state,row,{target='foods',limit=1000}={})
     }
   };
   visit(row,1,[]);return rows;
+}
+
+// Shared row production for explicit expansion and automatic meal logging.
+// Persistence supplies child IDs; the source quantity and lineage stay identical.
+export function expandedDiarySources(state,original){
+  const common=parseFoodDiaryFields({date:original.date,group:original.group??state.settings.groups[0],time:original.time??''},state.settings.groups),parent=parseReferencedQuantity(state,original).source;
+  return expandResourceQuantity(state,original,{target:'children'}).map(({source,path})=>({
+    ...source,...common,kind:'food',name:parseReferencedQuantity(state,source).resource.name,
+    ...(original.photo?{photo:original.photo}:{}),
+    ...(original.textReview?{textReview:{...original.textReview,modifiedAfterReview:true}}:{}),
+    ...(original.copiedFrom?{copiedFrom:original.copiedFrom}:{}),
+    expandedFrom:{version:1,id:original.id,date:common.date,parent,path,...(original.expandedFrom?{previous:original.expandedFrom}:{})},
+    ...(original.repeatId!==undefined?{repeatId:original.repeatId}:{})
+  }));
 }

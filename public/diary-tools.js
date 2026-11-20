@@ -1,11 +1,12 @@
-import {request,command} from './diary-api.js';
+import {request,queueCommand} from './diary-api.js';
+import {mealActionText as mealText} from './meal-action-messages.js';
 import {escape as e} from './html.js';
 import {t} from './app-language.js';
 import {coreText} from './core-cloud-messages.js';
 const key=(collection,id)=>JSON.stringify([collection,id]);
 const name=(collection,row)=>collection==='notes'?row.text:collection==='biometrics'?row.type:row.facts?.name??row.name;
 const button=(label,action,disabled=false)=>`<button type="button" data-diary-tool="${action}" ${disabled?'disabled':''}>${label}</button>`;
-export function createDiaryTools({diary,date,show,close,header,content,render,onChange,onDisplay,onScores}){
+export function createDiaryTools({diary,date,show,close,header,content,render,onChange,onDisplay,onScores,onMealAction}){
  let selecting=false,selected=new Set(),clipboard=null;
  const rows=()=>['entries','notes','biometrics'].flatMap(collection=>(diary()?.[collection]??[]).map(row=>({collection,row})));
  const selection=()=>({date:date(),scope:'selected',records:rows().filter(({collection,row})=>selected.has(key(collection,row.id))).map(({collection,row})=>({collection,id:row.id}))});
@@ -13,8 +14,8 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
  const refs=source=>{if(source.scope==='selected')return rows().filter(({collection,row})=>source.records.some(ref=>ref.collection===collection&&ref.id===row.id));return rows().filter(({row})=>source.scope==='day'||row.group===source.group);};
  const groupSelection=group=>({date:date(),scope:'selected',records:diary().recordDisplay.groups.find(row=>row.name===group)?.records??[]});
  function reset(){selecting=false;selected.clear();}
- async function save(type,payload,revision=diary().revision){
-  const result=await command(revision,type,payload);reset();await onChange();close();return result;
+ async function save(type,payload,revision=diary().revision,projection={}){
+  const result=await queueCommand(revision,type,payload,{projection});reset();close();void onChange();return result;
  }
  function screen(title,html){show(header(title)+'<section class="diary-tools-sheet">'+html+'<p class="sheet-message" role="status"></p></section>');}
  function actionForm(title,html,onSubmit){screen(title,'<form>'+html+`<footer class="entry-actions"><button class="primary">${e(t('common.save'))}</button></footer></form>`);const form=content.querySelector('form'),status=content.querySelector('[role=status]');form.onsubmit=async event=>{event.preventDefault();form.querySelectorAll('button').forEach(b=>b.disabled=true);try{await onSubmit(Object.fromEntries(new FormData(form)));}catch(error){if(status.isConnected)status.textContent=error.message;}finally{form.querySelectorAll('button').forEach(b=>b.disabled=false);}};return form;}
@@ -37,7 +38,21 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
  const actions={copy:capture,paste:copy,clear,move,time,meal,delete:remove};
  function menu(){screen(t('nav.diary'),`<div class="diary-tools-menu">${button(coreText('tools.selectEntries'),'select')}${button(t('diary.copyDay'),'copy')}${button(t('mobileCompositeEditor.paste'),'paste',!clipboard)}${button(t('diary.clearAmounts'),'clear')}${button(t('diaryGroups.entryOrder'),'order')}${onDisplay?button(coreText('diary.display'),'display'):''}${onScores?button(t('mobileScoreSettings.title'),'scores'):''}${button(t('reminders.refresh'),'refresh')}</div>`);content.querySelectorAll('[data-diary-tool]').forEach(b=>b.onclick=()=>{const action=b.dataset.diaryTool;if(action==='select'){selecting=true;selected.clear();close();render();}else if(action==='paste')copy(clipboard);else if(action==='order')order();else if(action==='display')onDisplay();else if(action==='scores')onScores();else if(action==='refresh'){close();onChange();}else actions[action](all());});}
  function groupMenu(group){const source=groupSelection(group),configured=diary().groups.includes(group);screen(group,`<div class="diary-tools-menu">${button(coreText('tools.selectGroup'),'select')}${button(t('diaryCopy.copyGroup'),'copy')}${button(t('diary.clearAmounts'),'clear')}${configured?button(t('diaryGroups.entryOrder'),'order'):''}</div>`);content.querySelectorAll('[data-diary-tool]').forEach(b=>b.onclick=()=>{const action=b.dataset.diaryTool;if(action==='select')select(source);else if(action==='order')order(group);else actions[action](source);});}
- function recordMenu(collection,id,onEdit){const source={date:date(),scope:'selected',records:[{collection,id}]};screen(coreText('tools.entry'),`<div class="diary-tools-menu">${button(t('mobileNutrientTargets.edit'),'edit')}${button(t('cyclePanel.select'),'select')}${button(coreText('tools.copy'),'copy')}${button(coreText('tools.moveGroup'),'move')}${button(t('mobileRepeat.delete'),'delete')}</div>`);content.querySelectorAll('[data-diary-tool]').forEach(b=>b.onclick=()=>{const action=b.dataset.diaryTool;if(action==='edit')onEdit();else if(action==='select')select(source);else actions[action](source);});}
+ async function expand(entry){
+  const review=await busy(mealText('expand'),()=>request('/api/diary/tools/review',{operation:'expand',date:entry.date,id:entry.id}));if(!review)return;
+  try{await save('entry.expand',{date:review.date,id:review.id,fingerprint:review.fingerprint,confirmed:true},review.revision,{entries:review.items});}
+  catch(error){const status=content.querySelector('[role=status]');if(status)status.textContent=error.message;}
+ }
+ async function mealSettings(){
+  const view=await busy(mealText('settings'),()=>request('/api/display'));if(!view)return;
+  const form=actionForm(mealText('settings'),`<label class="field-row"><span>${e(t('mobileDisplay.alwaysExpandMeals'))}</span><input type="checkbox" role="switch" name="alwaysExpandMeals" ${view.settings.alwaysExpandMeals?'checked':''}></label>`,()=>save('display.save',{alwaysExpandMeals:form.elements.alwaysExpandMeals.checked},view.revision));
+ }
+ function recordMenu(collection,id,onEdit){
+  const source={date:date(),scope:'selected',records:[{collection,id}]},entry=collection==='entries'?diary().entries.find(row=>row.id===id):null,isMeal=!!entry?.mealId;
+  const mealActions=[['repeat','repeat'],['original','original'],['copyEdit','copy-edit'],['adjust','adjust'],['expand','expand'],['settings','settings']];
+  screen(isMeal?entry.facts?.name??entry.name??coreText('tools.entry'):coreText('tools.entry'),`<div class="diary-tools-menu">${isMeal?mealActions.map(([label,action])=>button(e(mealText(label)),action)).join(''):button(t('mobileNutrientTargets.edit'),'edit')+button(t('cyclePanel.select'),'select')}${button(coreText('tools.copy'),'copy')}${isMeal?button(e(mealText('nutrition')),'nutrition'):button(coreText('tools.moveGroup'),'move')}${button(t('mobileRepeat.delete'),'delete')}</div>`);
+  content.querySelectorAll('[data-diary-tool]').forEach(b=>b.onclick=()=>{const action=b.dataset.diaryTool;if(action==='edit')onEdit();else if(action==='select')select(source);else if(isMeal&&action==='expand')void expand(entry);else if(isMeal&&action==='settings')void mealSettings();else if(isMeal&&['repeat','original','copy-edit','adjust','nutrition'].includes(action))onMealAction?.(action,entry);else actions[action](source);});
+ }
  return {
   menu,groupMenu,recordMenu,reset,selection:()=>selecting?selection():null,
   selectBox(collection,row){return selecting?`<input type="checkbox" class="diary-select" data-tool-select data-collection="${collection}" data-id="${e(row.id)}" aria-label="${e(coreText('tools.selectName',{name:name(collection,row)}))}" ${selected.has(key(collection,row.id))?'checked':''}>`:'';},

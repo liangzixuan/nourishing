@@ -9,4 +9,7 @@
 .chart-detail [data-chart-pick] .mcl-arrow{width:18px;height:18px;transform:rotate(90deg)}
 .chart-detail .mcl-text-button{display:block;width:100%;border:0;background:none;color:var(--green);font:700 1rem/1.3 Karla,Lato,sans-serif;padding:16px;text-transform:uppercase;min-height:48px}
 .chart-detail .mcl-row:disabled{opacity:.6}
-.chart-detail .mcl-body{padding-bottom:24px}
+.chart-detail .mcl-body{padding:16px 0 calc(100px + env(safe-area-inset-bottom))}
+.chart-detail .dc-bottom{position:fixed;z-index:5;bottom:0;left:0;right:0}
+.chart-detail .mcl-group{margin-top:16px;border-radius:12px;overflow:hidden}
+.chart-detail .mcl-row{min-height:56px;padding:16px}

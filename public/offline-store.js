@@ -1,3 +1,6 @@
+import {remapWriteReferences,writeReceiptIdentities} from './write-identities.js';
+import {applyWriteToState} from './write-projection.js';
+import {projectLocalDiary} from './local-diary-projection.js';
 import {offlineFailure} from './offline-errors.js';
 const DB='nourishing-private-offline',channel=typeof BroadcastChannel==='function'?new BroadcastChannel('nourishing-offline'):null;
 let opening;
@@ -9,9 +12,10 @@ const cacheTicket=active=>({ownerId:active.ownerId,epoch:active.epoch,cacheRevis
 function resetResponses(active,meta,responses){responses.clear();meta.delete('response-lru');active.cacheRevision=(active.cacheRevision??0)+1;}
 function sameSession(active,expected){return !!expected&&!!active.ownerId&&!active.cacheLocked&&active.ownerId===expected.ownerId&&active.epoch===expected.epoch;}
 function assertTicket(active,copy,expected,{revision=false,unlocked=true}={}){if(!expected||active.ownerId!==expected.ownerId||active.epoch!==expected.epoch||revision&&copy?.revision!==expected.revision||unlocked&&copy?.locked)throw offlineFailure('copyChanged');}
-export async function offlineCopy(){return transact(({active,copy})=>copy?{...copy,ticket:ticket(active,copy)}:null,false);}
+export async function readWriteCopy(){return transact(({active,copy})=>copy?{...copy,ticket:ticket(active,copy)}:null,false);}
+export async function offlineCopy(){const copy=await readWriteCopy();return copy?.snapshot?copy:null;}
 export async function activateOfflineAccount(ownerId,{sessionContext=null}={}){if(typeof ownerId!=='string'||!ownerId)throw offlineFailure('signInFirst');return transact(({active,meta,responses})=>{if(active.ownerId!==ownerId){active={ownerId,epoch:crypto.randomUUID()};resetResponses(active,meta,responses);}active.cacheLocked=false;active.sessionContext=/^[a-f0-9]{64}$/.test(sessionContext??'')?sessionContext:null;meta.put(active,'active');return {...ticket(active,null),...cacheTicket(active)};});}
-export async function saveOfflineSnapshot(snapshot,expected){return transact(({active,copy,accounts,meta,responses})=>{assertTicket(active,copy,expected,{unlocked:false});if(snapshot.version!==1||snapshot.identity.ownerId!==active.ownerId)throw offlineFailure('otherSnapshot');if(copy&&copy.snapshot.identity.generation!==snapshot.identity.generation){resetResponses(active,meta,responses);meta.put(active,'active');}const pending=copy?.pending??[];for(const row of pending)if(row.command.generation!==snapshot.identity.generation){row.status='conflict';row.error='The diary was restored. Review this change.';row.messageKey='accountCloud.offlineError.restored';}const next={ownerId:active.ownerId,snapshot:structuredClone(snapshot),pending,locked:false,revision:(copy?.revision??0)+1};accounts.put(next);return {...next,ticket:ticket(active,next)};});}
+export async function saveOfflineSnapshot(snapshot,expected){return transact(({active,copy,accounts,meta,responses})=>{assertTicket(active,copy,expected,{unlocked:false});if(snapshot?.version!==1||snapshot.identity?.ownerId!==active.ownerId||typeof snapshot.identity.generation!=='string'||!snapshot.identity.generation)throw offlineFailure('otherSnapshot');if(copy?.snapshot?.identity.generation===snapshot.identity.generation&&(copy.pending.some(row=>row.transport)||expected.revision!==undefined&&copy.revision!==expected.revision))return {...copy,ticket:ticket(active,copy),snapshotRefreshed:false};if(copy?.snapshot&&copy.snapshot.identity.generation!==snapshot.identity.generation){resetResponses(active,meta,responses);meta.put(active,'active');}const pending=copy?.pending??[];for(const row of pending){if(row.command.generation==null)row.command.generation=snapshot.identity.generation;else if(row.command.generation!==snapshot.identity.generation){row.status='conflict';row.error='The diary was restored. Review this change.';row.messageKey='accountCloud.offlineError.restored';}}const next={ownerId:active.ownerId,snapshot:structuredClone(snapshot),pending,recordIds:copy?.recordIds??{},locked:false,revision:(copy?.revision??0)+1};accounts.put(next);return {...next,ticket:ticket(active,next),snapshotRefreshed:true};});}
 export async function changeOfflineCopy(expected,change,{strict=false}={}){return transact(({active,copy,accounts})=>{assertTicket(active,copy,expected,{revision:strict});if(!copy)throw offlineFailure('keepFirst');const next=change(structuredClone(copy));if(!next)return;next.revision=copy.revision+1;accounts.put(next);return {...next,ticket:ticket(active,next)};});}
 export async function lockOfflineAccount(expected){return transact(({active,copy,accounts,meta,responses})=>{if(expected)assertTicket(active,copy,expected,{unlocked:false});active.epoch=crypto.randomUUID();active.cacheLocked=true;resetResponses(active,meta,responses);meta.put(active,'active');if(copy)accounts.put({...copy,locked:true,revision:copy.revision+1});});}
 export async function clearOfflineAccount({discardPending=false}={}){return transact(({active,copy,accounts,meta,copies,responses})=>{const pendingCount=copies.reduce((sum,row)=>sum+row.pending.length,0);if(pendingCount&&!discardPending)throw Object.assign(offlineFailure('syncBeforeSignout'),{pendingCount});accounts.clear();responses.clear();meta.delete('response-lru');meta.put({ownerId:null,epoch:crypto.randomUUID(),cacheRevision:0,cacheLocked:true},'active');},true,true);}
@@ -21,6 +25,55 @@ export async function queueOffline(copy,type,payload,preview,foodVersion,operati
  return changeOfflineCopy(copy.ticket,current=>{if(current.pending.length>=1000)throw offlineFailure('syncBeforeMore');current.pending.push({command,preview:structuredClone(preview),status:'pending',error:null,createdAt:new Date().toISOString()});return current;},{strict:true});
 }
 
+// Online and offline edits share this account-owned outbox. A snapshot is optional
+// during the first launch; a command must never wait for a full workspace download.
+export async function persistBackgroundWrite(expected,{path,body,projection={}}){
+ return transact(({active,copy,accounts})=>{
+  assertTicket(active,copy,expected);
+  if(active.cacheLocked)throw offlineFailure('signInFirst');
+  const next=copy??{ownerId:active.ownerId,snapshot:null,pending:[],locked:false,revision:0};
+  body=remapWriteReferences(structuredClone(body),next.recordIds??{});projection=remapWriteReferences(structuredClone(projection),next.recordIds??{});
+  const prior=next.pending.find(row=>row.command.operationId===body.requestId);
+  if(prior){if(JSON.stringify(prior.transport)!==JSON.stringify({path,body}))throw Error('This save has changed.');return prior;}
+  const row={command:{ownerId:active.ownerId,generation:next.snapshot?.identity.generation??null,operationId:body.requestId,type:body.type??(path==='/api/snapshots/save'?'snapshot.add':path==='/api/note-photos/save'?'note.photo.save':'photo.log'),payload:body.payload??body},transport:{path,body:structuredClone(body)},preview:{},projection:structuredClone(projection),status:'pending',error:null,createdAt:new Date().toISOString()};
+  next.pending.push(row);next.revision++;accounts.put(next);return row;
+ });
+}
+
+export async function changeBackgroundWrite(expected,id,change){
+ return transact(({active,copy,accounts})=>{
+  assertTicket(active,copy,expected);if(!copy)return null;
+  const row=copy.pending.find(row=>row.command.operationId===id);if(!row)return null;
+  const result=change(row,copy);copy.revision++;accounts.put(copy);return result;
+ });
+}
+
+
+// Acknowledgement and reference changes commit with queue removal. Restart cannot
+// observe half of a receipt or send a dependent edit to a temporary record ID.
+export async function acknowledgeBackgroundWrite(expected,id,result){
+ return transact(({active,copy,accounts,responses})=>{
+  assertTicket(active,copy,expected);if(!copy)return;
+  const row=copy.pending.find(item=>item.command.operationId===id);if(!row)return;
+  const identities=writeReceiptIdentities(row,result);
+  if(copy.snapshot?.state)applyWriteToState(copy.snapshot.state,row,result);
+  copy.recordIds={...copy.recordIds,...identities};
+  copy.pending=copy.pending.filter(item=>item.command.operationId!==id);
+  for(const item of copy.pending)remapWriteReferences(item,identities);
+  for(const [path,value]of Object.entries(row.projection?.responses??{})){
+   responses.put({path,value:remapWriteReferences(structuredClone(value),identities),savedAt:0});
+  }
+  // Keep already-open diary screens current while the canonical refresh runs.
+  if(copy.snapshot?.state){
+   const read=responses.getAll();read.onsuccess=()=>{
+    for(const cached of read.result)if(/^\/api\/diary(?:\?|$)/.test(cached.path)&&cached.value?.date){
+     try{responses.put({...cached,value:projectLocalDiary(copy.snapshot.state,cached.value.date,{...cached.value,revision:result.revision}),savedAt:0});}catch{/* A missing local resource is refreshed from the server. */}
+    }
+   };
+  }
+  copy.revision++;accounts.put(copy);
+ });
+}
 
 // Response caching shares the authenticated owner epoch, but never reads or mutates
 // offline snapshots or queued commands. A separate LRU stores metadata only.
@@ -56,6 +109,7 @@ export async function invalidatePrivateResponsePaths(expected,shouldDrop,{staleO
  return responseTransaction(({active,meta,responses,lru,done})=>{
   if(!sameSession(active,expected)){done(null);return;}
   if(staleOnly){
+   active.cacheRevision=(active.cacheRevision??0)+1;meta.put(active,'active');
    const targets=lru.filter(row=>shouldDrop(row.path));
    if(!targets.length){done(cacheTicket(active));return;}
    let remaining=targets.length;
@@ -85,4 +139,16 @@ export async function currentPrivateResponseTicket(expected){
 export async function resumePrivateResponses(context){
  if(!/^[a-f0-9]{64}$/.test(context??''))return null;
  return responseTransaction(({active,done})=>done(active.ownerId&&!active.cacheLocked&&active.sessionContext===context?cacheTicket(active):null));
+}
+
+// The public offline shell contains no account identity. Only a previously
+// verified, unlocked session on this device can supply its private cache.
+export async function resumeOfflinePrivateResponses(){
+ return transact(({active,copy})=>active.ownerId&&!active.cacheLocked&&!copy?.locked&&/^[a-f0-9]{64}$/.test(active.sessionContext??'')?cacheTicket(active):null,false);
+}
+
+// Rebind a verified account without unlocking, replacing, or invalidating its cache.
+export async function bindPrivateResponseSession(expected,context){
+ if(!/^[a-f0-9]{64}$/.test(context??''))return null;
+ return transact(({active,meta})=>{if(!sameSession(active,expected))return null;active.sessionContext=context;meta.put(active,'active');return cacheTicket(active);},false);
 }

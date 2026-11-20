@@ -1,14 +1,16 @@
 import {dc} from './discover-cloud-messages.js';
 import {uiLanguage,t} from './app-language.js';
 import {escape as e} from './html.js';
-import {request} from './diary-api.js';
+import {request,queueCommand} from './diary-api.js';
+import {localWorkspaceState} from './local-engine.js';
+import {onBackgroundWriteStatus} from './background-writes.js';
 import {chartCardMarkup,mountChartPlots,validateChartView} from './chart-presentation.js';
 import {chartArrow,chartTitle,chartSeriesLabel} from './charts-source-view.js';
 import {MobileChartPicker} from './cgm-detail-source/mobile-chart-picker.js';
 import {MobileDiaryCalendar} from './snapshot-source/mobile-diary-calendar.js';
 import {chartPickerOptions} from './custom-chart-source/chart-picker-options.js';
 import {mountCustomChartEditor} from './custom-chart-editor.js';
-import {ranges,rangeLabel} from './dashboard-source/discover-ui.js';
+import {ranges,rangeLabel,bottomNavigation} from './dashboard-source/discover-ui.js';
 import {mobileChartsMessages} from './health-source/public/locales/mobile-charts.js';
 import {createMessageFormatter} from './report-source/public/message-formatter.js';
 const format=createMessageFormatter(mobileChartsMessages),m=(key,values)=>format(uiLanguage(),key,values);
@@ -18,7 +20,10 @@ export function mountChartDetail(view,id,ui){
  const {show,content,close}=ui;
  show('<section class="chart-detail"></section>');
  const root=content.querySelector('.chart-detail'),dialog=content.closest('dialog'),abort=new AbortController();
- let card=view.cards.find(row=>row.id===id),plots,picker,disposed=false,busy=false,error='',pending=null,conflict=false,loading=true;
+ let card=view.cards.find(row=>row.id===id),plots,picker,disposed=false,busy=false,error='',pending=null,conflict=false,loading=false,editSerial=0,plotPending=false;
+ const projectionModule=import('./local-chart-projection.js');
+ const queued=new Set();
+ const chartPath='/api/charts?'+new URLSearchParams({to:view.to,card:id});
  const alive=()=>!disposed&&root.isConnected,scrollHost=()=>dialog??content;
  const rangeName=value=>ranges.some(([key])=>key===value)?rangeLabel(value,uiLanguage()):m('lastDays',{count:Number(value)});
  const pick=(key,label,value)=>`<button type="button" class="mcl-row" data-chart-pick="${key}"><strong>${e(label)}</strong><span>${e(value)}${chartArrow}</span></button>`;
@@ -43,13 +48,13 @@ export function mountChartDetail(view,id,ui){
    controls+=toggle('zoom',m('zoom'))+toggle('showFasting',m('showFasting'));
   }
   controls+=toggle('showOnDashboard',m('showOnDashboard'))+toggle('showCycle',dc('cyclePhases'),card.cycleOverlayEnabled);
-  root.innerHTML=`<header class="sheet-header"><button type="button" class="icon-button" data-chart-back aria-label="${t('discover.back')}">‹</button><h2 id="sheet-title">${e(chartTitle(card))}</h2></header><div class="mcl-body"><p role="alert" ${error?'':'hidden'}>${e(error)}${pending?`<button type="button" data-chart-retry>${t('reminders.retry')}</button>`:''}${conflict?`<button type="button" data-chart-reload>${dc('reloadChart')}</button>`:''}</p>${chartCardMarkup(card,{detail:true})}<div class="mcl-group">${controls}</div>${card.kind==="custom"?`<button type="button" class="mcl-text-button" data-chart-edit>${e(m('edit'))}</button><button type="button" class="mcl-text-button" data-chart-delete>${e(m('delete'))}</button>`:''}</div>`;
-  for(const control of root.querySelectorAll('input,button'))control.disabled=busy||loading&&!control.hasAttribute('data-chart-back')||!!pending&&!control.hasAttribute('data-chart-retry')&&!control.hasAttribute('data-chart-back')||conflict&&!control.hasAttribute('data-chart-reload')&&!control.hasAttribute('data-chart-back');
+  root.innerHTML=`<header class="sheet-header"><button type="button" class="icon-button" data-chart-back aria-label="${t('discover.back')}">‹</button><h2 id="sheet-title">${e(chartTitle(card))}</h2></header><div class="mcl-body"><p role="alert" ${error?'':'hidden'}>${e(error)}${pending?`<button type="button" data-chart-retry>${t('reminders.retry')}</button>`:''}${conflict?`<button type="button" data-chart-reload>${dc('reloadChart')}</button>`:''}</p>${plotPending?`<p role="status">${e(dc('loadingChart'))}</p>`:''}${chartCardMarkup(card,{detail:true})}<div class="mcl-group">${controls}</div>${card.kind==="custom"?`<button type="button" class="mcl-text-button" data-chart-edit>${e(m('edit'))}</button><button type="button" class="mcl-text-button" data-chart-delete>${e(m('delete'))}</button>`:''}</div><nav class="dc-bottom" aria-label="${e(t('discover.nav.main'))}">${bottomNavigation('trends',uiLanguage())}</nav>`;
+  for(const control of root.querySelectorAll('input,button:not([data-discover])'))control.disabled=busy||loading&&!control.hasAttribute('data-chart-back')||!!pending&&!control.hasAttribute('data-chart-retry')&&!control.hasAttribute('data-chart-back')||conflict&&!control.hasAttribute('data-chart-reload')&&!control.hasAttribute('data-chart-back');
   root.dataset.chartBusy=String(busy||loading);plots=mountChartPlots(root,{...view,cards:[card]});scrollHost().scrollTop=scroll;
  }
  async function refresh(){
-  const next=validateChartView(await request('/api/charts?'+new URLSearchParams({to:view.to,card:id}),undefined,abort.signal));
-  if(alive()){const nextCard=next.cards.find(row=>row.id===id);if(!nextCard)throw Error(dc('chartUnavailable'));view=next;card=nextCard;}
+  const expected=editSerial,next=validateChartView(await request(chartPath,undefined,abort.signal));
+  if(alive()&&expected===editSerial){const nextCard=next.cards.find(row=>row.id===id);if(!nextCard)throw Error(dc('chartUnavailable'));view=next;card=nextCard;}
  }
  async function save(type,payload){
   if(busy||loading||!alive()||conflict||pending&&type)return;
@@ -64,15 +69,28 @@ export function mountChartDetail(view,id,ui){
    if(failure.status>=400&&failure.status<500){pending=null;if(failure.status===409)conflict=true;}
   }finally{busy=false;if(alive())render();}
  }
+ async function savePreference(type,payload){
+  if(busy||!alive())return;busy=true;root.dataset.chartBusy='true';error='';const before=structuredClone(card),beforeView=view;editSerial++;
+  try{
+   const state=await localWorkspaceState();let projected=null;
+   if(state){const {projectLocalChart}=await projectionModule;projected=await projectLocalChart(state,{type,payload},view,id);}
+   let next=projected??{...view,cards:view.cards.map(row=>row.id===id?{...row,settings:{...row.settings,...(type==='chart.display'?payload.patch:{})}}:row)};
+   const nextCard=next.cards.find(row=>row.id===id),projection={responses:{[chartPath]:next},...(projected?{chartState:projected.localChartState}:{})};
+   const result=await queueCommand(view.revision,type,payload,{projection});queued.add(result.requestId);
+   if(!alive())return;view=next;card=nextCard;plotPending=!projected;void ui.afterSave?.();void ui.onChange?.();
+  }catch(failure){if(alive()){card=before;view=beforeView;error=failure.message;}}
+  finally{busy=false;if(alive())render();}
+ }
+ const stopStatus=onBackgroundWriteStatus(event=>{if(!alive())return;if(event.saved&&queued.delete(event.requestId)){view={...view,revision:event.result.revision??view.revision};void ui.afterSave?.();void ui.onChange?.();if(plotPending)void refresh().then(()=>{plotPending=false;if(alive())render();}).catch(failure=>{error=failure.message;if(alive())render();});}});
  function preference(key,value){
-  if(key==='showCycle'&&card.kind==="custom")return save('chart.cycle-overlay',{id:card.chartId,enabled:value});
+  if(key==='showCycle'&&card.kind==="custom")return savePreference('chart.cycle-overlay',{id:card.chartId,enabled:value});
   if(['primary','secondary'].includes(key)){
    const metric=JSON.parse(value);
-   if(card.kind==="custom")return save('chart.save',{...card.definition,[key]:metric});
-   return save('chart.display',{id,patch:{[key]:metric}});
+   if(card.kind==="custom")return savePreference('chart.save',{...card.definition,[key]:metric});
+   return savePreference('chart.display',{id,patch:{[key]:metric}});
   }
   const patch={[key]:value};if(key==='range'&&value==="custom"){patch.from=card.range.from;patch.to=card.range.to;}
-  return save('chart.display',{id,patch});
+  return savePreference('chart.display',{id,patch});
  }
  function popup(key,anchor){
   const p=card.settings;
@@ -91,10 +109,11 @@ export function mountChartDetail(view,id,ui){
   }
   picker=new MobileChartPicker({label,choices,selected,search,anchor,onClose:()=>picker=null,onChoose:value=>preference(key,value)});
  }
- function dispose(){if(disposed)return;disposed=true;abort.abort();picker?.close();plots?.dispose();observer.disconnect();}
- function back(){if(picker){picker.close();return;}if(busy)return;dispose();close();}
+ function dispose(){if(disposed)return;disposed=true;stopStatus();abort.abort();picker?.close();plots?.dispose();observer.disconnect();}
+ function back(){if(picker){picker.close();return;}dispose();close();}
  root.addEventListener('click',event=>{
   const button=event.target.closest('button');if(!button)return;
+  if(button.dataset.discover){const destination=button.dataset.discover.slice(6);dispose();close();if(destination!=='dashboard'){const target={diary:'diary-tab',foods:'foods-tab',more:'settings-tab',add:'add-food'}[destination];document.getElementById(target)?.click();}return;}
   if(button.hasAttribute('data-chart-back'))return back();
   if(button.hasAttribute('data-chart-retry'))return void save();
   if(button.hasAttribute('data-chart-reload'))return void reload();
@@ -108,8 +127,7 @@ export function mountChartDetail(view,id,ui){
  const handleBack=event=>{if(!alive()||picker)return;event.preventDefault();event.stopImmediatePropagation();back();};
  dialog?.addEventListener('cancel',handleBack,{capture:true,signal:abort.signal});window.addEventListener('nourishing-back',handleBack,{capture:true,signal:abort.signal});
  const observer=new MutationObserver(()=>{if(!root.isConnected)dispose();});observer.observe(content,{childList:true});
- // A parent card may still show its previous revision while its post-save refresh runs.
- // Source openDetail reads the canonical card on every open before enabling edits.
- render();void (async()=>{try{await refresh();}catch(failure){if(alive()){error=failure.message;conflict=true;}}finally{loading=false;if(alive())render();}})();
+ // Paint the captured card at once; refresh without delaying navigation or controls.
+ render();void (async()=>{try{await refresh();}catch(failure){if(alive())error=failure.message;}finally{if(alive())render();}})();
  return {element:root,dispose};
 }

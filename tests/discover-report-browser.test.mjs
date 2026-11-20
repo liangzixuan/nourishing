@@ -25,7 +25,7 @@ test('Report All Time uses source record dates and the canonical 3660-day bound'
 
 test('Discover headers route Newsfeed and settings per tab; source Report renders and applies options',async()=>{
  const state=initialState(),requests=[];let reportWait=null,releaseReport,failNextReport=false;
- state.foods=[{id:'oats',name:'Fixture oats',serving:'100 g',grams:100,nutrients:{calories:389,protein:16.9,carbs:66.3,fat:6.9}}];
+ state.foods=[{id:'oats',name:'Fixture oats',serving:'100 g',grams:100,nutrients:{calories:389,protein:16.9,carbs:66.3,fat:6.9,omega6:2,omega3:1}}];
  state.entries=[{id:'entry',foodId:'oats',date,time:'12:00',amount:1,group:'Lunch',kind:'food'}];
  const server=createServer(async(req,res)=>{
   try{
@@ -59,6 +59,17 @@ test('Discover headers route Newsfeed and settings per tab; source Report render
   failNextReport=true;await page.getByRole('button',{name:'Report',exact:true}).click();await page.locator('[data-retry]').waitFor();await page.locator('[data-retry]').click();await page.locator('.mobile-report-toolbar').waitFor();assert.equal(requests.length,3);await page.waitForFunction(()=>Object.keys(window.Chart?.instances??{}).length===2);
   assert.equal(await page.locator('[data-report-energy-kind=consumed]').count(),1);assert.equal(await page.locator('[data-report-energy-kind=expenditure]').count(),1);assert.ok(await page.locator('[data-mobile-category]').count()>3);assert.equal(await page.locator('.report-filters').count(),0);
   assert.equal(await page.locator('[data-report-energy-kind=consumed] .report-energy-center strong').textContent(),'389');
+  assert.equal(await page.locator('[data-report-section=macros] [data-report-nutrient]').count(),4);
+  assert.equal(await page.locator('[data-report-section=highlights] [data-report-nutrient]').count(),8);
+  assert.equal(await page.locator('[data-report-score]').count(),8);
+  assert.equal(await page.locator('[data-report-balance]').count(),7);assert.equal(await page.locator('.report-balance-grid [data-report-balance]').count(),5);assert.equal(await page.locator('.report-balance-extras [data-report-balance]').count(),2);assert.equal(await page.locator('[data-report-balance=calcium-oxalate]').evaluate(node=>getComputedStyle(node).gridColumn),'1 / -1');
+  assert.equal(await page.locator('[data-report-balance="zinc-copper"] [data-balance-value]').textContent(),'—');
+  assert.equal(await page.locator('[data-report-balance="zinc-copper"] .report-gauge-needle').count(),0);
+  assert.equal(await page.locator('[data-report-balance="omega6-omega3"] [data-balance-value]').textContent(),'2');assert.equal(await page.locator('[data-report-balance="omega6-omega3"] .report-gauge-needle').count(),1);
+  assert.deepEqual(await page.locator('[data-mobile-category]').evaluateAll(nodes=>nodes.slice(0,3).map(node=>node.dataset.mobileCategory)),['General','Vitamins','Minerals']);
+  assert.equal(await page.locator('[data-mobile-category="Vitamins"]').getAttribute('open'),'');
+  await page.locator('[data-report-section=macros]').scrollIntoViewIfNeeded();await page.screenshot({path:'.local/report-targets.png'});await page.locator('[data-report-section=balances]').scrollIntoViewIfNeeded();await page.screenshot({path:'.local/report-balances.png'});
+  await page.locator('[data-report-section=macros] > summary').click();
   await page.screenshot({path:'.local/report-source-with-data.png',fullPage:true});
   await page.getByRole('button',{name:'Report Settings',exact:true}).click();await page.getByRole('dialog',{name:'Report Settings',exact:true}).waitFor();
   await page.route('**/api/nutrition-report?*',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Report unavailable. Try again.'})}),{times:1});
@@ -68,9 +79,12 @@ test('Discover headers route Newsfeed and settings per tab; source Report render
   await page.locator('[data-report-action=dates]').last().click();await page.getByRole('button',{name:'Today',exact:true}).click();await page.locator('[data-mobile-report=dates]').waitFor({state:'detached'});assert.equal(requests.at(-1).from,date);
   await page.locator('[data-report-action=dates]').last().click();await page.getByRole('button',{name:'Custom Range',exact:true}).click();await page.getByLabel('From',{exact:true}).fill('2026-11-13');await page.getByLabel('To',{exact:true}).fill(date);await page.getByRole('button',{name:'Apply',exact:true}).click();await page.locator('[data-mobile-report=custom]').waitFor({state:'detached'});assert.equal(requests.at(-1).from,'2026-11-13');
   await page.keyboard.press('Escape');await page.locator('[data-mobile-report=settings]').waitFor({state:'detached'});
+  assert.equal(await page.locator('[data-report-section=macros]').getAttribute('open'),null,'range changes preserve collapsed sections');
+  await page.locator('[data-report-score]').first().click();await page.locator('[data-mobile-report=score]').waitFor();assert.ok(await page.locator('[data-mobile-report=score]').textContent().then(text=>text.includes('Known days')));await page.keyboard.press('Escape');
+  await page.locator('[data-report-balance="omega6-omega3"]').click();await page.locator('[data-mobile-report=balance]').waitFor();assert.equal(await page.locator('[data-mobile-report=balance] [data-nutrient-ratio="omega6-omega3"]').count(),1);await page.keyboard.press('Escape');
   await page.getByRole('button',{name:'Newsfeed',exact:true}).click();await page.getByText('Fixture News',{exact:true}).waitFor();await page.getByRole('button',{name:'Close',exact:true}).click();
   await page.getByRole('button',{name:'Charts',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('[aria-label="Manage Charts"]').disabled);await page.getByRole('button',{name:'Manage Charts',exact:true}).first().click();await page.getByRole('heading',{name:'Manage Charts',exact:true}).waitFor();await page.getByRole('button',{name:'Close',exact:true}).click();await page.getByRole('button',{name:'Newsfeed',exact:true}).click();await page.getByText('Fixture News',{exact:true}).waitFor();await page.getByRole('button',{name:'Close',exact:true}).click();
   await page.getByRole('button',{name:'Snapshots',exact:true}).click();assert.equal(await page.locator('#header [data-discover=shell-settings]').count(),0);assert.equal(await page.getByRole('button',{name:'Newsfeed',exact:true}).count(),1);
-  await page.getByRole('button',{name:'Report',exact:true}).click();await page.locator('.mobile-report-toolbar').waitFor();await page.waitForFunction(()=>Object.keys(window.Chart?.instances??{}).length===2);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(errors,[]);await page.screenshot({path:'.local/report-source-restored.png',fullPage:true});
+  await page.getByRole('button',{name:'Report',exact:true}).click();await page.locator('.mobile-report-toolbar').waitFor();await page.waitForFunction(()=>Object.keys(window.Chart?.instances??{}).length===2);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));state.settings.energyUnit='kJ';state.settings.completedDays=[date];await page.getByRole('button',{name:'Report Settings',exact:true}).click();await page.locator('.mobile-report-options summary').click();await page.locator('[data-report-action=refresh]').click();await page.waitForFunction(()=>document.querySelector('[data-report-section=macros] [data-mobile-nutrient=calories]')?.textContent.includes('kJ'));await page.keyboard.press('Escape');assert.match(await page.locator('[data-report-section=macros] [data-mobile-nutrient=calories]').textContent(),/1,627.6 kJ/);assert.deepEqual(errors,[]);await page.screenshot({path:'.local/report-source-restored.png',fullPage:true});
  }finally{releaseReport?.();await browser?.close();await new Promise(resolve=>server.close(resolve));}
 });

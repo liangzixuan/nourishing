@@ -13,6 +13,8 @@ import {escape as e} from './html.js';
 import {mobileFoodsHeader,mobileFoodsHome} from './foods-source/mobile-foods-home.js';
 import {mobileLibraryHeader,mobileLibraryCollection,MobileLibrarySheet,MobileLibraryActions} from './foods-source/mobile-library.js';
 import {icon} from './foods-source/icons.js';
+import {localLibraryItem} from './local-engine.js';
+import {mealActionText} from './meal-action-messages.js';
 const labels=()=>({food:t("mobileSearch.food"),recipe:t("recipeEditor.recipe"),meal:fc("meal")});
 export function mountLibrary({page,show,close,header,content,date,openEntry,onChange,headerRoot}){
  let data,kind='food',screen='home',sort='recent',retired=false,query='',disposed=false,serial=0,extrasCleanup,optionsSheet,foodEditor,mealEditor,recipeEditor,collectionBack=null;
@@ -60,7 +62,7 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
  const itemMenu=new MobileLibraryActions({root:page,onChoose:itemActions});
  page.addEventListener('click',select);
  headerRoot?.addEventListener('click',select);
- async function openItem(itemKind,id,keptDraft){show(header(labels()[itemKind])+`<p class="empty">${e(t("mobileNutrientDetail.loading"))}</p>`);const loading=content.querySelector('.empty');try{const item=await request('/api/library/item?'+new URLSearchParams({kind:itemKind,id}));if(!disposed&&loading.isConnected)editor(itemKind,item,keptDraft);}catch(error){if(!disposed&&loading.isConnected)loading.textContent=error.message;}}
+ async function openItem(itemKind,id,keptDraft,{copy=false}={}){show(header(labels()[itemKind])+`<p class="empty">${e(t("mobileNutrientDetail.loading"))}</p>`);const loading=content.querySelector('.empty');try{const item=await localLibraryItem({kind:itemKind,id})??await request('/api/library/item?'+new URLSearchParams({kind:itemKind,id}));if(!data)data=await request('/api/library');if(!disposed&&loading.isConnected){if(copy){const resource={...item.resource};delete resource.id;editor(itemKind,{...item,resource:undefined},keptDraft??{name:mealActionText('copyName',{name:resource.name}),items:structuredClone(resource.items)});}else editor(itemKind,item,keptDraft);}}catch(error){if(!disposed&&loading.isConnected)loading.textContent=error.message;}}
 
  function editor(itemKind,saved,draft,importOptions={}){
   foodEditor?.dispose();mealEditor?.dispose();recipeEditor?.dispose();const resource=saved?.resource;
@@ -75,5 +77,5 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
    const editorMount=itemKind==='recipe'?mountRecipeEditor:mountMealEditor;const mounted=editorMount({...importOptions,onImported:prepared=>editor('recipe',null,prepared.recipe,{imported:prepared}),saved,data,draft,show,close,content,date,onSaved:savedChange,onAction:action,onReload:async()=>{await reload();if(resource)openItem(itemKind,resource.id);else editor(itemKind,null);},openEntry});if(itemKind==='recipe')recipeEditor=mounted;else mealEditor=mounted;return;
   }
  }
- render();reload();return {reload,dispose(){disposed=true;serial++;if(collectionBack){collectionBack.release({popHistory:false});collectionBack=null;}retirement.dispose();foodEditor?.dispose();mealEditor?.dispose();recipeEditor?.dispose();extrasCleanup?.();optionsSheet?.close(false);itemMenu.dispose();data=null;page.removeEventListener('click',select);headerRoot?.removeEventListener('click',select);document.body.classList.remove('foods-home-mobile','mobile-library');}};
+ render();reload();return {reload,openItem,dispose(){disposed=true;serial++;if(collectionBack){collectionBack.release({popHistory:false});collectionBack=null;}retirement.dispose();foodEditor?.dispose();mealEditor?.dispose();recipeEditor?.dispose();extrasCleanup?.();optionsSheet?.close(false);itemMenu.dispose();data=null;page.removeEventListener('click',select);headerRoot?.removeEventListener('click',select);document.body.classList.remove('foods-home-mobile','mobile-library');}};
 }

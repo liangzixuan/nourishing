@@ -1,9 +1,19 @@
+import {request} from './diary-api.js';
 import {dc} from './discover-cloud-messages.js';
 import {TargetControlScreen as CloudTargetScreen} from './energy-expenditure.js';
 import {parseWeightGoal} from './report-source/server/weight-goal.mjs';
 import {validateWeightGoalCapture} from './weight-goal-source/weight-goal-capture.js';
 /** Weight-goal source controller consumes the server's plan and exact measurement choice. */
 export class TargetControlScreen extends CloudTargetScreen{
+ refreshCapture(value){
+  if(this.disposed||this.step!==0||this.busy||this.session.pending)return;
+  this.saved=this.capture(value);this.energyUnit=this.saved.energyUnit;this.render();
+ }
+ async refreshOnSync(){
+  if(this.disposed||this.step!==0||this.session.pending)return;
+  try{const value=await request('/api/target-policies?'+new URLSearchParams({date:this.date}),undefined,this.events.signal,{fresh:true});this.refreshCapture(value);}catch{/* Keep the current view when background refresh is unavailable. */}
+ }
+
  capture(value){
   const invalid=()=>{throw Error(dc('weightGoalLoad'));};
   if(!value||value.date!==this.date||!/^[a-f0-9]{64}$/.test(value.revision)||!['kcal','kJ'].includes(value.energyUnit)||!value.weightGoal)invalid();

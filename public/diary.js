@@ -1,6 +1,6 @@
 import './client-errors.js';
 import './pwa.js';
-import {enqueueWrite, onWriteQueueStatus} from './async-queue.js';
+import {startBackgroundWrites,onBackgroundWriteStatus} from './background-writes.js';
 import {localLibraryItem, localDiaryView} from './local-engine.js';
 import {pushBackHandler} from './back-history.js';
 import {startDeviceSync, warmDeviceViews, warmAdjacentDays} from './device-sync.js';
@@ -27,13 +27,14 @@ import {createDiaryTools} from './diary-tools.js';
 import {openNutrientDetail} from './nutrient-detail.js';
 import {openBarcode} from './barcode.js';
 import {openEntryAdjustment} from './entry-adjustments.js';
+import {openMealNutrition} from './meal-nutrition.js';
 import {openFoodInsights} from './food-insights.js';
 import {mountPhotoLog} from './photo-log.js';
 import {mountRecordEditor} from './records.js';
 import {mountRepeats} from './repeats.js';
 import {mobileDiaryHeader, mobileDiaryGroups, mobileDiaryRecord, diarySymbol} from './diary-view.js';
 import {escape as e} from './html.js';
-import {request, command, clearPending, photoSaver} from './diary-api.js';
+import {request, command, clearPending, queueCommand, queuePhoto} from './diary-api.js';
 import {mountLibrary} from './library.js';
 import {mountFoodPicker} from './food-picker.js';
 import {mountNutrition} from './nutrition.js';
@@ -47,7 +48,8 @@ const notice = document.querySelector('#notice');
 const headerRoot = document.querySelector('.app-header');
 const shell = createAppShell({headerRoot, dateBar, navigation: document.querySelector('.app-nav')});
 
-onWriteQueueStatus(({error, retry}) => {
+onBackgroundWriteStatus(({error, retry, saved}) => {
+  if(saved)void load({reuseUnchanged:true});
   if (error) {
     notice.textContent = '';
     const msg = document.createElement('span');
@@ -57,16 +59,15 @@ onWriteQueueStatus(({error, retry}) => {
     btn.textContent = coreText('retry');
     btn.onclick = () => {
       notice.textContent = '';
-      retry?.();
+      Promise.resolve(retry?.()).catch(error => {notice.textContent=error.message;});
     };
-    notice.append(msg, btn);
+    const review = document.createElement('button');
+    review.type = 'button';
+    review.textContent = coreText('more.storage');
+    review.onclick = async () => {await navigate('more');more?.open('storage');};
+    notice.append(msg, btn, review);
   }
 });
-
-async function refreshRevision() {
-  const latest = await request('/api/diary?date=' + date, undefined, undefined, {fresh: true});
-  if (diary && latest?.revision) diary = {...diary, revision: latest.revision};
-}
 
 const svg = path =>
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
@@ -166,6 +167,7 @@ const diaryTools = createDiaryTools({
   onChange: load,
   onDisplay: () => summaryAction({action: 'configure-diary-display'}),
   onScores: () => summaryAction({action: 'choose-scores'}),
+  onMealAction: mealAction,
 });
 
 sheet.addEventListener('click', event => {
@@ -195,6 +197,7 @@ async function load({reuseUnchanged = false} = {}) {
       });
       accountReady = true;
       startDeviceSync(account.id);
+      startBackgroundWrites();
       startPrivateImages();
     }
     const result = await request('/api/diary?date=' + date, undefined, undefined, {
@@ -212,7 +215,7 @@ async function load({reuseUnchanged = false} = {}) {
     if (id === loadId) {
       notice.textContent = error.message;
       if (view === 'diary' && !reuseUnchanged) {
-        page.innerHTML = `<p class="empty"><button type="button" data-reload>${e(coreText('retry'))}</button><a href="/offline.html">${e(t('nav.offline'))}</a></p>`;
+        page.innerHTML = `<p class="empty"><button type="button" data-reload>${e(coreText('retry'))}</button></p>`;
       }
     }
   } finally {
@@ -441,23 +444,14 @@ function shiftDiaryDate(delta) {
   return switchDiaryDate(formatDate(d));
 }
 
-function toggleCompleteDay() {
+async function toggleCompleteDay() {
   if (!diary) return;
   const targetDate = date;
   const nextCompleted = !diary.completed;
+  await queueCommand(diary.revision,'day.complete',{date:targetDate,completed:nextCompleted});
   diary = {...diary, completed: nextCompleted};
   if (view === 'diary') render();
-  enqueueWrite({
-    run: () => command(diary.revision, 'day.complete', {date: targetDate, completed: nextCompleted}),
-    onConflictRefresh: refreshRevision,
-    onSuccess: async result => {
-      if (result?.revision && diary) diary = {...diary, revision: result.revision};
-      await load({reuseUnchanged: true});
-    },
-    onError: async () => {
-      await load();
-    },
-  });
+
 }
 
 function handleRecordRowClick(target) {
@@ -475,7 +469,18 @@ function handleRecordRowClick(target) {
   return target.hasAttribute('data-md-context') ? diaryTools.recordMenu(collection, id, open) : open();
 }
 
-function openRepeatsView() {
+async function mealAction(action,entry){
+  if(action==='repeat'){
+    close({popHistory:false});openRepeatsView({mealId:entry.mealId,amount:entry.amount??1,quantity:entry.quantity,unit:entry.unit,group:entry.group,time:entry.time,startDate:entry.date});return;
+  }
+  if(action==='original'||action==='copy-edit'){
+    navigate('foods');await library?.openItem('meal',entry.mealId,undefined,{copy:action==='copy-edit'});return;
+  }
+  if(action==='adjust')return openEntryAdjustment({kind:'meal',revision:diary.revision,date:entry.date,id:entry.id,show,close,header,content,onSave:load});
+  if(action==='nutrition')return openMealNutrition({entry,revision:diary.revision,energyUnit:diary.energyUnit,show,header,content});
+}
+
+function openRepeatsView(initialDraft) {
   leaveView();
   view = 'repeats';
   selectTab('foods-tab');
@@ -485,6 +490,7 @@ function openRepeatsView() {
     navigate('foods');
   });
   library = mountRepeats({
+    initialDraft,
     page,
     headerRoot,
     onExit: () => {
@@ -636,23 +642,18 @@ function openCustomWaterSheet() {
       `<form class="entry-form"><label class="field-row"><span>${e(t('mobileFood.amount'))} (mL)</span><input name="amount" type="number" min="1" step="any" value="250" required></label><p class="sheet-message" role="status"></p><footer class="entry-actions"><button class="primary">${e(t('activity.addToDiary'))}</button></footer></form>`,
   );
   const form = content.querySelector('form');
-  form.onsubmit = event => {
+  let saving = false;
+  form.onsubmit = async event => {
     event.preventDefault();
+    if(saving)return;
+    saving=true;
     const amount = Number(form.elements.amount.value);
     const targetDate = date;
     const entryTime = new Date().toTimeString().slice(0, 5);
+    try{await queueCommand(diary.revision,'water.add',{date:targetDate,time:entryTime,amount});}catch(error){saving=false;form.querySelector('[role=status]').textContent=error.message;return;}
     close();
-    enqueueWrite({
-      run: () => command(diary.revision, 'water.add', {date: targetDate, time: entryTime, amount}),
-      onConflictRefresh: refreshRevision,
-      onSuccess: async result => {
-        if (result?.revision && diary) diary = {...diary, revision: result.revision};
-        await load({reuseUnchanged: true});
-      },
-      onError: async () => {
-        await load();
-      },
-    });
+    await load({reuseUnchanged:true});
+
   };
 }
 
@@ -662,20 +663,11 @@ const SUMMARY_ACTIONS = {
     pickerCleanup = mountTargetsSheet({date: () => date, show, close, header, content, onChange: load, initialScreen: 'day'});
   },
   'all-nutrients': () => navigate('discover', 'report', date),
-  water: input => {
+  water: async input => {
     const targetDate = date;
     const entryTime = new Date().toTimeString().slice(0, 5);
-    enqueueWrite({
-      run: () => command(diary.revision, 'water.add', {date: targetDate, time: entryTime, amount: input.amount}),
-      onConflictRefresh: refreshRevision,
-      onSuccess: async result => {
-        if (result?.revision && diary) diary = {...diary, revision: result.revision};
-        await load({reuseUnchanged: true});
-      },
-      onError: async () => {
-        await load();
-      },
-    });
+    await queueCommand(diary.revision,'water.add',{date:targetDate,time:entryTime,amount:input.amount});
+    await load({reuseUnchanged:true});
   },
   'water-custom': openCustomWaterSheet,
   'nutrient-contributors': input =>
@@ -851,7 +843,8 @@ function foodEditor({item, entry, quantity, returnSearch, viewState}) {
       await load();
       if (view === 'foods') await library?.reload();
     },
-    onOptimisticCommand: ({type, value, item: targetItem}) => {
+    onOptimisticCommand: async ({type, value, item: targetItem}) => {
+      const queued=await queueCommand(diary.revision,type,value,{projection:{entries:[{...value,name:targetItem?.resource?.name,facts:targetItem?.facts}],foods:targetItem?.kind==='food'?[targetItem.resource]:[]}});
       if (diary) {
         if (type === 'entry.delete') {
           diary = {
@@ -872,7 +865,7 @@ function foodEditor({item, entry, quantity, returnSearch, viewState}) {
           };
         } else if (type === 'entry.add' && value.date === date) {
           const added = {
-            id: 'optimistic-entry-' + Date.now(),
+            id: queued.requestId,
             ...value,
             name: targetItem?.resource?.name ?? '',
             facts: targetItem?.facts ?? {name: targetItem?.resource?.name ?? ''},
@@ -883,25 +876,16 @@ function foodEditor({item, entry, quantity, returnSearch, viewState}) {
             recordDisplay: updateRecordDisplay(diary.recordDisplay, {add: [added]}),
           };
         }
+        const projected=await localDiaryView(date,diary);if(projected)diary=projected;
         if (view === 'diary') render();
       }
-      enqueueWrite({
-        run: () => command(diary.revision, type, value),
-        onConflictRefresh: refreshRevision,
-        onSuccess: async result => {
-          if (result?.revision && diary) diary = {...diary, revision: result.revision};
-          await load({reuseUnchanged: true});
-          if (view === 'foods') await library?.reload();
-        },
-        onError: async () => {
-          await load();
-        },
-      });
+
     },
     onBack: returnSearch ?? search,
     onAdjust: () =>
       openEntryAdjustment({
         kind: item.kind,
+        revision:diary.revision,
         date: entry.date,
         id: entry.id,
         show,
@@ -949,7 +933,6 @@ async function copyFood(item, onCancel) {
 
 function photoLog(initialGroup) {
   if (!diary) return;
-  const saver = photoSaver(() => diary.revision);
   return mountPhotoLog({
     show,
     close,
@@ -958,8 +941,9 @@ function photoLog(initialGroup) {
     date: () => date,
     groups: diary.groups,
     initialGroup,
-    save: saver,
-    onOptimisticSave: ({payload, rows: optimisticRows}) => {
+    save: payload => queuePhoto(diary.revision,payload),
+    onOptimisticSave: async ({payload, rows: optimisticRows}) => {
+      const queued=await queuePhoto(diary.revision,payload,{entries:optimisticRows,foods:optimisticRows.map(row=>row.food).filter(Boolean)});
       const switchingView = view !== 'diary';
       if (switchingView) {
         leaveView();
@@ -974,7 +958,7 @@ function photoLog(initialGroup) {
       if (!sameDate && payload.date) date = payload.date;
       if (diary && sameDate && optimisticRows?.length) {
         const added = optimisticRows.map((row, idx) => ({
-          id: 'optimistic-photo-' + Date.now() + '-' + idx,
+          id: queued.requestId + '-' + idx,
           date: payload.date,
           time: payload.time,
           group: payload.group,
@@ -996,18 +980,8 @@ function photoLog(initialGroup) {
           recordDisplay: updateRecordDisplay(diary.recordDisplay, {add: added}),
         };
       }
-      if (diary) render();
-      enqueueWrite({
-        run: () => saver(payload),
-        onConflictRefresh: refreshRevision,
-        onSuccess: async result => {
-          if (result?.revision && diary) diary = {...diary, revision: result.revision};
-          await load({reuseUnchanged: true});
-        },
-        onError: async () => {
-          await load();
-        },
-      });
+      if(diary){const projected=await localDiaryView(date,diary);if(projected)diary=projected;render();}
+
     },
     onChange: load,
   });

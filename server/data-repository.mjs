@@ -1,9 +1,7 @@
 import {diaryCycleDays} from './health-controls.mjs';
-import {diaryToolsPresentation} from './diary-tools.mjs';
-import {diarySummaryPresentation} from './diary-summary.mjs';
+import {projectLocalDiary} from './local-diary-projection.mjs';
 import {Query} from 'node-appwrite';
 import {rowId,unpackWorkspace,searchTerms,digest} from './data-codec.mjs';
-import {calculateSummary,entryFacts} from './domain/nutrition.mjs';
 import {workspaceRows} from './workspace-generations.mjs';
 const databaseId='nourishing';
 const notFound=()=>{throw Object.assign(Error('No migrated data is available.'),{code:404,publicMessage:'No migrated data is available.'});};
@@ -19,7 +17,7 @@ export function createDataRepository(db,ownerId){
  }
  let activeCatalogHead=null;
  async function catalogHead(){if(!activeCatalogHead){activeCatalogHead=get('catalog_heads','active').catch(error=>{activeCatalogHead=null;if(error.code===404)throw Object.assign(Error('Food catalog is being prepared.'),{code:503,publicMessage:'Food catalog is being prepared.'});throw error;});}return activeCatalogHead;}
- const diaryFromState=(state,date,clock)=>{const summary=calculateSummary(state,date);return diaryToolsPresentation(state,{date,cycleDays:diaryCycleDays(state,date,clock),revision:digest(state),theme:state.settings.theme??'dark',groups:state.settings.groups,completed:state.settings.completedDays?.includes(date)??false,entries:state.entries.filter(r=>r.date===date).map(row=>({...row,facts:entryFacts(state,row)})),biometrics:state.biometrics.filter(r=>r.date===date),notes:state.notes.filter(r=>r.date===date),summary,presentation:diarySummaryPresentation(state,summary,clock)});};
+ const diaryFromState=(state,date,clock)=>projectLocalDiary(state,date,{date,cycleDays:diaryCycleDays(state,date,clock),revision:digest(state)},clock);
  return {
    readState,
    diaryFromState,

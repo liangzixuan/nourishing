@@ -1,4 +1,5 @@
 import {ID, Permission, Role} from 'node-appwrite';
+import {encodeCommandReceipt,decodeCommandReceipt} from './command-receipt-codec.mjs';
 import {workspaceRows, stageWorkspaceRows, assertStagedRows, recoveryMarker} from './workspace-generations.mjs';
 import {verifiedWorkspaceMedia, workspaceMediaRows, copyWorkspaceMediaRow} from './workspace-media.mjs';
 import {backupReferences, backupManifest} from './backup.mjs';
@@ -60,6 +61,7 @@ function formatCommandResult(revision, saved) {
   return {
     ok: true,
     revision,
+    ...(saved?.records ? {records:saved.records} : {}),
     ...(saved?.counts ? {counts: saved.counts} : {}),
     ...(saved?.entryIds ? {entryIds: saved.entryIds} : {}),
     ...(saved?.photoId ? {photoId: saved.photoId} : {}),
@@ -88,13 +90,13 @@ export function createWorkspaceStore(db, owner) {
     const receipt = await optional(db, 'command_receipts', receiptId);
     if (!receipt) return null;
     if (receipt.ownerId !== owner || receipt.fingerprint !== fingerprint) conflict();
-    return JSON.parse(receipt.result);
+    return decodeCommandReceipt(receipt.result);
   }
 
   async function stageReceipt(receiptId, fingerprint, result, transactionId) {
     await db.createRow({
       ...args('command_receipts', receiptId),
-      data: {ownerId: owner, fingerprint, result: JSON.stringify(result)},
+      data: {ownerId: owner, fingerprint, result: encodeCommandReceipt(result)},
       permissions: permissions(owner),
       transactionId,
     });
@@ -242,7 +244,7 @@ export function createWorkspaceStore(db, owner) {
       {
         onRollbackError: async () => {
           const saved = await optional(db, 'command_receipts', receiptId);
-          if (saved && saved.ownerId === owner && saved.fingerprint === fingerprint) return JSON.parse(saved.result);
+          if (saved && saved.ownerId === owner && saved.fingerprint === fingerprint) return decodeCommandReceipt(saved.result);
         },
       },
     );
@@ -290,7 +292,7 @@ export function createWorkspaceStore(db, owner) {
           assertOfflineIdentity(input, {ownerId: owner, generation: latest.generation});
           const saved = await optional(db, 'command_receipts', receiptId);
           if (saved && saved.ownerId === owner && saved.fingerprint === fingerprint) {
-            return {...JSON.parse(saved.result), replayed: true};
+            return {...decodeCommandReceipt(saved.result), replayed: true};
           }
           throw error;
         },

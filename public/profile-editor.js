@@ -2,7 +2,10 @@ import {WheelColumn} from './fasting-source/mobile-datetime-picker.js';
 import {uiLanguage,t} from './app-language.js';
 import {dc} from './discover-cloud-messages.js';
 import {escape as e} from './html.js';
-import {request} from './diary-api.js';
+import {queueCommand} from './diary-api.js';
+import {localWorkspaceState} from './local-engine.js';
+import {ensureDeviceSnapshot} from './device-sync.js';
+import {projectProfileEdit} from './profile-local.js';
 
 const labels={en:{birthday:'Birthday',month:'Month',day:'Day',year:'Year',kg:'Kilograms',lb:'Pounds'},fr:{birthday:'Date de naissance',month:'Mois',day:'Jour',year:'Année',kg:'Kilogrammes',lb:'Livres'},de:{birthday:'Geburtstag',month:'Monat',day:'Tag',year:'Jahr',kg:'Kilogramm',lb:'Pfund'},'pt-BR':{birthday:'Data de nascimento',month:'Mês',day:'Dia',year:'Ano',kg:'Quilogramas',lb:'Libras'}};
 const unitFactors={weight:{kg:1,lb:.45359237,lbs:.45359237,st:6.35029318},height:{cm:1,in:2.54,m:100,ft:30.48},bodyFat:{'%':1}};
@@ -51,7 +54,9 @@ export function openProfileEditor({kind,data,date,onSaved,onClose}){
   return {type:'profileSettings.measurement',payload:{kind,value:Number(form.elements.value.value),unit,date,time:new Date().toTimeString().slice(0,5)}};
  }
  form.onsubmit=async event=>{event.preventDefault();if(busy||conflict)return;busy=true;status.textContent='';
-  try{if(!pending)pending={revision:data.revision,requestId:crypto.randomUUID(),...action()};form.querySelectorAll('button,input').forEach(n=>n.disabled=true);fields.inert=true;await request('/api/workspace/command',pending);if(closed)return;await onSaved?.();busy=false;close();}
+  try{const candidate=pending??{revision:data.revision,requestId:crypto.randomUUID(),...action()};form.querySelectorAll('button,input').forEach(n=>n.disabled=true);fields.inert=true;
+   let state=await localWorkspaceState();if(!state){status.textContent=t('mobileNutrientDetail.loading');await ensureDeviceSnapshot();state=await localWorkspaceState();}
+   const next=projectProfileEdit(data,candidate,state);pending=candidate;await queueCommand(pending.revision,pending.type,pending.payload,{requestId:pending.requestId,projection:{responses:{['/api/profile-settings?date='+encodeURIComponent(date)]:next}}});if(closed)return;busy=false;close();onSaved?.(next);}
   catch(error){if(closed)return;status.textContent=error.message;conflict=error.status===409;if(error.status>=400&&error.status<500&&error.status!==408)pending=null;
    if(conflict){const reload=document.createElement('button');reload.type='button';reload.textContent=dc('reloadSettings');reload.dataset.profileReload='';reload.onclick=async()=>{await onSaved?.();close();};status.append(reload);}
   }finally{busy=false;if(!closed){form.querySelectorAll('button').forEach(n=>n.disabled=false);form.querySelector('[type=submit]').disabled=conflict;form.querySelector('[type=submit]').textContent=pending?t('mobileSuggest.retry'):t('common.save');form.querySelectorAll('input').forEach(n=>n.disabled=Boolean(pending)||conflict);fields.inert=Boolean(pending)||conflict;}}

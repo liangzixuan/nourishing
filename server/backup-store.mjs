@@ -1,3 +1,4 @@
+import {encodeCommandReceipt,decodeCommandReceipt} from './command-receipt-codec.mjs';
 import {workspaceMediaRows,describeWorkspaceMedia,copyWorkspaceMediaRow} from './workspace-media.mjs';
 import {ID,Permission,Role} from 'node-appwrite';
 import {isDeepStrictEqual} from 'node:util';
@@ -65,7 +66,7 @@ export function createBackupStore({db,storage,ownerId,now=()=>Date.now()}){
   fields(input,['requestId','reviewToken','confirmation']);
   if(typeof input.requestId!=='string'||!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(input.requestId)||!token(input.reviewToken)||input.confirmation!=='replace')fail('Confirm replacement of this workspace.',400);
   const receiptId=rowId(owner,input.requestId),fingerprint=digest({type:'backup.restore',payload:input});
-  const receipt=async()=>{const saved=await optional(()=>db.getRow(args('command_receipts',receiptId)));if(!saved)return null;if(saved.ownerId!==owner||saved.fingerprint!==fingerprint)conflict();return JSON.parse(saved.result);};
+  const receipt=async()=>{const saved=await optional(()=>db.getRow(args('command_receipts',receiptId)));if(!saved)return null;if(saved.ownerId!==owner||saved.fingerprint!==fingerprint)conflict();return decodeCommandReceipt(saved.result);};
   const prior=await receipt();if(prior)return prior;
   const {row,review,manifest}=await loadReview(input.reviewToken),{state,head}=await snapshot();assertSource(head,review);
   const media=await mediaRows(row.generation),byKey=new Map(media.map(item=>[item.namespace+':'+item.sourceId,item]));
@@ -90,7 +91,7 @@ export function createBackupStore({db,storage,ownerId,now=()=>Date.now()}){
    await db.updateRow({...args('workspace_heads',owner),data:packed.head,transactionId:tx.$id});
    await stageFastingDispatch({db,owner,state:prepared.state,generation:row.generation,transactionId:tx.$id,now:new Date(clock()),timeZone:'UTC'});
    await stageReminderDispatch({db,owner,state:prepared.state,generation:row.generation,transactionId:tx.$id,now:new Date(clock())});
-   await db.createRow({...args('command_receipts',receiptId),data:{ownerId:owner,fingerprint,result:JSON.stringify(result)},permissions:permissions(owner),transactionId:tx.$id});
+   await db.createRow({...args('command_receipts',receiptId),data:{ownerId:owner,fingerprint,result:encodeCommandReceipt(result)},permissions:permissions(owner),transactionId:tx.$id});
    await db.updateTransaction({transactionId:tx.$id,commit:true});return result;
   }catch(error){await db.updateTransaction({transactionId:tx.$id,rollback:true}).catch(()=>{});const saved=await receipt();if(saved)return saved;throw error;}
  }

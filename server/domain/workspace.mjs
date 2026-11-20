@@ -1,3 +1,5 @@
+import {applyChartPreference} from './chart-display-command.mjs';
+import {mergeEntryUpdate} from './entry-update-fields.mjs';
 import {parseProfileDemographics} from './profile-demographics.mjs';
 import {scoreDisplayPatch} from './score-display-controls.mjs';
 import {prepareSharedItemGraph} from './shared-item-graph.mjs';
@@ -94,7 +96,7 @@ import {parseCompositeSources} from './composite-source.mjs';
 import {recipeEntryFields,recipeForEntry} from './recipe-entry.mjs';
 import {parseReferencedQuantity,parseCompositeItems} from './resource-quantity.mjs';
 import {collectResourceDependencies,orderRecipeDependencies,recipeAncestors} from './resource-dependencies.mjs';
-import {expandResourceQuantity} from './resource-expansion.mjs';
+import {expandResourceQuantity,expandedDiarySources} from './resource-expansion.mjs';
 import { calculateTargetSetup,validateTargetSetupRecord,setupTargetKeys } from './target-setup.mjs';
 import {parseCarbohydratePolicy,parseCarbohydrateBasis,NET_CARBOHYDRATE_TARGET_ID} from './carbohydrate-policy.mjs';
 
@@ -403,10 +405,9 @@ export function prepareSelectionDraft(s,input){
   return {kind:input.kind,selection,fingerprint,draft,inlineFoods,selectedCount:records.length,warningCodes};
 }
 function expandedDiaryItems(s,original){
-  const normalized=entry(s,original),parent=parseReferencedQuantity(s,original).source,day=original.date,id=original.id;
-  return expandResourceQuantity(s,original,{target:'children'}).map(({source,path})=>{
-    const child=entry(s,{...source,date:day,group:normalized.group,time:normalized.time,...(original.photo?{photo:original.photo}:{}),...(original.textReview?{textReview:{...original.textReview,modifiedAfterReview:true}}:{}),...(original.copiedFrom?{copiedFrom:original.copiedFrom}:{}),expandedFrom:{version:1,id,date:day,parent,path,...(original.expandedFrom?{previous:original.expandedFrom}:{})}});
-    if(original.repeatId!==undefined)child.repeatId=exactId(original.repeatId,'Repeat ID');return child;
+  const normalized=entry(s,original);
+  return expandedDiarySources(s,{...original,...normalized}).map(source=>{
+    const child=entry(s,source);if(source.repeatId!==undefined)child.repeatId=exactId(source.repeatId,'Repeat ID');return child;
   });
 }
 function loggedDiaryRows(s,original){
@@ -663,18 +664,7 @@ function setEntryDetails(s,input){
 }
 function prepareEntryUpdate(s,p){
   const old=lookup(s,'entries',p.id);if(old.kind==='exercise')fail('Delete and add an exercise to change it.');
-  const reference=resourceReference(p),oldReference=resourceReference(old),changedReference=reference&&(reference!==oldReference||p[reference]!==old[reference]);
-  const base={...old};
-  if(changedReference){delete base.mealItems;delete base.recipeOverride;}
-  if(reference){for(const key of ['foodId','recipeId','mealId'])if(key!==reference)delete base[key];delete base.nutrients;delete base.carbohydrateBasis;}
-  if(Object.hasOwn(p,'nutrients')&&!Object.hasOwn(p,'carbohydrateBasis'))delete base.carbohydrateBasis;
-  if(changedReference||(p.amount!==undefined&&p.quantity===undefined)){
-    for(const key of ['quantity','unit','portionId','portionLabel','grams','milliliters'])delete base[key];
-    if(changedReference)delete base.amount;
-  }
-  if((reference||oldReference)==='recipeId'&&p.quantity!==undefined){for(const key of ['amount','grams','milliliters','portionLabel'])delete base[key];if(isQuantityUnit(p.unit)||p.unit==='batch'||changedReference)delete base.portionId;}
-  const merged={...base,...p};
-  if(p.quantity!==undefined&&p.unit===undefined&&!changedReference)merged.unit=old.unit;
+  const merged=mergeEntryUpdate(old,p);
   const next={...entry(s,merged),id:old.id,...(old.repeatId?{repeatId:old.repeatId}:{})};
   assertDiaryDaysEditable(s,[old.date,next.date]);
   retainSourceReviews(next,old,merged,['foodId','recipeId','mealId','mealItems','recipeOverride','amount','quantity','unit','portionId','nutrients','carbohydrateBasis']);
@@ -919,15 +909,9 @@ export function act(s,type,p={},context={}) {
       s.settings=next;break;
     }
     case 'fast.start':case 'fast.record':case 'fast.end':case 'fast.update':case 'fast.delete':applyFastAction(s,type,p,new Date());break;
-    case 'chart.save':{
-      const chart=parseChart(p),previous=s.charts.find(row=>row.id===chart.id),prefs=s.settings.mobileCharts?.custom?.[chart.id];
-      const changed=previous?['primary','secondary'].filter(axis=>JSON.stringify(previous[axis])!==JSON.stringify(chart[axis])):[];
-      save(s,'charts',chart);
-      if(prefs)for(const axis of changed)delete prefs[axis+'Unit'];
-      break;
-    }
+    case 'chart.save':applyChartPreference(s,{type,payload:p});break;
     case 'cycle.overlay':{objectKeys(p,['chart','enabled'],'Cycle overlay');if(typeof p.chart!=='string')fail('Choose a supported chart.');s.settings.cycleChartOverlays=updateCycleChartOverlays(s.settings.cycleChartOverlays,{[p.chart]:p.enabled});break;}
-    case 'chart.cycle-overlay':{objectKeys(p,['id','enabled'],'Chart cycle overlay');if(typeof p.enabled!=='boolean')fail('Choose true or false for the cycle overlay.');const chart=lookup(s,'charts',exactId(p.id));chart.cycleOverlay=p.enabled;break;}
+    case 'chart.cycle-overlay':applyChartPreference(s,{type,payload:p});break;
     case 'chart.visibility':{objectKeys(p,['id','visible'],'Chart visibility');if(typeof p.visible!=='boolean')fail('Chart visibility must be true or false.');lookup(s,'charts',exactId(p.id)).visible=p.visible;break;}
     case 'chart.delete':remove(s,'charts',p.id);if(s.settings.mobileCharts?.custom)delete s.settings.mobileCharts.custom[p.id];break;
     case 'client.save':save(s,'clients',{id:p.id,name:text(p.name,'Client name',200),email:typeof p.email==='string'?p.email.slice(0,300):'',notes:typeof p.notes==='string'?p.notes.slice(0,100000):'',targets:p.targets?validateTargets(p.targets):{}});break;

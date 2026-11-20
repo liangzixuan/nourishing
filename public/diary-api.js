@@ -3,6 +3,7 @@ import {requestErrorMessage} from './request-error.js';
 import {coreText} from './core-cloud-messages.js';
 import {cacheableRead,cachedRead} from './device-requests.js';
 import {readDeviceCache,invalidateDeviceCache,invalidateDeviceCachePaths} from './device-cache.js';
+import {queueBackgroundWrite,overlayPendingResponse} from './background-writes.js';
 
 let pending=null;
 export const clearPending=()=>{pending=null;};
@@ -37,10 +38,10 @@ function invalidationPrefixes(path,body){
 
 const STALE_ANALYTICS_PREFIXES=['/api/dashboard','/api/charts','/api/nutrition-report','/api/diary/calendar'];
 
-async function invalidateForWrite(ticket,path,body){
+async function invalidateForWrite(ticket,path,body,{preserveCache=false}={}){
  if(!ticket)return;
  const prefixes=invalidationPrefixes(path,body);
- if(!prefixes){await invalidateDeviceCache(ticket).catch(()=>{});return;}
+ if(!prefixes){if(preserveCache)await invalidateDeviceCachePaths(()=>true,ticket,{staleOnly:true}).catch(()=>{});else await invalidateDeviceCache(ticket).catch(()=>{});return;}
  const editedDate=body?.payload?.date??body?.date??null;
  const matchPrefix=(key,list)=>list.some(prefix=>{
   if(prefix==='/api/diary'&&typeof editedDate==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(editedDate)){
@@ -50,7 +51,7 @@ async function invalidateForWrite(ticket,path,body){
  });
  const hard=prefixes.filter(p=>!STALE_ANALYTICS_PREFIXES.includes(p));
  const stale=prefixes.filter(p=>STALE_ANALYTICS_PREFIXES.includes(p));
- if(hard.length)await invalidateDeviceCachePaths(key=>matchPrefix(key,hard),ticket).catch(()=>{});
+ if(hard.length)await invalidateDeviceCachePaths(key=>matchPrefix(key,hard),ticket,{staleOnly:preserveCache}).catch(()=>{});
  if(stale.length)await invalidateDeviceCachePaths(key=>matchPrefix(key,stale),ticket,{staleOnly:true}).catch(()=>{});
 }
 
@@ -65,14 +66,18 @@ async function network(path,body,signal){
  const result=await response.json().catch(()=>{throw Error(coreText('request.unavailable'));});if(!response.ok)throw Object.assign(Error(requestErrorMessage(result,response.status)),{status:response.status,errorCode:result.errorCode});return result;
 }
 export async function request(path,body,signal,options){
- if(!body&&cacheableRead(path))return cachedRead(path,currentSignal=>network(path,body,currentSignal),signal,options);
+ if(!body&&cacheableRead(path)){
+  const original=options?.onRefresh;
+  const value=await cachedRead(path,currentSignal=>network(path,body,currentSignal),signal,{...options,...(original?{onRefresh:async next=>original(await overlayPendingResponse(path,next))}:{})});
+  return options?.canonical?value:overlayPendingResponse(path,value);
+ }
  // Read-only POST operations never invalidate saved screens or store their
  // transient review tokens. A lost mutation reply still invalidates affected views.
  const changes=body&&!/\/(?:analyze|prepare|preview|edit-preview|ingredient-preview|template-preview|parse|answer|search|lookup|resolve|suggestions|oracle|review|export|inspect|test|verification)$/.test(path);
  const ticket=changes?(await readDeviceCache('/api/diary').catch(()=>({}))).ticket:null;
- if(ticket)await invalidateForWrite(ticket,path,body);
+ if(ticket)await invalidateForWrite(ticket,path,body,options);
  try{return await network(path,body,signal);}finally{
-  if(ticket){await invalidateForWrite(ticket,path,body);window.dispatchEvent(new Event('nourishing-data-changed'));}
+  if(ticket){await invalidateForWrite(ticket,path,body,options);window.dispatchEvent(new Event('nourishing-data-changed'));}
  }
 }
 export async function command(revision,type,payload){
@@ -81,12 +86,9 @@ export async function command(revision,type,payload){
  const result=await request(path,pending.body);pending=null;return result;
 }
 
-export function photoSaver(revision){
- let pendingPhoto=null;
- return async input=>{
-  const signature=JSON.stringify(input);
-  if(pendingPhoto?.signature!==signature)pendingPhoto={signature,body:{...input,revision:revision(),requestId:crypto.randomUUID()}};
-  try{const result=await request('/api/photos/save',pendingPhoto.body);pendingPhoto=null;return result;}
-  catch(error){if(error?.status===409)pendingPhoto=null;throw error;}
- };
+export function queueCommand(revision,type,payload,{path='/api/workspace/command',projection={},requestId=crypto.randomUUID()}={}){
+ return queueBackgroundWrite(path,{revision,type,payload,requestId},projection);
+}
+export function queuePhoto(revision,payload,projection={}){
+ return queueBackgroundWrite('/api/photos/save',{...payload,revision,requestId:crypto.randomUUID()},projection);
 }

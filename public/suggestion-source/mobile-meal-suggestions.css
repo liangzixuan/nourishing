@@ -15,3 +15,5 @@ dialog.ms-picker{position:fixed;inset:0;width:100%;max-width:700px;height:100dvh
 .msc-grid{grid-auto-flow:column}@media(max-width:360px){.msc-grid{grid-auto-flow:row;grid-template-rows:none!important}}
 
 .ms-ingredients li>.ms-edit-ingredient{display:block;flex:1;min-width:0;width:auto;text-align:left;font:inherit;padding:4px 0;overflow-wrap:anywhere}.ms-edit-ingredient span{display:block}.ms-edit-ingredient:disabled{opacity:.7}.ms-edit-ingredient:focus-visible{outline:2px solid var(--green);outline-offset:3px}.ms-quantity-dialog .mf-header{grid-template-columns:44px minmax(0,1fr)}
+
+.ms-diary-controls{background:var(--paper);border-radius:14px;margin-bottom:16px;padding:0 8px}.ms-diary-controls input,.ms-diary-controls select{max-width:65%;min-height:44px}

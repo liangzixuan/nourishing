@@ -1,34 +1,23 @@
 # Offline diary parity
 
-The cloud PWA keeps an account-partitioned IndexedDB copy only after **Keep diary on this device**. The service worker caches public code and styles. It does not cache API responses, authentication pages, health records or photos.
+Nourishing uses the same diary UI online and offline. An account-scoped IndexedDB snapshot holds saved diary data and the pending command outbox. The service worker stores public UI assets only. Private responses and photos remain in account-partitioned device storage.
 
-Source provenance is recorded in `offline-source-manifest.json` and `domain-source-manifest.json`. The browser reuses the PC quantity and correction projections, biometric library, biometric validation and nutrition calculations. The cloud adapter replaces the SQLite receipt transaction with the existing owner-scoped Appwrite workspace transaction.
+## Local editing and sync
 
-## Implemented
+Food, water, notes, manual exercise and biometric edits use the normal diary editors. Supported calculations reuse the server's quantity, nutrition, adjustment and profile projections. Display preferences, chart preferences, profile edits, repeat items and snapshot metadata also update locally and sync in the background. New image uploads, AI recognition and uncached catalog searches require a connection.
 
-- Cold direct entry registers the worker and saves its public dependency closure before storing a diary copy.
-- Restarting offline retains the saved diary, foods, recipe and meal quantity facts, pending changes and source nutrition totals.
-- Saved-food additions, notes, water, explicit exercise and biometric batches queue with immutable operation IDs. Food versions and record revisions remain unchanged on retry.
-- Existing food quantities and diary details, notes, exercise and manual biometrics use source correction rules. Newly queued records cannot be edited until synced; this matches the PC source.
-- Reconnection sends commands in order. Lost responses retry the same ID. Changed records, changed foods and older restore generations remain conflicts instead of overwriting current data.
-- Existing receipts are marked as replayed. A replay removes the pending command without restoring a record that may since have been deleted. Sync refreshes the authoritative snapshot afterward.
-- Authentication expiry locks retained data until the same account is verified. Account switches cannot select another account's copy. Logout checks pending changes across all account partitions and clears all copies after sync or explicit discard. Owner/epoch checks reject delayed writes after logout.
-- Cross-tab logout, lock or account switch closes the offline editor and removes the previous account's visible records.
+The app persists a command before closing its editor. Storage failure keeps the form open. Reloading retains pending commands and their local effects. Reconnection verifies the account and workspace generation before replaying commands in order. Stable operation IDs and server receipts prevent duplicate saves after a lost response. Acknowledgements reconcile saved records and temporary IDs with queue removal in one transaction.
 
-## Offline controls and nutrition
+Food edits can follow a pending addition; their references are translated when the addition is acknowledged. Reviewed note, exercise and biometric corrections retain their record revisions. A pending correction in those editors must sync before another correction can be made. Completed days and imported-record edit rules still apply.
 
-- Pending changes can be exported as the source `nourish-offline-pending` JSON format, retried after a conflict, or discarded individually. Retry preserves the complete saved command, including its ID and revisions. Commands from an earlier restore cannot be retried. Discard changes only this device's outbox.
-- Exercise entry and correction accept kcal and kJ through the source decimal conversion. The saved value remains kcal. Changing the selector keeps the entered number, as in the PC form.
-- The measurement picker creates new custom definitions through the source `biometric.log` command. The reviewed definition and readings sync together. Catalog measurements, paired blood pressure and retained custom metrics use the same source library.
-- Nutrition details show source nutrient values, targets, measurement coverage and upper limits. Hidden nutrients, macro visibility, consumed/remaining mode and energy units follow the saved settings. Missing measurements remain unknown. Groups start collapsed to keep the diary compact.
-- English, French, German and Brazilian Portuguese labels use the source language catalogs. Nutrient labels use source nutrient identity translations. The open copy uses its saved application language; the initial page has a language selector. User-entered record names are preserved.
+A workspace restore holds commands from the earlier generation for review. Retry cannot bypass that check. Session expiry locks retained data, account switches cannot expose another account's copy, and logout requires sync or explicit discard when pending changes remain. Delayed responses cannot write into a later account session.
 
-The compact diary also includes temporary food/group selection and collapsed score, completeness and nutrient-balance sections. Selection changes macro/nutrient intake and balances. Scores, completeness and energy details remain tied to the full day, including queued changes. Selection clears on date, account, generation or saved-copy refresh and is never added to the sync queue. Score and balance visibility follow saved settings. Existing report-source renderers and calculations own these values and translations. Server validation errors without a source localization key retain their supplied message.
+## Recovery controls
 
-Offline photo recognition, AI requests and remote food-catalog search remain online features. Cached records with imported provenance remain subject to the source editability rules.
+More → Device storage shows pending changes from the shared outbox. It supports retry, individual discard, pending JSON export, snapshot refresh and removal of the device copy. A failed-save notice links to these controls. Discard removes the local pending command; it does not undo a command already accepted by the server. An uncertain save should be retried first so its receipt can be reconciled.
 
 ## Verification
 
-`node --test tests/offline*.test.mjs` covers source validation, atomic store rollback, receipt replay, account/generation rejection, record revisions, HTTP authentication, session clearing and real Chrome service-worker behavior. The Chrome test covers cold direct entry, offline navigation/restart, food and water additions, food correction, kJ exercise entry, weight and custom measurement logging, pending JSON export, unchanged-command conflict retry, discard, French rendering, reconnect after a lost response, expiry locking, account isolation and public-cache contents. Nutrition tests cover source visibility, unknown measurements, unit conversion, saved settings and all four supported label languages.
+Browser checks exercise real IndexedDB, the service worker, normal diary editors and production command contracts. Coverage includes offline restart, add/edit/delete, rapid dependent edits, lost responses, storage failure, malformed snapshots, restored generations, session locking and account isolation. Focused UI tests cover cached editors and delayed network responses. Shared projection tests compare local nutrition and settings against canonical server results.
 
-The deployed Appwrite preview has also passed offline restart, immutable queued writes and automatic sync checks with disposable accounts. Hosted Chrome checks passed for selected food totals and balances, unchanged daily scores and completeness, mobile layout, public-only caching and account isolation. Physical-phone offline behavior remains unverified.
+Source provenance remains recorded in `offline-source-manifest.json` and `domain-source-manifest.json`. Physical-device camera, AI recognition quality and notification delivery require separate live checks; browser fixtures do not establish those results.

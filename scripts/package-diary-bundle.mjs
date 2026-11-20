@@ -1,11 +1,19 @@
 import {stat} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {rolldown} from 'rolldown';
+import {buildLocalCharts} from './package-local-charts.mjs';
+import {buildLocalSettings} from './package-local-settings.mjs';
+import {buildLocalDiary} from './package-local-diary.mjs';
+import {packageAdjustmentModel} from './package-adjustment-model.mjs';
 
 const publicRoot = new URL('../public/', import.meta.url);
-const EXTERNAL_DYNAMIC = new Set(['./offline-sync.js', './report-source/renderer.js']);
+const EXTERNAL_DYNAMIC = new Set(['./report-source/renderer.js','./local-chart-projection.js','./local-diary-projection.js']);
 
 export async function buildDiaryBundle() {
+  await buildLocalCharts();
+  await buildLocalSettings();
+  await buildLocalDiary();
+  await packageAdjustmentModel();
   const input = fileURLToPath(new URL('diary.js', publicRoot));
   const file = fileURLToPath(new URL('diary-bundle.js', publicRoot));
   const bundle = await rolldown({
@@ -16,6 +24,7 @@ export async function buildDiaryBundle() {
     await bundle.write({
       file,
       format: 'es',
+      codeSplitting: false,
       minify: true,
     });
   } finally {

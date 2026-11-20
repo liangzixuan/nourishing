@@ -5,6 +5,7 @@ import {uiLanguage,t} from './app-language.js';
 import {request} from './diary-api.js';
 import {escape as e} from './html.js';
 import {openProfileEditor} from './profile-editor.js';
+import {ensureDeviceSnapshot} from './device-sync.js';
 import {moreBackHeader} from './more-source/menu-view.js';
 
 const options=(rows,value)=>rows.map(([id,label])=>`<option value="${e(id)}" ${String(id)===String(value)?'selected':''}>${e(label)}</option>`).join('');
@@ -16,11 +17,12 @@ const display=value=>value===null||value===undefined?t('threshold.target.notSet'
 
 /** Profile is a projection of explicitly configured policies and measurement series. */
 export function mountProfile({page,headerRoot,...ui}){
+ void ensureDeviceSnapshot().catch(()=>{});
  let disposed=false,data,editor;const abort=new AbortController(),root=document.createElement('section');root.className='profile-page';page.replaceChildren(root);
  const alive=()=>!disposed&&root.isConnected,date=()=>typeof ui.date==='function'?ui.date():ui.date;
  headerRoot.innerHTML=moreBackHeader(t('settings.profile'));
  async function load(fresh=false){root.setAttribute('aria-busy','true');try{const apply=value=>{if(alive()){data=value;render();}};apply(await request('/api/profile-settings?date='+encodeURIComponent(date()),null,abort.signal,{fresh,onRefresh:value=>{if(!editor)apply(value);}}));}catch(error){if(alive()){root.innerHTML='<p class="empty" role="status">'+e(error.message)+`</p><button class="profile-retry" data-profile-reload>${t('mobileSuggest.retry')}</button>`;}}finally{if(alive())root.setAttribute('aria-busy','false');}}
- const changed=async()=>{await ui.onChange?.();if(alive())await load(true);};
+ const changed=async next=>{if(next){data=next;if(alive())render();void ui.onChange?.();return;}await ui.onChange?.();if(alive())await load(true);};
  function render(){
   const {demographics:d,measurements:m,bmi}=data.profile;
   const row=(id,label,value,extra='',editable=true)=>`<${editable?'button type="button"':'div'} class="profile-row" ${editable?'data-profile-row="'+id+'"':''}><strong>${label}</strong><span class="profile-value">${e(value)}${extra?'<small>'+e(extra)+'</small>':''}</span>${editable?'<span class="profile-chevron" aria-hidden="true">›</span>':''}</${editable?'button':'div'}>`;

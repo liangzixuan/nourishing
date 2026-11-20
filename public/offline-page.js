@@ -1,2 +1,2 @@
-import {mountOfflineDiary} from './offline-diary.js';
-mountOfflineDiary(document.querySelector('#offline-root')??document.querySelector('main'));
+// One diary surface handles saved views and pending changes online and offline.
+location.replace('/diary');

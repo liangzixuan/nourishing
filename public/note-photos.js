@@ -1,8 +1,10 @@
+import {recordEditorData,saveRecordCommand} from './record-local.js';
+import {queueBackgroundWrite} from './background-writes.js';
 import {privateImageAttributes} from './private-images.js';
-import {request,command} from './diary-api.js';
+import {request,queueCommand} from './diary-api.js';
 import {escape as e} from './html.js';
 
-export const notePhotoUrl=record=>/^[a-f0-9]{64}$/.test(record?.imageId??'')?'/api/media?'+new URLSearchParams({namespace:'note_photos',id:record.imageId}):null;
+export const notePhotoUrl=record=>record?.localPhoto??(/^[a-f0-9]{64}$/.test(record?.imageId??'')?'/api/media?'+new URLSearchParams({namespace:'note_photos',id:record.imageId}):null);
 export const notePhotoThumbnail=record=>notePhotoUrl(record)?`<img class="note-photo-thumbnail" loading="lazy" ${privateImageAttributes(notePhotoUrl(record))} alt="Note photo" referrerpolicy="no-referrer">`:'';
 const fileData=file=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('Could not open this photo.'));reader.readAsDataURL(file);});
 
@@ -11,7 +13,7 @@ export async function mountNoteEditor({record,date,initialGroup,show,close,heade
  show(header(record?'Edit Note':'Add Note')+'<p class="empty">Loading…</p>');
  const loading=content.querySelector('.empty');let options,detail;
  try{
-  [options,detail]=await Promise.all([request('/api/records/options?'+new URLSearchParams({date:record?.date??date})),record?request('/api/records/item?'+new URLSearchParams({collection:'notes',id:record.id})):null]);
+  [options,detail]=await recordEditorData(record?.date??date,'notes',record?.id);
   if(!loading.isConnected)return;if(detail)record=detail.record;
  }catch(error){if(loading.isConnected)loading.textContent=error.message;return;}
  const editable=!record||detail.editable,limit=Math.max(1024,record?.text?.length??0),group=record?record.group??'':options.groups.includes(initialGroup)?initialGroup:'',time=record?.time??new Date().toTimeString().slice(0,5);
@@ -54,10 +56,10 @@ export async function mountNoteEditor({record,date,initialGroup,show,close,heade
   event.preventDefault();if(busy||conflict||!editable)return;
   pending??={requestId:crypto.randomUUID(),revision:detail?.revision??options.revision,id:record?.id??null,recordRevision:detail?.recordRevision??null,fields:{date:form.elements.date.value,time:form.elements.time.value,text:form.elements.text.value,group:form.elements.group.value||null},photo:mode==='replace'?{mode,...photo}:{mode}};
   busy=true;controls();status.textContent='';
-  try{await request('/api/note-photos/save',pending);pending=null;if(alive())close();await onChange();}
+  try{if(mode==='keep'&&!record?.imageId)await saveRecordCommand(pending.revision,record?'record.correct':'note.add',record?{collection:'notes',id:record.id,recordRevision:pending.recordRevision,changes:pending.fields}:pending.fields);else await queueBackgroundWrite('/api/note-photos/save',pending,{notes:[{...record,...pending.fields,id:record?.id??pending.requestId,...(mode==='replace'?{imageId:photo.id,localPhoto:photo.dataUrl}:mode==='remove'?{imageId:null}:{})}]});pending=null;if(alive())close();void Promise.resolve(onChange()).catch(()=>{});}
   catch(error){if(alive()){status.textContent=error.message;if(error.status>=400&&error.status<500){pending=null;if(error.status===409){conflict=true;const reload=document.createElement('button');reload.type='button';reload.textContent='Reload note';reload.onclick=()=>mountNoteEditor({record,date,initialGroup,show,close,header,content,onChange});status.append(reload);}}}}
-  finally{if(alive()){busy=false;controls();}}
+  finally{if(alive()){busy=false;pending=null;controls();}}
  };
- const remove=form.querySelector('[data-note-delete]');if(remove)remove.onclick=()=>{remove.textContent='Delete note';remove.onclick=async()=>{if(busy)return;busy=true;controls();try{await command(detail.revision,'note.delete',{id:record.id});if(alive())close();await onChange();}catch(error){if(alive())status.textContent=error.message;}finally{if(alive()){busy=false;controls();}}};};
+ const remove=form.querySelector('[data-note-delete]');if(remove)remove.onclick=()=>{remove.textContent='Delete note';remove.onclick=async()=>{if(busy)return;busy=true;controls();try{await queueCommand(detail.revision,'note.delete',{id:record.id});if(alive())close();void Promise.resolve(onChange()).catch(()=>{});}catch(error){if(alive())status.textContent=error.message;}finally{if(alive()){busy=false;controls();}}};};
  renderPhoto();
 }

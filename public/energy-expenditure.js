@@ -25,7 +25,7 @@ export class TargetControlScreen{
  }
  async load(){
   this.readController?.abort();const controller=new AbortController();this.readController=controller;this.busy=true;this.error='';this.render();
-  try{const value=this.capture(await request('/api/target-policies?'+new URLSearchParams({date:this.date}),undefined,controller.signal));if(this.disposed||controller.signal.aborted)return;this.saved=value;this.energyUnit=value.energyUnit;this.reset();}
+  try{const value=this.capture(await request('/api/target-policies?'+new URLSearchParams({date:this.date}),undefined,controller.signal,{onRefresh:value=>this.refreshCapture?.(value)}));if(this.disposed||controller.signal.aborted)return;this.saved=value;this.energyUnit=value.energyUnit;this.reset();}
   catch(error){if(!this.disposed&&!controller.signal.aborted)this.error=error.message;}
   finally{if(!this.disposed&&this.readController===controller){this.busy=false;this.render();}}
  }

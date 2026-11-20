@@ -1,3 +1,4 @@
+import {encodeCommandReceipt,decodeCommandReceipt} from './command-receipt-codec.mjs';
 import {ID,Permission,Role} from 'node-appwrite';
 import {digest,rowId,packWorkspace,unpackWorkspace} from './data-codec.mjs';
 import {createWorkspaceStore} from './workspace-store.mjs';
@@ -35,7 +36,7 @@ export function createCsvImportStore({db,ownerId:owner,reviewSecret,now=()=>Date
  async function save(input){
   validateCsvInput(input,{saving:true});
   const receiptId=rowId(owner,input.requestId),fingerprint=digest({type:'csv.import',payload:input});
-  const receipt=async()=>{const row=await optional(()=>db.getRow(args('command_receipts',receiptId)));if(!row)return null;if(row.ownerId!==owner||row.fingerprint!==fingerprint)conflict();return JSON.parse(row.result);};
+  const receipt=async()=>{const row=await optional(()=>db.getRow(args('command_receipts',receiptId)));if(!row)return null;if(row.ownerId!==owner||row.fingerprint!==fingerprint)conflict();return decodeCommandReceipt(row.result);};
   const prior=await receipt();if(prior)return prior;
   const review=verifyCsvReview(input,{owner,reviewSecret,now:clock()}),{head,state}=await snapshot();
   if(head.digest!==input.revision)conflict();
@@ -60,7 +61,7 @@ export function createCsvImportStore({db,ownerId:owner,reviewSecret,now=()=>Date
    await db.updateRow({...args('workspace_heads',owner),data:packed.head,transactionId:tx.$id});
    await stageFastingDispatch({db,owner,state:prepared.state,generation,transactionId:tx.$id,now:new Date(clock()),timeZone:'UTC'});
    await stageReminderDispatch({db,owner,state:prepared.state,generation,transactionId:tx.$id,now:new Date(clock())});
-   await db.createRow({...args('command_receipts',receiptId),data:{ownerId:owner,fingerprint,result:JSON.stringify(result)},permissions:permissions(owner),transactionId:tx.$id});
+   await db.createRow({...args('command_receipts',receiptId),data:{ownerId:owner,fingerprint,result:encodeCommandReceipt(result)},permissions:permissions(owner),transactionId:tx.$id});
    await db.updateTransaction({transactionId:tx.$id,commit:true});return result;
   }catch(error){await db.updateTransaction({transactionId:tx.$id,rollback:true}).catch(()=>{});const saved=await receipt();if(saved)return saved;throw error;}
  }

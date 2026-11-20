@@ -6,6 +6,7 @@ import {escape as e} from './html.js';
 import {mountDisplay} from './display.js';
 import {mountTargets} from './targets.js';
 import {mountFasting} from './fasting.js';
+import {mountDeviceStorage} from './device-storage.js';
 import {mountBackup} from './backup.js';
 import {mountRepeats} from './repeats.js';
 import {mountProfile} from './profile-settings.js';
@@ -28,7 +29,7 @@ const main = () => [
 
 const tools = () => [
   ['reminders', t('nav.reminders')],
-  ['offline', t('nav.offline')],
+  ['storage', coreText('more.storage')],
   ['repeats', t('mobileRepeat.title')],
   ['glucose', t('nav.glucose-timeline')],
   ['cycle', coreText('cycle.title')],
@@ -113,7 +114,7 @@ export function mountMore({
     root.innerHTML =
       group(main().map(([id, label, icon]) => row(id, label, icon)).join(''), 'mm-primary') +
       `<h2 class="mm-tools-title">${e(t('mobileMore.tools'))}</h2>` +
-      group(tools().map(([id, label]) => (id === 'offline' ? link(label, '/offline.html') : row(id, label))).join(''), 'mm-tools') +
+      group(tools().map(([id, label]) => row(id,label)).join(''), 'mm-tools') +
       `<p class="mm-empty" hidden>${e(t('mobileMore.noResults'))}</p>`;
     filter();
     window.scrollTo(0, scroll);
@@ -179,13 +180,14 @@ export function mountMore({
     if (id === 'export') return void openExport(ui);
     if (id === 'targets') return childView(id, t('mobileMore.targets'), host => mountTargets({...ui, page: host, headerRoot, onExit: exitToHome}));
     if (id === 'fasting') return childView(id, t('mobileMore.fasting'), host => mountFasting({...ui, page: host, headerRoot, onBack: exitToHome}));
+    if (id === 'storage') return childView(id,coreText('more.storage'),host=>mountDeviceStorage({root:host}));
     if (id === 'backup') return childView(id, coreText('more.backup'), host => mountBackup({...ui, root: host}));
     if (id === 'repeats') {
       return childView(id, t('mobileRepeat.title'), host =>
         mountRepeats({...ui, page: host, headerRoot, backLabel: t('discover.back'), onExit: exitToHome}),
       );
     }
-    if (id === 'display') return childView(id, t('mobileMore.display'), host => mountDisplay({root: host, headerRoot, onChange}));
+    if (id === 'display') return childView(id, t('mobileMore.display'), host => mountDisplay({root: host, headerRoot, onChange, date}));
     if (id === 'foods') return onFoods?.();
     if (id === 'reports') return onDiscover?.('report');
     if (id === 'sharing') {
@@ -212,7 +214,7 @@ export function mountMore({
         id,
         t('mobileMore.about'),
         '<div class="mm-about"><img src="/favicon.svg" alt=""><h2>Nourishing</h2><p>' +
-          e(coreText('more.version', {version: '1.0.12'})) +
+          e(coreText('more.version', {version: '1.0.13'})) +
           '</p><button type="button" class="mm-update-btn" data-more-check-update>' +
           e(coreText('more.checkUpdates')) +
           '</button><p class="mm-update-status" role="status" aria-live="polite"></p></div>' +
@@ -300,6 +302,7 @@ export function mountMore({
   renderHome();
   return {
     setIdentity,
+    open,
     refreshLanguage() {
       if (screen === 'home') renderHome();
       else open(screen);

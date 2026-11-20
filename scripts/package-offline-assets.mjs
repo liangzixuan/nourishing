@@ -21,9 +21,13 @@ export async function buildOfflineAssets(){
    await visit(spec.startsWith('/')?spec:posix.resolve(posix.dirname(path),spec));
   }
  }
- for(const path of ['/offline.html','/offline.css','/offline-diary.css','/favicon.svg','/offline-page.js'])await visit(path);
+ const source=await readFile(new URL('diary.html',publicRoot),'utf8'),shell=load(source);
+ shell('head').append('<meta name="nourishing-offline-shell" content="public">');
+ shell('script[src="/pwa-update.js"],link[href="/pwa-update.css"]').remove();
+ await writeFile(new URL('diary-shell.html',publicRoot),shell.html());
+ for(const path of ['/diary-shell.html','/offline.html','/favicon.svg','/offline-page.js'])await visit(path);
  // Prepare every module in the authenticated diary entry graph before the
- // worker can become waiting and offer Reload. The HTML itself stays network-only.
+ // worker can become waiting and offer Reload. Authenticated HTML stays network-only.
  const diary=load(await readFile(new URL('diary.html',publicRoot),'utf8'));
  for(const script of diary('script[src]').toArray()){
   const path=diary(script).attr('src');if(path!=='/pwa-update.js')await visit(path);

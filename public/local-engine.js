@@ -11,39 +11,33 @@ import {recipeWeight} from './report-source/server/recipe-weight.mjs';
 import {recipeForEntry} from './report-source/server/recipe-entry.mjs';
 import {mealForEntry} from './report-source/server/meal-entry.mjs';
 import {convertEnergy} from './report-source/server/energy-units.mjs';
+import {mergeEntryUpdate} from './report-source/server/entry-update-fields.mjs';
 
 const LIBRARY_KINDS = ['food', 'recipe', 'meal'];
 let cachedState = null;
-let cachedAt = 0;
-let inFlight = null;
+let cachedIdentity = null;
 
 export function invalidateLocalState() {
   cachedState = null;
-  cachedAt = 0;
 }
 
 if (typeof window !== 'undefined') {
   window.addEventListener('nourishing-data-changed', invalidateLocalState);
+  window.addEventListener('nourishing-local-changed', invalidateLocalState);
 }
 
-async function readLocalState() {
-  if (cachedState && Date.now() - cachedAt < 15000) return cachedState;
-  if (inFlight) return inFlight;
-  inFlight = (async () => {
-    try {
-      const copy = await offlineCopy();
-      if (!copy?.snapshot?.state) return null;
-      cachedState = offlineEffectiveState(copy);
-      cachedAt = Date.now();
-      return cachedState;
-    } catch {
-      return null;
-    } finally {
-      inFlight = null;
-    }
-  })();
-  return inFlight;
+export async function localWorkspaceState() {
+  try {
+    const copy = await offlineCopy();
+    if (!copy?.snapshot?.state || copy.locked) return null;
+    const identity = JSON.stringify([copy.ownerId, copy.ticket.epoch, copy.revision]);
+    if (cachedState && cachedIdentity === identity) return cachedState;
+    cachedState = offlineEffectiveState(copy);
+    cachedIdentity = identity;
+    return cachedState;
+  } catch { return null; }
 }
+const readLocalState = localWorkspaceState;
 
 function quantityOptions(state, kind, item) {
   const grams = kind === 'recipe' ? recipeWeight(item, state).grams : kind === 'food' ? item.grams : null;
@@ -106,7 +100,7 @@ export async function localPreviewDiaryItem(payload) {
     if (payload.id) {
       const existing = (state.entries ?? []).find(row => row.id === payload.id);
       if (!existing) return null;
-      next = {...existing, ...payload};
+      next = mergeEntryUpdate(existing, payload);
     } else {
       const kind = payload.recipeId ? 'recipe' : payload.mealId ? 'meal' : payload.foodId ? 'food' : null;
       if (!kind) return null;
@@ -132,42 +126,7 @@ export async function localDiaryView(targetDate, template) {
   const state = await readLocalState();
   if (!state) return null;
   try {
-    const groups = state.settings?.groups ?? template.groups ?? ['Uncategorized'];
-    const defaultGroup = groups.includes('Uncategorized') ? 'Uncategorized' : groups[0];
-    const entries = (state.entries ?? [])
-      .filter(row => row.date === targetDate)
-      .map(row => ({...row, facts: entryFacts(state, row)}));
-    const biometrics = (state.biometrics ?? []).filter(row => row.date === targetDate);
-    const notes = (state.notes ?? []).filter(row => row.date === targetDate);
-    const summary = calculateSummary(state, targetDate);
-    const grouped = new Map(groups.map(name => [name, []]));
-    const pushRef = (collection, row) => {
-      const name = row.group && grouped.has(row.group) ? row.group : defaultGroup;
-      if (!grouped.has(name)) grouped.set(name, []);
-      grouped.get(name).push({collection, id: row.id});
-    };
-    for (const row of entries) pushRef('entries', row);
-    for (const row of notes) pushRef('notes', row);
-    for (const row of biometrics) pushRef('biometrics', row);
-    const showGroups = template.recordDisplay?.showGroups ?? true;
-    const recordDisplay = {
-      ...(template.recordDisplay ?? {}),
-      showGroups,
-      groups: [...grouped.entries()].map(([name, records]) => ({name, records})),
-    };
-    return {
-      ...template,
-      date: targetDate,
-      groups,
-      completed: state.settings?.completedDays?.includes(targetDate) ?? false,
-      entries,
-      biometrics,
-      notes,
-      summary,
-      recordDisplay,
-      _local: true,
-    };
-  } catch {
-    return null;
-  }
+    const {projectLocalDiary} = await import('./local-diary-projection.js');
+    return {...projectLocalDiary(state,targetDate,template),_local:true};
+  } catch { return null; }
 }

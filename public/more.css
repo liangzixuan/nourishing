@@ -24,3 +24,5 @@
 .more-mobile .mm-update-btn:focus-visible{outline:2px solid var(--green);outline-offset:2px;}
 .more-mobile .mm-update-status{margin-top:8px;font-size:.9rem;color:var(--muted,inherit);min-height:1.3em;}
 .more-mobile .mm-update-status:empty{display:none;}
+
+.device-storage{padding:16px;overflow-wrap:anywhere}.device-storage button{min-height:44px;margin:6px 8px 6px 0;padding:10px 16px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font:inherit}.device-storage ul{list-style:none;padding:0}.device-storage li{padding:12px 0;border-bottom:1px solid var(--line)}

@@ -20,3 +20,8 @@ public/pwa-icons/
 # Generated public offline asset graph and diary JS bundle
 /public/offline-assets.js
 /public/diary-bundle.js
+/public/local-chart-projection.js
+/public/local-group-rename.js
+/public/local-diary-projection.js
+
+/public/diary-shell.html

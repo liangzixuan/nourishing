@@ -3,7 +3,8 @@ import {uiLanguage,t} from './app-language.js';
 import {mountChartDetail} from './chart-detail.js';
 import {mountCgmDetail} from './cgm-detail.js';
 import {escape as e} from './html.js';
-import {request,command} from './diary-api.js';
+import {request,queueCommand} from './diary-api.js';
+import {localWorkspaceState} from './local-engine.js';
 import {chartCardMarkup,mountChartPlots,validateChartView} from './chart-presentation.js';
 import {chartArrow,chartTitle} from './charts-source-view.js';
 import {openChartDefinition} from './chart-editor.js';
@@ -46,7 +47,11 @@ export function mountCharts({page,date,show,close,header,content,onChange,onRead
   host.querySelectorAll('[data-chart-visible]').forEach(input=>input.onchange=async()=>{
    const previous=!input.checked;host.querySelectorAll('button,input').forEach(control=>control.disabled=true);
    try{const id=input.dataset.chartVisible,custom=id.startsWith('custom:'),definition=custom?data.saved.find(chart=>chart.id===id.slice(7)):null;
-    await command(data.revision,custom?'chart.save':'chart.display',custom?{...definition,visible:input.checked}:{id,patch:{visible:input.checked}});await load();await onChange?.();if(alive()&&host.isConnected)manage();}
+    const action={type:custom?'chart.save':'chart.display',payload:custom?{...definition,visible:input.checked}:{id,patch:{visible:input.checked}}};
+    const state=await localWorkspaceState();if(!state)throw Error(dc('loadingChart'));
+    const {projectLocalChart}=await import('./local-chart-projection.js'),next=await projectLocalChart(state,action,data);
+    await queueCommand(data.revision,action.type,action.payload,{projection:{responses:{['/api/charts?'+new URLSearchParams({to:date()})]:next},chartState:next.localChartState}});
+    if(alive()){data=next;render();if(host.isConnected)manage();}void onChange?.();}
    catch(error){if(host.isConnected){input.checked=previous;host.querySelector('[role=status]').textContent=error.message;}}
    finally{host.querySelectorAll('button,input').forEach(control=>control.disabled=false);}
   });

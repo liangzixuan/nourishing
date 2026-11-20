@@ -1,9 +1,12 @@
 import {dc} from './discover-cloud-messages.js';
+import {reportTargetSections,reportNutrientGroups,reportBalanceSection,reportBalanceDetail,reportScoreDetail} from './report-mobile-source/report-sections.js';
+import {scoreDisplayName} from './report-source/public/score-language.js';
+import {balanceDisplayName} from './report-source/public/nutrient-balance-view.js';
 import {uiLanguage,t} from './app-language.js';
 import {ReportEnergyChart,energyChartMarkup} from './report-mobile-source/report-energy-chart.js';
 import {MobileReportNutrientDetail,validateReportNutrientDetail} from './report-mobile-source/mobile-report-nutrient-detail.js';
 import {request} from './diary-api.js';
-import {nutrientDisplayName,nutrientGroupName} from './report-source/public/nutrient-language.js';
+import {nutrientDisplayName} from './report-source/public/nutrient-language.js';
 import {carbohydrateDisplayLabel} from './report-source/public/carbohydrate-description.js';
 import {escape as e,symbol,bottomNavigation,ranges,rangeLabel,resolveRange} from './dashboard-source/discover-ui.js';
 import {displayValue,displayUnit} from './dashboard-source/energy-display.js';
@@ -14,18 +17,19 @@ const action=(label,id,extra='')=>`<button type="button" class="dc-button" data-
 
 // Adapt the original MobileNutritionReport markup to the authenticated cloud capture.
 export function mountMobileReport({root,value,onApply,onPrint}){
- let capture=value,disposed=false,busy=false;const stack=[],charts=[new ReportEnergyChart('consumed',uiLanguage()),new ReportEnergyChart('expenditure',uiLanguage())];
+ let capture=value,disposed=false,busy=false;const expanded=new Map(),stack=[],charts=[new ReportEnergyChart('consumed',uiLanguage()),new ReportEnergyChart('expenditure',uiLanguage())];
  root.classList.add('nutrition-report-mobile');
  const options=()=>capture.report.options;
  function render(){
+  for(const node of root.querySelectorAll('[data-report-section]'))expanded.set(node.dataset.reportSection,node.open);
   const {report,energyUnit:unit}=capture;
-  const nutrients=report.nutrients.filter(row=>row.visible),net=report.carbohydrates.net.summary;if(net.visible)nutrients.push({...net,id:'netCarbohydrate'});
-  const groups=new Map();for(const row of nutrients){if(!groups.has(row.category))groups.set(row.category,[]);groups.get(row.category).push(row);}
   const macros=[report.nutrients.find(row=>row.id==="protein"),{...report.carbohydrate.summary,name:carbohydrateDisplayLabel(report.carbohydrate.definition,uiLanguage())},report.nutrients.find(row=>row.id==="fat")].filter(Boolean);
   const macroDetails=`<div class="report-macro-details"><h3>${t('settings.macroLabel')}</h3><div class="mobile-report-macro-list">${macros.map(row=>`<div data-mobile-macro="${e(row.id)}"><span>${e(nutrientDisplayName(row,uiLanguage()))}</span><strong>${number(row.mean)}${row.mean===null?'':' '+e(row.unit)}</strong></div>`).join('')}</div></div>`;
-  root.innerHTML=`<div class="mobile-report-toolbar">${action(`<span>${e(t('reportNutrientDetail.average'))}: ${e(rangeText(options()))}</span>${symbol('chevron_right')}`,'dates')}<p role="status"></p></div><div class="mobile-report-overview">${report.energy.summary.filter(row=>['consumed','expenditure','remaining'].includes(row.id)).map(row=>row.id==='consumed'?energyChartMarkup(report.energy,unit,'consumed',macroDetails,uiLanguage()):row.id==='expenditure'?energyChartMarkup(report.energy,unit,'expenditure','',uiLanguage()):`<section class="dc-card report-energy-chart report-remaining" data-report-energy-kind="remaining"><div class="report-energy-heading"><h2>${t('energyReport.remaining')}</h2></div><div class="report-energy-ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46"/></svg><div class="report-energy-center"><strong>${number(displayValue(row.mean,'kcal',unit))}</strong>${row.mean===null?'':`<span>${e(unit)}</span>`}</div></div></section>`).join('')}</div>`+[...groups].map(([category,rows])=>`<details class="dc-card mobile-report-nutrients" data-mobile-category="${e(category)}"><summary class="mobile-report-category"><h2>${e(nutrientGroupName(category,uiLanguage()))}</h2>${symbol('expand_more')}</summary><div>${rows.map(row=>`<div data-mobile-nutrient="${e(row.id)}"><button type="button" class="dc-button" data-report-nutrient="${e(row.id)}"><span>${e(nutrientDisplayName(row,uiLanguage()))}</span><strong>${number(displayValue(row.mean,row.unit,unit))}${row.mean===null?'':' '+e(displayUnit(row.unit,unit))}</strong></button>${row.percentOfMeanTarget===null?'':`<progress max="100" value="${Math.min(100,Math.max(0,row.percentOfMeanTarget))}" aria-label="${e(nutrientDisplayName(row,uiLanguage()))} · ${e(t('mobileOracle.target'))}" aria-valuetext="${number(row.percentOfMeanTarget)}%"></progress>`}</div>`).join('')}</div></details>`).join('');
+  root.innerHTML=`<div class="mobile-report-toolbar">${action(`<span>${e(t('reportNutrientDetail.average'))}: ${e(rangeText(options()))}</span>${symbol('chevron_right')}`,'dates')}<p role="status"></p></div><div class="mobile-report-overview">${report.energy.summary.filter(row=>['consumed','expenditure','remaining'].includes(row.id)).map(row=>row.id==='consumed'?energyChartMarkup(report.energy,unit,'consumed',macroDetails,uiLanguage()):row.id==='expenditure'?energyChartMarkup(report.energy,unit,'expenditure','',uiLanguage()):`<section class="dc-card report-energy-chart report-remaining" data-report-energy-kind="remaining"><div class="report-energy-heading"><h2>${t('energyReport.remaining')}</h2></div><div class="report-energy-ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46"/></svg><div class="report-energy-center"><strong>${number(displayValue(row.mean,'kcal',unit))}</strong>${row.mean===null?'':`<span>${e(unit)}</span>`}</div></div></section>`).join('')}</div>`+reportTargetSections(capture,expanded)+reportNutrientGroups(capture,expanded)+reportBalanceSection(capture,expanded);
   root.querySelector('[data-report-action=dates]').onclick=openDates;
   root.querySelectorAll('[data-report-nutrient]').forEach(button=>button.onclick=()=>openNutrient(button.dataset.reportNutrient));
+  root.querySelectorAll('[data-report-score]').forEach(button=>button.onclick=()=>{const row=report.scores.summary.find(row=>row.id===button.dataset.reportScore);dialog(scoreDisplayName(row,uiLanguage()),'score',reportScoreDetail(row));});
+  root.querySelectorAll('[data-report-balance]').forEach(button=>button.onclick=()=>{const id=button.dataset.reportBalance,row=[...report.balances.pairs,report.balances.pral,report.balances.calciumAbsorption].find(row=>row.id===id);const node=dialog(balanceDisplayName(row,uiLanguage()),'balance',reportBalanceDetail(capture,id));node.querySelectorAll('[data-balance-style]').forEach(element=>{element.style.cssText=element.dataset.balanceStyle;element.removeAttribute('data-balance-style');});});
   for(const chart of charts)void chart.render(root,report.energy);
  }
  function back(){const dialog=stack.pop();if(!dialog)return;dialog.reportDetail?.dispose();dialog.close();dialog.remove();}
