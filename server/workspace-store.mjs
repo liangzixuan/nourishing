@@ -173,8 +173,7 @@ export function createWorkspaceStore(db, owner) {
     return fasting;
   }
 
-  async function persist(state, before, head, transactionId, context = {}) {
-    const packed = packWorkspace(state, owner, head.generation);
+  async function persistPacked(packed, state, before, head, transactionId, context = {}) {
     const old = new Map(before.map(row => [row.$id, row]));
     const writes = [];
     for (const row of packed.rows) {
@@ -199,6 +198,11 @@ export function createWorkspaceStore(db, owner) {
     return packed.head.digest;
   }
 
+  async function persist(state, before, head, transactionId, context = {}) {
+    const packed = packWorkspace(state, owner, head.generation);
+    return persistPacked(packed, state, before, head, transactionId, context);
+  }
+
   async function command(raw, readCatalog, context = {}) {
     const input = parseCommand(raw);
     const receiptId = rowId(owner, input.requestId);
@@ -209,13 +213,15 @@ export function createWorkspaceStore(db, owner) {
     ]);
     if (existing) return existing;
     if (!head || head.ownerId !== owner || head.digest !== input.revision) conflict();
-    // Resolve catalog facts before opening the short-lived write transaction.
-    const catalogFoods = await readActionFoods(input, readCatalog);
+    // Resolve catalog facts and current workspace rows in parallel before opening the write transaction.
+    const [catalogFoods, before] = await Promise.all([
+      readActionFoods(input, readCatalog),
+      workspaceRows(db, owner, head.generation),
+    ]);
 
     return withHeadTransaction(
       head,
       async transactionId => {
-        const before = await workspaceRows(db, owner, head.generation);
         const state = await unpackOrConflict(head, before);
         context.beforeApply?.();
         const loggingBefore = beginCloudLogging(state, input.type);
@@ -224,12 +230,13 @@ export function createWorkspaceStore(db, owner) {
         const commandContext = CATALOG_CONTEXT_TYPES.has(input.type) ? {...context, owner, catalogFoods} : context;
         const saved = applyWorkspaceCommand(state, action, commandContext);
         finishCloudLogging(state, loggingBefore, input.type, calendar);
-        const [revision] = await Promise.all([
-          persist(state, before, head, transactionId, context),
+        const packed = packWorkspace(state, owner, head.generation);
+        const result = formatCommandResult(packed.head.digest, saved);
+        await Promise.all([
+          persistPacked(packed, state, before, head, transactionId, context),
           context.stageMedia ? context.stageMedia({transactionId, generation: head.generation}) : null,
+          stageReceipt(receiptId, fingerprint, result, transactionId),
         ]);
-        const result = formatCommandResult(revision, saved);
-        await stageReceipt(receiptId, fingerprint, result, transactionId);
         return result;
       },
       {

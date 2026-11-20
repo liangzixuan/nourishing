@@ -309,12 +309,55 @@ function buildMediaAndPhotoMethods(ctx) {
           // Fall back to TablesDB search if the compact catalog index is unavailable.
         }
       }
-      return createCloudPhotoAnalyzer().analyze(input, {
+      const result = await createCloudPhotoAnalyzer().analyze(input, {
         owner,
         foods: state.foods,
         signal,
         search,
       });
+      try {
+        const matched = (result.suggestions ?? [])
+          .filter(row => row.kind === 'observation' && row.selection?.id)
+          .map(suggestion => ({
+            suggestion,
+            candidate: suggestion.candidates?.find(c => c.ref.id === suggestion.selection?.id && c.ref.kind === suggestion.selection?.kind),
+          }))
+          .filter(({candidate}) => Boolean(candidate));
+        if (matched.length) {
+          const previewState = structuredClone(state);
+          const localIds = new Set(previewState.foods.map(f => f.id));
+          const missingIds = [...new Set(matched.map(({candidate}) => candidate.ref.id).filter(id => !localIds.has(id)))];
+          const readFood = catalogReader(repository);
+          const fetched = await Promise.all(missingIds.map(async id => [id, await readFood(id)]));
+          const capturedIds = new Map();
+          for (const [id, food] of fetched) {
+            if (food) capturedIds.set(id, captureCatalogFood(previewState, food).id);
+          }
+          const today = new Date().toISOString().slice(0, 10);
+          for (const {suggestion, candidate} of matched) {
+            try {
+              const foodId = capturedIds.get(candidate.ref.id) ?? candidate.ref.id;
+              const estimate = suggestion.portionEstimate;
+              const payload = {
+                foodId,
+                date: today,
+                time: '12:00',
+                group: previewState.settings.groups?.[0] ?? 'Uncategorized',
+                ...(Number.isFinite(candidate.grams) && candidate.grams > 0 && estimate
+                  ? {quantity: estimate.grams, unit: 'g'}
+                  : {amount: 1}),
+              };
+              const preview = previewDiaryItem(previewState, payload);
+              suggestion.preview = {...preview, energy: diaryEnergy(previewState, preview.nutrition.totals.calories)};
+            } catch {
+              // Fall back to on-demand /api/diary/preview if an individual row cannot be precomputed.
+            }
+          }
+        }
+      } catch {
+        // Never fail photo analysis if preview precomputation fails.
+      }
+      return result;
     },
     savePhoto: async (secret, input) => {
       const allowed = ['requestId', 'revision', 'photo', 'reviewToken', 'date', 'time', 'group', 'rows', 'destination'];

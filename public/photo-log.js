@@ -77,7 +77,9 @@ export function mountPhotoLog({show, close, header, content, date, groups, initi
   }
   function makeRow(suggestion, candidate) {
     const estimate = suggestion.portionEstimate;
-    return {name: candidate?.name ?? suggestion.description, foodId: candidate?.ref.id ?? null, ...(Number.isFinite(candidate?.grams) && candidate.grams > 0 && estimate ? {quantity: estimate.grams, unit: 'g'} : {amount: 1}), ...(suggestion.observationIndex !== undefined ? {observationIndex: suggestion.observationIndex} : {}), ...(suggestion.additionIndex !== undefined ? {additionIndex: suggestion.additionIndex} : {}), estimate, suggestion};
+    const quantity = Number.isFinite(candidate?.grams) && candidate.grams > 0 && estimate ? {quantity: estimate.grams, unit: 'g'} : {amount: 1};
+    const preview = suggestion.preview && candidate?.ref.id === suggestion.selection?.id ? suggestion.preview : null;
+    return {name: candidate?.name ?? suggestion.description, foodId: candidate?.ref.id ?? null, ...quantity, ...(preview ? {preview} : {}), ...(suggestion.observationIndex !== undefined ? {observationIndex: suggestion.observationIndex} : {}), ...(suggestion.additionIndex !== undefined ? {additionIndex: suggestion.additionIndex} : {}), estimate, suggestion};
   }
   function review() {
     const additions = analysis.suggestions.filter(suggestion => suggestion.kind === 'possible-addition' && !rows.some(row => row.additionIndex === suggestion.additionIndex));
@@ -103,23 +105,32 @@ export function mountPhotoLog({show, close, header, content, date, groups, initi
   }
   async function commit(destination){
     if(pendingSave)return;pendingSave=true;const panel=body.firstElementChild;
+    const saveBtn=body.querySelector('[data-save]'),saveLabel=saveBtn?.textContent;
+    if(saveBtn&&!destination)saveBtn.textContent='Saving…';
     body.querySelectorAll('button,input,select').forEach(element=>element.disabled=true);
     try{
       await save({photo:{id:analysis.photo.id,dataUrl:analysis.photo.dataUrl},reviewToken:analysis.reviewToken,date:diaryDate,time,group,...(destination?{destination}:{}),rows:rows.map(({foodId,observationIndex,additionIndex,amount,quantity,unit,portionId})=>({foodId,...(observationIndex!==undefined?{observationIndex}:{}),...(additionIndex!==undefined?{additionIndex}:{}),...(quantity!==undefined?{quantity,unit,...(portionId?{portionId}:{})}:{amount})}))});
       if(alive()&&panel.isConnected){dispose();close();}
       void onChange();
-    }finally{pendingSave=false;if(alive())body.querySelectorAll('button,input,select').forEach(element=>element.disabled=false);}
+    }finally{pendingSave=false;if(alive()){if(saveBtn&&saveLabel)saveBtn.textContent=saveLabel;body.querySelectorAll('button,input,select').forEach(element=>element.disabled=false);}}
   }
 
   async function updateNutrition() {
     nutritionAbort?.abort();nutritionAbort=new AbortController();const signal=nutritionAbort.signal,version=++nutritionVersion;
     const summary=body.querySelector('.photo-nutrition-summary');if(!summary)return;
-    const previews=rows.map(()=>null),jobs=rows.map((row,index)=>({row,index})).filter(({row})=>row.foodId);
+    const previews=rows.map(()=>null),jobs=[];
+    for(let index=0;index<rows.length;index++){
+      const row=rows[index];if(!row.foodId)continue;
+      const payload={foodId:row.foodId,date:diaryDate,time,group,...(row.quantity!==undefined?{quantity:row.quantity,unit:row.unit,...(row.portionId?{portionId:row.portionId}:{})}:{amount:row.amount??1})},key=JSON.stringify(payload),label=body.querySelector(`[data-macros="${index}"]`);
+      const cached=nutritionCache.get(key)??(row.preview&&!row.previewStale?row.preview:null);
+      if(cached){nutritionCache.set(key,cached);previews[index]=cached;if(label)label.innerHTML=photoMacros(cached);}
+      else{if(label)label.textContent='Calculating macros…';jobs.push({row,index,payload,key});}
+    }
     const current=()=>alive()&&summary.isConnected&&version===nutritionVersion;
     const render=()=>{if(current())summary.innerHTML=photoNutritionSummary(previews);};
     render();
     async function worker(){while(jobs.length&&current()){
-      const {row,index}=jobs.shift(),payload={foodId:row.foodId,date:diaryDate,time,group,...(row.quantity!==undefined?{quantity:row.quantity,unit:row.unit,...(row.portionId?{portionId:row.portionId}:{})}:{amount:row.amount??1})},key=JSON.stringify(payload),label=body.querySelector(`[data-macros="${index}"]`);
+      const {index,payload,key}=jobs.shift(),label=body.querySelector(`[data-macros="${index}"]`);
       try{
         const result=nutritionCache.get(key)??await request('/api/diary/preview',payload,signal);
         if(!current())return;
@@ -148,7 +159,7 @@ export function mountPhotoLog({show, close, header, content, date, groups, initi
       const preferred = replacing && row.estimate && item.options.some(([id]) => id === 'g') ? {quantity: row.estimate.grams, unit: 'g'} : replacing ? {amount: 1} : row;
       replace(`<form class="entry-form"><p class="photo-edit-name">${e(item.resource.name)}</p>${quantityFields(item.options, preferred)}${row.estimate ? `<p class="photo-preview-details">${e(fc('photoEstimate',{grams:num(row.estimate.grams)}))}</p>` : ''}<footer class="entry-actions"><button type="button" data-back>${e(t("mobileFoodEditor.back"))}</button><button class="primary">${e(t("mobileExpenditure.done"))}</button></footer></form>`);
       const form = body.querySelector('form');form.querySelector('[data-back]').onclick = review;
-      form.onsubmit = event => {event.preventDefault();const {amount, quantity, unit, portionId, ...rest} = row;const next = {...rest, foodId: item.resource.id, name: item.resource.name, ...quantityValue(form), portionLabel: item.resource.portions?.find(p => p.id === form.elements.unit.value.slice(8))?.label};if (index === undefined) rows.push(next);else rows[index] = next;review();};
+      form.onsubmit = event => {event.preventDefault();const {amount, quantity, unit, portionId, preview: _oldPreview, ...rest} = row;const next = {...rest, foodId: item.resource.id, name: item.resource.name, ...quantityValue(form), portionLabel: item.resource.portions?.find(p => p.id === form.elements.unit.value.slice(8))?.label};if (index === undefined) rows.push(next);else rows[index] = next;review();};
     } catch (error) {if (alive() && loading.isConnected) {loading.textContent = error.message;const back = document.createElement('button');back.type = 'button';back.textContent = t("mobileFoodEditor.back");back.onclick = review;body.append(back);}}
   }
   start();return {dispose};

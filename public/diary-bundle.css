@@ -2,6 +2,7 @@
 
 /* /mobile-theme.css */
 /* Mobile surfaces have one palette. The saved theme and device policy live in appearance.js. */
+html,body{overscroll-behavior-y:none}
 .discover-mobile{
  --bg:#f5f6fa;--paper:#fff;--card:var(--paper);--ink:#232638;--muted:#606577;
  --line:#d8dbe5;--border:var(--line);--pale:#e7e9f1;--green:#176e73;--accent:#ff6430;
