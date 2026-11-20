@@ -70,6 +70,8 @@ async function createFixture() {
     reminders: async () => ({supported: false, enabled: false, subscribed: false, schedules: []}),
     library: async () => libraryView(state),
     favorites: async () => favoriteView(state),
+    recordOptions: async () => ({date: today, groups: state.settings.groups, biometrics: []}),
+    exerciseCatalog: async () => ({categories: []}),
     libraryItem: async (_, kind, id, entryId) =>
       libraryItem(state, kind, state[kind + 's'].find(r => r.id === id), state.entries.find(r => r.id === entryId)),
     previewDiary: async (_, payload) => {

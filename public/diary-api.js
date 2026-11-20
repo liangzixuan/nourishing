@@ -80,6 +80,7 @@ export function photoSaver(revision){
  return async input=>{
   const signature=JSON.stringify(input);
   if(pendingPhoto?.signature!==signature)pendingPhoto={signature,body:{...input,revision:revision(),requestId:crypto.randomUUID()}};
-  const result=await request('/api/photos/save',pendingPhoto.body);pendingPhoto=null;return result;
+  try{const result=await request('/api/photos/save',pendingPhoto.body);pendingPhoto=null;return result;}
+  catch(error){if(error?.status===409)pendingPhoto=null;throw error;}
  };
 }

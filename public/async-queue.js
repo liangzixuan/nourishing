@@ -26,7 +26,12 @@ async function runWithRetry(task) {
   try {
     return await task.run();
   } catch (error) {
-    // Only auto-retry transient network/5xx errors; never retry 4xx client/validation errors.
+    // On 409 revision conflict, silently refresh latest workspace revision and retry once.
+    if (error?.status === 409 && typeof task.onConflictRefresh === 'function') {
+      await task.onConflictRefresh();
+      return task.run();
+    }
+    // Only auto-retry transient network/5xx errors; never retry other 4xx client/validation errors.
     if (error?.status >= 400 && error?.status < 500) throw error;
     await new Promise(resolve => setTimeout(resolve, 1200));
     return task.run();

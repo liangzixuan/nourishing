@@ -13,6 +13,9 @@ export function warmDeviceViews(date,{delay=500,force=false}={}){
  const paths=[
   '/api/display',
   '/api/library',
+  '/api/library/favorites',
+  '/api/records/options?'+new URLSearchParams({date}),
+  '/api/records/exercise-catalog',
   '/api/dashboard?'+new URLSearchParams({date}),
   '/api/profile-settings?'+new URLSearchParams({date}),
   '/api/targets?'+new URLSearchParams({date}),

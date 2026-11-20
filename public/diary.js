@@ -47,7 +47,7 @@ const notice = document.querySelector('#notice');
 const headerRoot = document.querySelector('.app-header');
 const shell = createAppShell({headerRoot, dateBar, navigation: document.querySelector('.app-nav')});
 
-onWriteQueueStatus(({pending, label, error, retry}) => {
+onWriteQueueStatus(({error, retry}) => {
   if (error) {
     notice.textContent = '';
     const msg = document.createElement('span');
@@ -60,14 +60,13 @@ onWriteQueueStatus(({pending, label, error, retry}) => {
       retry?.();
     };
     notice.append(msg, btn);
-    return;
-  }
-  if (pending > 0) {
-    notice.textContent = label || 'Syncing…';
-  } else if (notice.textContent && !notice.querySelector('button')) {
-    notice.textContent = '';
   }
 });
+
+async function refreshRevision() {
+  const latest = await request('/api/diary?date=' + date, undefined, undefined, {fresh: true});
+  if (diary && latest?.revision) diary = {...diary, revision: latest.revision};
+}
 
 const svg = path =>
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
@@ -439,8 +438,8 @@ function toggleCompleteDay() {
   diary = {...diary, completed: nextCompleted};
   if (view === 'diary') render();
   enqueueWrite({
-    label: nextCompleted ? 'Marking day complete…' : 'Reopening day…',
     run: () => command(diary.revision, 'day.complete', {date: targetDate, completed: nextCompleted}),
+    onConflictRefresh: refreshRevision,
     onSuccess: async result => {
       if (result?.revision && diary) diary = {...diary, revision: result.revision};
       await load({reuseUnchanged: true});
@@ -634,8 +633,8 @@ function openCustomWaterSheet() {
     const entryTime = new Date().toTimeString().slice(0, 5);
     close();
     enqueueWrite({
-      label: 'Saving water…',
       run: () => command(diary.revision, 'water.add', {date: targetDate, time: entryTime, amount}),
+      onConflictRefresh: refreshRevision,
       onSuccess: async result => {
         if (result?.revision && diary) diary = {...diary, revision: result.revision};
         await load({reuseUnchanged: true});
@@ -657,8 +656,8 @@ const SUMMARY_ACTIONS = {
     const targetDate = date;
     const entryTime = new Date().toTimeString().slice(0, 5);
     enqueueWrite({
-      label: 'Saving water…',
       run: () => command(diary.revision, 'water.add', {date: targetDate, time: entryTime, amount: input.amount}),
+      onConflictRefresh: refreshRevision,
       onSuccess: async result => {
         if (result?.revision && diary) diary = {...diary, revision: result.revision};
         await load({reuseUnchanged: true});
@@ -876,10 +875,9 @@ function foodEditor({item, entry, quantity, returnSearch, viewState}) {
         }
         if (view === 'diary') render();
       }
-      const label = type === 'entry.delete' ? 'Deleting entry…' : type === 'entry.update' ? 'Saving changes…' : 'Adding to diary…';
       enqueueWrite({
-        label,
         run: () => command(diary.revision, type, value),
+        onConflictRefresh: refreshRevision,
         onSuccess: async result => {
           if (result?.revision && diary) diary = {...diary, revision: result.revision};
           await load({reuseUnchanged: true});
@@ -990,8 +988,8 @@ function photoLog(initialGroup) {
       }
       if (diary) render();
       enqueueWrite({
-        label: 'Saving photo meal…',
         run: () => saver(payload),
+        onConflictRefresh: refreshRevision,
         onSuccess: async result => {
           if (result?.revision && diary) diary = {...diary, revision: result.revision};
           await load({reuseUnchanged: true});
