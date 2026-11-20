@@ -8,6 +8,16 @@ export function applyWriteToState(state,row,result){
  const replace=(collection,value)=>{state[collection]??=[];const i=state[collection].findIndex(item=>item.id===value.id);if(i<0)state[collection].push(value);else state[collection][i]=value;};
  const remove=(collection,id)=>{state[collection]=(state[collection]??[]).filter(item=>item.id!==id);};
  projectDiaryBulkWrite(state,row.command);
+ if((type==='selection.recipe'||type==='selection.meal')&&!result?.records){
+  const draft=row.projection?.reusable;
+  if(draft){
+   const foods=new Map((draft.foods??[]).map((food,index)=>[food.id,{...structuredClone(food),id:`${row.command.operationId}-food-${index}`} ]));
+   for(const food of foods.values())replace('foods',food);
+   const resource=structuredClone(draft.resource),field=draft.kind==='recipe'?'ingredients':'items';
+   resource[field]=resource[field].map(item=>foods.has(item.foodId)?{...item,foodId:foods.get(item.foodId).id}:item);
+   replace(draft.kind+'s',{...resource,id:row.command.operationId,name:p.name});
+  }
+ }
  if(type==='records.copy'&&!result?.records){
   const selection=p.selection;
   const records=selection.scope==='selected'?selection.records.map(ref=>({collection:ref.collection,row:state[ref.collection]?.find(item=>item.id===ref.id&&item.date===selection.date)})).filter(item=>item.row):['entries','biometrics','notes'].flatMap(collection=>(state[collection]??[]).filter(item=>item.date===selection.date&&(selection.scope==='day'||item.group===selection.group)).map(row=>({collection,row})));

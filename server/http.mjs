@@ -561,7 +561,9 @@ function registerDiaryAndReportRoutes(add) {
         'records.set-time',
         'records.delete',
         'selection.meal',
+        'selection.recipe',
         'diary.order',
+        'diary.sort-all',
         'group.order',
       ];
       if (!allowed.includes(body?.type)) fail(400, 'Choose a diary action.');

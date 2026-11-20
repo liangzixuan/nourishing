@@ -6,7 +6,7 @@ import {coreText} from './core-cloud-messages.js';
 const key=(collection,id)=>JSON.stringify([collection,id]);
 const name=(collection,row)=>collection==='notes'?row.text:collection==='biometrics'?row.type:row.facts?.name??row.name;
 const button=(label,action,disabled=false)=>`<button type="button" data-diary-tool="${action}" ${disabled?'disabled':''}>${label}</button>`;
-export function createDiaryTools({diary,date,show,close,header,content,render,onChange,onDisplay,onScores,onMealAction}){
+export function createDiaryTools({diary,date,show,close,header,content,render,onChange,onComplete,onReport,onShare,onMealAction,onNutrition}){
  let selecting=false,selected=new Set(),clipboard=null;
  const rows=()=>['entries','notes','biometrics'].flatMap(collection=>(diary()?.[collection]??[]).map(row=>({collection,row})));
  const selection=()=>({date:date(),scope:'selected',records:rows().filter(({collection,row})=>selected.has(key(collection,row.id))).map(({collection,row})=>({collection,id:row.id}))});
@@ -32,11 +32,63 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
  function move(source){const records=refs(source).map(({collection,row})=>({collection,id:row.id,group:row.group??null})),revision=diary().revision;actionForm(coreText('tools.moveGroup'),`<label class="field-row"><span>${e(t('mobileFood.group'))}</span><select name="group">${diary().groups.map(g=>`<option>${e(g)}</option>`).join('')}</select></label>`,values=>save('records.move-group',{date:date(),group:values.group,records},revision));}
  function time(source){const records=refs(source).map(({collection,row})=>({collection,id:row.id,group:row.group??null,time:row.time??''})),revision=diary().revision;actionForm(t('diaryActions.time.set'),`<label class="field-row"><span>${e(t('appActions.time'))}</span><input name="time" type="time"></label>`,values=>save('records.set-time',{date:date(),time:values.time,records},revision));}
  function remove(source){const records=refs(source),revision=diary().revision;confirm(coreText('tools.deleteEntries'),`<p class="diary-tools-summary">${e(coreText('tools.deleteConfirm',{count:records.length}))}</p>`,t('mobileRepeat.delete'),()=>save('records.delete',{selection:source,confirmed:true},revision));}
- async function meal(source){const review=await busy(t('diaryActions.selection.meal'),()=>request('/api/diary/tools/review',{operation:'meal',selection:source}));if(!review)return;actionForm(t('diaryActions.selection.meal'),`<label class="field-row"><span>${e(t('settings.name'))}</span><input name="name" maxlength="500" value="${e(review.name)}" required></label><ul class="diary-tools-preview">${review.items.map(item=>`<li>${e(item.name)}<small>${e(item.quantity??item.amount)} ${e(item.unit??coreText('diary.portions'))}</small></li>`).join('')}</ul>`,values=>save('selection.meal',{selection:review.selection,fingerprint:review.fingerprint,name:values.name,confirmed:true},review.revision));}
+ async function reusable(source,kind){
+  const title=t('diaryActions.selection.'+kind),review=await busy(title,()=>request('/api/diary/tools/review',{operation:kind,selection:source}));if(!review)return;
+  actionForm(title,`<label class="field-row"><span>${e(t('settings.name'))}</span><input name="name" maxlength="500" value="${e(review.name)}" required></label><ul class="diary-tools-preview">${review.items.map(item=>`<li>${e(item.name)}<small>${e(item.quantity??item.amount)} ${e(item.unit??coreText('diary.portions'))}</small></li>`).join('')}</ul>`,values=>save('selection.'+kind,{selection:review.selection,fingerprint:review.fingerprint,name:values.name,confirmed:true},review.revision,{reusable:{kind,resource:review.resource,foods:review.foods}}));
+ }
+
  function order(group){const current=group===undefined?diary().diarySort:diary().groupOrders[group]??'',revision=diary().revision;actionForm(group===undefined?t('diaryGroups.entryOrder'):coreText('tools.groupOrder',{group}),`<label class="field-row"><span>${e(t('diaryGroups.order'))}</span><select name="mode">${[...(group===undefined?[]:[['',coreText('tools.diaryDefault')]]),['source',t('health.count.added')],['time',t('appActions.time')]].map(([value,label])=>`<option value="${value}" ${value===current?'selected':''}>${label}</option>`).join('')}</select></label>`,values=>save(group===undefined?'diary.order':'group.order',group===undefined?{mode:values.mode}:{group,mode:values.mode||null},revision));}
  function select(source){selecting=true;selected=new Set(refs(source).map(({collection,row})=>key(collection,row.id)));close();render();}
- const actions={copy:capture,paste:copy,clear,move,time,meal,delete:remove};
- function menu(){screen(t('nav.diary'),`<div class="diary-tools-menu">${button(coreText('tools.selectEntries'),'select')}${button(t('diary.copyDay'),'copy')}${button(t('mobileCompositeEditor.paste'),'paste',!clipboard)}${button(t('diary.clearAmounts'),'clear')}${button(t('diaryGroups.entryOrder'),'order')}${onDisplay?button(coreText('diary.display'),'display'):''}${onScores?button(t('mobileScoreSettings.title'),'scores'):''}${button(t('reminders.refresh'),'refresh')}</div>`);content.querySelectorAll('[data-diary-tool]').forEach(b=>b.onclick=()=>{const action=b.dataset.diaryTool;if(action==='select'){selecting=true;selected.clear();close();render();}else if(action==='paste')copy(clipboard);else if(action==='order')order();else if(action==='display')onDisplay();else if(action==='scores')onScores();else if(action==='refresh'){close();onChange();}else actions[action](all());});}
+ const actions={copy:capture,paste:copy,clear,move,time,meal:source=>reusable(source,'meal'),recipe:source=>reusable(source,'recipe'),nutrition:source=>onNutrition(source),delete:remove};
+ function menuSheet(label,items,choose){
+  show(`<section class="diary-menu-sheet" aria-label="${e(label)}"><h2 id="sheet-title" class="diary-menu-title">${e(label)}</h2>${items.map(item=>button(e(item.label),item.id,item.disabled)).join('')}<p role="status" class="sheet-message"></p></section>`);
+  const root=content.querySelector('.diary-menu-sheet');
+  root.querySelectorAll('[data-diary-tool]').forEach(node=>node.onclick=async()=>{node.disabled=true;try{await choose(node.dataset.diaryTool);}catch(error){if(root.isConnected)root.querySelector('[role=status]').textContent=error.message;}finally{node.disabled=false;}});
+ }
+ async function copyPreviousDay(){
+  const destination={date:date(),group:null},previous=new Date(date()+'T12:00:00Z');previous.setUTCDate(previous.getUTCDate()-1);
+  const review=await busy(coreText('diary.copyPreviousDay'),()=>request('/api/diary/tools/review',{operation:'copy',selection:{date:previous.toISOString().slice(0,10),scope:'day'},destination}));if(!review)return;
+  return save('records.copy',{selection:review.selection,destination:review.destination,fingerprint:review.fingerprint,confirmed:true},review.revision);
+ }
+ function menu(){
+  if(selecting)return selectionMenu();
+  const items=[
+   {id:'complete',label:diary().completed?t('diary.reopen'):coreText('diary.completeDay')},
+   {id:'report',label:coreText('diary.dailyReport')},
+   {id:'share',label:coreText('diary.shareWidgets')},
+   {id:'sort-all',label:coreText('diary.sortAll')},
+   {id:'select',label:coreText('diary.multiSelectAction')},
+   ...(clipboard?[{id:'paste',label:t('mobileCompositeEditor.paste')}]:[]),
+   {id:'copy',label:coreText('diary.copyCurrentDay')},
+   {id:'copy-previous',label:coreText('diary.copyPreviousDay')},
+   {id:'clear',label:coreText('diary.clearAllAmounts')},
+   {id:'delete',label:coreText('diary.deleteAll')}
+  ];
+  menuSheet(t('nav.diary'),items,async action=>{
+   if(action==='select'){selecting=true;selected.clear();close();render();}
+   else if(action==='complete'){await onComplete();close();}
+   else if(action==='report'){close();onReport();}
+   else if(action==='share')onShare();
+   else if(action==='sort-all')await save('diary.sort-all',{});
+   else if(action==='copy-previous')await copyPreviousDay();
+   else if(action==='paste')copy(clipboard);
+   else await actions[action](all());
+  });
+ }
+
+ function selectionMenu(){
+  const source=selection(),records=refs(source),count=records.length,foods=records.filter(({collection,row})=>collection==='entries'&&row.kind!=='exercise'),foodOnly=!!count&&foods.length===count;
+  const items=[
+   {id:'time',label:coreText('diary.selectedTime'),disabled:!foodOnly},
+   {id:'recipe',label:coreText('diary.selectedRecipe'),disabled:!foodOnly},
+   {id:'meal',label:coreText('diary.selectedMeal'),disabled:!foodOnly},
+   {id:'copy',label:coreText('tools.copy'),disabled:!count},
+   {id:'nutrition',label:coreText('diary.selectedNutrition'),disabled:!foods.length},
+   {id:'delete',label:t('mobileRepeat.delete'),disabled:!count}
+  ];
+  menuSheet(coreText('diary.selectedActions'),items,action=>actions[action](source));
+ }
+
  function groupMenu(group){const source=groupSelection(group),configured=diary().groups.includes(group);screen(group,`<div class="diary-tools-menu">${button(coreText('tools.selectGroup'),'select')}${button(t('diaryCopy.copyGroup'),'copy')}${button(t('diary.clearAmounts'),'clear')}${configured?button(t('diaryGroups.entryOrder'),'order'):''}</div>`);content.querySelectorAll('[data-diary-tool]').forEach(b=>b.onclick=()=>{const action=b.dataset.diaryTool;if(action==='select')select(source);else if(action==='order')order(group);else actions[action](source);});}
  async function expand(entry){
   const review=await busy(mealText('expand'),()=>request('/api/diary/tools/review',{operation:'expand',date:entry.date,id:entry.id}));if(!review)return;
@@ -57,7 +109,8 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
   menu,groupMenu,recordMenu,reset,selection:()=>selecting?selection():null,
   selectBox(collection,row){return selecting?`<input type="checkbox" class="diary-select" data-tool-select data-collection="${collection}" data-id="${e(row.id)}" aria-label="${e(coreText('tools.selectName',{name:name(collection,row)}))}" ${selected.has(key(collection,row.id))?'checked':''}>`:'';},
   groupBox(group){const members=refs(groupSelection(group));return selecting?`<input type="checkbox" class="diary-select" data-tool-select-group="${e(group)}" aria-label="${e(coreText('tools.selectName',{name:group}))}" ${!members.length?'disabled':members.every(({collection,row})=>selected.has(key(collection,row.id)))?'checked':''}>`:'';},
-  toolbar(){if(!selecting)return '';const count=selection().records.length,foodOnly=refs(selection()).every(({collection,row})=>collection==='entries'&&row.kind!=='exercise');return `<section class="diary-selection-tools"><div><strong>${e(coreText('tools.selected',{count}))}</strong>${button(t('mobileExpenditure.done'),'done')}</div><nav>${button(coreText('tools.copy'),'copy',!count)}${button(t('entryControls.move'),'move',!count)}${button(t('appActions.time'),'time',!count||!foodOnly)}${button(t('diary.clearAmounts'),'clear',!count)}${button(t('diaryActions.selection.meal'),'meal',!count||!foodOnly)}${button(t('mobileRepeat.delete'),'delete',!count)}</nav></section>`;},
+  selectionHeader(icons){return selecting?`<div class="diary-selection-header"><button type="button" class="icon-button" data-diary-tool="done" aria-label="${e(t('mobileFoodEditor.back'))}">${icons.back}</button><h2>${e(coreText('diary.multiSelect'))}</h2><button type="button" class="icon-button" data-diary-menu aria-label="${e(coreText('diary.selectedActions'))}">${icons.more}</button></div>`:'';},
+  toggleRow(target){if(!selecting||target.closest('input'))return false;const row=target.closest('[data-diary-record]');if(!row)return false;const k=key(row.dataset.collection,row.dataset.id);selected.has(k)?selected.delete(k):selected.add(k);render();return true;},
   change(event){const input=event.target;if(input.hasAttribute('data-tool-select')){const k=key(input.dataset.collection,input.dataset.id);input.checked?selected.add(k):selected.delete(k);render();return true;}if(input.hasAttribute('data-tool-select-group')){for(const {collection,row}of refs(groupSelection(input.dataset.toolSelectGroup))){const k=key(collection,row.id);input.checked?selected.add(k):selected.delete(k);}render();return true;}return false;},
   action(action){if(action==='done'){reset();render();return;}actions[action]?.(selection());},
   dispose(){reset();clipboard=null;}

@@ -7,9 +7,10 @@ import {recipeForEntry} from './domain/recipe-entry.mjs';
 import {mealForEntry} from './domain/meal-entry.mjs';
 import {digest} from './data-codec.mjs';
 import {invalid} from './request-errors.mjs';
-export const libraryKinds=['food','recipe','meal'];
+import {libraryKinds,libraryItems} from './domain/library-list.mjs';
+export {libraryKinds};
 export function libraryView(state){
- return {revision:digest(state),taxonomy:{categories:foodCategories,tags:foodTags},energyUnit:state.settings.energyUnit??'kcal',nutrients:catalog.map(({id,name,unit,group,category})=>({id,name,unit,group,category})),items:libraryKinds.flatMap(kind=>state[kind+'s'].filter(row=>!row.readOnly).map(({id,name,retired})=>({id,name,kind,retired:!!retired,favorite:(state.settings.favorites??[]).some(ref=>ref.kind===kind&&ref.id===id)})))};
+ return {revision:digest(state),taxonomy:{categories:foodCategories,tags:foodTags},energyUnit:state.settings.energyUnit??'kcal',nutrients:catalog.map(({id,name,unit,group,category})=>({id,name,unit,group,category})),items:libraryItems(state)};
 }
 export function libraryItem(state,kind,resource,entry){
  if(!libraryKinds.includes(kind)||!resource)invalid('This library item no longer exists.');

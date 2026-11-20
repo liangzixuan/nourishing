@@ -1,5 +1,6 @@
 import {uiLanguage} from './app-language.js';
-import {prepareStreakImage,canShareStreak,shareStreak,saveStreak} from './streak-source/discover-share.js';
+import {prepareStreakImage} from './streak-source/discover-share.js';
+import {canShareImage,shareImage,saveImage} from './image-sharing.js';
 import {formatMessage} from './dashboard-source/message-format.js';
 import {escape as e} from './html.js';
 
@@ -14,11 +15,11 @@ export function openStreakShare(stats,{show,header,content,language=uiLanguage()
   if(!alive()){dispose();return;}
   url=URL.createObjectURL(file);const counts=stats?.savedCounts??{},number=value=>value.toLocaleString(language);
   const description=message('share.description',{days:number(stats?.longest??0),food:number(counts.food??0),exercise:number(counts.exercise??0),metric:number(counts.metric??0),fast:number(counts.fast??0)});
-  host.innerHTML=`<img class="dc-streak-image" src="${url}" alt="${e(description)}"><div class="dc-share-actions"><button type="button" class="primary">${e(message(canShareStreak(file)?'share.button':'share.save'))}</button></div><p role="status"></p>`;
-  const button=host.querySelector('button'),status=host.querySelector('[role=status]');let download=!canShareStreak(file);
+  host.innerHTML=`<img class="dc-streak-image" src="${url}" alt="${e(description)}"><div class="dc-share-actions"><button type="button" class="primary">${e(message(canShareImage(file)?'share.button':'share.save'))}</button></div><p role="status"></p>`;
+  const button=host.querySelector('button'),status=host.querySelector('[role=status]');let download=!canShareImage(file);
   button.onclick=async()=>{
-   if(!alive())return;status.textContent='';if(download){saveStreak(file);return;}button.disabled=true;
-   try{const result=await shareStreak(file,language);if(result==='unavailable'&&alive()){download=true;button.textContent=message('share.save');}}
+   if(!alive())return;status.textContent='';if(download){saveImage(file);return;}button.disabled=true;
+   try{const result=await shareImage(file,message('share.nativeTitle'));if(result==='unavailable'&&alive()){download=true;button.textContent=message('share.save');}}
    catch{if(alive())status.textContent=message('share.failed');}
    finally{if(alive())button.disabled=false;}
   };

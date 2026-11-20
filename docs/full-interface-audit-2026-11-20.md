@@ -8,7 +8,7 @@ This audit replaces the broad coverage claims in the earlier parity audit. Versi
 
 The reference archive is `Downloads/Cronometer Reference - 2026-11-20`: 333 retained screenshot/XML pairs. All 28 contact sheets have received an overview review. This is **not** a claim that 333 current-app states have passed comparison. Personal screenshots and extracted text stay outside Git.
 
-Current visual checks use the actual frontend and canonical domain/view code at localhost port 4401 with synthetic data. Recognition responses and the food catalog are fixtures. These checks do not establish production authentication, AI quality, camera permissions, notification delivery, or installed-device behavior. Different viewport scaling prevents a pixel-accurate comparison.
+Current visual checks use the actual frontend and canonical domain/view code in local browser fixtures with synthetic data. Recognition responses and the food catalog are fixtures. These checks do not establish production authentication, AI quality, camera permissions, notification delivery, or installed-device behavior. Different viewport scaling prevents a pixel-accurate comparison.
 
 Each state needs separate evidence for layout/actions, navigation/dismissal, and applicable create/edit/cancel/delete behavior. Save flows also need immediate local results, persisted restart, delayed response, failure/retry, and no duplicate records. A screen is not complete because its parent tab exists or a unit test passes.
 
@@ -18,9 +18,9 @@ Status terms: **different** = observed mismatch; **missing** = reference action 
 
 | ID | Priority | State and references | Finding | Evidence / work required |
 | --- | --- | --- | --- | --- |
-| D1 | High | Diary day menu, 56/216 | Different: generic full-screen menu with eight actions instead of the nine-row bottom sheet. Complete Day, Daily Report, Share Diary Widgets, Copy Previous Day and Delete All are absent from this menu. | Browser + `public/diary-tools.js`. Preserve working commands and add the correct entry points; inspect sharing destination before implementing it. |
-| D2 | High | Diary multi-select, 57–59/217–222 | Different/missing: selected-count card and chip toolbar replace Multi Select Mode header and overflow sheet. Recipe creation and selection nutrition are absent. | Browser + `public/diary-tools.js`. Check whole-row selection, exit, disabled actions and mixed record types. |
-| R4 | High | Diary bulk actions | Missing immediate local projection for copy, clear amounts, move group, timestamps, bulk delete and ordering. Background queuing alone does not satisfy instant local updates. | Source: `public/write-projection.js`, `public/offline-model.js`. Reproduce and compare local effects with canonical commands, including receipt reconciliation. |
+| D1 | High | Diary day menu, 56/216 | Corrected locally: nine-action bottom sheet, with Paste shown after Copy. Complete Day, Daily Report, widget sharing, sorting, previous-day copy and Delete All now have entry points. | Browser assertions cover all nine labels and sharing selection/preview/download. Full action journeys and installed-device checks remain open. Sharing follows the public guide; exact current widget graphics remain unverified. |
+| D2 | High | Diary multi-select, 57–59/217–222 | Corrected locally: Multi Select Mode header, six-action overflow, whole-row selection, recipe creation and nutrition summary. | Browser checks cover mixed-row disabled actions, whole-row toggles, nutrition and recipe cancellation. Recipe/meal creation still uses a compact name/ingredient form; the complete staged editor remains a gap. |
+| R4 | High | Diary bulk actions and selection creation | Local projections now cover copy, clear amounts, move group, timestamps, bulk delete, ordering, and creation of recipes/meals. Cached Foods lists derive from the same effective local state. | Canonical/local comparisons and real-queue browser checks cover lost acknowledgements, restart, identity reconciliation, and visible created recipes. This does not establish every CRUD journey. |
 | R5 | High | Diary copy/clear/create selection | Reviews require a network request before progressing. | Source: `public/diary-tools.js`. Reuse canonical preparation over the local snapshot; retain stale-source protection. |
 | D3 | Medium | Report, 133–143 | Different: long lists of source-specific nutrient variants appear by default, with repeated empty rows and extra coverage/detail text. | Browser + Report renderer. Retain source data, but show the concise user-facing nutrient set by default. |
 | D4 | Medium | Report settings, 134–137 | Different: Days Displayed uses a native select rather than the reference choice screen. Extra More fold. | Browser. Date Range list exists; Custom Range currently uses two native date fields. |
@@ -39,17 +39,20 @@ Status terms: **different** = observed mismatch; **missing** = reference action 
 | D15 | Medium | Macro template editor, 186 | Different: missing overflow controls and a separate Units card below the editor. | Browser: Fixed and Ratios states, cancel return and scheduler options inspected. Scheduler structure is close to reference; create/update persistence remains unverified in this audit. |
 | D16 | High | Nutrient Targets vitamin rows, 190–192 | Same underlying display issue as D3: source-specific variants precede the normal vitamin list. | Browser screenshot and catalog source. Both Reports and Targets need a shared default display set/order, with advanced source facts retained. |
 
+| D17 | High | Diary group menu | Missing actions: current menu has Select Group, Copy, Clear Amounts and Order. The public reference guide also exposes timestamp, previous-day group copy, recipe/meal creation, quick-add default, nutrition and delete. | Source plus [Mobile: Edit Diary Entries](https://support.cronometer.com/hc/en-us/articles/360019003171-Mobile-Edit-Diary-Entries). Compare saved group-menu states before implementation; do not infer completion from the day-menu fix. |
+
 ### Local verification in progress
 
-Bulk move, timestamp, delete, clear-amount and global/group ordering now project into the retained local state for both pending and acknowledged writes. Copy now shares record-shaping rules with the canonical save and receives canonical record IDs in its receipt. A real-queue browser regression passed for mixed food/note/water copy, immediate edit/delete, lost acknowledgement, restart and identity reconciliation. Selection creation and network-bound preparation remain open; this does not close R4/R5.
+Bulk actions and selection creation now project into device state and reconcile canonical receipt identities. The cached Foods list uses that state so a new recipe remains visible after a lost server response and reload. Browser tests cover this path, mixed food/note/water copying, selection navigation, disabled actions, and local storage failure. Network-bound preparation remains open under R5.
 
-After the sync-notice change, 12 focused tests passed across background-write browser tests, bulk projection tests and food-entry browser tests. They cover retry silence, one blocked-change review action, recovery, retained pending changes, lost acknowledgements, restore protection and visible local-storage failure. No release or production-device verification has occurred for these changes.
+Transient sync errors stay silent; blocked changes have one concise Review action. Error details remain in Device storage. Tests cover retained pending changes, retry recovery and lost acknowledgements. Widget sharing follows the [public sharing guide](https://support.cronometer.com/hc/en-us/articles/21818099650836-Mobile-Social-Sharing), with local image generation and a tested image-download fallback. Native device sharing is not yet verified for the new Diary flow.
 
 Additional inspected states: Profile sex/weight/height/body-fat pickers; Diary Settings folds/subtotals/quick-add; Note editor/photo chooser; Cardio exercise picker/effort; Suggest Food filters/results/quantity/remove; Oracle form/results/back; Repeat create/options/pending list. These are structure checks unless separately stated above, not complete journey passes.
 
 Further checks: Macro & Energy fixed/advanced controls, Macro Scheduler list/options, new template Fixed/Ratio/cancel, missing-profile expenditure setup/cancel, Nutrient Targets categories/vitamin rows. The populated expenditure state remains unverified because this synthetic account has no profile. The local fixture command adapter now supplies its catalog reader; the earlier Repeat sync failure was fixture-specific. Background error banners were absent after loading the corrected fixture and current bundle.
 
-The full local suite ran 634 tests: 632 passed and two browser tests still expected the removed retry banners. Those tests now verify the Review route for a blocked setting and silent automatic retry for a lost reply; both passed on rerun. The production Astro build passed. CI/deployment is not yet performed for this working set.
+Version 1.0.14 local verification: all 638 tests passed, and the production Astro build passed. CI and deployment are pending. The earlier failed runs exposed stale UI assertions and an expected provenance hash update after extracting shared image actions; affected tests then passed. These results establish the tested behavior, not complete interface parity.
+
 
 ## State coverage ledger
 
@@ -57,8 +60,8 @@ Ranges identify reference states, not a blanket pass. The local extracted invent
 
 | Journey / references | Current comparison | Remaining checks |
 | --- | --- | --- |
-| Diary empty/populated/day menu, 1/4/56/216/335 | Different: D1 | Date header, summary folds, groups, row actions, day status, all menu destinations |
-| Diary multi-select, 57–59/215–222 | Different/missing: D2 | Each selection action, mixed rows, whole-row toggle, cancellation |
+| Diary empty/populated/day menu, 1/4/56/216/335 | Day menu corrected locally: D1 | Date header, summary folds, groups, row actions, day status, all menu destinations |
+| Diary multi-select, 57–59/215–222 | Header/actions corrected locally: D2 | Full reusable editors, each save action and device checks |
 | Calendar, 303–304 | Unverified | Month navigation, legend, completed days, date return |
 | Add to Diary, 2–3 | Structure checked | Edit/reorder/hide options, each destination and return |
 | Biometrics, 5–23 | Grid and heart-rate editor structure checked | Category icons, all picker states, multi-value measurements, create/edit/delete, completed-day handling |

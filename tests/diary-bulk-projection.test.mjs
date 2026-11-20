@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {initialState,act} from '../server/domain/workspace.mjs';
 import {diaryToolsReview,applyDiaryToolsCommand} from '../server/diary-tools.mjs';
+import {applyWorkspaceCommand} from '../server/workspace-commands.mjs';
+import {entryFacts} from '../server/domain/nutrition.mjs';
+import {writeReceiptIdentities,remapWriteReferences} from '../public/write-identities.js';
 import {buildLocalDiary} from '../scripts/package-local-diary.mjs';
 await buildLocalDiary();
 const {applyWriteToState}=await import('../public/write-projection.js');
@@ -37,4 +40,26 @@ test('local global and group ordering agree with canonical settings',()=>{
  compare('diary.order',{mode:'time'});
  const state=fixture();compare('group.order',{group:'Lunch',mode:'time'},state);
  compare('group.order',{group:'Lunch',mode:null},state);
+ state.settings.diaryGroupOrder={version:1,groups:[{group:'Lunch',mode:'source'}]};
+ compare('diary.sort-all',{},state);assert.equal(state.settings.diarySort,'time');assert.equal(state.settings.diaryGroupOrder,undefined);
+});
+
+test('recipes and meals from a selection appear locally, then keep canonical identities after acknowledgement',()=>{
+ for(const kind of ['recipe','meal']){
+  const state=fixture();act(state,'entry.add',{name:'Inline snack',date,amount:2,nutrients:{calories:30}});
+  const selection={date,scope:'selected',records:state.entries.filter(row=>row.date===date).map(row=>({collection:'entries',id:row.id}))};
+  const review=diaryToolsReview(state,{operation:kind,selection});
+  const command={type:'selection.'+kind,operationId:'selected-fixture',payload:{selection:review.selection,fingerprint:review.fingerprint,name:'Saved '+kind,confirmed:true}};
+  const row={command,projection:{reusable:{kind,resource:review.resource,foods:review.foods}}},pending=structuredClone(state),acknowledged=structuredClone(state);
+  applyWriteToState(pending,row);
+  const resource=pending[kind+'s'].find(item=>item.id===command.operationId);
+  assert.equal(resource?.name,'Saved '+kind);
+  assert.equal(entryFacts(pending,{[kind+'Id']:resource.id,amount:1}).nutrients.calories,210);
+  const result=applyWorkspaceCommand(state,{type:command.type,payload:command.payload});applyWriteToState(acknowledged,row,result);
+  for(const collection of ['foods','recipes','meals','entries'])assert.deepEqual(acknowledged[collection],state[collection]);
+  const identities=writeReceiptIdentities(row,result),next={payload:{[kind+'Id']:resource.id,items:[{foodId:'selected-fixture-food-0'}]}};
+  remapWriteReferences(next,identities);
+  assert.equal(next.payload[kind+'Id'],result.id);
+  assert.equal(next.payload.items[0].foodId,result.records.foods[0].id);
+ }
 });

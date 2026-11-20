@@ -12,6 +12,23 @@ import {createWorkspaceStore} from '../server/workspace-store.mjs';
 import {diaryStoreFixture} from './fixtures/diary-store.mjs';
 import {diaryToolsReview} from '../server/diary-tools.mjs';
 
+test('selection-created recipes stay visible in cached library reads before and after lost-ack recovery',async()=>{
+ const state=initialState(),date='2026-11-20';state.foods=[{id:'rice',name:'Rice',grams:100,nutrients:{calories:100}}];act(state,'entry.add',{foodId:'rice',date,amount:1});
+ const review=diaryToolsReview(state,{operation:'recipe',selection:{date,scope:'selected',records:state.entries.map(row=>({collection:'entries',id:row.id}))}});
+ await realQueueFixture(state,async({page,fixture,flush})=>{
+  const result=await page.evaluate(async review=>{
+   const {queueCommand}=await import('/diary-api.js'),{overlayPendingResponse}=await import('/background-writes.js');
+   const result=await queueCommand(review.revision,'selection.recipe',{selection:review.selection,fingerprint:review.fingerprint,name:'Local lunch',confirmed:true},{projection:{reusable:{kind:'recipe',resource:review.resource,foods:review.foods}}});
+   return {result,view:await overlayPendingResponse('/api/library',{items:[]})};
+  },review);
+  assert.ok(result.view.items.some(item=>item.kind==='recipe'&&item.name==='Local lunch'));
+  await flush();assert.equal(fixture.state().recipes.length,1);
+  await page.reload();await flush();
+  const view=await page.evaluate(async()=>await(await import('/background-writes.js')).overlayPendingResponse('/api/library',{items:[]}));
+  assert.deepEqual(view.items.filter(item=>item.kind==='recipe').map(item=>({id:item.id,name:item.name})),fixture.state().recipes.map(({id,name})=>({id,name})));
+ },{losePath:'/api/workspace/command'});
+});
+
 async function realQueueFixture(state,run,{losePath,rejectWrite}={}){
  const owner='owner-a',date='2026-11-20',fixture=diaryStoreFixture(state,owner),store=createWorkspaceStore(fixture.db,owner),sent=[];let lose=Boolean(losePath);
  const server=createServer(async(req,res)=>{try{

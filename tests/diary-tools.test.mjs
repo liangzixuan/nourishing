@@ -32,6 +32,17 @@ test('reusable meal uses original quantities and inline snapshots, with no calle
  const meal=state.meals.find(row=>row.id===result.result.id);assert.equal(meal.items.length,4);assert.equal(entryFacts(state,{mealId:meal.id,amount:1}).nutrients.calories,700);
  assert.throws(()=>apply(state,'selection.meal',{selection:review.selection,fingerprint:review.fingerprint,name:'Injected',confirmed:true,nutrients:{calories:1}}),{code:400});assert.throws(()=>apply(state,'selection.meal',{selection:review.selection,fingerprint:review.fingerprint,name:'Stale',confirmed:true}),{status:409});
 });
+
+test('selection recipe keeps measured ingredients and creates a reusable snapshot without changing the diary',()=>{
+ const state=setup();act(state,'entry.add',{name:'Inline',date,group:'Lunch',amount:2,nutrients:{calories:50}});
+ const review=diaryToolsReview(state,{operation:'recipe',selection:select(state)}),before=structuredClone(state.entries);
+ const result=apply(state,'selection.recipe',{selection:review.selection,fingerprint:review.fingerprint,name:'Saved recipe',confirmed:true});
+ const recipe=state.recipes.find(row=>row.id===result.result.id);
+ assert.equal(recipe.name,'Saved recipe');assert.equal(recipe.ingredients.length,4);
+ assert.equal(entryFacts(state,{recipeId:recipe.id,amount:1}).nutrients.calories,700);
+ assert.deepEqual(state.entries,before);
+ assert.throws(()=>apply(state,'selection.recipe',{selection:review.selection,fingerprint:review.fingerprint,name:'Stale recipe',confirmed:true}),{status:409});
+});
 test('global and group order change display only; account kJ conversion never changes recorded calories',()=>{
  const state=setup(),before=structuredClone(state.entries);state.settings.energyUnit='kJ';apply(state,'diary.order',{mode:'time'});apply(state,'group.order',{group:'Lunch',mode:'source'});
  const project=()=>diaryToolsPresentation(state,{groups:state.settings.groups,entries:state.entries.map(row=>({...row,facts:entryFacts(state,row)})),summary:calculateSummary(state,date)});

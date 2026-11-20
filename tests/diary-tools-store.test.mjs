@@ -27,3 +27,14 @@ test('repository projects persisted order and energy settings without altering n
  const f=setup();await f.command('diary.order',{mode:'time'});const state=f.state();state.settings.energyUnit='kJ';const persisted=diaryStoreFixture(state),repository=createDataRepository(persisted.db,owner),view=await repository.diary(date);
  assert.equal(view.energyUnit,'kJ');assert.equal(view.consumedEnergy,836.8);assert.deepEqual(view.entries.map(r=>r.time),['08:00','18:00']);assert.equal(view.entries[0].energyValue,418.4);assert.equal(view.entries[0].facts.nutrients.calories,100);assert.equal(view.revision,digest(state));
 });
+
+test('selection recipe and meal saves replay the same resource after a lost commit reply',async()=>{
+ for(const kind of ['recipe','meal']){
+  const f=setup(),before=f.state(),selection={date,scope:'selected',records:before.entries.map(row=>({collection:'entries',id:row.id}))};
+  const review=diaryToolsReview(before,{operation:kind,selection}),input=f.input('selection.'+kind,{selection:review.selection,fingerprint:review.fingerprint,name:'Saved '+kind,confirmed:true});
+  f.lose();const saved=await f.store.command(input,async()=>null,context);
+  assert.deepEqual(await f.store.command(input,async()=>null,context),saved);
+  assert.equal(f.state()[kind+'s'].length,1);assert.equal(saved.records[kind+'s'][0].name,'Saved '+kind);
+  assert.deepEqual(f.state().entries,before.entries);assert.equal(f.table('command_receipts').size,1);
+ }
+});

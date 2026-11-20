@@ -61,6 +61,7 @@ jobs:
           CHROME_PATH: /usr/bin/google-chrome
         run: |
           node scripts/package-diary-bundle.mjs
+          node scripts/package-diary-styles.mjs
           mkdir -p coverage
           node --test \
             --experimental-test-coverage \

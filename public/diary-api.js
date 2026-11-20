@@ -29,7 +29,7 @@ function invalidationPrefixes(path,body){
   if(/^(?:display|pause-life)\./.test(type))return DISPLAY_PREFIXES;
   if(/^(?:profile|target|targets|nutrient-target|energy|weight-goal|macro)\./.test(type))return TARGET_PREFIXES;
   if(/^(?:fast|fasting)\./.test(type))return FASTING_PREFIXES;
-  if(/^(?:food|recipe|meal|favorite|library)\./.test(type))return LIBRARY_PREFIXES;
+  if(/^(?:food|recipe|meal|favorite|library|selection)\./.test(type))return LIBRARY_PREFIXES;
   if(/^repeat\./.test(type))return REPEAT_PREFIXES;
   if(/^snapshot\./.test(type))return SNAPSHOT_PREFIXES;
  }
@@ -82,7 +82,7 @@ export async function request(path,body,signal,options){
 }
 export async function command(revision,type,payload){
  const signature=JSON.stringify({revision,type,payload});if(pending?.signature!==signature)pending={signature,body:{revision,type,payload,requestId:crypto.randomUUID()}};
- const path=['cycle.import','cycle.remove'].includes(type)?'/api/cycle/'+type.split('.')[1]:type==='share.import'?'/api/library/share/import':['records.copy','records.clear-amounts','records.move-group','records.set-time','records.delete','selection.meal','diary.order','group.order'].includes(type)?'/api/diary/tools/save':type==='barcode.log'?'/api/barcode/save':type==='library.retirement'?'/api/library/command':type==='entry.ingredients.adjust'?'/api/diary/ingredients/save':'/api/workspace/command';
+ const path=['cycle.import','cycle.remove'].includes(type)?'/api/cycle/'+type.split('.')[1]:type==='share.import'?'/api/library/share/import':['records.copy','records.clear-amounts','records.move-group','records.set-time','records.delete','selection.meal','selection.recipe','diary.sort-all','diary.order','group.order'].includes(type)?'/api/diary/tools/save':type==='barcode.log'?'/api/barcode/save':type==='library.retirement'?'/api/library/command':type==='entry.ingredients.adjust'?'/api/diary/ingredients/save':'/api/workspace/command';
  const result=await request(path,pending.body);pending=null;return result;
 }
 

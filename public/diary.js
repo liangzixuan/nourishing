@@ -28,7 +28,8 @@ import {createDiaryTools} from './diary-tools.js';
 import {openNutrientDetail} from './nutrient-detail.js';
 import {openBarcode} from './barcode.js';
 import {openEntryAdjustment} from './entry-adjustments.js';
-import {openMealNutrition} from './meal-nutrition.js';
+import {openMealNutrition,openSelectionNutrition} from './meal-nutrition.js';
+import {openDiaryShare} from './diary-sharing.js';
 import {openFoodInsights} from './food-insights.js';
 import {mountPhotoLog} from './photo-log.js';
 import {mountRecordEditor} from './records.js';
@@ -151,9 +152,11 @@ const diaryTools = createDiaryTools({
   content,
   render,
   onChange: load,
-  onDisplay: () => summaryAction({action: 'configure-diary-display'}),
-  onScores: () => summaryAction({action: 'choose-scores'}),
+  onComplete: toggleCompleteDay,
+  onReport: () => navigate('discover','report',date),
+  onShare: () => {const share=openDiaryShare(diary,{show,header,content});pickerCleanup=Object.assign(share.dispose,{back:share.back});},
   onMealAction: mealAction,
+  onNutrition: selection => openSelectionNutrition({selection,revision:diary.revision,energyUnit:diary.energyUnit,show,header,content}),
 });
 
 sheet.addEventListener('click', event => {
@@ -305,7 +308,7 @@ function render() {
   document.querySelector('#diary-tab').setAttribute('aria-current', 'page');
   document.querySelector('#foods-tab').removeAttribute('aria-current');
 
-  dateBar.innerHTML = mobileDiaryHeader({
+  dateBar.innerHTML = diaryTools.selectionHeader(icons) || mobileDiaryHeader({
     date,
     today: today(),
     complete: diary.completed,
@@ -341,7 +344,7 @@ function render() {
     labels: {add: t('diary.addFood')},
   });
 
-  page.innerHTML = `${diaryCycleMarkup(diary.cycleDays)}${diaryTools.toolbar()}${diarySummaryMarkup(displayedDiary, diaryTools.selection())}<div class="md-diary diary-layout">${groupMarkup}</div>`;
+  page.innerHTML = `${diaryCycleMarkup(diary.cycleDays)}${diarySummaryMarkup(displayedDiary, diaryTools.selection())}<div class="md-diary diary-layout">${groupMarkup}</div>`;
   summaryPanel = mountDiarySummary({
     root: page,
     diary: displayedDiary,
@@ -507,7 +510,7 @@ function handleDocumentClick(event) {
     event.preventDefault();
     return diaryTools.groupMenu(target.dataset.toolGroup);
   }
-  if (target.dataset.diaryTool && target.closest('.diary-selection-tools')) return diaryTools.action(target.dataset.diaryTool);
+  if (target.dataset.diaryTool && target.closest('.diary-selection-header')) return diaryTools.action(target.dataset.diaryTool);
   if (target.dataset.diaryNutrient) {
     return openNutrientDetail({
       nutrient: target.dataset.diaryNutrient,
@@ -547,6 +550,12 @@ document.addEventListener('change', event => {
   diaryTools.change(event);
 });
 document.addEventListener('click', handleDocumentClick);
+document.addEventListener('click', event => {
+  if (diaryTools.toggleRow(event.target)) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+}, true);
 
 function navigate(next, initialTab = 'dashboard', reportDate) {
   if (!diary) {

@@ -1,6 +1,7 @@
 export {diaryEnergy,diaryToolsPresentation} from './diary-presentation.mjs';
-import {act,prepareRecordSelection,captureRecordSelection,previewRecordCopy,previewClearAmounts,prepareSelectionDraft,removeDiaryRecords,previewEntryExpansion} from './domain/workspace.mjs';
+import {act,prepareRecordSelection,captureRecordSelection,previewRecordCopy,previewClearAmounts,prepareSelectionDraft,normalizeLibraryDraft,removeDiaryRecords,previewEntryExpansion} from './domain/workspace.mjs';
 import {digest} from './data-codec.mjs';
+import {sortAllDiaryEntriesByTime} from './domain/diary-order.mjs';
 import {calculateSummary,calculateSelectionNutrition,isExerciseEntry} from './domain/nutrition.mjs';
 
 const fail=message=>{throw Object.assign(Error(message),{status:400,code:400,publicMessage:message});};
@@ -13,7 +14,9 @@ export const diaryToolCommandFields=Object.freeze({
  'records.set-time':['date','time','records'],
  'records.delete':['selection','confirmed'],
  'selection.meal':['selection','fingerprint','name','confirmed'],
+ 'selection.recipe':['selection','fingerprint','name','confirmed'],
  'diary.order':['mode'],
+ 'diary.sort-all':[],
  'group.order':['group','mode']
 });
 export function diaryToolsReview(state,input){
@@ -32,9 +35,10 @@ export function diaryToolsReview(state,input){
   case 'capture':review=captureRecordSelection(state,input.selection);break;
   case 'copy':review=previewRecordCopy(state,{selection:input.selection,destination:input.destination});break;
   case 'clear':review=previewClearAmounts(state,{selection:input.selection});break;
-  case 'meal':{
-   const source=prepareSelectionDraft(state,{kind:'meal',selection:input.selection});
-   review={selection:source.selection,fingerprint:source.fingerprint,name:source.draft.name,selectedCount:source.selectedCount,warningCodes:source.warningCodes,items:source.draft.items.map(item=>{const kind=item.recipeId?'recipe':'food',resource=state[kind+'s'].find(row=>row.id===item[kind+'Id'])??source.inlineFoods.find(row=>row.id===item.foodId);return {...item,name:resource?.name??'Food'};})};break;
+  case 'recipe':case 'meal':{
+   const source=prepareSelectionDraft(state,{kind:input.operation,selection:input.selection});
+   const context={...state,foods:[...state.foods,...source.inlineFoods]},resource=normalizeLibraryDraft(context,source.kind,source.draft);
+   review={selection:source.selection,fingerprint:source.fingerprint,name:source.draft.name,selectedCount:source.selectedCount,warningCodes:source.warningCodes,resource,foods:source.inlineFoods,items:(source.draft.items??source.draft.ingredients).map(item=>{const kind=item.recipeId?'recipe':'food',resource=context[kind+'s'].find(row=>row.id===item[kind+'Id']);return {...item,name:resource?.name??'Food'};})};break;
   }
   default:fail('Choose a diary action.');
  }
@@ -47,10 +51,11 @@ export function applyDiaryToolsCommand(state,{type,payload}){
   if(payload.confirmed!==true)fail('Confirm the selected records.');
   const {records}=prepareRecordSelection(candidate,payload.selection);if(!records.length)fail('Select at least one record.');
   for(const collection of ['entries','biometrics','notes']){const ids=records.filter(row=>row.collection===collection).map(row=>row.row.id);if(ids.length)removeDiaryRecords(candidate,collection,ids);}
- }else if(type==='selection.meal'){
-  const prepared=prepareSelectionDraft(candidate,{kind:'meal',selection:payload.selection});
-  result=act(candidate,'selection.save',{kind:'meal',selection:payload.selection,fingerprint:payload.fingerprint,confirmed:payload.confirmed,draft:{...prepared.draft,name:payload.name}});
- }else if(type==='diary.order')result=act(candidate,'settings.save',{diarySort:payload.mode});
+ }else if(type==='selection.meal'||type==='selection.recipe'){
+  const kind=type.slice('selection.'.length),prepared=prepareSelectionDraft(candidate,{kind,selection:payload.selection});
+  result=act(candidate,'selection.save',{kind,selection:payload.selection,fingerprint:payload.fingerprint,confirmed:payload.confirmed,draft:{...prepared.draft,name:payload.name}});
+ }else if(type==='diary.sort-all')sortAllDiaryEntriesByTime(candidate);
+ else if(type==='diary.order')result=act(candidate,'settings.save',{diarySort:payload.mode});
  else result=act(candidate,type,payload);
  Object.assign(state,candidate);return {handled:true,result};
 }

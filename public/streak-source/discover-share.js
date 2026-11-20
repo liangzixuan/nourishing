@@ -26,17 +26,3 @@ export async function prepareStreakImage(stats,language='en'){
  const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error(t('share.failed'));
  return new File([blob],'nourishing-streak.png',{type:'image/png'});
 }
-
-export function canShareStreak(file){return typeof navigator.share==='function'&&navigator.canShare?.({files:[file]})===true;}
-
-// Called directly from a click with an already prepared file, preserving user activation.
-export async function shareStreak(file,language='en'){
- if(!canShareStreak(file))return 'unavailable';
- try{await navigator.share({files:[file],title:message(language,'share.nativeTitle')});return 'shared';}
- catch(error){if(error.name==='AbortError')return 'cancelled';if(error.name==='NotAllowedError')return 'unavailable';throw error;}
-}
-
-export function saveStreak(file){
- const url=URL.createObjectURL(file),link=document.createElement('a');link.href=url;link.download=file.name;
- document.body.append(link);try{link.click();}finally{link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
-}

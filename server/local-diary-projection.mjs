@@ -2,13 +2,15 @@ import {calculateSummary,entryFacts} from './domain/nutrition.mjs';
 import {diarySummaryPresentation} from './diary-summary.mjs';
 import {diaryToolsPresentation} from './diary-presentation.mjs';
 import {mergeEntryUpdate} from './domain/entry-update-fields.mjs';
-import {setDiaryGroupOrder} from './domain/diary-order.mjs';
+import {setDiaryGroupOrder,sortAllDiaryEntriesByTime} from './domain/diary-order.mjs';
 export {copiedDiaryRecords} from './domain/diary-record-copy.mjs';
+export {libraryItems} from './domain/library-list.mjs';
 
 /** Replay already-prepared bulk commands over the retained account baseline.
  * Server validation remains authoritative; projection must also work after an
  * acknowledgement, when the server returns no changed-record payload. */
 export function projectDiaryBulkWrite(state,{type,payload:p}){
+ if(type==='diary.sort-all'){sortAllDiaryEntriesByTime(state);return;}
  if(type==='diary.order'){state.settings.diarySort=p.mode;return;}
  if(type==='group.order'){setDiaryGroupOrder(state,p);return;}
  if(type==='records.move-group'||type==='records.set-time'){

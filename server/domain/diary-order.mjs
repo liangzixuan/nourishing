@@ -1,5 +1,10 @@
 const recordedTime=row=>typeof row?.time==='string'&&/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(row.time)?row.time:null;
 
+export function sortAllDiaryEntriesByTime(state){
+  state.settings.diarySort='time';
+  delete state.settings.diaryGroupOrder;
+}
+
 /** Compare recorded local times only. Equal and untimed ties keep source order. */
 export function compareRecordedTime(a,b,{untimed='last'}={}){
   if(!['first','last'].includes(untimed))throw new RangeError('Untimed entries must appear first or last.');

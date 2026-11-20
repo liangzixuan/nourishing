@@ -6,11 +6,12 @@
       "source": "public/discover-share.js",
       "target": "public/streak-source/discover-share.js",
       "sourceSha256": "650fb34168f9abaea3364e31997aec7157ba7b0b3b7b5931cd711ac316d1faa0",
-      "sha256": "5760a0209416955e1868883f7765808e802827b70755ade85fd38145a53fa597",
+      "sha256": "ad1c5a34f29a1eac5b2971a40cf715fdce1034417febbb685e48111e610d3e65",
       "transforms": [
         "Normalize LF",
         "Reuse Dashboard message formatter",
-        "Remove native Android bridge paths"
+        "Remove native Android bridge paths",
+        "Extract image share and download transport into public/image-sharing.js; keep streak image preparation here"
       ]
     },
     {
