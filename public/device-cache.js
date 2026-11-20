@@ -1,4 +1,4 @@
-import {activateOfflineAccount,resumePrivateResponses,readPrivateResponse,writePrivateResponse,invalidatePrivateResponses,currentPrivateResponseTicket} from './offline-store.js';
+import {activateOfflineAccount,resumePrivateResponses,readPrivateResponse,writePrivateResponse,invalidatePrivateResponses,invalidatePrivateResponsePaths,currentPrivateResponseTicket} from './offline-store.js';
 
 const state=(globalThis[Symbol.for('nourishing.deviceCache')]??={verified:null,initialization:0});
 const miss=()=>({value:undefined,savedAt:null,ticket:null});
@@ -26,6 +26,10 @@ export async function writeDeviceCache(path,value,ticket){
 }
 export async function invalidateDeviceCache(ticket=state.verified){
  if(!state.verified||!same(state.verified,ticket))return null;const current=state.initialization,result=await invalidatePrivateResponses(ticket);
+ if(current!==state.initialization||!same(state.verified,ticket))return null;if(result)state.verified=result;return result;
+}
+export async function invalidateDeviceCachePaths(shouldDrop,ticket=state.verified){
+ if(!state.verified||!same(state.verified,ticket))return null;const current=state.initialization,result=await invalidatePrivateResponsePaths(ticket,shouldDrop);
  if(current!==state.initialization||!same(state.verified,ticket))return null;if(result)state.verified=result;return result;
 }
 export async function hasCurrentDeviceCache(ticket){

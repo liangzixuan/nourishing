@@ -40,7 +40,7 @@ async function prepareUploadImage(file) {
 }
 
 /** Save is injected by the authenticated cloud owner; no photo draft is persisted. */
-export function mountPhotoLog({show, close, header, content, date, groups, initialGroup, save, onChange = async () => {}}) {
+export function mountPhotoLog({show, close, header, content, date, groups, initialGroup, save, onOptimisticSave, onChange = async () => {}}) {
   let disposed = false, serial = 0, abort, analysis, originalImage, rows = [], pickerCleanup, pendingSave = false, nutritionAbort, nutritionVersion = 0, hintDismissed = false, createCleanup;
   const nutritionCache = new Map();
   // Same default as the existing mobile photoDialog: uncategorized, then the current meal.
@@ -104,12 +104,23 @@ export function mountPhotoLog({show, close, header, content, date, groups, initi
     };
   }
   async function commit(destination){
-    if(pendingSave)return;pendingSave=true;const panel=body.firstElementChild;
+    if(pendingSave)return;
+    const payload={photo:{id:analysis.photo.id,dataUrl:analysis.photo.dataUrl},reviewToken:analysis.reviewToken,date:diaryDate,time,group,...(destination?{destination}:{}),rows:rows.map(({foodId,observationIndex,additionIndex,amount,quantity,unit,portionId})=>({foodId,...(observationIndex!==undefined?{observationIndex}:{}),...(additionIndex!==undefined?{additionIndex}:{}),...(quantity!==undefined?{quantity,unit,...(portionId?{portionId}:{})}:{amount})}))};
+    if(!destination&&onOptimisticSave){
+      const optimisticRows=rows.map(row=>{
+        const previewKey=JSON.stringify({foodId:row.foodId,date:diaryDate,time,group,...(row.quantity!==undefined?{quantity:row.quantity,unit:row.unit,...(row.portionId?{portionId:row.portionId}:{})}:{amount:row.amount??1})});
+        return {name:row.name,foodId:row.foodId,quantity:row.quantity,unit:row.unit,amount:row.amount,portionLabel:row.portionLabel,preview:nutritionCache.get(previewKey)??row.preview??null};
+      });
+      dispose();close();
+      onOptimisticSave({payload,rows:optimisticRows});
+      return;
+    }
+    pendingSave=true;const panel=body.firstElementChild;
     const saveBtn=body.querySelector('[data-save]'),saveLabel=saveBtn?.textContent;
     if(saveBtn&&!destination)saveBtn.textContent='Saving…';
     body.querySelectorAll('button,input,select').forEach(element=>element.disabled=true);
     try{
-      await save({photo:{id:analysis.photo.id,dataUrl:analysis.photo.dataUrl},reviewToken:analysis.reviewToken,date:diaryDate,time,group,...(destination?{destination}:{}),rows:rows.map(({foodId,observationIndex,additionIndex,amount,quantity,unit,portionId})=>({foodId,...(observationIndex!==undefined?{observationIndex}:{}),...(additionIndex!==undefined?{additionIndex}:{}),...(quantity!==undefined?{quantity,unit,...(portionId?{portionId}:{})}:{amount})}))});
+      await save(payload);
       if(alive()&&panel.isConnected){dispose();close();}
       void onChange();
     }finally{pendingSave=false;if(alive()){if(saveBtn&&saveLabel)saveBtn.textContent=saveLabel;body.querySelectorAll('button,input,select').forEach(element=>element.disabled=false);}}

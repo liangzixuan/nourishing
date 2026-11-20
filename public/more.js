@@ -212,7 +212,7 @@ export function mountMore({
         id,
         t('mobileMore.about'),
         '<div class="mm-about"><img src="/favicon.svg" alt=""><h2>Nourishing</h2><p>' +
-          e(coreText('more.version', {version: '1.0.5'})) +
+          e(coreText('more.version', {version: '1.0.6'})) +
           '</p></div>' +
           group(row('account', t('mobileMore.account')) + row('backup', coreText('more.yourData'))),
       );

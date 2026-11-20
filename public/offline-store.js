@@ -52,6 +52,18 @@ export async function writePrivateResponse(path,value,size,expected){
 export async function invalidatePrivateResponses(expected){
  return responseTransaction(({active,meta,responses,done})=>{if(!sameSession(active,expected)){done(null);return;}resetResponses(active,meta,responses);meta.put(active,'active');done(cacheTicket(active));},{notify:true});
 }
+export async function invalidatePrivateResponsePaths(expected,shouldDrop){
+ return responseTransaction(({active,meta,responses,lru,done})=>{
+  if(!sameSession(active,expected)){done(null);return;}
+  const kept=[];
+  for(const row of lru){
+   if(shouldDrop(row.path))responses.delete(row.path);
+   else kept.push(row);
+  }
+  meta.put(kept,'response-lru');
+  done(cacheTicket(active));
+ },{notify:true});
+}
 export async function currentPrivateResponseTicket(expected){
  return responseTransaction(({active,done})=>done(sameSession(active,expected)?cacheTicket(active):null));
 }

@@ -1,4 +1,5 @@
 import './client-errors.js';
+import {enqueueWrite, onWriteQueueStatus} from './async-queue.js';
 import {pushBackHandler} from './back-history.js';
 import {startDeviceSync, warmDeviceViews} from './device-sync.js';
 import {startPrivateImages} from './private-images.js';
@@ -43,6 +44,28 @@ const content = document.querySelector('#sheet-content');
 const notice = document.querySelector('#notice');
 const headerRoot = document.querySelector('.app-header');
 const shell = createAppShell({headerRoot, dateBar, navigation: document.querySelector('.app-nav')});
+
+onWriteQueueStatus(({pending, label, error, retry}) => {
+  if (error) {
+    notice.textContent = '';
+    const msg = document.createElement('span');
+    msg.textContent = (error.message || 'Could not save changes.') + ' ';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = coreText('retry');
+    btn.onclick = () => {
+      notice.textContent = '';
+      retry?.();
+    };
+    notice.append(msg, btn);
+    return;
+  }
+  if (pending > 0) {
+    notice.textContent = label || 'Syncing…';
+  } else if (notice.textContent && !notice.querySelector('button')) {
+    notice.textContent = '';
+  }
+});
 
 const svg = path =>
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
@@ -405,16 +428,23 @@ function shiftDiaryDate(delta) {
   return load();
 }
 
-async function toggleCompleteDay(button) {
-  button.disabled = true;
-  try {
-    await command(diary.revision, 'day.complete', {date, completed: !diary.completed});
-    await load();
-  } catch (error) {
-    notice.textContent = error.message;
-  } finally {
-    button.disabled = false;
-  }
+function toggleCompleteDay() {
+  if (!diary) return;
+  const targetDate = date;
+  const nextCompleted = !diary.completed;
+  diary = {...diary, completed: nextCompleted};
+  if (view === 'diary') render();
+  enqueueWrite({
+    label: nextCompleted ? 'Marking day complete…' : 'Reopening day…',
+    run: () => command(diary.revision, 'day.complete', {date: targetDate, completed: nextCompleted}),
+    onSuccess: async result => {
+      if (result?.revision && diary) diary = {...diary, revision: result.revision};
+      await load({reuseUnchanged: true});
+    },
+    onError: async () => {
+      await load();
+    },
+  });
 }
 
 function handleRecordRowClick(target) {
@@ -593,23 +623,23 @@ function openCustomWaterSheet() {
       `<form class="entry-form"><label class="field-row"><span>${e(t('mobileFood.amount'))} (mL)</span><input name="amount" type="number" min="1" step="any" value="250" required></label><p class="sheet-message" role="status"></p><footer class="entry-actions"><button class="primary">${e(t('activity.addToDiary'))}</button></footer></form>`,
   );
   const form = content.querySelector('form');
-  form.onsubmit = async event => {
+  form.onsubmit = event => {
     event.preventDefault();
-    const button = form.querySelector('button');
-    button.disabled = true;
-    try {
-      await command(diary.revision, 'water.add', {
-        date,
-        time: new Date().toTimeString().slice(0, 5),
-        amount: Number(form.elements.amount.value),
-      });
-      await load();
-      if (form.isConnected) close();
-    } catch (error) {
-      if (form.isConnected) form.querySelector('[role=status]').textContent = error.message;
-    } finally {
-      button.disabled = false;
-    }
+    const amount = Number(form.elements.amount.value);
+    const targetDate = date;
+    const entryTime = new Date().toTimeString().slice(0, 5);
+    close();
+    enqueueWrite({
+      label: 'Saving water…',
+      run: () => command(diary.revision, 'water.add', {date: targetDate, time: entryTime, amount}),
+      onSuccess: async result => {
+        if (result?.revision && diary) diary = {...diary, revision: result.revision};
+        await load({reuseUnchanged: true});
+      },
+      onError: async () => {
+        await load();
+      },
+    });
   };
 }
 
@@ -619,17 +649,20 @@ const SUMMARY_ACTIONS = {
     pickerCleanup = mountTargetsSheet({date: () => date, show, close, header, content, onChange: load, initialScreen: 'day'});
   },
   'all-nutrients': () => navigate('discover', 'report', date),
-  water: async input => {
-    try {
-      await command(diary.revision, 'water.add', {
-        date,
-        time: new Date().toTimeString().slice(0, 5),
-        amount: input.amount,
-      });
-      await load();
-    } catch (error) {
-      notice.textContent = error.message;
-    }
+  water: input => {
+    const targetDate = date;
+    const entryTime = new Date().toTimeString().slice(0, 5);
+    enqueueWrite({
+      label: 'Saving water…',
+      run: () => command(diary.revision, 'water.add', {date: targetDate, time: entryTime, amount: input.amount}),
+      onSuccess: async result => {
+        if (result?.revision && diary) diary = {...diary, revision: result.revision};
+        await load({reuseUnchanged: true});
+      },
+      onError: async () => {
+        await load();
+      },
+    });
   },
   'water-custom': openCustomWaterSheet,
   'nutrient-contributors': input =>
@@ -821,6 +854,7 @@ function copyFood(item, onCancel) {
 
 function photoLog(initialGroup) {
   if (!diary) return;
+  const saver = photoSaver(() => diary.revision);
   return mountPhotoLog({
     show,
     close,
@@ -829,7 +863,41 @@ function photoLog(initialGroup) {
     date: () => date,
     groups: diary.groups,
     initialGroup,
-    save: photoSaver(() => diary.revision),
+    save: saver,
+    onOptimisticSave: ({payload, rows: optimisticRows}) => {
+      if (diary && payload.date === date && optimisticRows?.length) {
+        const added = optimisticRows.map((row, idx) => ({
+          id: 'optimistic-photo-' + Date.now() + '-' + idx,
+          date: payload.date,
+          time: payload.time,
+          group: payload.group,
+          foodId: row.foodId,
+          name: row.name,
+          ...(row.quantity !== undefined ? {quantity: row.quantity, unit: row.unit} : {amount: row.amount ?? 1}),
+          facts: {
+            name: row.name,
+            portionLabel: row.portionLabel,
+            calories: row.preview?.nutrition?.totals?.calories ?? null,
+            protein: row.preview?.nutrition?.totals?.protein ?? null,
+            carbs: row.preview?.nutrition?.totals?.carbs ?? null,
+            fat: row.preview?.nutrition?.totals?.fat ?? null,
+          },
+        }));
+        diary = {...diary, entries: [...diary.entries, ...added]};
+        if (view === 'diary') render();
+      }
+      enqueueWrite({
+        label: 'Saving photo meal…',
+        run: () => saver(payload),
+        onSuccess: async result => {
+          if (result?.revision && diary) diary = {...diary, revision: result.revision};
+          await load({reuseUnchanged: true});
+        },
+        onError: async () => {
+          await load();
+        },
+      });
+    },
     onChange: load,
   });
 }
