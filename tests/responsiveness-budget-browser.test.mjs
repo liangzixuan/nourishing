@@ -361,6 +361,19 @@ test('core Diary, Photo Log, and More interactions respond instantly under 1500m
     });
     const foodSearchCalls = f.apiHits.slice(searchHitsBefore).filter(h => h.path === '/api/food-search');
     assert.equal(foodSearchCalls.length, 0, `Expected 0 /api/food-search calls, got: ${JSON.stringify(foodSearchCalls)}`);
+    await page.locator('[data-mfs="close"]').click();
+    await page.locator('#sheet').waitFor({state: 'hidden'});
+
+    // 8. Switching days in Diary (< Previous Day, then > Next Day) renders in < 800ms under 1500ms API latency.
+    const initialDate = await page.locator('#diary-date').getAttribute('data-date');
+    await timed('Switch to Previous Day in Diary', async () => {
+      await page.locator('[data-action="prev-day"]').click();
+      await page.waitForFunction(prev => document.querySelector('#diary-date')?.getAttribute('data-date') !== prev, initialDate);
+    });
+    await timed('Switch back to Today in Diary', async () => {
+      await page.locator('[data-action="next-day"]').click();
+      await page.waitForFunction(orig => document.querySelector('#diary-date')?.getAttribute('data-date') === orig, initialDate);
+    });
 
     assert.deepEqual(f.errors, []);
   } finally {

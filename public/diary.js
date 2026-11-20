@@ -1,9 +1,9 @@
 import './client-errors.js';
 import './pwa.js';
 import {enqueueWrite, onWriteQueueStatus} from './async-queue.js';
-import {localLibraryItem} from './local-engine.js';
+import {localLibraryItem, localDiaryView} from './local-engine.js';
 import {pushBackHandler} from './back-history.js';
-import {startDeviceSync, warmDeviceViews} from './device-sync.js';
+import {startDeviceSync, warmDeviceViews, warmAdjacentDays} from './device-sync.js';
 import {startPrivateImages} from './private-images.js';
 import {sameDiarySnapshot, presentDiarySnapshot} from './diary-snapshot.js';
 import {uiLanguage, applyAppLanguage, t} from './app-language.js';
@@ -222,6 +222,7 @@ async function load({reuseUnchanged = false} = {}) {
 
 function applyDiary(result) {
   warmDeviceViews(date);
+  warmAdjacentDays(result.date);
   diary = result;
   diaryReceivedAt = performance.now() - Math.max(0, Date.now() - (Date.parse(result.presentation?.fasting?.asOf) || Date.now()));
   const nextLanguage = result.presentation?.settings?.appLanguage ?? 'en';
@@ -406,6 +407,19 @@ function openInsights(mode = 'suggestions', day = date) {
   });
 }
 
+async function switchDiaryDate(nextDate) {
+  diaryTools.reset();
+  date = nextDate;
+  if (diary && view === 'diary') {
+    const local = await localDiaryView(nextDate, diary);
+    if (local && date === nextDate && view === 'diary') {
+      diary = local;
+      render();
+    }
+  }
+  return load({reuseUnchanged: true});
+}
+
 function openDiaryCalendar() {
   diaryCalendar?.close();
   diaryCalendar = new MobileDiaryCalendar({
@@ -413,9 +427,7 @@ function openDiaryCalendar() {
     language: uiLanguage(),
     loadMonth: (month, signal) => request('/api/diary/calendar?month=' + month, undefined, signal),
     onChoose: value => {
-      diaryTools.reset();
-      date = value;
-      void load();
+      void switchDiaryDate(value);
     },
     onClose: () => {
       diaryCalendar = null;
@@ -424,11 +436,9 @@ function openDiaryCalendar() {
 }
 
 function shiftDiaryDate(delta) {
-  diaryTools.reset();
   const d = new Date(date + 'T12:00:00');
   d.setDate(d.getDate() + delta);
-  date = formatDate(d);
-  return load();
+  return switchDiaryDate(formatDate(d));
 }
 
 function toggleCompleteDay() {

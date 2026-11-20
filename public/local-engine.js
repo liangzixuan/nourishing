@@ -5,7 +5,7 @@
 import {offlineCopy} from './offline-store.js';
 import {offlineEffectiveState} from './offline-model.js';
 import {catalog} from './report-source/server/nutrient-catalog.mjs';
-import {calculateSelectionNutrition, entryFacts} from './report-source/server/nutrition.mjs';
+import {calculateSelectionNutrition, calculateSummary, entryFacts} from './report-source/server/nutrition.mjs';
 import {availableQuantityUnits} from './report-source/server/quantity-units.mjs';
 import {recipeWeight} from './report-source/server/recipe-weight.mjs';
 import {recipeForEntry} from './report-source/server/recipe-entry.mjs';
@@ -122,6 +122,51 @@ export async function localPreviewDiaryItem(payload) {
     const calories = nutrition.totals?.calories ?? null;
     const energy = {value: calories === null ? null : convertEnergy(calories, 'kcal', unit), unit};
     return {version: 1, nutrition, energy};
+  } catch {
+    return null;
+  }
+}
+
+export async function localDiaryView(targetDate, template) {
+  if (!targetDate || !template) return null;
+  const state = await readLocalState();
+  if (!state) return null;
+  try {
+    const groups = state.settings?.groups ?? template.groups ?? ['Uncategorized'];
+    const defaultGroup = groups.includes('Uncategorized') ? 'Uncategorized' : groups[0];
+    const entries = (state.entries ?? [])
+      .filter(row => row.date === targetDate)
+      .map(row => ({...row, facts: entryFacts(state, row)}));
+    const biometrics = (state.biometrics ?? []).filter(row => row.date === targetDate);
+    const notes = (state.notes ?? []).filter(row => row.date === targetDate);
+    const summary = calculateSummary(state, targetDate);
+    const grouped = new Map(groups.map(name => [name, []]));
+    const pushRef = (collection, row) => {
+      const name = row.group && grouped.has(row.group) ? row.group : defaultGroup;
+      if (!grouped.has(name)) grouped.set(name, []);
+      grouped.get(name).push({collection, id: row.id});
+    };
+    for (const row of entries) pushRef('entries', row);
+    for (const row of notes) pushRef('notes', row);
+    for (const row of biometrics) pushRef('biometrics', row);
+    const showGroups = template.recordDisplay?.showGroups ?? true;
+    const recordDisplay = {
+      ...(template.recordDisplay ?? {}),
+      showGroups,
+      groups: [...grouped.entries()].map(([name, records]) => ({name, records})),
+    };
+    return {
+      ...template,
+      date: targetDate,
+      groups,
+      completed: state.settings?.completedDays?.includes(targetDate) ?? false,
+      entries,
+      biometrics,
+      notes,
+      summary,
+      recordDisplay,
+      _local: true,
+    };
   } catch {
     return null;
   }

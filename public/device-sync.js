@@ -5,12 +5,23 @@ import {warmLocalCatalogIndex} from './local-search.js';
 
 let started=false,timer,running=false,again=false;
 let warmedDate,warmTimer,warmGeneration=0;
+function shiftDate(date,delta){
+ const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+delta);return d.toISOString().slice(0,10);
+}
+export function warmAdjacentDays(date){
+ if(!date)return;
+ const paths=['/api/diary?date='+shiftDate(date,-1),'/api/diary?date='+shiftDate(date,1),'/api/diary/calendar?month='+date.slice(0,7)];
+ setTimeout(()=>{for(const path of paths)void request(path).catch(()=>{});},250);
+}
 export function warmDeviceViews(date,{delay=500,force=false}={}){
  if(!force&&warmedDate===date)return;warmedDate=date;
  const generation=++warmGeneration;
  clearTimeout(warmTimer);
  const from=new Date(date+'T12:00:00Z');from.setUTCDate(from.getUTCDate()-6);
  const paths=[
+  '/api/diary?date='+shiftDate(date,-1),
+  '/api/diary?date='+shiftDate(date,1),
+  '/api/diary/calendar?month='+date.slice(0,7),
   '/api/display',
   '/api/library',
   '/api/library/favorites',

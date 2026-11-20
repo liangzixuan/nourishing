@@ -35,13 +35,19 @@ function invalidationPrefixes(path,body){
  return null;
 }
 
-const STALE_ANALYTICS_PREFIXES=['/api/dashboard','/api/charts','/api/nutrition-report'];
+const STALE_ANALYTICS_PREFIXES=['/api/dashboard','/api/charts','/api/nutrition-report','/api/diary/calendar'];
 
 async function invalidateForWrite(ticket,path,body){
  if(!ticket)return;
  const prefixes=invalidationPrefixes(path,body);
  if(!prefixes){await invalidateDeviceCache(ticket).catch(()=>{});return;}
- const matchPrefix=(key,list)=>list.some(prefix=>key===prefix||key.startsWith(prefix+'?')||key.startsWith(prefix));
+ const editedDate=body?.payload?.date??body?.date??null;
+ const matchPrefix=(key,list)=>list.some(prefix=>{
+  if(prefix==='/api/diary'&&typeof editedDate==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(editedDate)){
+   return key==='/api/diary?date='+editedDate||key==='/api/diary';
+  }
+  return key===prefix||key.startsWith(prefix+'?')||key.startsWith(prefix);
+ });
  const hard=prefixes.filter(p=>!STALE_ANALYTICS_PREFIXES.includes(p));
  const stale=prefixes.filter(p=>STALE_ANALYTICS_PREFIXES.includes(p));
  if(hard.length)await invalidateDeviceCachePaths(key=>matchPrefix(key,hard),ticket).catch(()=>{});
