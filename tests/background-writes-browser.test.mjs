@@ -35,6 +35,26 @@ async function realQueueFixture(state,run,{losePath}={}){
  finally{await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
 }
 
+test('calendar markers reflect local visibility changes before and after sync instead of stale responses',async()=>{
+ const state=initialState();act(state,'food.save',{name:'Rice',serving:'100 g',grams:100,nutrients:{calories:100}});
+ act(state,'entry.add',{foodId:state.foods[0].id,date:'2026-11-20',group:'Lunch',amount:1});
+ await realQueueFixture(state,async({page,flush})=>{
+  const change=visible=>page.evaluate(async visible=>{
+   const {readWriteCopy}=await import('/offline-store.js');
+   const {queueCommand}=await import('/diary-api.js');
+   const copy=await readWriteCopy();await queueCommand(copy.snapshot.revision,'display.save',{diaryCalendar:{version:1,food:visible,exercise:true,biometric:true,note:true,fast:true}});
+  },visible);
+  const markers=stale=>page.evaluate(async stale=>{
+   const {overlayPendingResponse}=await import('/background-writes.js');
+   return (await overlayPendingResponse('/api/diary/calendar?month=2026-11',{month:'2026-11',markers:stale,completedDays:[],calendar:{asOf:'2026-11-20T12:00:00Z',timeZone:'UTC'}})).markers;
+  },stale);
+  await change(false);assert.deepEqual(await markers({'2026-11-20':['food']}),{});
+  await flush();assert.deepEqual(await markers({'2026-11-20':['food']}),{});
+  await change(true);assert.deepEqual(await markers({}),{'2026-11-20':['food']});
+  await flush();assert.deepEqual(await markers({}),{'2026-11-20':['food']});
+ });
+});
+
 test('automatically expanded meals keep child edit and delete identities through a lost acknowledgement',{timeout:30000},async()=>{
  const state=initialState();state.settings.alwaysExpandMeals=true;
  const foodA=act(state,'food.save',{name:'Rice',serving:'100 g',grams:100,nutrients:{calories:100}}),foodB=act(state,'food.save',{name:'Beans',serving:'100 g',grams:100,nutrients:{calories:200}});

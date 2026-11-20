@@ -147,3 +147,4 @@ For each change, keep the app working end to end and add a focused check for the
 - Complete suite: `node --test --test-concurrency=2 tests/*.test.mjs` passed **628 tests**, with zero failed, skipped or cancelled tests (239 seconds).
 - Staged patch whitespace checks passed. Application sources contain no legacy product-name matches.
 - The master-branch CI workflow repeats test/build checks before deploying the site and functions to Appwrite.
+- The first CI run exposed stale Calendar marker visibility after a Display save. Calendar now shares its presence projection between server and local reads, including pending and acknowledged changes. The new hide/show regression, durable queue tests, Calendar rules and Display browser flow passed (8 tests); the production build passed again. CI repeats the full suite on this correction before deployment.

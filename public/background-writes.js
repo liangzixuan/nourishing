@@ -3,7 +3,7 @@ import {readDeviceCache} from './device-cache.js';
 import {request} from './diary-api.js';
 import {acceptOfflineReceipt,offlineEffectiveState} from './offline-model.js';
 import {applyWriteToState} from './write-projection.js';
-import {projectLocalDiary} from './local-diary-projection.js';
+import {projectLocalDiary,projectDiaryCalendar} from './local-diary-projection.js';
 import {offlineFailure} from './offline-errors.js';
 
 const listeners=new Set();
@@ -97,6 +97,9 @@ export async function overlayPendingResponse(path,value){
  for(const row of copy.pending){
   if(!row.transport)continue;
   if(row.projection?.responses?.[path])result=structuredClone(row.projection.responses[path]);
+ }
+ if(path.startsWith('/api/diary/calendar?')&&result?.calendar&&copy.snapshot?.state){
+  return {...result,...projectDiaryCalendar(offlineEffectiveState(copy),result.month,result.calendar)};
  }
  if(/^\/api\/diary(?:\?|$)/.test(path)&&result?.entries&&copy.pending.length){
   if(copy.snapshot?.state){

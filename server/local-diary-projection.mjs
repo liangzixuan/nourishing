@@ -17,3 +17,4 @@ export function projectLocalDiary(state,date,template={},clock={now:new Date()})
 
 export {projectProfileSettings} from './profile-settings-view.mjs';
 export {applyProfileSettingsProjection} from './domain/profile-settings-command.mjs';
+export {projectDiaryCalendar} from './domain/diary-calendar.mjs';
