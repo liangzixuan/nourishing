@@ -17,7 +17,7 @@ export function mountDisplay({root,headerRoot,onChange=async()=>{}}){
   const previous=view.settings;
   if(patch.theme!==undefined)applyTheme(patch.theme);
   if(patch.fontSize!==undefined||patch.fontFamily!==undefined)applyFontPreferences({...previous,...patch});
-  try{pending.result??=await request('/api/workspace/command',pending.body);const next=await request('/api/display',undefined,abort.signal);if(!alive())return next.settings;view=next;applyTheme(view.settings.theme);applyFontPreferences(view.settings);void onChange();applyAppLanguage(view.settings.appLanguage);pending=null;return view.settings;}
+  try{pending.result??=await request('/api/workspace/command',pending.body);const next=await request('/api/display',undefined,abort.signal);if(!alive())return next.settings;view=next;applyTheme(view.settings.theme);applyFontPreferences(view.settings);await onChange();applyAppLanguage(view.settings.appLanguage);pending=null;return view.settings;}
   catch(error){applyTheme(previous.theme);applyFontPreferences(previous);if(error.status>=400&&error.status<500)pending=null;else error.pending=true;throw error;}
  }
  void load();return {back(){if(child){if(child.back?.())return true;void load();return true;}return controller?.back()??false;},dispose(){disposed=true;abort.abort();child?.dispose();controller?.dispose();}};
