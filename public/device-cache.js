@@ -28,8 +28,8 @@ export async function invalidateDeviceCache(ticket=state.verified){
  if(!state.verified||!same(state.verified,ticket))return null;const current=state.initialization,result=await invalidatePrivateResponses(ticket);
  if(current!==state.initialization||!same(state.verified,ticket))return null;if(result)state.verified=result;return result;
 }
-export async function invalidateDeviceCachePaths(shouldDrop,ticket=state.verified){
- if(!state.verified||!same(state.verified,ticket))return null;const current=state.initialization,result=await invalidatePrivateResponsePaths(ticket,shouldDrop);
+export async function invalidateDeviceCachePaths(shouldDrop,ticket=state.verified,options){
+ if(!state.verified||!same(state.verified,ticket))return null;const current=state.initialization,result=await invalidatePrivateResponsePaths(ticket,shouldDrop,options);
  if(current!==state.initialization||!same(state.verified,ticket))return null;if(result)state.verified=result;return result;
 }
 export async function hasCurrentDeviceCache(ticket){

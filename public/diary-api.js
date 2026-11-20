@@ -35,11 +35,17 @@ function invalidationPrefixes(path,body){
  return null;
 }
 
+const STALE_ANALYTICS_PREFIXES=['/api/dashboard','/api/charts','/api/nutrition-report'];
+
 async function invalidateForWrite(ticket,path,body){
  if(!ticket)return;
  const prefixes=invalidationPrefixes(path,body);
- if(!prefixes)await invalidateDeviceCache(ticket).catch(()=>{});
- else await invalidateDeviceCachePaths(key=>prefixes.some(prefix=>key===prefix||key.startsWith(prefix+'?')||key.startsWith(prefix)),ticket).catch(()=>{});
+ if(!prefixes){await invalidateDeviceCache(ticket).catch(()=>{});return;}
+ const matchPrefix=(key,list)=>list.some(prefix=>key===prefix||key.startsWith(prefix+'?')||key.startsWith(prefix));
+ const hard=prefixes.filter(p=>!STALE_ANALYTICS_PREFIXES.includes(p));
+ const stale=prefixes.filter(p=>STALE_ANALYTICS_PREFIXES.includes(p));
+ if(hard.length)await invalidateDeviceCachePaths(key=>matchPrefix(key,hard),ticket).catch(()=>{});
+ if(stale.length)await invalidateDeviceCachePaths(key=>matchPrefix(key,stale),ticket,{staleOnly:true}).catch(()=>{});
 }
 
 async function network(path,body,signal){

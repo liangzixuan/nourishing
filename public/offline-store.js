@@ -52,9 +52,22 @@ export async function writePrivateResponse(path,value,size,expected){
 export async function invalidatePrivateResponses(expected){
  return responseTransaction(({active,meta,responses,done})=>{if(!sameSession(active,expected)){done(null);return;}resetResponses(active,meta,responses);meta.put(active,'active');done(cacheTicket(active));},{notify:true});
 }
-export async function invalidatePrivateResponsePaths(expected,shouldDrop){
+export async function invalidatePrivateResponsePaths(expected,shouldDrop,{staleOnly=false}={}){
  return responseTransaction(({active,meta,responses,lru,done})=>{
   if(!sameSession(active,expected)){done(null);return;}
+  if(staleOnly){
+   const targets=lru.filter(row=>shouldDrop(row.path));
+   if(!targets.length){done(cacheTicket(active));return;}
+   let remaining=targets.length;
+   for(const row of targets){
+    const read=responses.get(row.path);
+    read.onsuccess=()=>{
+     if(read.result)responses.put({...read.result,savedAt:0});
+     if(--remaining===0)done(cacheTicket(active));
+    };
+   }
+   return;
+  }
   const kept=[];
   for(const row of lru){
    if(shouldDrop(row.path))responses.delete(row.path);
