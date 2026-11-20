@@ -21,7 +21,7 @@ import {fastingView} from '../server/fasting.mjs';
 import {repeatView} from '../server/repeat-view.mjs';
 import {libraryView, libraryItem} from '../server/library-view.mjs';
 import {favoriteView} from '../server/library-extras.mjs';
-import {projectOfflineSnapshot} from '../server/offline.mjs';
+import {offlineSnapshot as projectOfflineSnapshot} from '../server/offline.mjs';
 import {digest} from '../server/data-codec.mjs';
 
 const TINY_PNG =
