@@ -5,7 +5,7 @@ import {startBackgroundWrites,onBackgroundWriteStatus} from './background-writes
 import {localLibraryItem, localDiaryView} from './local-engine.js';
 import {walkingEfforts} from './local-diary-projection.js';
 import {pushBackHandler} from './back-history.js';
-import {startDeviceSync, warmDeviceViews, warmAdjacentDays} from './device-sync.js';
+import {startDeviceSync, warmDeviceViews} from './device-sync.js';
 import {startPrivateImages} from './private-images.js';
 import {sameDiarySnapshot, presentDiarySnapshot} from './diary-snapshot.js';
 import {uiLanguage, applyAppLanguage, t} from './app-language.js';
@@ -226,7 +226,6 @@ async function load({reuseUnchanged = false} = {}) {
 
 function applyDiary(result) {
   warmDeviceViews(date);
-  warmAdjacentDays(result.date);
   diary = result;
   diaryReceivedAt = performance.now() - Math.max(0, Date.now() - (Date.parse(result.presentation?.fasting?.asOf) || Date.now()));
   const nextLanguage = result.presentation?.settings?.appLanguage ?? 'en';

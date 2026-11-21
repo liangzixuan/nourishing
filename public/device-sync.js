@@ -4,7 +4,8 @@ import {saveOfflineSnapshot,onOfflineChange,readWriteCopy} from './offline-store
 import {warmLocalCatalogIndex} from './local-search.js';
 
 let started=false,timer,running=false,again=false;
-let warmedDate,warmTimer,warmGeneration=0;
+let warmedDate,warmTimer,warmWorkers=0;
+let warmQueue=[];
 let snapshotRead;
 /** Share the initial account snapshot across startup and local editors. */
 export async function ensureDeviceSnapshot({refresh=false,ownerId}={}){
@@ -25,15 +26,18 @@ export async function ensureDeviceSnapshot({refresh=false,ownerId}={}){
 function shiftDate(date,delta){
  const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+delta);return d.toISOString().slice(0,10);
 }
-export function warmAdjacentDays(date){
- if(!date)return;
- const paths=['/api/diary?date='+shiftDate(date,-1),'/api/diary?date='+shiftDate(date,1)];
- setTimeout(()=>{for(const path of paths)void request(path).catch(()=>{});},250);
+async function runWarmWorker(){
+ warmWorkers++;
+ try{
+  while(warmQueue.length){
+   const next=warmQueue.shift();
+   try{await next();}catch{/* Other cached screens can still refresh. */}
+  }
+ }finally{warmWorkers--;}
 }
 export function warmDeviceViews(date,{delay=500,force=false}={}){
  if(!force&&warmedDate===date)return;warmedDate=date;
- const generation=++warmGeneration;
- clearTimeout(warmTimer);
+ clearTimeout(warmTimer);warmQueue=[];
  const from=new Date(date+'T12:00:00Z');from.setUTCDate(from.getUTCDate()-6);
  const paths=[
   '/api/diary?date='+shiftDate(date,-1),
@@ -53,9 +57,11 @@ export function warmDeviceViews(date,{delay=500,force=false}={}){
   '/api/snapshots',
   '/api/nutrition-report?'+new URLSearchParams({from:from.toISOString().slice(0,10),to:date,dayFilter:'nonempty',includeToday:true,includeSupplements:true}),
  ];
- // Two background reads at a time keep menus instant without starving foreground requests.
- const warm=async()=>{while(paths.length&&generation===warmGeneration){const path=paths.shift();await request(path).catch(()=>{});}};
- warmTimer=setTimeout(()=>{if(generation!==warmGeneration)return;void warmLocalCatalogIndex();void warm();void warm();},delay);
+ // Replacing queued work leaves in-flight reads in their existing slots.
+ warmTimer=setTimeout(()=>{
+  warmQueue=[warmLocalCatalogIndex,...paths.map(path=>()=>request(path,undefined,undefined,{waitForRefresh:true,canonical:true}))];
+  while(warmWorkers<2&&warmQueue.length)void runWarmWorker();
+ },delay);
 }
 export function startDeviceSync(ownerId){
  if(started||!globalThis.indexedDB)return;started=true;
@@ -74,5 +80,5 @@ export function startDeviceSync(ownerId){
  });
  window.addEventListener('nourishing-data-changed',()=>{schedule();rewarm();});
  window.addEventListener('online',schedule);
- window.addEventListener('pagehide',()=>{clearTimeout(timer);clearTimeout(warmTimer);});void save();
+ window.addEventListener('pagehide',()=>{clearTimeout(timer);clearTimeout(warmTimer);warmQueue=[];warmedDate=undefined;});void save();
 }

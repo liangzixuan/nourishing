@@ -55,3 +55,41 @@ test('a late unauthorized response from the previous account cannot lock or clea
  f.route('/api/account',{id:'bob'});await f.authenticate();f.route('/api/dashboard',{private:'Bob'});await page.evaluate(async()=>{await api.request('/api/dashboard');document.querySelector('#page').textContent='Bob private';});old.release();assert.equal(await page.evaluate(()=>previous),'AbortError');assert.equal(new URL(page.url()).pathname,'/');assert.equal(await page.locator('#page').textContent(),'Bob private');assert.deepEqual(await page.evaluate(async()=>(await cache.readDeviceCache('/api/dashboard')).value),{private:'Bob'});
  }finally{await f.close();}
 });
+
+
+test('view warmups bound actual refreshes across date changes and leave foreground cached reads immediate',async()=>{
+ const f=await fixture();
+ try{
+  const {page}=f;await f.authenticate();
+  await page.evaluate(async()=>{
+   const {ticket}=await cache.readDeviceCache('/api/diary');
+   for(const day of ['14','16'])await cache.writeDeviceCache('/api/diary?date=2026-11-'+day,{version:1},ticket);
+   const clock=Date.now;Date.now=()=>clock()+60000;
+   await cache.writeDeviceCache('/api/display',{version:1},ticket);
+   const original=window.fetch,gate=new Promise(resolve=>window.releaseReads=resolve);
+   window.activity={active:0,peak:0,paths:[]};
+   window.fetch=async(path,...args)=>{
+    if(typeof path!=='string'||!path.startsWith('/api/'))return original(path,...args);
+    activity.paths.push(path);activity.active++;activity.peak=Math.max(activity.peak,activity.active);
+    try{
+     await gate;await new Promise(resolve=>setTimeout(resolve,5));
+     return Response.json({version:2},{status:path==='/api/library'?503:200});
+    }finally{activity.active--;}
+   };
+   window.warm=(await import('/device-sync.js')).warmDeviceViews;
+   warm('2026-11-15',{delay:0});
+  });
+  await page.waitForFunction(()=>activity.paths.includes('/api/diary?date=2026-11-14'));
+  assert.deepEqual(await page.evaluate(()=>api.request('/api/diary?date=2026-11-14')),{version:1});
+  await page.evaluate(()=>warm('2026-11-18',{delay:0}));
+  await page.evaluate(()=>releaseReads());
+  const last='/api/nutrition-report?from=2026-11-12&to=2026-11-18&dayFilter=nonempty&includeToday=true&includeSupplements=true';
+  await page.waitForFunction(path=>activity.paths.includes(path),last);
+  assert.deepEqual(await page.evaluate(path=>api.request(path),last),{version:2});
+  const {peak,paths}=await page.evaluate(()=>activity);
+  assert.equal(peak,2);assert.equal(paths.filter(p=>p==='/api/diary?date=2026-11-14').length,1);
+  assert.ok(paths.includes('/api/diary?date=2026-11-19'),JSON.stringify(paths));assert.ok(paths.includes('/api/library'));
+  assert.ok(!paths.includes('/api/display'),'a fresh screen needs no refresh');
+  assert.ok(!paths.includes('/api/repeats?date=2026-11-15'),'superseded queued reads stop');
+ }finally{await f.close();}
+});
