@@ -117,3 +117,12 @@ The live site reports 1.0.15. Public version, diary preparation, background writ
 ### Water reference clarification
 
 The [current mobile water guide](https://support.cronometer.com/hc/en-us/articles/18018883315988-Mobile-Water-Tracking), checked November 20, states that minus removes the newest water entry in full, including a custom amount. The total-water bar includes food and beverages and opens the nutrient target editor. This resolves the removal ambiguity left by references 35/41/42. It is documentation evidence, not a new device test. The saved screenshots remain the visual authority. No Water implementation change is claimed yet.
+
+
+### Automatic background reconciliation (1.0.16)
+
+Release commit `9176c90` removes the global background-save review banner and per-change retry prompts. New queued requests now use the canonical snapshot revision, then the revision returned by each preceding save. The chosen request is persisted before sending; interrupted responses retry the exact body and operation ID. Existing blocked changes retry automatically. A final permanent rejection drops that change and continues the queue, following the product owner's explicit preference. Network failures and rate limits keep pending changes for background retry. Restored-generation edits are discarded without replay.
+
+The rapid single-device regression sends 16 additions, edits and settings changes. Without revision chaining it makes 31 requests; with the fix it makes 16, retains all changes and leaves no pending commands. The full isolated release candidate passed 648 local tests and the production Astro build. The exact rejection previously seen on the user's device was not captured; these checks establish the stale-revision path and automatic reconciliation behavior.
+
+The live site reports 1.0.16. Version, diary entrypoint, background writes, Device storage and core message assets match the tested release candidate. The removed sync-notice module returns 404 and is absent from the offline asset list. [GitHub CI and all Appwrite deployments passed](https://github.com/liangzixuan/nourishing/actions/runs/44847393307). The site, reminders, scheduler and account-cleanup deployments all reached ready. Installed-device confirmation remains unperformed. The broader interface audit remains open.
