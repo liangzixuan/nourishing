@@ -14,16 +14,18 @@ export function mobileDiaryHeader({date,today,complete,icons,menu,labels,languag
  return `<div class="md-date-bar">${button(icons.check,'complete-day',`class="md-complete ${complete?'is-complete':''}" data-completed="${!complete}" aria-label="${e(complete?labels.reopen:labels.complete)}"`)}<div class="md-date-controls">${button(icons.back,'prev-day',`aria-label="${e(labels.previous)}"`)}<button type="button" class="md-date-label" data-md-calendar aria-label="${e(labels.date)}">${e(label)}</button>${button(icons.chevron,'next-day',`aria-label="${e(labels.next)}"`)}</div>${menu.replace('>•••</summary>','>'+icons.more+'</summary>')}</div>`;
 }
 
-export function mobileDiaryGroups({groups,configuredGroups=groups,records,renderRow,selectBox,icons,labels,showGroups=true,subtotal=()=>''}){
+export function mobileDiaryGroups({groups,configuredGroups=groups,records,renderRow,selectBox,icons,labels,selectedGroup=null,showGroups=true,subtotal=()=>''}){
  if(!showGroups)return `<section class="md-group"><table class="diary-table md-records"><tbody>${records.map(renderRow).join('')}</tbody></table></section>`;
  return groups.map(group=>{
   const rows=records.filter(row=>row.group===group),open=mobileDiarySession.groups.get(group)??rows.length>0,configured=configuredGroups.includes(group);
-  return `<details class="md-group" data-md-group="${e(group)}" ${configured?`data-diary-drop-group="${e(group)}"`:''} ${open?'open':''}><summary>${button(icons.plus,configured?'group-quick-add':'add-food',`class="md-group-add" ${configured?`data-group="${e(group)}"`:''} aria-label="${e(labels.add)}: ${e(group)}"`)}${configured?selectBox(group):''}<strong>${e(group)}</strong>${subtotal(group)}<span class="md-group-chevron">${icons.chevron}</span></summary><table class="diary-table md-records"><tbody>${rows.map(renderRow).join('')}</tbody></table></details>`;
+  return `<details class="md-group" data-md-group="${e(group)}" ${configured?`data-diary-drop-group="${e(group)}"`:''} ${open?'open':''}><summary>${button(icons.plus,configured?'group-quick-add':'add-food',`class="md-group-add" ${configured?`data-group="${e(group)}"`:''} aria-label="${e(labels.add)}: ${e(group)}"`)}${configured?selectBox(group):''}<button type="button" data-md-select-group aria-pressed="${selectedGroup===group}" ${configured?'':'disabled'}><strong>${e(group)}</strong></button>${subtotal(group)}<button type="button" class="md-group-chevron" data-md-fold-group aria-label="${e(labels.toggle)}: ${e(group)}" aria-expanded="${open}">${icons.chevron}</button></summary><table class="diary-table md-records"><tbody>${rows.map(renderRow).join('')}</tbody></table></details>`;
  }).join('');
 }
 
-export function mobileDiaryRecord({id,collection,name,meta,amount,icon,selectBox,action,extra=''}){
- return `<tr data-diary-record data-collection="${e(collection)}" data-id="${e(id)}"><td><div class="md-record">${selectBox}<button type="button" class="md-record-menu" data-md-context aria-label="${e(name)}: actions">${icon}</button><div class="md-record-text">${button(`<span class="food-name">${e(name)}</span>`,action,`class="entry-name" data-id="${e(id)}"`)}<div class="food-meta">${meta}</div>${extra}</div></div></td><td ${collection==='entries'?`data-diary-summary-entry="${e(id)}"`:''}>${amount}</td></tr>`;
+export function mobileDiaryRecord({id,collection,name,meta,amount,icon,selectBox,action,extra='',swipe=false,canDelete=false,labels={}}){
+ const options=swipe?`<button type="button" class="md-swipe-action md-swipe-options" data-md-swipe-action data-md-swipe-options aria-label="${e(labels.actions)}: ${e(name)}" hidden><img src="/snapshot-source/dots-vertical.svg" alt=""></button>`:'';
+ const remove=swipe&&canDelete?`<button type="button" class="md-swipe-action md-swipe-delete" data-md-swipe-action data-md-delete aria-label="${e(labels.remove)}: ${e(name)}" hidden><img src="/repeat-source/delete.svg" alt=""></button>`:'';
+ return `<tr data-diary-record ${swipe?'data-md-swipable':''} data-collection="${e(collection)}" data-id="${e(id)}"><td>${options}<div class="md-record">${selectBox}<button type="button" class="md-record-menu" data-md-context aria-label="${e(name)}: actions">${icon}</button><div class="md-record-text">${button(`<span class="food-name">${e(name)}</span>`,action,`class="entry-name" data-id="${e(id)}"`)}<div class="food-meta">${meta}</div>${extra}</div></div></td><td ${collection==='entries'?`data-diary-summary-entry="${e(id)}"`:''}>${remove}<div class="md-record-amount">${amount}</div></td></tr>`;
 }
 
 export function mobileDiarySummary({summary,facts,settings,unit,language,labels,icons,macroMode,scores,nutrientName,scoreName}){
@@ -48,12 +50,20 @@ export function mobileDiarySummary({summary,facts,settings,unit,language,labels,
 }
 
 export class MobileDiary {
- constructor({root,header,summary,context,onSummary,onDatePicker}){
+ constructor({root,header,summary,context,onSummary,onDatePicker,onGroupSelect}){
   Object.assign(this,{root,header,context,onSummary,onDatePicker});this.charts=[];this.generation=0;this.abort=new AbortController();const options={signal:this.abort.signal};
   root.addEventListener('click',event=>{
    const dot=event.target.closest('[data-md-dot]'),step=event.target.closest('[data-md-step]');
    if(dot||step)this.showPage(dot?Number(dot.dataset.mdDot):mobileDiarySession.page+Number(step.dataset.mdStep));
    if(event.target.closest('[data-md-context]'))context(event);
+   const group=event.target.closest('[data-md-group]'),heading=event.target.closest('[data-md-group]>summary');
+   if(heading){
+    if(event.target.closest('[data-md-fold-group]')){group.open=!group.open;heading.querySelector('[data-md-fold-group]').setAttribute('aria-expanded',String(group.open));}
+    else if(event.target.closest('[data-md-select-group]')||!event.target.closest('button,input,label')){
+     event.preventDefault();const select=heading.querySelector('[data-md-select-group]');
+     if(!select.disabled){onGroupSelect?.(group.dataset.mdGroup);root.querySelectorAll('[data-md-select-group]').forEach(button=>button.setAttribute('aria-pressed',String(button===select)));}
+    }
+   }
    if(event.target.closest('.md-group summary button,.md-water summary button'))event.preventDefault();
   },options);
   root.addEventListener('toggle',event=>{if(event.target.matches('[data-md-group]'))mobileDiarySession.groups.set(event.target.dataset.mdGroup,event.target.open);},{...options,capture:true});

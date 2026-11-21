@@ -149,6 +149,7 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
  }
  return {
   menu,groupMenu,recordMenu,reset,selection:()=>selecting?selection():null,
+  removeRecord(collection,id){if(!diary().completed)return remove({date:date(),scope:'selected',records:[{collection,id}]});},
   selectBox(collection,row){return selecting?`<input type="checkbox" class="diary-select" data-tool-select data-collection="${collection}" data-id="${e(row.id)}" aria-label="${e(coreText('tools.selectName',{name:name(collection,row)}))}" ${selected.has(key(collection,row.id))?'checked':''}>`:'';},
   groupBox(group){const members=refs(groupSelection(group));return selecting?`<input type="checkbox" class="diary-select" data-tool-select-group="${e(group)}" aria-label="${e(coreText('tools.selectName',{name:group}))}" ${!members.length?'disabled':members.every(({collection,row})=>selected.has(key(collection,row.id)))?'checked':''}>`:'';},
   selectionHeader(icons){return selecting?`<div class="diary-selection-header"><button type="button" class="icon-button" data-diary-tool="done" aria-label="${e(t('mobileFoodEditor.back'))}">${icons.back}</button><h2>${e(coreText('diary.multiSelect'))}</h2><button type="button" class="icon-button" data-diary-menu aria-label="${e(coreText('diary.selectedActions'))}">${icons.more}</button></div>`:'';},

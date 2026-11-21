@@ -1,5 +1,6 @@
 import {createUITranslator} from './app-language.js';
 const rows={
+ 'diary.toggleGroup':['Expand or collapse group','Développer ou réduire le groupe','Gruppe ein- oder ausklappen','Expandir ou recolher grupo'],
  'diary.groupTime':['Add Group Timestamp','Ajouter une heure au groupe','Uhrzeit für Gruppe hinzufügen','Adicionar horário ao grupo'],
  'diary.groupSort':['Sort Group Entries by Time','Trier le groupe par heure','Gruppeneinträge nach Uhrzeit sortieren','Ordenar grupo por horário'],
  'diary.groupPrevious':['Copy Yesterday’s Group','Copier le groupe de la veille','Gruppe vom Vortag kopieren','Copiar grupo de ontem'],

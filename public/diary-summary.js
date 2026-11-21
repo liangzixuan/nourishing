@@ -27,10 +27,10 @@ export function diarySummaryMarkup(diary,selection){
 }
 
 /** Owns summary carousel, charts and timer only. Mutations and destination navigation stay with the shell. */
-export function mountDiarySummary({root,diary,onAction,selection}){
+export function mountDiarySummary({root,diary,onAction,selection,onGroupSelect}){
  const controller=new AbortController(),header=document.createElement('div');
  let disposed=false,facts=diary.summary,chartSummary=diary.summary,ready=!selection?.records.length;
- const panel=new MobileDiary({root,header,summary:diary.summary,context:()=>{},onDatePicker:()=>{}});
+ const panel=new MobileDiary({root,header,summary:diary.summary,context:()=>{},onDatePicker:()=>{},onGroupSelect});
  const selected=ready?null:watchDiarySelection({selection,onChange:result=>{if(disposed)return;facts=result.facts;chartSummary=result.chartSummary;ready=true;panel.update(summaryMarkup(diary,facts,chartSummary),chartSummary);}});
  const actions=new Set(['mobile-diary-energy','edit-day-targets','nutrient-contributors','configure-diary-display','all-nutrients','choose-scores','score-details','open-fasting','water','water-custom','water-menu','water-remove','water-settings','water-target']);
  root.addEventListener('toggle',event=>{if(event.target.matches('.md-water'))waterExpanded=event.target.open;},{capture:true,signal:controller.signal});

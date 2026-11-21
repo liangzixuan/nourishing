@@ -24,6 +24,7 @@ import {openDiarySession} from './diary-startup.js';
 import {mountTextLog} from './text-log.js';
 import {notePhotoThumbnail} from './note-photos.js';
 import {createDiaryTools} from './diary-tools.js';
+import {bindDiaryRowSwipe} from './diary-row-swipe.js';
 import {openNutrientDetail} from './nutrient-detail.js';
 import {openBarcode} from './barcode.js';
 import {openEntryAdjustment} from './entry-adjustments.js';
@@ -91,6 +92,7 @@ let library = null;
 let nutrition = null;
 let more = null;
 let summaryPanel = null;
+let disposeRowSwipe = null;
 let waterPanel=null,waterMenu=null,waterAmount=null;
 let pickerCleanup;
 let account;
@@ -102,6 +104,7 @@ let diary = null;
 let loadId = 0;
 let searchId = 0;
 let group = 'Uncategorized';
+let selectedDiaryGroup = null;
 let sheetBackHandle = null;
 let tabBackHandle = null;
 let repeatsBackHandle = null;
@@ -251,6 +254,7 @@ function leaveView() {
   }
   summaryPanel?.dispose();
   summaryPanel = null;
+  disposeRowSwipe?.();disposeRowSwipe=null;
   library?.dispose();
   library = null;
   nutrition?.dispose();
@@ -274,10 +278,12 @@ function formatEntryMeta(row, time) {
 }
 
 function renderDiaryRow(collection, row) {
+  const swipeOptions={swipe:!diaryTools.selection(),canDelete:!diary.completed,labels:{actions:coreText('diary.actions'),remove:t('mobileRepeat.delete')}};
   const time = diary.presentation?.settings?.showTimestamp === false ? '' : row.time;
   if (collection === 'entries') {
     const iconName = row.kind === 'exercise' ? 'fitness_center' : row.recipeId || row.mealId ? 'restaurant' : 'nutrition';
     return mobileDiaryRecord({
+      ...swipeOptions,
       id: row.id,
       collection,
       name: row.facts?.name ?? row.name,
@@ -292,6 +298,7 @@ function renderDiaryRow(collection, row) {
   const waterAmount=isNote?null:waterRecordAmount(diary,row);
   const thumb = isNote ? notePhotoThumbnail(row) : '';
   return mobileDiaryRecord({
+    ...swipeOptions,
     id: row.id,
     collection,
     name: isNote ? row.text : waterAmount?waterText('water'):row.type,
@@ -307,6 +314,7 @@ function renderDiaryRow(collection, row) {
 }
 
 function render() {
+  disposeRowSwipe?.();disposeRowSwipe=null;
   const displayedDiary = presentDiarySnapshot(diary, performance.now() - diaryReceivedAt);
   summaryPanel?.dispose();
   selectTab('diary-tab');
@@ -338,6 +346,7 @@ function render() {
     .flatMap(g => g.records.map(ref => ({...ref, group: g.name, row: maps[ref.collection].get(ref.id)})))
     .filter(item => item.row);
   const groupMarkup = mobileDiaryGroups({
+    selectedGroup: diary.groups.includes(selectedDiaryGroup) ? selectedDiaryGroup : null,
     groups: display.groups.map(g => g.name),
     configuredGroups: diary.groups,
     records,
@@ -348,20 +357,23 @@ function render() {
       diaryGroupSubtotal(diary.summary.diaryTable, g, {energyUnit: diary.energyUnit, language: uiLanguage()}) +
       `<button type="button" class="diary-group-tools" data-tool-group="${e(g)}" aria-label="${e(coreText('diary.groupActions', {group: g}))}">⋯</button>`,
     icons,
-    labels: {add: t('diary.addFood')},
+    labels: {add: t('diary.addFood'),toggle:coreText('diary.toggleGroup')},
   });
 
   page.innerHTML = `${diaryCycleMarkup(diary.cycleDays)}${diarySummaryMarkup(displayedDiary, diaryTools.selection())}<div class="md-diary diary-layout">${groupMarkup}</div>`;
+  disposeRowSwipe=bindDiaryRowSwipe(page);
   summaryPanel = mountDiarySummary({
     root: page,
     diary: displayedDiary,
     onAction: summaryAction,
+    onGroupSelect: value => { selectedDiaryGroup = value; },
     selection: diaryTools.selection(),
   });
 }
 
 function runAddAction(kind, initialGroup) {
-  group = initialGroup ?? defaultGroup(diary.groups);
+  group = initialGroup ?? (view==='diary'&&diary.groups.includes(selectedDiaryGroup)?selectedDiaryGroup:defaultGroup(diary.groups));
+  initialGroup = group;
   const actions = {
     food: search,
     photo: () => photoLog(initialGroup),
@@ -461,7 +473,7 @@ function handleRecordRowClick(target) {
     if (collection === 'biometrics') return recordEditor('biometric', row);
     return row.kind === 'exercise' ? recordEditor('exercise', row) : edit({entry: row});
   };
-  return target.hasAttribute('data-md-context') ? diaryTools.recordMenu(collection, id, open) : open();
+  return (target.hasAttribute('data-md-context')||target.hasAttribute('data-md-swipe-options')) ? diaryTools.recordMenu(collection, id, open) : open();
 }
 
 async function mealAction(action,entry){
@@ -544,7 +556,11 @@ function handleDocumentClick(event) {
     group = target.dataset.group ?? defaultGroup(diary?.groups);
     return runAddAction(action === 'group-quick-add' ? diary.presentation.groupQuickAdd[group] ?? 'food' : 'food', group);
   }
-  if (['edit-entry', 'edit-note', 'edit-biometric'].includes(action) || target.hasAttribute('data-md-context')) {
+  if(target.hasAttribute('data-md-delete')){
+    const row=target.closest('[data-diary-record]');
+    if(row&&!diary.completed)return diaryTools.removeRecord(row.dataset.collection,row.dataset.id);
+  }
+  if (['edit-entry', 'edit-note', 'edit-biometric'].includes(action) || target.hasAttribute('data-md-context') || target.hasAttribute('data-md-swipe-options')) {
     return handleRecordRowClick(target);
   }
   if (Object.hasOwn(TAB_ROUTES, target.id)) return navigate(TAB_ROUTES[target.id]);
