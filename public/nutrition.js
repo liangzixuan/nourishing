@@ -1,18 +1,16 @@
 import {dc} from './discover-cloud-messages.js';
 import {bindDiscoverSwipe} from './discover-swipe.js';
 import {createDiscoverMotion} from './discover-motion.js';
-import {uiLanguage,t} from './app-language.js';
+import {t} from './app-language.js';
 import {mountMobileReport} from './report-mobile.js';
 import {openGlucose,openCycle} from './health-controls.js';
 import {openCoach} from './coach.js';
 import {discoverHeader} from './app-shell.js';
-import {mountDashboard} from './dashboard.js';
+import {mountDashboard,openDashboardNews} from './dashboard.js';
 import {mountRecordEditor} from './records.js';
 import {mountSnapshots} from './snapshots.js';
 import {mountFasting,openFastingAction} from './fasting.js';
 import {mountCharts} from './charts.js';
-import {newsfeedMarkup} from './dashboard-source/discover-settings-ui.js';
-import {parseNewsfeed,newsCardsMarkup} from './dashboard-source/discover-news.js';
 import {escape as e} from './html.js';
 import {request} from './diary-api.js';
 import {openPrintReport} from './print-report.js';
@@ -28,11 +26,8 @@ export function mountNutrition({page,headerRoot,date,show,close,header,content,o
  onChange=async(...args)=>{data=undefined;cancelReport();return changed?.(...args);};
  function cancelReport(){serial++;reportController?.abort();reportController=null;}
  function select(next){if(next===tab)return;const tabs=['dashboard','charts','report','snapshots'],direction=tabs.indexOf(next)>tabs.indexOf(tab)?1:-1;tab=next;refreshHeader?.(false);motion.change(direction,discover);}
- async function news(){
-  if(dashboard)return dashboard.openNews();
-  show(`${header(t('discover.title.newsfeed'))}<div class="dashboard-panel" aria-busy="true"></div>`);const host=content.querySelector('.dashboard-panel');
-  try{const result=await request('/api/dashboard?'+new URLSearchParams({date:date()}));if(alive()&&host.isConnected)host.innerHTML=result.news.items.length?newsCardsMarkup(parseNewsfeed(result.news)):newsfeedMarkup(uiLanguage());}
-  catch(error){if(host.isConnected)host.textContent=error.message;}finally{host.removeAttribute('aria-busy');}
+ function news(){
+  return dashboard?dashboard.openNews():openDashboardNews({show,close,content,date});
  }
  async function loadReport(panel,onReady){
   cancelReport();const id=serial,controller=new AbortController();reportController=controller;

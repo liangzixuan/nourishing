@@ -4,6 +4,7 @@ import {mountAccount} from './account-screen.js';
 import {pushBackHandler} from './back-history.js';
 import {t} from './app-language.js';
 import {coreText} from './core-cloud-messages.js';
+import {accountMessage} from './account-cloud-messages.js';
 import {escape as e} from './html.js';
 import {mountDisplay} from './display.js';
 import {mountTargets} from './targets.js';
@@ -16,7 +17,7 @@ import {openImports} from './imports.js';
 import {mountReminders} from './reminders.js';
 import {openGlucose, openCycle} from './health-controls.js';
 import {openExport} from './charts.js';
-import {moreRow as row, moreLink as link, moreGroup as group, moreHomeHeader, moreBackHeader} from './more-source/menu-view.js';
+import {moreRow as row, moreLink as link, moreGroup as group, moreIcon, moreHomeHeader, moreBackHeader} from './more-source/menu-view.js';
 
 const main = () => [
   ['account', t('mobileMore.account'), 'account-cog'],
@@ -39,6 +40,21 @@ const tools = () => [
   ['export', coreText('more.export')],
   ['backup', coreText('more.backup')],
 ];
+
+function manualTopics(expanded) {
+  const topics = [
+    ['diary', t('discover.nav.diary'), coreText('manual.diary')],
+    ['foods', t('mobileMore.foods'), coreText('manual.foods')],
+    ['reports', t('mobileMore.reports'), coreText('manual.reports')],
+    ['display', t('mobileMore.display'), coreText('manual.display')],
+    ['notifications', coreText('more.notifications'),
+      accountMessage('accountCloud.allowNotificationsInYourBrowserSettings'), accountMessage('reminders.foodShortcutHint'),
+      accountMessage('reminders.groupHint'), accountMessage('reminders.weightShortcutHint')],
+  ];
+  return group(topics.map(([id, title, ...paragraphs]) =>
+    `<details class="mm-manual-topic" data-manual-topic="${id}"${id === expanded ? ' open' : ''}><summary>${e(title)}</summary>${paragraphs.map(p => `<p>${e(p)}</p>`).join('')}</details>`,
+  ).join(''));
+}
 
 /** Adapts the existing More layout to authenticated cloud features. */
 export function mountMore({
@@ -106,7 +122,10 @@ export function mountMore({
   }
 
   function heading(title) {
-    headerRoot.innerHTML = moreBackHeader(title);
+    const help = screen === 'notifications'
+      ? `<button type="button" data-notification-help aria-label="${e(t('mobileMore.manual'))}">${moreIcon('help-circle')}</button>`
+      : undefined;
+    headerRoot.innerHTML = moreBackHeader(title, help);
     document.body.classList.add('more-destination');
   }
 
@@ -231,15 +250,7 @@ export function mountMore({
       );
     }
     if (id === 'manual') {
-      const topics = [
-        [t('discover.nav.diary'), coreText('manual.diary')],
-        [t('mobileMore.foods'), coreText('manual.foods')],
-        [t('mobileMore.reports'), coreText('manual.reports')],
-        [t('mobileMore.display'), coreText('manual.display')],
-      ];
-      return section(id, t('mobileMore.manual'), group(topics.map(([title, body]) =>
-        `<details class="mm-manual-topic"><summary>${e(title)}</summary><p>${e(body)}</p></details>`,
-      ).join('')));
+      return section(id, t('mobileMore.manual'), manualTopics());
     }
     if (id === 'licenses') {
       return section(id,coreText('more.licenses'),group(licenseNotices.map(([name])=>row('license/'+name,name)).join('')));
@@ -321,9 +332,13 @@ export function mountMore({
   const click = event => {
     const button = event.target.closest('[data-more-open]');
     const updateButton = event.target.closest('[data-more-check-update]');
+    const help = event.target.closest('[data-notification-help]');
     if (button) {
       event.preventDefault();
       open(button.dataset.moreOpen);
+    } else if (help) {
+      help.focus({preventScroll: true});
+      show(header(t('mobileMore.manual')) + manualTopics('notifications'));
     } else if (updateButton) {
       event.preventDefault();
       void checkForUpdates(updateButton);
