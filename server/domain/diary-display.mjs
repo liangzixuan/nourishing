@@ -5,7 +5,7 @@ import {NET_CARBOHYDRATE_TARGET_ID} from './carbohydrate-policy.mjs';
 const options=new Map(nutrientDisplayOptions.map(option=>[option.id,option]));
 const finite=value=>typeof value==='number'&&Number.isFinite(value);
 const fail=message=>{throw Object.assign(new Error(message),{status:400});};
-export const defaultDiaryDisplayPolicy=Object.freeze({version:1,highlighted:Object.freeze(['fiber','iron','calcium','potassium','vitaminC','sodium','magnesium','vitaminD']),showHighlights:true,macroDisplay:'consumed'});
+export const defaultDiaryDisplayPolicy=Object.freeze({version:1,highlighted:Object.freeze(['addedSugar','fiber','calcium','vitaminA','vitaminC','vitaminB12','folate','potassium']),showHighlights:true,macroDisplay:'consumed'});
 
 /** Parse explicit choices without adding defaults to stored settings. */
 export function parseDiaryDisplayPolicy(value){

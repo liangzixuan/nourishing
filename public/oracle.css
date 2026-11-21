@@ -6,3 +6,6 @@
 .mo-category-search{padding:16px 16px 0}.mo-category-list{margin-top:12px}.mo-category-search input,.mo-food-query input,.mo-select-menu input{min-width:0;width:100%;font:inherit;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px}
 .mo-select-menu input{position:sticky;top:0;width:calc(100% - 16px);margin:0 8px 8px}.mo-food-query{display:flex;gap:8px;margin:0;padding:0 12px 12px}.mo-food-query button{font:inherit;border:0;border-radius:8px;padding:8px 14px;background:var(--paper);color:var(--ink)}
 .mo-dialog [hidden],.mo-select-menu [hidden]{display:none!important}
+
+.oracle-sheet .oracle-body{padding-bottom:var(--dc-nav-space,70px)}
+.oracle-sheet [data-oracle-nav]{position:fixed;max-width:700px}

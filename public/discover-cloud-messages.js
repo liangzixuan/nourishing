@@ -4,6 +4,8 @@ import {mobileChartEditorMessages} from './custom-chart-source/messages.js';
 import {createUITranslator} from './app-language.js';
 // Cloud-owned UI messages. User names, source descriptions and saved values are not translated.
 const rows=[
+ ["switchSummary","Switch to {{widget}}","Afficher {{widget}}","Zu {{widget}} wechseln","Mostrar {{widget}}"],
+ ["summaryWhenLogged","Added when logged","Ajouté après la saisie","Wird nach dem Eintragen ergänzt","Adicionado após o registro"],
  [
   "activityKcal",
   "Activity (kcal)",

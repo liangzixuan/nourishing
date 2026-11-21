@@ -16,6 +16,8 @@ Status terms: **different** = observed mismatch; **missing** = reference action 
 
 ## Confirmed findings
 
+The table records the original findings. The [follow-up comparisons](#november-20-follow-up-comparisons) record the latest evidence for each changed screen.
+
 | ID | Priority | State and references | Finding | Evidence / work required |
 | --- | --- | --- | --- | --- |
 | D1 | High | Diary day menu, 56/216 | Corrected locally: nine-action bottom sheet, with Paste shown after Copy. Complete Day, Daily Report, widget sharing, sorting, previous-day copy and Delete All now have entry points. | Browser assertions cover all nine labels and sharing selection/preview/download. Full action journeys and installed-device checks remain open. Sharing follows the public guide; exact current widget graphics remain unverified. |
@@ -24,7 +26,7 @@ Status terms: **different** = observed mismatch; **missing** = reference action 
 | R5 | High | Diary copy/clear/create selection | Released in 1.0.15: capture, copy, clear amounts, recipes and meals prepare from the device snapshot using shared canonical rules. | Focused real-queue tests pass for pending identities, lost replies, restart and source changes. All 646 local tests pass; CI passes 643 with three expected platform skips. Build, deployment and live assets verified. First launch without a snapshot still uses the server. Entry expansion remains a separate network-bound path. Meal/group nutrition reads the local snapshot when its records are available. |
 | D3 | Medium | Report, 133–143 | Different: long lists of source-specific nutrient variants appear by default, with repeated empty rows and extra coverage/detail text. | Browser + Report renderer. Retain source data, but show the concise user-facing nutrient set by default. |
 | D4 | Medium | Report settings, 134–137 | Different: Days Displayed uses a native select rather than the reference choice screen. Extra More fold. | Browser. Date Range list exists; Custom Range currently uses two native date fields. |
-| D5 | Medium | Dashboard summary, 324 | Different: missing inline period and adjustment icon; macro rows differ. | Browser. Cards exist, but card existence does not establish parity. |
+| D5 | Medium | Dashboard summary, 102/325 | Different: missing inline period and adjustment icon; macro rows differ. | Browser. Cards exist, but card existence does not establish parity. |
 | D6 | Medium | Create/edit recipe, 60–79 | Different: Import Recipe location, help/overflow controls, and edit options. | Browser first step/cooked weight; source. Remaining steps need direct comparison and CRUD. |
 | D7 | Medium | Custom food, 252–263 | Different: no separate Nutrition Facts fold; extra fields/sections; header actions differ. Save & Add path needs verification. | Browser + `public/custom-food-editor.js`. |
 | D8 | Medium | Create/edit meal, 223–241 | Different: overflow appears on new items; edit menu contains extra actions instead of the compact reference menu. | Source: `public/composite-editor.js`; current edit states remain visually unverified. |
@@ -58,6 +60,20 @@ Further checks: Macro & Energy fixed/advanced controls, Macro Scheduler list/opt
 
 Version 1.0.14 local verification: all 638 tests passed, and the production Astro build passed. [CI and all Appwrite deployments passed](https://github.com/liangzixuan/nourishing/actions/runs/44838292756) at release commit `ddc9098`. Live version metadata, sync handling, Diary menus and sharing assets match the verified source. The public update cache includes the new version and sync modules. Installed-device verification of this release remains open. The earlier failed runs exposed stale UI assertions and an expected provenance hash update after extracting shared image actions; affected tests then passed. These results establish the tested behavior, not complete interface parity.
 
+
+## November 20 follow-up comparisons
+
+| Finding and references | Current local evidence | Open evidence |
+| --- | --- | --- |
+| D3/D16, 137–143 and 190–192 | Report and Targets share the six ordered nutrient groups. Source-specific rows remain available through additional nutrients or an explicit highlight. The fixtures cover selecting an advanced target, editing it, changing visibility, and opening its Report detail. | Exact platform styling and installed-device behavior. |
+| D4, 134–136 | The Settings screen has Date Range, Days Displayed and Include Supplements. Pickers show the selected value. Tests cover staged custom dates, cancel, errors and applying a choice with Report folds retained. More options moved to the Report footer. | Native date picker and device keyboard. |
+| D5, 102/325 | The Report Summary card shows an inline range and adjustment control. All six existing modes remain selectable. Screenshots cover unknown, measured, known zero and target rows. Reference 324 is scrolled below the card. | Switch order follows the existing selector. The captures do not show a switch interaction. |
+| D7, 252–263 | Nutrition Facts has its own fold. The edit header opens a Delete sheet. Review has Back, Save Food and Save & Add to Diary. In the real Diary fixture a new food opened for logging before upload, appeared immediately, then synchronized as one food and one linked entry. | Exact serving and label layouts, built-in help content, native selectors and installed-device deletion. |
+| D9, 160/166–167 | The expanded Diary Groups section has indexed inline fields and enable switches. The browser covers cancellation, occupied and unused slots, out-of-order activation, rename and queued updates. Existing entries and quick-add choices follow the renamed group. | Native keyboard and installed-device settings. |
+| D10/D12, 204–214 | The filter overflow contains Reset Filters. Macro estimates show four full-width rows with values, targets and percentages. A removed ingredient can be restored to its original position or the Undo bar dismissed. Local screenshot checks found and corrected overlapping ingredient names and quantities. The results overflow still offers the existing result-specific actions. | Exact result-card layout, native touch and the quality of production suggestions. |
+| D13, 242–251 | The main Oracle form now includes working Foods navigation. The full-screen category and results pages match the reference distinction. Chrome covered routing to Diary, search, ranking bases, quantity-aware results, category constraints and Back. | The fixture ranks a small synthetic catalog. Identical rankings to the reference and all production catalog sources remain unverified. |
+| D14, 193–203 | Repeat search and serving counts are localized. Chrome exercised food detail → Next, empty weekdays, create, edit, enable/disable and delete. A repeat reappeared after restarting Chrome with API traffic blocked, and synchronized after reconnection. | The fixture shell remained available. Installed-device offline startup, keyboard and barcode remain open. |
+| D15, 185–186 | The template editor places Units in the macro overflow. New templates also expose a draft-only restore action. Chrome exercised unit selection, cancellation and template create/update/delete with the scheduler. | Reference 186 shows the overflow buttons closed. Their exact menu contents remain unverified. |
 
 ## State coverage ledger
 

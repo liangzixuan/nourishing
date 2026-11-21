@@ -1,4 +1,5 @@
 const rows={
+ additional:['More nutrients','Autres nutriments','Weitere Nährstoffe','Mais nutrientes'],
  title:['Nutrient Targets','Objectifs nutritionnels','Nährstoffziele','Metas de nutrientes'],
  'group.general':['General','Général','Allgemein','Geral'],'group.vitamins':['Vitamins','Vitamines','Vitamine','Vitaminas'],'group.minerals':['Minerals','Minéraux','Mineralstoffe','Minerais'],'group.carbohydrates':['Carbohydrates','Glucides','Kohlenhydrate','Carboidratos'],'group.lipids':['Lipids','Lipides','Fette','Lipídios'],'group.protein':['Protein','Protéines','Protein','Proteínas'],
  dailyTarget:['Daily Target','Objectif quotidien','Tagesziel','Meta diária'],maximum:['Max Threshold','Seuil maximal','Obergrenze','Limite máximo'],visible:['Visible','Visible','Sichtbar','Visível'],custom:['Custom','Personnalisé','Benutzerdefiniert','Personalizado'],

@@ -1,7 +1,7 @@
 import {prepareDiaryRecordUpdate} from './local-diary-projection.js';
 // Serializable local effects for acknowledged and pending background commands.
 import {applyProfileSettingsProjection,projectDiaryBulkWrite,copiedDiaryRecords} from './local-diary-projection.js';
-import {renameDiaryGroup} from './local-group-rename.js';
+import {diaryGroupSlots,editDiaryGroupSlot,renameDiaryGroup} from './local-group-rename.js';
 import {mergeEntryUpdate} from './report-source/server/entry-update-fields.mjs';
 import {expandedDiarySources} from './report-source/server/resource-expansion.mjs';
 export function applyWriteToState(state,row,result){
@@ -49,6 +49,7 @@ export function applyWriteToState(state,row,result){
  if(type==='water.add')replace('biometrics',{id,date:p.date,time:p.time,...(Object.hasOwn(p,'group')?{group:p.group}:{}),type:'Water',unit:'mL',value:p.amount,_pending:!result});
  if(type==='day.complete'){state.settings.completedDays=(state.settings.completedDays??[]).filter(day=>day!==p.date);if(p.completed)state.settings.completedDays.push(p.date);}
  if(type==='display.save'||type==='preferences.patch')Object.assign(state.settings,p);
+ if(type==='group.editSlot'&&state.settings.groups&&diaryGroupSlots(state.settings)[p.slot-1]===p.from)editDiaryGroupSlot(state,p);
  if(type==='group.rename'&&state.settings.groups?.includes(p.from))renameDiaryGroup(state,p);
  if(row.projection?.chartState){state.settings.mobileCharts=structuredClone(row.projection.chartState.mobileCharts);state.charts=structuredClone(row.projection.chartState.charts);}
  if(type==='entry.ingredients.adjust'){

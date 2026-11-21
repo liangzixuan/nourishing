@@ -1,6 +1,6 @@
 import {onBackgroundWriteStatus} from './background-writes.js';
 import {localWorkspaceState} from './local-engine.js';
-import {renameDiaryGroup} from './local-group-rename.js';
+import {editDiaryGroupSlot} from './local-group-rename.js';
 import {renderDashboardSettings} from './dashboard-settings.js';
 import {streakSettingsMarkup} from './dashboard-source/discover-settings-ui.js';
 import {uiLanguage} from './app-language.js';
@@ -40,9 +40,9 @@ export function mountDisplay({root,headerRoot,onChange=async()=>{},date=()=>new 
  }
  async function save(patch,type='display.save'){
   let settings={...view.settings,...structuredClone(patch)};
-  if(type==='group.rename'){
+  if(type==='group.editSlot'){
    const state=structuredClone(await localWorkspaceState()??{entries:[],biometrics:[],notes:[],repeats:[],settings:view.settings});
-   state.settings={...state.settings,...view.settings};renameDiaryGroup(state,patch);settings=state.settings;
+   state.settings={...state.settings,...view.settings};editDiaryGroupSlot(state,patch);settings={...view.settings,groups:state.settings.groups,diaryGroups:state.settings.diaryGroups,diaryQuickAdd:state.settings.diaryQuickAdd,waterSettings:state.settings.waterSettings};
   }
   const next={...view,settings};
   await queueCommand(view.revision,type,patch,{projection:{responses:{'/api/display':next}}});view=next;

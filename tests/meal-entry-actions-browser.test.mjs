@@ -65,6 +65,23 @@ test('saved meal actions distinguish original, copy and occurrence; local adjust
   await page.screenshot({path:'.local/meal-actions/expanded-diary.png'});
   assert.equal(remoteReviews,0);
   await page.evaluate(async()=>{Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>true});await (await import('/background-writes.js')).flushBackgroundWrites();});await page.locator(`[data-diary-record][data-id="${entryId}"]`).waitFor({state:'detached'});const children=state().entries.filter(row=>row.expandedFrom?.id===entryId);assert.equal(children.length,1);assert.equal(children[0].quantity,0.5);assert.equal(children[0].portionId,'bowl');const localServingPreview=await page.evaluate(async id=>(await import('/local-engine.js')).localPreviewDiaryItem({id,amount:2}),children[0].id);assert.equal(localServingPreview.nutrition.totals.calories,400);assert.deepEqual(state().meals.find(row=>row.id===meal.id),original[0]);assert.deepEqual(errors,[]);
+
+  await page.locator('#foods-tab').click();
+  await page.locator('[data-action=new-food]').click();
+  await page.getByLabel('Name',{exact:true}).fill('Packed lunch');
+  await page.evaluate(()=>Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>false}));
+  await page.locator('[data-mfe-submit]:enabled').click();
+  await page.locator('[data-mfe-add]:enabled').click();
+  await page.getByRole('heading',{name:'Packed lunch',exact:true}).waitFor();
+  await page.getByRole('button',{name:'Add to Diary',exact:true}).click();
+  await page.locator('#sheet').waitFor({state:'hidden'});
+  assert.equal(state().foods.some(row=>row.name==='Packed lunch'),false);
+  await page.locator('#diary-tab').click();
+  await page.locator('[data-diary-record]').filter({hasText:'Packed lunch'}).waitFor();
+  await page.evaluate(async()=>{Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>true});await (await import('/background-writes.js')).flushBackgroundWrites();});
+  const created=state().foods.filter(row=>row.name==='Packed lunch');
+  assert.equal(created.length,1);
+  assert.equal(state().entries.filter(row=>row.foodId===created[0].id).length,1);
  }catch(error){if(page){mkdirSync('.local/meal-actions',{recursive:true});await page.screenshot({path:'.local/meal-actions/failure.png'});console.error(page.url(),await page.locator('body').innerText(),errors);}throw error;}
  finally{await browser?.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
 });

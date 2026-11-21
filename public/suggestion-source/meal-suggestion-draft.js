@@ -14,7 +14,13 @@ export class MealSuggestionDraft {
    this.preview=value;this.rows=structuredClone(value.rows);this.status='ready';this.onChange(this);return true;
   }catch(error){if(this.current(version)){this.status='error';this.error=error.message;this.onChange(this);}return false;}
  }
- remove(index){if(this.disposed||!Number.isInteger(index)||index<0||index>=this.rows.length)return false;this.rows=this.rows.filter((_,i)=>i!==index);return this.refresh();}
+ remove(index){if(this.disposed||!Number.isInteger(index)||index<0||index>=this.rows.length)return false;this.removed={index,row:this.rows[index]};this.rows=this.rows.filter((_,i)=>i!==index);return this.refresh();}
+ undoRemove(){
+  if(this.disposed||!this.removed)return false;
+  const {index,row}=this.removed;this.removed=null;
+  this.rows.splice(index,0,row);
+  return this.refresh();
+ }
  updateQuantity(index,{quantity,unit,portionId}){
   if(this.disposed||!Number.isInteger(index)||index<0||index>=this.rows.length)return false;
   const {portionId:oldPortion,amount:oldAmount,grams:oldGrams,...row}=this.rows[index];this.rows=this.rows.map((value,i)=>i===index?{...row,quantity,unit,...(unit==='portion'?{portionId}:{})}:value);return this.refresh();

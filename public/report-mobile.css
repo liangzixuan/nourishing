@@ -7,9 +7,44 @@
 
 .report-remaining .report-energy-ring{margin-bottom:4px}.report-remaining svg{width:100%;height:100%;display:block}.report-remaining circle{fill:none;stroke:var(--mobile-ring-track,#414456);stroke-width:7}
 .nutrition-report-mobile .mobile-report-nutrients{padding:16px;margin:16px 0;border-radius:16px}.nutrition-report-mobile .mobile-report-category{display:flex;align-items:center;justify-content:space-between;gap:12px;list-style:none;cursor:pointer}.mobile-report-category::-webkit-details-marker{display:none}.mobile-report-category h2{font:700 1.15rem/1.3 Karla,Lato,sans-serif;margin:0}.mobile-report-nutrients[open]>.mobile-report-category{margin-bottom:18px}.mobile-report-nutrients[open]>.mobile-report-category .material-symbols-rounded{transform:rotate(180deg)}
-.report-target-list,.report-target-grid{display:grid;gap:20px}.report-target-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 16px}.report-target-grid .dc-button,.report-target-list .dc-button{display:flex;justify-content:space-between;align-items:baseline;width:100%;gap:8px;text-align:left;min-height:32px;padding:0}.report-target-grid .dc-button span,.report-target-list .dc-button span{font-weight:700;min-width:0}.report-target-grid .dc-button strong,.report-target-list .dc-button strong{font-weight:400;color:var(--muted);white-space:nowrap}.report-target-list small{font-weight:400;color:var(--muted)}.nutrition-report-mobile progress{display:block;width:100%;height:9px;border:0;border-radius:8px;overflow:hidden;background:var(--mobile-ring-track,#414456);accent-color:var(--green)}.nutrition-report-mobile progress::-webkit-progress-bar{background:var(--mobile-ring-track,#414456);border-radius:8px}.nutrition-report-mobile progress::-webkit-progress-value{background:var(--green);border-radius:8px}.nutrition-report-mobile progress::-moz-progress-bar{background:var(--green);border-radius:8px}.report-partial{font-size:.75rem;color:var(--muted)}
+.report-target-list,.report-target-grid{display:grid;gap:20px}.report-target-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 16px}.report-target-grid .dc-button,.report-target-list .dc-button{display:flex;justify-content:space-between;align-items:baseline;width:100%;gap:8px;text-align:left;min-height:32px;padding:0}.report-target-grid .dc-button span,.report-target-list .dc-button span{font-weight:700;min-width:0}.report-target-grid .dc-button strong,.report-target-list .dc-button strong{font-weight:400;color:var(--muted);white-space:nowrap}.report-target-list small{font-weight:400;color:var(--muted)}.nutrition-report-mobile progress{display:block;width:100%;height:9px;border:0;border-radius:8px;overflow:hidden;background:var(--mobile-ring-track,#414456);accent-color:var(--green)}.nutrition-report-mobile progress::-webkit-progress-bar{background:var(--mobile-ring-track,#414456);border-radius:8px}.nutrition-report-mobile progress::-webkit-progress-value{background:var(--green);border-radius:8px}.nutrition-report-mobile progress::-moz-progress-bar{background:var(--green);border-radius:8px}
 .report-balance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 12px}.report-balance{display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;min-width:0;padding:0}.report-balance-gauge{width:100%;max-width:180px;height:auto;display:block}.report-balance-gauge path{fill:none;stroke-width:10}.report-gauge-track{stroke:var(--mobile-ring-track,#414456)}.report-gauge-band{stroke:#65cf8f}.report-balance-gauge .report-gauge-needle{stroke:var(--ink);stroke-width:2}.report-gauge-center{fill:var(--ink)}.report-balance-gauge text{fill:var(--muted);font-size:11px}.report-balance-gauge+strong{margin-top:-30px;margin-bottom:12px;font-size:1.1rem;font-weight:400}.report-balance-name{font-size:.85rem;font-weight:700;text-align:center;overflow-wrap:anywhere;border:1px solid var(--line,#414456);border-radius:20px;padding:3px 8px}.report-balance:last-child:nth-child(odd){grid-column:1/-1;justify-self:center;width:calc(50% - 6px)}
 .report-detail-facts,.mobile-report-dialog [data-nutrient-balances]{padding:16px}.mobile-report-dialog .nutrient-balance-card{padding:16px}.mobile-report-dialog .nutrient-balance-card h3{margin-top:0}.mobile-report-dialog .nutrient-balance-inputs,.mobile-report-dialog .nutrient-balance-days,.report-detail-facts dl{display:grid;gap:8px}.mobile-report-dialog dd{margin:0}.mobile-report-dialog .nutrient-balance-meter{position:relative;height:12px;background:var(--mobile-ring-track,#414456)}.mobile-report-dialog .nutrient-balance-band{position:absolute;height:100%;background:var(--green)}.mobile-report-dialog .nutrient-balance-meter i{position:absolute;top:-3px;width:3px;height:18px;background:var(--ink)}.mobile-report-dialog a{color:var(--green)}
 .mobile-report-nutrient-dialog .dc-dialog-header{display:grid;grid-template-columns:44px minmax(0,1fr) 44px}.mobile-report-nutrient-dialog .dc-dialog-header h2{margin:0;text-align:center;overflow-wrap:anywhere}.mobile-report-nutrient-dialog .dc-dialog-body{padding-bottom:24px}.mobile-report-nutrient-help .dc-dialog-body{padding:16px}.mobile-report-nutrient-dialog .mnd-card,.mobile-report-nutrient-dialog .mnd-sources{margin-bottom:0}
 
 .report-balance-extras{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:24px;padding-top:20px;border-top:1px solid var(--line)}.report-balance-extras .report-balance{gap:8px}
+
+.mobile-report-dialog:is([data-mobile-report=settings],[data-mobile-report=days],[data-mobile-report=dates],[data-mobile-report=options]) .dc-dialog-header {
+ display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:0;padding:6px;
+}
+.mobile-report-dialog:is([data-mobile-report=settings],[data-mobile-report=days],[data-mobile-report=dates],[data-mobile-report=options]) .dc-dialog-header h2 { margin:0; }
+.mobile-report-dialog:is([data-mobile-report=settings],[data-mobile-report=days],[data-mobile-report=dates],[data-mobile-report=options]) .dc-row {
+ min-height:56px;padding:0 16px;
+}
+.mobile-report-dialog .dc-row>[data-report-action] { min-height:56px;padding:8px 0;text-align:start; }
+.mobile-report-dialog .dc-row>.dc-button>.report-setting-value { margin-inline-start:auto;text-align:end; }
+.mobile-report-dialog .dc-row>[data-choice]>.material-symbols-rounded { color:var(--green); }
+.mobile-report-dialog .dc-row>[aria-pressed=false]>.material-symbols-rounded { visibility:hidden; }
+.mobile-report-dialog:is([data-mobile-report=days],[data-mobile-report=dates]) .dc-dialog-body { padding-bottom:env(safe-area-inset-bottom,0px); }
+.mobile-report-dialog [data-custom-fields][hidden],.mobile-report-dialog [type=submit][hidden] { display:none; }
+.mobile-report-dialog .report-custom-date { cursor:pointer; }
+.mobile-report-dialog .report-custom-date strong { font:700 calc(16rem / 18) Karla,Lato,sans-serif; }
+.mobile-report-dialog .report-custom-date>span { display:flex;align-items:center;position:relative; }
+.report-custom-date input { position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer; }
+.report-custom-date input::-webkit-calendar-picker-indicator { position:absolute;inset:0;width:100%;height:100%;margin:0;cursor:pointer; }
+.report-custom-date:focus-within { outline:2px solid var(--green);outline-offset:-2px; }
+.mobile-report-dialog[data-mobile-report=dates] .dc-pill { margin:0 16px 16px;min-height:44px; }
+.nutrition-report-mobile>[data-report-action=options] { min-height:44px;padding:8px 0;color:var(--mobile-accent-text,var(--green)); }
+
+.report-nutrient-groups{padding:16px;margin:16px 0;border-radius:16px}
+.nutrition-report-mobile .report-nutrient-groups .mobile-report-nutrients{padding:0;margin:0;border:0;box-shadow:none;background:transparent}
+.report-nutrient-groups .mobile-report-nutrients+.mobile-report-nutrients{margin-top:22px}
+.report-nutrient-groups .mobile-report-category h2{font-size:1rem}
+.report-nutrient-groups .mobile-report-nutrients[open]>.mobile-report-category{margin-bottom:10px}
+.report-nutrient-groups .report-target-list{gap:12px}
+.report-nutrient-groups .report-target-list .dc-button{min-height:24px}
+.report-nutrient-groups [data-depth="1"]{margin-inline-start:16px}
+.report-nutrient-groups [data-depth="2"]{margin-inline-start:32px}
+.report-nutrient-groups [data-depth="3"]{margin-inline-start:48px}
+
+.report-highlight-column{display:grid;align-content:start;gap:20px}

@@ -4,3 +4,20 @@
 .dc-symbol-svg{width:24px;height:24px}
 .dc-macro-list span{min-width:0;overflow-wrap:anywhere}.dc-macro-list strong{flex:none}
 .dashboard-panel{padding:16px}.dashboard-panel .dc-row{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:61px;border-bottom:1px solid var(--line)}.dashboard-panel .dc-row>span{min-width:0}.dc-switch{width:48px;height:28px;accent-color:var(--green);flex:none;cursor:pointer}.dc-switch:disabled{opacity:.4}.dc-unavailable{color:var(--muted);font-size:.8rem}.dc-reset-streak{margin-top:24px}.dc-reset-streak p{color:var(--muted);font-size:.9rem}.dc-streak-input{display:flex;gap:8px;align-items:center}.dc-streak-input input{width:86px}.dc-sleep-facts{display:grid;gap:10px}.dc-sleep-facts>div{display:flex;justify-content:space-between;gap:14px}.dc-sleep-facts dd{margin:0}.dc-sleep-record{border-bottom:1px solid var(--line);padding:16px 0}.dc-sleep-record h3,.dc-sleep-source h3{font-size:1rem}.dc-sleep-record pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.75rem}.dc-sleep-record details,.dc-sleep-notes{margin-top:12px}.dc-news-empty{text-align:center}.dashboard-panel [hidden]{display:none!important}
+
+.dc-summary-header,.dc-summary-period-row{display:flex;align-items:center;gap:8px}
+.dc-summary-header{justify-content:space-between;min-height:24px}
+.dc-summary-header .dc-icon{min-width:44px;min-height:44px;margin:-10px -10px -10px 0;color:var(--green)}
+.dc-summary-period-row{flex-wrap:wrap;row-gap:0}
+.dc-summary-period-row .dc-summary-number{margin:0}
+.dc-summary-period-row .dc-summary-period{display:inline-flex;align-items:center;gap:2px;min-height:32px;font:400 calc(14rem / 18) Lato,Arial,sans-serif}
+.dc-summary-period .dc-symbol-svg{width:17px;height:17px}
+.dc-summary-macros{margin-top:8px;overflow:hidden;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.dc-summary-macros>div{display:flex;align-items:center;gap:10px;padding:6px 9px;min-height:35px;color:var(--ink);font-size:calc(15rem / 18)}
+.dc-summary-macros>div+div{border-top:1px solid var(--line)}
+.dc-summary-macros>div::before{content:"";width:12px;height:12px;border-radius:50%;flex:none;background:var(--muted)}
+.dc-summary-macros>[data-summary-nutrient=protein]::before{background:#61ce91}
+.dc-summary-macros>[data-summary-nutrient=trackedCarbohydrate]::before{background:#41c8d4}
+.dc-summary-macros>[data-summary-nutrient=fat]::before{background:#be78ce}
+.dc-summary-macros strong{font:700 calc(16rem / 18) Karla,Lato,sans-serif}
+.dc-summary-macros span,.dc-summary-macros strong{min-width:0;overflow-wrap:anywhere}

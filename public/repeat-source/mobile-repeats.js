@@ -1,11 +1,28 @@
 import {AnchoredMenu} from '../targets-source/anchored-menu.js';
 import {escape as e} from '../html.js';
-import {formatMessage} from './message-format.js';
+import {formatMessage} from '../report-source/public/message-format.js';
 const message=language=>(key,values)=>formatMessage(language,'mobileRepeat.'+key,values);
 export function mobileRepeatsHeader(language,icon){const m=message(language);return `<div class="mr-header"><button type="button" data-action="repeat-home" aria-label="${e(m('back'))}">${icon('back')}</button><h1>${e(m('title'))}</h1><button type="button" data-action="new-repeat" aria-label="${e(m('add'))}">${icon('plus')}</button></div>`;}
-export function mobileRepeatsMarkup({language,rows,name,quantity,icon,query=''}){
- const m=message(language),day=new Intl.DateTimeFormat(language,{weekday:'short',timeZone:'UTC'});
- return `<div class="mr-home"><label class="mr-search">${icon('search')}<input type="search" data-mr-search aria-label="${e(m('search'))}" placeholder="${e(m('search'))}" value="${e(query)}"></label><div class="mr-items">${rows.length?rows.map(row=>`<section class="mr-item" data-mr-item data-mr-name="${e(name(row))}"><button type="button" data-action="edit-repeat" data-id="${e(row.id)}"><strong>${e(name(row))}</strong><span>${e(quantity(row))} · ${e(row.group)}</span><span>${e(row.days.map(i=>day.format(new Date(Date.UTC(2026,10,1+i,12)))).join(', '))}${row.time?' · '+e(row.time):''}${row.enabled===false?' · '+e(formatMessage(language,'repeat.disabled')):''}</span></button></section>`).join(''):`<section class="mr-empty"><span class="mr-repeat-icon" aria-hidden="true">${icon('repeat')}</span><div><h2>${e(m('emptyTitle'))}</h2><p>${e(m('emptyHelp'))}</p></div></section>`}</div><p data-mr-no-results hidden>${e(m('noResults'))}</p>${rows.length?`<button type="button" class="mr-review" data-action="apply-repeats">${e(formatMessage(language,'repeat.reviewDay'))}</button>`:''}</div>`;
+export function mobileRepeatsMarkup({language,rows,name,quantity,icon,query='',sort='recent'}){
+ const m=message(language);
+ const weekday=new Intl.DateTimeFormat(language,{weekday:'short',timeZone:'UTC'});
+ const clock=new Intl.DateTimeFormat(language,{hour:'numeric',minute:'2-digit',timeZone:'UTC'});
+ const collator=new Intl.Collator(language,{sensitivity:'base',numeric:true});
+ const ordered=sort==='alphabetical'?[...rows].sort((a,b)=>collator.compare(name(a),name(b))):[...rows].reverse();
+ const cards=ordered.map(row=>{
+  const days=row.days.map(i=>weekday.format(new Date(Date.UTC(2026,10,1+i)))).join(', ');
+  const time=row.time?clock.format(new Date('2000-01-01T'+row.time+':00Z')):'';
+  const schedule=[days,time].filter(Boolean).join(' - ');
+  return `<section class="mr-item" data-mr-item data-mr-name="${e(name(row))}">
+    <button type="button" data-action="edit-repeat" data-id="${e(row.id)}">
+      <strong>${e(name(row))}</strong><span>${e(schedule)}${row.enabled===false?' · '+e(formatMessage(language,'repeat.disabled')):''}</span>
+      <small>${e(quantity(row))} · ${e(row.group)}</small>${icon('chevron')}
+    </button></section>`;
+ }).join('');
+ return `<div class="mr-home"><label class="mr-search">${icon('search')}<input type="search" data-mr-search aria-label="${e(m('search'))}" placeholder="${e(m('search'))}" value="${e(query)}"></label>
+  ${rows.length?`<div class="mr-list-tools"><span>${e(m('count',{count:rows.length}))}</span><button type="button" data-action="sort-repeats">${e(formatMessage(language,'mobileLibrary.'+sort))}</button></div>`:''}
+  <div class="mr-items">${cards||`<section class="mr-empty"><span class="mr-repeat-icon" aria-hidden="true">${icon('repeat')}</span><div><h2>${e(m('emptyTitle'))}</h2><p>${e(m('emptyHelp'))}</p></div></section>`}</div>
+  <p data-mr-no-results hidden>${e(m('noResults'))}</p>${rows.length?`<button type="button" class="mr-review" data-action="apply-repeats">${e(formatMessage(language,'repeat.reviewDay'))}</button>`:''}</div>`;
 }
 export class MobileRepeatList{
  constructor({root,language,onQuery}){this.root=root;this.abort=new AbortController();const input=root.querySelector('[data-mr-search]');const filter=()=>{const query=input.value.trim().toLocaleLowerCase(language);let count=0;for(const row of root.querySelectorAll('[data-mr-item]')){row.hidden=!row.dataset.mrName.toLocaleLowerCase(language).includes(query);if(!row.hidden)count++}root.querySelector('[data-mr-no-results]').hidden=!query||count>0;const empty=root.querySelector('.mr-empty');if(empty)empty.hidden=Boolean(query);onQuery(input.value)};input.addEventListener('input',filter,{signal:this.abort.signal});filter();}

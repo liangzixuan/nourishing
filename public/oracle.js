@@ -1,3 +1,4 @@
+import {bottomNavigation} from './dashboard-source/discover-ui.js';
 import {uiLanguage,t} from './app-language.js';
 import {fc} from './food-cloud-messages.js';
 import {MobileOracle} from './oracle-source/mobile-oracle.js';
@@ -10,7 +11,7 @@ import {escape as e} from './html.js';
 export function openOracle({date,show,close,content,onAdded}){
  if(!document.querySelector('link[data-oracle-style]')){const link=document.createElement('link');link.rel='stylesheet';link.href='/oracle.css';link.dataset.oracleStyle='';document.head.append(link);}
  const day=typeof date==='function'?date():date;
- show(`<div class="oracle-heading"><header class="mo-header"><button type="button" data-oracle-close aria-label="${e(t("mobileFoodEditor.back"))}">${symbol('back')}</button><h1>${e(t("catalogInsights.oracle"))}</h1><span></span></header></div><div class="oracle-body"><p class="empty" role="status">${e(t("mobileNutrientDetail.loading"))}</p></div>`);
+ show(`<div class="oracle-heading"><header class="mo-header"><button type="button" data-oracle-close aria-label="${e(t("mobileFoodEditor.back"))}">${symbol('back')}</button><h1>${e(t("catalogInsights.oracle"))}</h1><span></span></header></div><div class="oracle-body"><p class="empty" role="status">${e(t("mobileNutrientDetail.loading"))}</p></div><nav class="dc-bottom" data-oracle-nav aria-label="${e(t("discover.nav.main"))}">${bottomNavigation("oracle",uiLanguage())}</nav>`);
  const sheet=content.closest('dialog'),root=content.querySelector('.oracle-body'),heading=content.querySelector('.oracle-heading'),events=new AbortController(),signal=events.signal;
  sheet.classList.add('oracle-sheet');let panel,diary,options,disposed=false,detail,detailDispose,detailAbort,conflict=false;
  const alive=()=>!disposed&&root.isConnected;
@@ -40,6 +41,12 @@ export function openOracle({date,show,close,content,onAdded}){
  sheet.addEventListener('cancel',back,{capture:true,signal});window.addEventListener('nourishing-back',back,{capture:true,signal});
  const observer=new MutationObserver(()=>{if(!root.isConnected)dispose();});observer.observe(content,{childList:true});sheet.addEventListener('close',()=>dispose(),{signal});
  function dispose(){if(disposed)return;disposed=true;events.abort();observer.disconnect();closeDetail();panel?.dispose();sheet.classList.remove('oracle-sheet');}
+ content.querySelector('[data-oracle-nav]').addEventListener('click',event=>{
+  const control=event.target.closest('[data-discover]');
+  if(!control)return;
+  const destination=document.querySelector('.app-nav [data-discover="'+control.dataset.discover+'"]');
+  if(destination){exit();destination.click();}
+ },{signal});
  heading.querySelector('[data-oracle-close]').onclick=exit;
  async function start(){try{await context();if(!alive())return;panel=new MobileOracle({root,header:heading,request:sourceRequest,nutrients:options.nutrients,targets:diary.summary.targets,options:{nutrient:'protein',basis:'100g',query:''},language:uiLanguage(),icon:symbol,onOptions:()=>{},onSelect:selectFood,onBack:exit});}catch(error){if(!alive())return;root.innerHTML=`<p role="alert">${e(error.message)}</p><button type="button" data-oracle-retry>${e(t("mobileSuggest.retry"))}</button>`;root.querySelector('[data-oracle-retry]').onclick=start;}}
  void start();return dispose;

@@ -24,7 +24,7 @@ const rows={
     "Todos"
   ],
   "mobileReport.filter.nonempty": [
-    "Non-Empty",
+    "Non Empty",
     "Non vides",
     "Mit Einträgen",
     "Com registros"

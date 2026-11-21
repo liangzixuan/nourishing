@@ -43,7 +43,7 @@ export {text,number} from './diary-record-fields.mjs';
 import {assertDiaryDaysEditable} from './diary-day-status.mjs';
 import {parseHealthConnectGroup} from './health-import-group.mjs';
 import {parseDiaryGroupOrder,setDiaryGroupOrder} from './diary-order.mjs';
-import {renameDiaryGroup} from './diary-group-rename.mjs';
+import {editDiaryGroupSlot,renameDiaryGroup} from './diary-group-rename.mjs';
 import {parseDiaryQuickAdd} from './diary-quick-add.mjs';
 import {parseDiaryGroups} from './diary-group-display.mjs';
 import {parseEnergyUnit} from './energy-units.mjs';
@@ -658,6 +658,7 @@ export function act(s,type,p={},context={}) {
       act(s,'settings.save',{targets,targetSetup:{...plan,appliedAt:new Date().toISOString()},macroPolicy:null,...(s.settings.energyPolicy?{energyPolicy:{...s.settings.energyPolicy,target:{mode:'fixed',includeAboveBaseline:false}}}:{})});
       break;
     }
+    case 'group.editSlot':editDiaryGroupSlot(s,p);break;
     case 'group.rename':renameDiaryGroup(s,p);break;
     case 'group.order':setDiaryGroupOrder(s,p);break;
     case 'nutrientTarget.setCustom':act(s,'settings.save',nutrientTargetCustomPatch(s,p));break;

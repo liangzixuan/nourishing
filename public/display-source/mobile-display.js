@@ -4,6 +4,7 @@ import {nutrientDisplayName} from '../report-source/public/nutrient-language.js'
 import {mobileDiarySettings,mobileQuickAddSettings} from './mobile-diary-settings.js';
 import {calendarMarker} from '../snapshot-source/mobile-diary-calendar.js';
 import {escape as e} from '../html.js';
+import {diaryGroupSlots} from '../local-group-rename.js';
 import {waterText} from '../water-messages.js';
 const icon='<img src="/more-source/icons/chevron-right.svg" alt="">';
 const toggles=()=>[['showTimestamp',t('mobileDisplay.showTimestamp')],['showEnergy',t('mobileDisplay.showEnergy')],['showMacros',t('mobileDisplay.showMacros')],['showHighlights',t('mobileDisplay.showHighlights')],['showWater',t('mobileDisplay.showWater')]];
@@ -13,13 +14,31 @@ const themes=()=>[['light',t('settings.light')],['dark',t('settings.dark')],['sy
 /** Saved MobileDisplay rows and modal choices, bounded to working cloud consumers. */
 export class MobileDisplay {
  constructor({root,settings,summaryNutrients,quickAddActions,navigation,onTitle,onSave,onReload,onDestination}){Object.assign(this,{root,settings,summaryNutrients,quickAddActions,navigation,onTitle,onSave,onReload,onDestination});this.alive=true;this.saving=false;this.pending=null;this.events=new AbortController();const {signal}=this.events;
-  root.addEventListener('click',event=>{const key=event.target.closest('[data-display-open]')?.dataset.displayOpen;if(key)this.open(key);const group=event.target.closest('[data-display-rename]')?.dataset.displayRename;if(group)this.rename(group);},{signal});
+  root.addEventListener('click',event=>{const key=event.target.closest('[data-display-open]')?.dataset.displayOpen;if(key)this.open(key);},{signal});
   root.addEventListener('input',event=>{if(event.target.matches('[data-display-font]'))root.querySelector('[data-display-font-value]').textContent=Number(event.target.value).toFixed(2)+'×';},{signal});
-  root.addEventListener('change',event=>{if(event.target.matches('[data-display-font]')){void this.save({fontScale:Number(event.target.value)});return;}const key=event.target.dataset.displayToggle;if(!key)return;void this.save(key==='showGroups'?{diaryGroups:{...this.settings.diaryGroups,showGroups:event.target.checked}}:key.startsWith('group:')?{diaryGroups:{...this.settings.diaryGroups,hiddenGroups:event.target.checked?this.settings.diaryGroups.hiddenGroups.filter(group=>group!==key.slice(6)):[...new Set([...this.settings.diaryGroups.hiddenGroups,key.slice(6)])]}}:key.startsWith('calendar:')?{diaryCalendar:{...this.settings.diaryCalendar,[key.slice(9)]:event.target.checked}}:key==='showHighlights'?{diaryDisplay:{...this.settings.diaryDisplay,showHighlights:event.target.checked}}:{[key]:event.target.checked});},{signal});root.addEventListener('toggle',event=>{if(event.target.matches('[data-display-groups]'))this.groupsOpen=event.target.open;},{signal,capture:true});this.render();
+  root.addEventListener('focusout',event=>{
+   const row=event.target.closest('[data-group-slot]');
+   if(!row||row.contains(event.relatedTarget))return;
+   this.editGroup(row);
+  },{signal});
+  root.addEventListener('keydown',event=>{
+   if(!event.target.matches('[data-group-name]')||event.isComposing)return;
+   if(event.key==='Escape'){event.preventDefault();event.target.value=event.target.defaultValue;event.target.blur();}
+   if(event.key==='Enter'){event.preventDefault();event.target.blur();}
+  },{signal});
+  root.addEventListener('change',event=>{if(event.target.matches('[data-group-enabled]')){this.editGroup(event.target.closest('[data-group-slot]'));return;}if(event.target.matches('[data-display-font]')){void this.save({fontScale:Number(event.target.value)});return;}const key=event.target.dataset.displayToggle;if(!key)return;void this.save(key==='showGroups'?{diaryGroups:{...this.settings.diaryGroups,showGroups:event.target.checked}}:key.startsWith('calendar:')?{diaryCalendar:{...this.settings.diaryCalendar,[key.slice(9)]:event.target.checked}}:key==='showHighlights'?{diaryDisplay:{...this.settings.diaryDisplay,showHighlights:event.target.checked}}:{[key]:event.target.checked});},{signal});root.addEventListener('toggle',event=>{if(event.target.matches('[data-display-groups]'))this.groupsOpen=event.target.open;},{signal,capture:true});this.render();
  }
  toggle(key,label,value){return `<label class="mds-row"><strong>${e(label)}</strong><input type="checkbox" role="switch" class="dc-switch" data-display-toggle="${e(key)}" ${value?'checked':''}></label>`;}
- rename(group){if(this.saving||this.pending)return;this.closeDialog();const dialog=document.createElement('dialog');this.dialog=dialog;this.returnFocus=document.activeElement;dialog.className='mds-dialog';dialog.setAttribute('aria-label',coreText('display.renameGroup'));dialog.innerHTML=`<form><h2>${e(coreText('display.renameGroup'))}</h2><label>${e(coreText('display.groupName'))}<input name="name" maxlength="100" required value="${e(group)}"></label><p role="status"></p><footer><button type="button" data-display-cancel>${e(t('mobileDisplay.cancel'))}</button><button type="submit" data-display-apply>${e(t('mobileDisplay.save'))}</button></footer></form>`;
- dialog.addEventListener('cancel',event=>{event.preventDefault();this.closeDialog();});dialog.addEventListener('click',event=>{if(event.target.closest('[data-display-cancel]'))this.closeDialog();if(event.target===dialog){const b=dialog.getBoundingClientRect();if(event.clientX<b.left||event.clientX>b.right||event.clientY<b.top||event.clientY>b.bottom)this.closeDialog();}});dialog.querySelector('form').onsubmit=event=>{event.preventDefault();void this.save({from:group,to:new FormData(event.target).get('name')},dialog,'group.rename');};document.body.append(dialog);dialog.showModal();}
+ editGroup(row){
+  if(this.saving||this.pending||!this.alive)return;
+  const slot=Number(row.dataset.groupSlot),from=diaryGroupSlots(this.settings)[slot-1];
+  const input=row.querySelector('[data-group-name]'),enabled=row.querySelector('[data-group-enabled]').checked;
+  const entered=input.value.trim();
+  if(from===null&&!enabled&&!entered)return;
+  const name=from===null&&!entered?input.placeholder:entered;
+  if(name===from&&enabled===!this.settings.diaryGroups.hiddenGroups.includes(from))return;
+  void this.save({slot,from,name,enabled},null,'group.editSlot');
+ }
  row(key,label,value){return `<button type="button" class="mds-row" data-display-open="${e(key)}"><strong>${e(label)}</strong><span class="mds-value">${e(value)}</span>${icon}</button>`;}
  render(){const s=this.settings,diary=this.navigation.screen==='diary',calendar=this.navigation.screen==='calendar',font=this.navigation.screen==='fontScale';this.onTitle(font?t('mobileDisplay.fontScale'):diary?t('mobileDisplay.diary'):calendar?t('mobileDisplay.calendar'):this.navigation.screen==='quickAdd'?coreText('display.quickAdd'):t('mobileDisplay.title'));const toggle=([key,label])=>`<label class="mds-row"><strong>${label}</strong><input type="checkbox" role="switch" class="dc-switch" data-display-toggle="${key}" ${(key==='showHighlights'?s.diaryDisplay.showHighlights:s[key])?'checked':''}></label>`;
  const rows=calendar?calendarKinds().map(([key,label])=>`<label class="mds-row">${calendarMarker(key)}<strong>${label}</strong><input type="checkbox" role="switch" class="dc-switch" data-display-toggle="calendar:${key}" ${s.diaryCalendar[key]?'checked':''}></label>`).join(''):diary?this.row('groupSubtotals',coreText('display.subtotals'),subtotalModes().find(([key])=>key===s.diaryTable.groupSubtotals)[1]):this.row('energyUnit',t('mobileDisplay.units'),s.energyUnit==='kJ'?t('mobileDisplay.kJ'):t('mobileDisplay.kcal'))+toggle(toggles()[0])+this.row('summaryNutrient',t('mobileDisplay.summaryNutrient'),nutrientDisplayName(this.summaryNutrients.find(row=>row.id===s.diaryTable.summaryNutrient),uiLanguage()))+toggles().slice(1).map(toggle).join('')+this.row('water',waterText('settings'),'')+this.row('dashboard',t('discover.title.dashboard-settings'),'')+this.row('pauseLife',t('mobileDisplay.pauseLife'),'')+this.row('diary',t('mobileDisplay.diary'),'')+this.row('calendar',t('mobileDisplay.calendar'),'')+this.row('theme',t('mobileDisplay.theme'),themes().find(([key])=>key===s.theme)?.[1]??t('settings.dark'))+this.row('appLanguage',t('mobileDisplay.appLanguage'),appLanguages.find(row=>row.id===s.appLanguage)?.name??'English')+this.row('fontScale',t('mobileDisplay.fontScale'),s.matchDeviceFontSize?coreText('display.browserDefault'):s.fontScale.toFixed(2)+'×');

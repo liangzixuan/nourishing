@@ -73,6 +73,7 @@ const COMMAND_FIELDS = {
   'entry.update': ['id', 'date', 'time', 'group', 'amount', 'quantity', 'unit', 'portionId'],
   'entry.delete': ['id'],
   'day.complete': ['date', 'completed'],
+  'group.editSlot': ['slot', 'from', 'name', 'enabled'],
   'group.rename': ['from', 'to'],
   'note.add': ['date', 'time', 'group', 'text'],
   'note.delete': ['id'],

@@ -40,3 +40,18 @@ test('Font Size uses canonical range and independent browser mode without changi
  const input={requestId:crypto.randomUUID(),revision:displayView(fixture.state()).revision,type:'display.save',payload:{matchDeviceFontSize:true}};await ownedStore.command(input);assert.equal(displayView(fixture.state()).settings.fontScale,2);assert.equal(displayView(fixture.state()).settings.matchDeviceFontSize,true);
  for(const payload of [{fontScale:.74},{fontScale:2.01},{fontScale:Infinity},{fontScale:null},{fontScale:'1.2'},{matchDeviceFontSize:'true'}])assert.throws(()=>applyWorkspaceCommand(fixture.state(),{type:'display.save',payload}),error=>(error.code??error.status)===400);
 });
+
+test('group slots preserve gaps, existing assignments and accounts with more than eight groups',async()=>{
+ const {diaryGroupSlots}=await import('../server/domain/diary-group-rename.mjs');
+ const fixture=diaryStoreFixture(initialState()),store=createWorkspaceStore(fixture.db,'fixture');
+ const change=(slot,from,name,enabled)=>store.command({requestId:crypto.randomUUID(),revision:displayView(fixture.state()).revision,type:'group.editSlot',payload:{slot,from,name,enabled}});
+ const slots=()=>diaryGroupSlots(fixture.state().settings);
+ await change(8,null,'Evening',true);await change(6,null,'Afternoon',false);
+ assert.deepEqual(slots(),['Breakfast','Lunch','Dinner','Snacks',null,'Afternoon',null,'Evening']);
+ assert.deepEqual(fixture.state().settings.diaryGroups.hiddenGroups,['Afternoon']);
+ await assert.rejects(change(6,null,'Stale',true),error=>(error.code??error.status)===409);
+ await assert.rejects(change(6,'Afternoon','Lunch',true),error=>(error.code??error.status)===409);
+ await change(6,'Afternoon','Tea',true);assert.equal(slots()[5],'Tea');
+ assert.deepEqual(fixture.state().settings.diaryGroups.hiddenGroups,[]);
+ const extended=Array.from({length:10},(_,i)=>'Name '+i);assert.deepEqual(diaryGroupSlots({groups:extended}),extended);
+});

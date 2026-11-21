@@ -19,6 +19,7 @@ import {openPrintReport} from './print-report.js';
 const offset=(date,days)=>{const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10);};
 export function mountNutrition({page,headerRoot,date,show,close,header,content,onChange,onDiary,onSuggest,initialTab='dashboard',reportDate}){
  let dashboard=null,snapshots=null,charts=null,fasting=null,mobileReport=null,disposed=false,serial=0,reportController,data,tab=initialTab,reportOptions={from:reportDate??offset(date(),-6),to:reportDate??date(),dayFilter:reportDate?'all':'nonempty',includeToday:true,includeSupplements:true};
+ const rangeSelection={};
  const root=document.createElement('section');root.className='nutrition-page';page.replaceChildren(root);
  const motion=createDiscoverMotion(root);let finishLoading,refreshHeader;
  const releaseSwipe=bindDiscoverSwipe(root,{current:()=>tab,select,onMove:motion.preview,onCancel:motion.reset,isTransitioning:motion.isTransitioning});
@@ -57,9 +58,9 @@ export function mountNutrition({page,headerRoot,date,show,close,header,content,o
  }
  function renderReport(panel){
   mobileReport?.dispose();
-  mobileReport=mountMobileReport({root:panel,value:data,onApply:async options=>{
-   const id=++serial,result=await request('/api/nutrition-report?'+new URLSearchParams(options));
-   if(!alive()||serial!==id||tab!=='report')throw Error(dc('reportClosed'));
+  mobileReport=mountMobileReport({root:panel,value:data,rangeSelection,onApply:async (options,signal)=>{
+   const id=++serial,result=await request('/api/nutrition-report?'+new URLSearchParams(options),undefined,signal);
+   if(signal.aborted||!alive()||serial!==id||tab!=='report')throw Error(dc('reportClosed'));
    data=result;reportOptions={...result.report.options};return result;
   },onPrint:options=>openPrintReport({initialOptions:options,show,header,content})});
  }

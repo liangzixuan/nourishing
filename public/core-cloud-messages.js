@@ -117,6 +117,8 @@ const rows={
  'display.sameSummary':['Same as Summary Column','Comme la colonne récapitulative','Wie Übersichtsspalte','Igual à coluna de resumo'],
  'display.subtotals':['Group Subtotals','Sous-totaux des groupes','Gruppensummen','Subtotais dos grupos'],
  'display.renameGroup':['Rename Group','Renommer le groupe','Gruppe umbenennen','Renomear grupo'],
+ 'display.groupSlot':['Group {{slot}}','Groupe {{slot}}','Gruppe {{slot}}','Grupo {{slot}}'],
+ 'display.expandMealsHelp':['Meals will be logged as individual food or recipe items.','Les repas seront enregistrés sous forme d’aliments ou de recettes individuels.','Mahlzeiten werden als einzelne Lebensmittel oder Rezepte eingetragen.','As refeições serão registradas como alimentos ou receitas individuais.'],
  'display.groupName':['Group name','Nom du groupe','Gruppenname','Nome do grupo'],
  'display.rename':['Rename','Renommer','Umbenennen','Renomear'],
  'display.quickAdd':['Quick Add','Ajout rapide','Schnelleintrag','Adição rápida'],

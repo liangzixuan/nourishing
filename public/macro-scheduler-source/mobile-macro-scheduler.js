@@ -48,7 +48,7 @@ export class MobileMacroScheduler extends TargetControlScreen{
   const rows=macroKeys.map(key=>`<div class="mts-macro-row"><span class="mts-macro-name mts-${key}">${e(this.label(key))} <small data-mts-derived="${key}"></small></span><strong data-mts-energy="${key}"></strong><input name="${key}" aria-label="${e(this.label(key))}" type="number" inputmode="decimal" min="0" step="any" ${d.mode==='ratios'?'required':''} value="${e(shownMacroInput(d,key,this.energyUnit)??'')}"><span>${e(unit)}</span></div>`).join('');
   const preset=KETO_PRESETS[d.keto.program];
   const keto=`${ketoProgramButton(this.language,d.keto.program)}${ketoSourceSlot()}${this.inputMarkup('leanBodyMassKg',d.keto.leanBodyMassKg,this.shared('lean'))}${this.inputMarkup('proteinPerKg',d.keto.proteinPerKg,this.shared('factor'),{unit:'g',disabled:!!preset,required:true})}${this.inputMarkup('carbohydrateGrams',d.keto.carbohydrateGrams,this.t('baseCarbs'),{unit:'g',disabled:!!preset,required:true})}<label class="mts-switch-row"><span>${e(this.shared('bonus'))}</span><input type="checkbox" role="switch" class="dc-switch" name="athleticBonus" ${d.keto.athleticBonus?'checked':''}></label><label class="mts-input-row"><span>${e(this.shared('addition'))}</span><select name="proteinAddition">${[0,25].map(v=>`<option value="${v}" ${d.keto.proteinAddition===v?'selected':''}>${e(this.shared(v===0?'addition.none':'addition.25'))}</option>`).join('')}</select></label>`;
-  return `<form data-mts-form>${d.day?'':`<label class="mts-card mts-name"><span>${e(m('name'))}<b> *</b></span><input name="templateName" aria-label="${e(m('name'))}" maxlength="120" required value="${e(d.name)}"></label>`}<section class="mts-card"><div class="mts-heading"><strong>${e(m('method'))}</strong>${this.button(moreIcon('help-circle'),`class="mts-icon" data-mts-help="method" aria-label="${e(m('help'))}"`)}${!d.day&&d.editing?this.button(dots(),`class="mts-icon mts-more" data-mts-template-menu aria-label="${e(m('menu'))}"`):''}</div><div class="mts-segments" role="group" aria-label="${e(m('method'))}">${['ratios','fixed','keto'].map(mode=>this.button(e(m(mode)),`data-mts-mode="${mode}" aria-pressed="${mode===d.mode}"`)).join('')}</div><div class="mts-heading"><strong>${e(m(d.mode==='fixed'?'fixedTitle':d.mode==='ratios'?'ratioTitle':'ketoTitle'))}</strong></div>${d.mode==='keto'?keto:rows}<div class="mts-total"><strong>${e(m('total'))}</strong><strong data-mts-total></strong></div></section><section class="mts-card"><label class="mts-switch-row"><strong>${e(m('customEnergy'))}</strong><input type="checkbox" name="energyCustom" role="switch" class="dc-switch" ${d.energy.mode==='fixed'?'checked':''}></label>${d.energy.mode==='fixed'?this.inputMarkup('energyValue',convertEnergy(d.energy.kcal,'kcal',this.energyUnit),this.t('energy'),{unit:this.energyUnit,required:true}):''}</section>${d.mode!=='keto'?`<fieldset class="mts-card mts-unit-options"><legend>${e(m('units'))}</legend>${(d.mode==='fixed'?['kcal','grams']:['percent','kcal','grams']).map(id=>`<label><input type="radio" name="units" value="${id}" ${(d.mode==='fixed'?d.fixedUnit:d.ratios.basis)===id?'checked':''}><span>${e(id==='kcal'?this.energyUnit:m(id))}</span></label>`).join('')}</fieldset>`:''}<p class="mts-preview-note" data-mts-calculation-note role="status"></p></form>`;
+  return `<form data-mts-form>${d.day?'':`<label class="mts-card mts-name"><span>${e(m('name'))}<b> *</b></span><input name="templateName" aria-label="${e(m('name'))}" maxlength="120" required value="${e(d.name)}"></label>`}<section class="mts-card"><div class="mts-heading"><strong>${e(m('method'))}</strong>${this.button(moreIcon('help-circle'),`class="mts-icon" data-mts-help="method" aria-label="${e(m('help'))}"`)}${this.button(dots(),`class="mts-icon mts-more" data-mts-template-menu aria-haspopup="menu" aria-label="${e(m('menu'))}"`)}</div><div class="mts-segments" role="group" aria-label="${e(m('method'))}">${['ratios','fixed','keto'].map(mode=>this.button(e(m(mode)),`data-mts-mode="${mode}" aria-pressed="${mode===d.mode}"`)).join('')}</div><div class="mts-heading"><strong>${e(m(d.mode==='fixed'?'fixedTitle':d.mode==='ratios'?'ratioTitle':'ketoTitle'))}</strong>${d.mode==='keto'?'':this.button(dots(),`class="mts-icon mts-more" data-mts-units aria-haspopup="menu" aria-label="${e(m('units'))}"`)}</div>${d.mode==='keto'?keto:rows}<div class="mts-total"><strong>${e(m('total'))}</strong><strong data-mts-total></strong></div></section><section class="mts-card"><label class="mts-switch-row"><strong>${e(m('customEnergy'))}</strong><input type="checkbox" name="energyCustom" role="switch" class="dc-switch" ${d.energy.mode==='fixed'?'checked':''}></label>${d.energy.mode==='fixed'?this.inputMarkup('energyValue',convertEnergy(d.energy.kcal,'kcal',this.energyUnit),this.t('energy'),{unit:this.energyUnit,required:true}):''}</section><p class="mts-preview-note" data-mts-calculation-note role="status"></p></form>`;
  }
  readInputs(){const form=this.root.querySelector('[data-mts-form]'),d=this.draft;if(!form||!d)return;const f=form.elements,num=name=>f[name]?.value===''?null:Number(f[name]?.value);
   if(f.templateName)d.name=f.templateName.value;
@@ -60,7 +60,6 @@ export class MobileMacroScheduler extends TargetControlScreen{
   if(this.busy||this.session.pending)return;const el=event.target;
   if(el.matches('[data-mts-enabled]')){if(commit)void this.perform({kind:'enabled',enabled:el.checked});return}
   if(!el.closest('[data-mts-form]'))return;this.readInputs();this.controls();if(el.name==='templateName')return;if(!commit){this.cancelCalculation();this.clearCalculation();return;}
-  if(el.name==='units'){if(this.draft.mode==='fixed')this.draft.fixedUnit=el.value;else this.draft.ratios.basis=el.value;this.render();return}
   if(el.name==='energyCustom'){this.draft.energy=el.checked?{mode:'fixed',kcal:this.saved.summary.macroTargets.energyTarget}:{mode:'inherit'};this.render();return}
   void this.calculate();
  }
@@ -112,6 +111,21 @@ export class MobileMacroScheduler extends TargetControlScreen{
   if(el.hasAttribute('data-mts-template'))this.openEditor(el.dataset.mtsTemplate);
   if(el.hasAttribute('data-mts-weekday'))this.pickWeekday(Number(el.dataset.mtsWeekday));
   if(el.hasAttribute('data-mts-mode')){this.readInputs();this.draft.mode=el.dataset.mtsMode;this.render()}
+  if(el.hasAttribute('data-mts-units')){
+   this.readInputs();
+   const d=this.draft,fixed=d.mode==='fixed',units=fixed?['grams','kcal']:['percent','kcal','grams'];
+   this.menuFor(el,units.map(id=>({id,label:id==='kcal'?this.energyUnit:this.m(id),selected:id===(fixed?d.fixedUnit:d.ratios.basis)})),id=>{
+    if(fixed)d.fixedUnit=id;else d.ratios.basis=id;
+    this.render();
+   });return;
+  }
+  if(el.hasAttribute('data-mts-template-menu')&&(!this.draft.editing||this.draft.day)){
+   this.menuFor(el,[{id:'restore',label:ketoMessage(this.language,'restore')}],()=>{
+    this.readInputs();
+    const {mode,fixed,fixedUnit,ratios,keto}=templateDraft(null,this.saved.defaults.settings);
+    Object.assign(this.draft,{mode,fixed,fixedUnit,ratios,keto});this.render();
+   });return;
+  }
   if(el.hasAttribute('data-mts-template-menu'))this.menuFor(el,[{id:'copy',label:this.m('copy')},{id:'delete',label:this.m('delete')}],id=>{
    if(id==='copy'){this.readInputs();this.draft.id=crypto.randomUUID();this.draft.editing=false;this.draft.name=this.t('copyName',{name:this.draft.name}).slice(0,120);this.render()}
    else this.confirm(this.m('delete'),this.m('deleteWarning'),()=>this.perform({kind:'template-delete',id:this.draft.id}));

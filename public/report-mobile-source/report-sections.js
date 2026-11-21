@@ -1,16 +1,18 @@
 import {uiLanguage,t,createUITranslator} from '../app-language.js';
 import {escape as e,symbol} from '../dashboard-source/discover-ui.js';
 import {displayValue,displayUnit} from '../dashboard-source/energy-display.js';
-import {nutrientDisplayName,nutrientGroupName} from '../report-source/public/nutrient-language.js';
+import {mobileNutrientGroups,orderedNutrientRows,mobileNutrientName} from '../mobile-nutrient-groups.js';
+import {sourceNutrients} from '../report-source/server/source-nutrient-registry.mjs';
+import {nutrientGroupName} from '../report-source/public/nutrient-language.js';
 import {scoreDisplayName} from '../report-source/public/score-language.js';
 import {balanceDisplayName,renderNutrientBalanceCards} from '../report-source/public/nutrient-balance-view.js';
 import {defaultDiaryDisplayPolicy} from '../report-source/server/diary-display.mjs';
 import {defaultNutritionScoreIds} from '../report-source/server/nutrition-score-policy.mjs';
 const messages={
- en:{macros:'Macronutrient Targets',highlights:'Highlighted Targets',scores:'Nutrition Scores',balances:'Nutrient Balance'},
- fr:{macros:'Objectifs de macronutriments',highlights:'Objectifs en évidence',scores:'Scores nutritionnels',balances:'Équilibre des nutriments'},
- de:{macros:'Makronährstoffziele',highlights:'Hervorgehobene Ziele',scores:'Ernährungsbewertungen',balances:'Nährstoffverhältnisse'},
- 'pt-BR':{macros:'Metas de macronutrientes',highlights:'Metas em destaque',scores:'Pontuações nutricionais',balances:'Equilíbrio de nutrientes'},
+ en:{additional:'More nutrients',noData:'No data',energy:'Energy (Consumed)',macros:'Macronutrient Targets',highlights:'Highlighted Targets',scores:'Nutrition Scores',balances:'Nutrient Balance'},
+ fr:{additional:'Autres nutriments',noData:'Aucune donnée',energy:'Énergie (consommée)',macros:'Objectifs de macronutriments',highlights:'Objectifs en évidence',scores:'Scores nutritionnels',balances:'Équilibre des nutriments'},
+ de:{additional:'Weitere Nährstoffe',noData:'Keine Daten',energy:'Energie (aufgenommen)',macros:'Makronährstoffziele',highlights:'Hervorgehobene Ziele',scores:'Ernährungsbewertungen',balances:'Nährstoffverhältnisse'},
+ 'pt-BR':{additional:'Mais nutrientes',noData:'Sem dados',energy:'Energia (consumida)',macros:'Metas de macronutrientes',highlights:'Metas em destaque',scores:'Pontuações nutricionais',balances:'Equilíbrio de nutrientes'},
 };
 const label=createUITranslator(messages);
 export const reportNumber=(value,digits=1)=>Number.isFinite(value)?value.toLocaleString(uiLanguage(),{maximumFractionDigits:digits}):'—';
@@ -19,26 +21,46 @@ const bar=(value,name)=>`<progress max="100" value="${Number.isFinite(value)?Mat
 export function reportSection(id,title,body,expanded,extra=''){
  return `<details class="dc-card mobile-report-nutrients" data-report-section="${e(id)}" ${extra} ${(expanded.get(id)??true)?'open':''}><summary class="mobile-report-category"><h2>${e(title)}</h2>${symbol('expand_more')}</summary>${body}</details>`;
 }
-export function reportNutrientRow(row,unit,{compact=false}={}){
- const name=nutrientDisplayName(row,uiLanguage()),value=reportNumber(displayValue(row.mean,row.unit,unit)),amount=row.mean===null?'—':value+' '+displayUnit(row.unit,unit);
- return `<div data-mobile-nutrient="${e(row.id)}"><button type="button" class="dc-button" data-report-nutrient="${e(row.id)}"><span>${e(name)}${compact?'':` <small>${e(amount)}</small>`}</span><strong>${percent(row.percentOfMeanTarget)}</strong></button>${bar(row.percentOfMeanTarget,name)}${row.partialDays?'<span class="report-partial">'+e(t('mobileReport.partialDays'))+': '+row.partialDays+'</span>':''}</div>`;
+const parents=new Map(sourceNutrients.map(row=>[row.id,row.parentId]));
+function reportDepth(id){
+ const parent=parents.get(id);
+ return parent?1+reportDepth(parent):0;
+}
+export function reportNutrientRow(row,unit,{compact=false,grouped=false}={}){
+ const name=grouped&&row.id==='calories'?label('energy'):mobileNutrientName(row,uiLanguage());
+ const amount=row.mean===null?label('noData'):reportNumber(displayValue(row.mean,row.unit,unit))+' '+displayUnit(row.unit,unit);
+ return `<div data-mobile-nutrient="${e(row.id)}" ${grouped?`data-depth="${reportDepth(row.id)}"`:''}><button type="button" class="dc-button" data-report-nutrient="${e(row.id)}"><span>${e(name)}${compact?'':` <small>· ${e(amount)}</small>`}</span><strong>${percent(row.percentOfMeanTarget)}</strong></button>${bar(row.percentOfMeanTarget,name)}</div>`;
 }
 export function reportTargetSections(capture,expanded){
  const {report,energyUnit:unit}=capture,rows=new Map(report.nutrients.map(row=>[row.id,row]));rows.set('netCarbohydrate',report.carbohydrates.net.summary);
  const macroIds=['calories','protein',report.carbohydrate.definition.mode==='net'?'netCarbohydrate':'carbs','fat'];
  const highlights=(capture.display?.highlighted??defaultDiaryDisplayPolicy.highlighted).map(id=>rows.get(id)).filter(row=>row?.visible);
+ const split=Math.ceil(highlights.length/2),highlightColumns=[highlights.slice(0,split),highlights.slice(split)];
  const scores=(capture.display?.scores??defaultNutritionScoreIds).map(id=>report.scores.summary.find(row=>row.id===id)).filter(Boolean);
  return reportSection('macros',label('macros'),`<div class="report-target-list">${macroIds.map(id=>reportNutrientRow(rows.get(id),unit)).join('')}</div>`,expanded)+
-  reportSection('highlights',label('highlights'),`<div class="report-target-grid">${highlights.map(row=>reportNutrientRow(row,unit,{compact:true})).join('')||`<p>${e(t('diaryDisplay.empty'))}</p>`}</div>`,expanded)+
+  reportSection('highlights',label('highlights'),`<div class="report-target-grid">${highlights.length?highlightColumns.map(column=>`<div class="report-highlight-column">${column.map(row=>reportNutrientRow(row,unit,{compact:true})).join('')}</div>`).join(''):`<p>${e(t('diaryDisplay.empty'))}</p>`}</div>`,expanded)+
   reportSection('scores',label('scores'),`<div class="report-target-grid">${scores.map(row=>{const name=scoreDisplayName(row,uiLanguage());return `<div><button type="button" class="dc-button" data-report-score="${e(row.id)}"><span>${e(name)}</span><strong>${percent(row.mean)}</strong></button>${bar(row.mean,name)}</div>`;}).join('')}</div>`,expanded);
 }
-const groupOrder=['General','Vitamins','Minerals','Carbohydrates','Lipids','Amino acids','Other compounds'];
-const leading={General:['calories','water','alcohol','caffeine'],Vitamins:['thiamin','riboflavin','niacin','pantothenicAcid','vitaminB6','vitaminB12','folate','vitaminA','vitaminC','vitaminD','vitaminE','vitaminK'],Minerals:['calcium','copper','iron','magnesium','manganese','phosphorus','potassium','selenium','sodium','zinc'],Carbohydrates:['carbs','fiber','starch','sugars','addedSugars','netCarbohydrate'],Lipids:['fat','monounsaturatedFat','polyunsaturatedFat','omega3','omega6','saturatedFat','transFat','cholesterol'],'Amino acids':['protein']};
+const defaultIds=new Set(Object.values(mobileNutrientGroups).flat());
+function visibleReportRows(report){
+ return [...report.nutrients,report.carbohydrates.net.summary].filter(row=>row.visible);
+}
 export function reportNutrientGroups(capture,expanded){
- const rows=capture.report.nutrients.filter(row=>row.visible).map(row=>({...row,category:row.id==='protein'?'Amino acids':row.id==='carbs'?'Carbohydrates':row.id==='fat'?'Lipids':row.category}));
- if(capture.report.carbohydrates.net.summary.visible)rows.push({...capture.report.carbohydrates.net.summary,id:'netCarbohydrate',category:'Carbohydrates'});
- return groupOrder.map(category=>{const members=rows.filter(row=>row.category===category),first=leading[category]??[],rank=row=>first.includes(row.id)?first.indexOf(row.id):first.length;
-  members.sort((a,b)=>rank(a)-rank(b));return members.length?reportSection('group:'+category,nutrientGroupName(category,uiLanguage()),`<div class="report-target-list">${members.map(row=>reportNutrientRow(row,capture.energyUnit)).join('')}</div>`,expanded,`data-mobile-category="${e(category)}"`):'';}).join('');
+ const byId=new Map(visibleReportRows(capture.report).map(row=>[row.id,row]));
+ const groups=Object.keys(mobileNutrientGroups).map(group=>{
+  const members=orderedNutrientRows(byId,group);
+  if(!members.length)return '';
+  const category=group[0].toUpperCase()+group.slice(1);
+  const title=group==='protein'?mobileNutrientName({id:'protein',name:'Protein'},uiLanguage()):nutrientGroupName(category,uiLanguage());
+  return reportSection('group:'+category,title,`<div class="report-target-list">${members.map(row=>reportNutrientRow(row,capture.energyUnit,{grouped:true})).join('')}</div>`,expanded,`data-mobile-category="${category}"`);
+ }).join('');
+ return `<div class="dc-card report-nutrient-groups">${groups}</div>`;
+}
+export function reportAdditionalNutrients(capture,expanded){
+ const extras=visibleReportRows(capture.report).filter(row=>!defaultIds.has(row.id));
+ if(!extras.length)return '';
+ const id='additional',title=label('additional');
+ return `<details class="dc-card mobile-report-nutrients" data-report-section="${id}" ${expanded.get(id)?'open':''}><summary class="mobile-report-category"><h2>${e(title)}</h2>${symbol('expand_more')}</summary><div class="report-target-list">${extras.map(row=>reportNutrientRow(row,capture.energyUnit)).join('')}</div></details>`;
 }
 // Gauge scales are display bounds; reference bands and values come from the captured balance.
 const scales={'omega6-omega3':25,'zinc-copper':20,'potassium-sodium':12,'calcium-magnesium':6,'calcium-oxalate':2};

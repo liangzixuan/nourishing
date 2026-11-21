@@ -1,4 +1,6 @@
 const rows={
+ undo:['Undo','Annuler','Rückgängig','Desfazer'],
+ itemDeleted:['Meal item deleted.','Aliment supprimé du repas.','Zutat aus Mahlzeit entfernt.','Item removido da refeição.'],
  addToMeal:['Add to Meal','Ajouter au repas','Zur Mahlzeit hinzuf\u00fcgen','Adicionar \u00e0 refei\u00e7\u00e3o'],
 
  editQuantity:['Edit quantity','Modifier la quantité','Menge bearbeiten','Editar quantidade'],applyQuantity:['Apply','Appliquer','Übernehmen','Aplicar'],changed:['This meal changed. Reopen the ingredient.','Ce repas a changé. Rouvrez l’aliment.','Diese Mahlzeit wurde geändert. Öffne den Bestandteil erneut.','Esta refeição mudou. Abra o ingrediente novamente.'],previewMismatch:['The preview does not match this ingredient. Try again.','L’aperçu ne correspond pas à cet aliment. Réessayez.','Die Vorschau entspricht nicht diesem Bestandteil. Versuche es erneut.','A prévia não corresponde a este ingrediente. Tente novamente.'],

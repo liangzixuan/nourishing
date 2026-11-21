@@ -45,6 +45,12 @@ test('Oracle source flow through real Foods and Diary under production CSP',asyn
   await page.addInitScript(()=>{window.violations=[];document.addEventListener('securitypolicyviolation',event=>window.violations.push(event.violatedDirective));});
   await page.goto(origin);await page.locator('.md-summary').waitFor();await chooseDiaryDate(page,'2026-11-14');
   await page.locator('#foods-tab').click();await page.locator('[data-food-insight=oracle]').click();await page.locator('[data-mo-nutrient]').waitFor();
+  const oracleNav=page.locator('[data-oracle-nav]');
+  assert.equal(await oracleNav.locator('button').count(),5);
+  assert.equal(await oracleNav.locator('[aria-current=page]').getAttribute('data-discover'),'shell-foods');
+  await oracleNav.locator('[data-discover=shell-diary]').click();
+  await page.locator('.md-diary').waitFor();assert.equal(await page.locator('#sheet').isVisible(),false);
+  await page.locator('#foods-tab').click();await page.locator('[data-food-insight=oracle]').click();await page.locator('[data-mo-nutrient]').waitFor();
   mkdirSync('.local/oracle-ui',{recursive:true});await page.screenshot({path:'.local/oracle-ui/home.png'});
   await page.locator('[data-mo-help]').click();await page.locator('.mo-help').waitFor();await page.mouse.click(1,1);assert.equal(await page.locator('.mo-help-dialog').count(),0);
   await page.locator('[data-mo-nutrient]').click();await page.getByLabel('Search nutrients',{exact:true}).fill('protein');await page.locator('[data-menu-command=protein]').click();

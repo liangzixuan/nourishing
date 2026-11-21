@@ -45,6 +45,12 @@ test('source Targets home and nutrient children work through production routes a
   const ready=async committed=>{await page.locator('[data-mnt-ready]').waitFor();await waitForOutboxIdle(page,committed);await page.locator('[data-mnt-ready]').waitFor();},openNutrients=async()=>{await page.getByRole('button',{name:'Nutrient Targets',exact:true}).click();await ready();};
   await openNutrients();assert.equal(await page.locator('[data-mnt-category]').count(),6);assert.ok(await page.locator('[data-mnt-highlight]').count()>0);
   mkdirSync('.local/targets',{recursive:true});await page.screenshot({path:'.local/targets/nutrients.png'});
+  await page.locator('[data-mnt-category=vitamins]').click();
+  assert.deepEqual(await page.locator('[data-mnt-row]').evaluateAll(rows=>rows.map(row=>row.dataset.mntRow)),['thiamin','riboflavin','niacin','pantothenicAcid','vitaminB6','vitaminB12','folate','vitaminA','vitaminC','vitaminD','vitaminE','vitaminK']);
+  await page.screenshot({path:'.local/targets/vitamins.png'});
+  await page.locator('[data-mnt-advanced]').click();
+  assert.equal(await page.locator('[data-mnt-row=vitaminDFrida]').isVisible(),true);
+  await page.locator('[data-mt-back]').click();
   await page.locator('[data-mnt-category=general]').click();const energy=page.locator('[data-mnt-row=calories]');assert.equal(await energy.locator('[data-mnt-field=custom]').isDisabled(),true);assert.equal(await energy.locator('[data-mnt-field=dailyTarget]').isDisabled(),true);assert.equal(await energy.locator('[data-mnt-field=dailyTarget]').inputValue(),String(seed.settings.targets.calories*4.184));assert.equal(await energy.locator('.mnt-unit').first().textContent(),'kJ');
   await page.locator('[data-mt-back]').click();await page.locator('[data-mnt-category=minerals]').click();const sodium=page.locator('[data-mnt-row=sodium]'),custom=()=>sodium.locator('[data-mnt-field=custom]');assert.equal(await sodium.locator('[data-mnt-field=dailyTarget]').isDisabled(),true);await custom().check();await ready(()=>state().settings.nutrientTargetModes.nutrients.sodium.daily==='custom');assert.equal(state().settings.nutrientTargetModes.nutrients.sodium.daily,'custom');
   await sodium.locator('[data-mnt-field=dailyTarget]').fill('1234');await sodium.locator('[data-mnt-field=dailyTarget]').press('Tab');await ready(()=>state().settings.targets.sodium===1234);assert.equal(state().settings.targets.sodium,1234,JSON.stringify(attempts));
@@ -56,7 +62,20 @@ test('source Targets home and nutrient children work through production routes a
   rejectSave=true;await sodium.locator('[data-mnt-field=dailyTarget]').fill('1300');await sodium.locator('[data-mnt-field=dailyTarget]').press('Tab');await ready(()=>state().settings.targets.sodium===1300);assert.equal(state().settings.targets.sodium,1300);assert.equal(await sodium.locator('[data-mnt-field=dailyTarget]').inputValue(),'1300');assert.equal(await page.getByRole('alert').count(),0);
   await sodium.scrollIntoViewIfNeeded();await page.screenshot({path:'.local/targets/minerals.png'});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   await page.locator('[data-mt-back]').click();await page.locator('[data-mnt-edit-highlights]').click();await page.getByRole('heading',{name:'Diary Display',exact:true}).waitFor();await page.getByLabel('Highlighted nutrient 1',{exact:true}).selectOption('ash');await page.locator('#sheet').getByRole('button',{name:'Save',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('#sheet').open);await page.locator('[data-mnt-highlight=ash]').waitFor();assert.equal(state().settings.diaryDisplay.highlighted[0],'ash');assert.equal(await page.locator('[data-mnt-highlight=ash]').count(),1);
-  const highlight=page.locator('[data-mnt-highlight]').first(),id=await highlight.getAttribute('data-mnt-highlight');await highlight.click();assert.equal(await page.locator('[data-mnt-row="'+id+'"] [data-mnt-help]').evaluate(el=>el===document.activeElement),true);await page.locator('[data-mt-back]').click();await page.locator('[data-mt-back]').click();await page.locator('[data-mt-home]').waitFor();
+  const highlight=page.locator('[data-mnt-highlight]').first(),id=await highlight.getAttribute('data-mnt-highlight');await highlight.click();
+  assert.equal(id,'ash');
+  assert.equal(await page.locator('[data-mnt-advanced]').getAttribute('aria-expanded'),'true');
+  const ash=page.locator('[data-mnt-row=ash]');
+  assert.equal(await ash.locator('[data-mnt-help]').evaluate(el=>el===document.activeElement),true);
+  await ash.locator('[data-mnt-field=visible]').check();
+  await ready(()=>!state().settings.nutrientDisplay.hidden.includes('ash'));
+  await ash.locator('[data-mnt-field=custom]').check();
+  await ready(()=>state().settings.nutrientTargetModes.nutrients.ash?.daily==='custom');
+  await ash.locator('[data-mnt-field=dailyTarget]').fill('2.5');
+  await ash.locator('[data-mnt-field=dailyTarget]').press('Tab');
+  await ready(()=>state().settings.targets.ash===2.5);
+  assert.equal(await ash.locator('[data-mnt-field=dailyTarget]').inputValue(),'2.5');
+  await page.locator('[data-mt-back]').click();await page.locator('[data-mt-back]').click();await page.locator('[data-mt-home]').waitFor();
   await page.getByRole('button',{name:'Macro & Energy Targets',exact:true}).click();await page.locator('[data-mte-ready]').waitFor();await page.locator('[data-mt-back]').click();assert.equal(state().settings.targets.protein,before.settings.targets.protein);
   {const before=attempts.length;await page.getByRole('button',{name:'Macro Scheduler',exact:true}).click();await page.locator('[data-mts-ready]').waitFor();await page.locator('[data-mt-back]').click();assert.equal(attempts.length,before);}
   await page.getByRole('button',{name:'Energy Expenditure',exact:true}).click();await page.locator('[data-mee-ready]').waitFor();await page.locator('[data-mt-back]').click();
