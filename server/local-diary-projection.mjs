@@ -64,7 +64,8 @@ export {inspectLibraryUses,checkLibraryDeletion,removeLibraryItem} from './domai
 export {libraryItem,recipePreview,libraryCollectionView} from './domain/library-item-view.mjs';
 
 export {prepareDiaryRecordUpdate,manuallyEditableRecord,sourceRecordReason} from './domain/diary-record-update.mjs';
-export {catalogExerciseRecord,resolveExerciseWeight,savedExerciseSettings,walkingEfforts} from './domain/catalog-exercise.mjs';
+export {walkingEfforts,walkingPresets} from './domain/general-walking.mjs';
+export {catalogExerciseRecord,resolveExerciseWeight,savedExerciseSettings,priorWalkingEfforts} from './domain/catalog-exercise.mjs';
 
 export {storeChartDefinition} from './domain/chart-definition-store.mjs';
 

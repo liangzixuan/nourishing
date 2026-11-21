@@ -1,5 +1,5 @@
 import {recordEditorData,saveRecordCommand} from './record-local.js';
-import {savedExerciseSettings,walkingEfforts} from './local-diary-projection.js';
+import {savedExerciseSettings,walkingEfforts,walkingPresets} from './local-diary-projection.js';
 import {dc} from './discover-cloud-messages.js';
 import {uiLanguage, t} from './app-language.js';
 import {request} from './diary-api.js';
@@ -372,7 +372,9 @@ class RecordEditorController {
     const saved=savedExerciseSettings(this.record);
     if(!saved)return this.exerciseEditor();
     let choices=[saved.activity];
-    if(saved.efforts){
+    if(saved.efforts===walkingEfforts){
+      choices=walkingPresets;
+    }else if(saved.efforts){
       try{
         const catalog=await request('/api/records/exercise-catalog',null,this.abort.signal);
         choices=Object.keys(saved.efforts).map(code=>code===saved.activity.code?saved.activity:catalog.items.find(row=>row.code===code)).filter(Boolean);

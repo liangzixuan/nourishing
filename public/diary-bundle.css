@@ -1500,16 +1500,29 @@ html[data-nourishing-native] [data-nourishing-health-connect]{display:inline-fle
 .nutrient-detail{padding:0 18px 24px;overflow-wrap:anywhere}.nutrient-detail-heading h2{margin:16px 0 4px;font-size:1.4rem}.nutrient-detail-heading p,.nutrient-detail-note,.nutrient-detail-credit{color:var(--muted);font-size:.9rem}.nutrient-detail-summary{background:var(--paper);border-radius:16px;padding:20px;margin:20px 0;display:grid;gap:8px}.nutrient-detail-summary>strong{font-size:2rem}.nutrient-detail-summary>small{color:var(--muted)}.nutrient-detail-summary>div{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--border);padding-top:14px}.nutrient-detail h3{font-size:1rem;margin:24px 0 12px}.nutrient-detail-sources{border:1px solid var(--border);border-radius:16px;overflow:hidden}.nutrient-detail-source{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 12px;width:100%;background:var(--paper);color:inherit;border:0;border-radius:0;text-align:left}.nutrient-detail-source+.nutrient-detail-source{border-top:1px solid var(--border)}.nutrient-detail-source>span{display:grid;gap:6px;min-width:0}.nutrient-detail-source>span:last-child{text-align:right;flex-shrink:0;max-width:45%}.nutrient-detail-source strong{font-size:1rem}.nutrient-detail-source small{font-size:.8rem;color:var(--muted)}.nutrient-detail-credit{margin-top:20px}.nutrient-detail-credit p{font-size:.85rem}.report-nutrient[type=button]{display:block;width:100%;text-align:left;background:none;color:inherit;border:0;border-radius:0;border-bottom:1px solid var(--border);cursor:pointer}.report-macros button{background:none;color:inherit;border:0;text-align:left;padding:0}.report-macros button strong{display:block}
 
 /* /note-photos.css */
-.note-editor .note-text-card{position:relative;background:var(--paper);padding:16px;border-radius:0 0 14px 14px;margin-bottom:16px}.note-editor textarea{display:block;width:100%;min-height:170px;border:0;background:transparent;color:var(--ink);font:inherit;resize:vertical;padding:4px}.note-text-actions{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:.8rem}.note-text-actions button{color:var(--green)}.note-photo-choices{position:absolute;right:16px;z-index:4;background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 24px #0005;overflow:hidden}.note-photo-choices button{display:block;width:100%;padding:16px;border:0;background:transparent;text-align:left;color:var(--ink)}.note-photo-preview{margin:12px 0 0}.note-photo-preview:empty{display:none}.note-photo-open{display:block;width:100%;border:0;padding:0;background:none}.note-photo-preview img{display:block;max-width:100%;height:210px;object-fit:contain;margin:auto;border-radius:10px}.note-photo-preview.expanded img{height:auto;max-height:70dvh}.note-photo-actions{display:flex;gap:12px;justify-content:center}.note-photo-preview button:not(.note-photo-open){border:0;background:none;color:var(--green);padding:12px 4px}.note-editor .note-time-toggle{width:22px;flex:none;accent-color:var(--green)}.note-photo-thumbnail{display:block;width:60px;height:60px;object-fit:cover;border-radius:8px;margin-top:8px}.note-editor .sheet-message button{margin-left:8px}.note-editor .entry-actions{z-index:3}
-
 .note-editor .record-fields{margin:0;padding:0;border:0;min-width:0}
-.note-editor .note-text-card{border-radius:12px;padding:14px;margin:12px 0}
-.note-editor textarea{min-height:clamp(135px,20dvh,180px);padding:10px;border:1px solid var(--line);border-radius:8px;resize:none}
-.note-editor .field-row{background:var(--paper);padding:8px 14px;min-height:48px}
+.note-editor .note-text-card{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px 16px 8px;margin:16px 0}
+.note-editor textarea{display:block;box-sizing:border-box;width:100%;min-height:173px;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);font:inherit;resize:none}
+.note-text-actions{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:.8rem}
+.note-text-actions button{color:var(--green)}
+.note-photo-choices{position:absolute;right:16px;z-index:4;background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 24px #0005;overflow:hidden}
+.note-photo-choices button{display:block;width:100%;padding:16px;border:0;background:transparent;text-align:left;color:var(--ink)}
+.note-photo-preview{margin:12px 0 0}
+.note-photo-preview:empty{display:none}
+.note-photo-open{display:block;width:100%;border:0;padding:0;background:none}
+.note-photo-preview img{display:block;max-width:100%;height:210px;object-fit:contain;margin:auto;border-radius:10px}
+.note-photo-preview.expanded img{height:auto;max-height:70dvh}
+.note-photo-actions{display:flex;gap:12px;justify-content:center}
+.note-photo-preview button:not(.note-photo-open){border:0;background:none;color:var(--green);padding:12px 4px}
+.note-editor .note-time-toggle{width:22px;flex:none;accent-color:var(--orange,#f5793b)}
+.note-photo-thumbnail{display:block;width:60px;height:60px;object-fit:cover;border-radius:8px;margin-top:8px}
+.note-editor .sheet-message button{margin-left:8px}
+.note-editor .field-row{background:var(--paper);padding:4px 16px;min-height:60px}
+.note-editor label.field-row{min-height:56px}
 .note-editor .field-row input[type=time],.note-editor .field-row select{width:auto;margin-left:auto}
-.note-editor .field-row .note-time-toggle{accent-color:var(--orange,#f5793b)}
-.note-editor .entry-actions{position:static;justify-content:center;background:transparent;border:0}
-.note-editor .entry-actions .primary{width:66%;flex:none;padding:8px 14px;text-transform:uppercase}
+.note-editor .entry-actions{position:static;justify-content:center;background:transparent;border:0;padding:16px}
+.note-editor .entry-actions .primary{position:relative;width:66%;flex:none;min-height:36px;padding:4px 14px;text-transform:uppercase}
+.note-editor .entry-actions .primary::after{content:"";position:absolute;inset:-6px 0}
 .note-editor .entry-actions .primary:disabled{opacity:.5}
 
 /* /library-extras.css */

@@ -117,6 +117,16 @@ test('Diary estimates with each account’s cold options cache and reopens a pen
   await edit();await page.getByRole('button',{name:/Effort Level.*Light/}).click();
   await page.getByRole('menuitemradio',{name:'Moderate',exact:true}).click();
   await page.locator('[name=duration]').fill('15');
+  for(const [effort,ten,fifteen] of [['Hard','91.68','137.52'],['Very Hard','117.88','176.82']]){
+   await page.locator('[data-mec-effort]').click();
+   await page.getByRole('menuitemradio',{name:effort,exact:true}).click();
+   assert.equal(await page.locator('[name=calories]').inputValue(),fifteen);
+   await page.locator('[name=duration]').fill('10');
+   assert.equal(await page.locator('[name=calories]').inputValue(),ten);
+   await page.locator('[name=duration]').fill('15');
+  }
+  await page.locator('[data-mec-effort]').click();
+  await page.getByRole('menuitemradio',{name:'Moderate',exact:true}).click();
   const estimated=74.66;
   assert.equal(Number(await page.locator('[name=calories]').inputValue()),estimated);
   await save();
@@ -142,8 +152,8 @@ test('Diary estimates with each account’s cold options cache and reopens a pen
   assert.deepEqual(attempts[0],attempts[1]);
   assert.equal(attempts[2].payload.id,entry.id);
   assert.equal(entry.exerciseBasis.minutes,10);
-  assert.equal(entry.exerciseBasis.code,'17170');
-  assert.equal(entry.exerciseSelection.code,'17200');
+  assert.equal(entry.exerciseBasis.code,'walk-light');
+  assert.equal(entry.exerciseSelection.code,'walk-moderate');
   assert.equal(entry.exerciseSelection.generalWalking,true);
   assert.equal(entry.exerciseSelection.useEstimate,true);
   assert.equal(Number(entry.caloriesBurned.toFixed(2)),estimated);

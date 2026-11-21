@@ -32,7 +32,21 @@ test('offline note photo selection survives cancel, restart, queued edits, accou
   await page.goto('http://127.0.0.1:'+server.address().port);await page.waitForFunction(()=>window.ready);
   const open=()=>page.locator('#open').click(),text=page.getByRole('textbox',{name:'Note',exact:true}),save=page.locator('.note-editor [type=submit]');
   const choose=async()=>{await page.locator('[data-note-gallery]').setInputFiles({name:'note.png',mimeType:'image/png',buffer:bytes});await page.waitForFunction(()=>document.querySelector('.note-photo-preview img')?.naturalWidth===20);};
+  await page.evaluate(async()=>{(await import('/app-language.js')).applyAppLanguage('fr');});await open();
+  await page.getByRole('heading',{name:'Ajouter une note'}).waitFor();
+  const frenchText=page.locator('.note-editor textarea');await frenchText.fill('abc');
+  assert.equal(await page.locator('[data-note-count]').getAttribute('aria-label'),'3 caractères utilisés sur 1024');
+  await page.keyboard.press('Escape');await page.evaluate(async()=>{(await import('/app-language.js')).applyAppLanguage('en');});
   await open();await text.waitFor();assert.equal(await save.isDisabled(),true);assert.equal(await page.locator('.note-editor input[type=date]').count(),0);
+  const attach=page.getByRole('button',{name:'Attach photo'}),sources=page.locator('.note-photo-choices');
+  await text.fill('Draft with photo');
+  for(const back of ['Escape','browser']){
+   await attach.click();await sources.waitFor();
+   if(back==='Escape')await page.keyboard.press('Escape');
+   else assert.equal(await page.evaluate(()=>window.dispatchEvent(new CustomEvent('nourishing-back',{cancelable:true}))),false);
+   assert.ok(await text.isVisible());assert.equal(await text.inputValue(),'Draft with photo');
+   assert.equal(await sources.isVisible(),false);assert.equal(await attach.evaluate(el=>el===document.activeElement),true);
+  }
   await page.evaluate(async urls=>{const cache=await caches.open('note-test-shell');await cache.addAll(urls);await navigator.serviceWorker.register('/fixture-sw.js');await navigator.serviceWorker.ready;},[...shell]);
   await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
   await context.setOffline(true);await choose();await page.keyboard.press('Escape');
@@ -44,7 +58,10 @@ test('offline note photo selection survives cancel, restart, queued edits, accou
   await page.reload();await page.waitForFunction(()=>window.ready);
   await page.evaluate(async()=>openNote((await localWorkspaceState()).notes[0]));
   await page.waitForFunction(()=>document.querySelector('.note-photo-preview img')?.naturalWidth===20);await page.keyboard.press('Escape');
+  await open();await text.fill('Account-owned draft');
   await page.evaluate(async()=>{await (await import('/device-cache.js')).initializeDeviceCache('other');});
+  await save.click();await page.getByRole('status').filter({hasText:'account changed'}).waitFor();
+  assert.equal(await text.inputValue(),'Account-owned draft');await page.keyboard.press('Escape');
   assert.deepEqual(await queue(),[]);assert.equal(await page.evaluate(()=>localWorkspaceState()),null);
   await page.evaluate(async()=>{await (await import('/device-cache.js')).initializeDeviceCache('fixture',{sessionContext:'a'.repeat(64)});});
   await page.evaluate(async()=>openNote((await localWorkspaceState()).notes[0]));

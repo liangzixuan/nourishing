@@ -1,3 +1,4 @@
+import {matchesWalkingSnapshot} from './general-walking.mjs';
 import {DiaryRecordError} from './diary-record-errors.mjs';
 import {isStoolScaleMetric,parseStoolType} from './stool-scale.mjs';
 import {date} from './calendar.mjs';
@@ -29,7 +30,8 @@ export function parseExerciseFields(input,groups){
 export function parseExerciseBasis(value){
  const keys=['version','edition','code','description','met','weightKg','weightSource','minutes','estimatedKcal','enteredKcal','source','date'];
  if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==keys.length||keys.some(key=>!Object.hasOwn(value,key))||value.version!==1)fail('Choose a complete exercise calculation snapshot.');
- if(typeof value.code!=='string'||!/^\d{5}$/.test(value.code)||!['profile','biometric'].includes(value.weightSource)||typeof value.source!=='string'||!value.source.startsWith('https://pacompendium.com/'))fail('Invalid exercise calculation source.');
+ const compendium=typeof value.code==='string'&&/^\d{5}$/.test(value.code)&&typeof value.source==='string'&&value.source.startsWith('https://pacompendium.com/');
+ if(!['profile','biometric'].includes(value.weightSource)||(!compendium&&!matchesWalkingSnapshot(value)))fail('Invalid exercise calculation source.');
  return {version:1,edition:text(value.edition,'Exercise edition',100),code:value.code,description:text(value.description,'Source activity',1000),met:number(value.met,'Source MET',Number.MIN_VALUE,Number.MAX_VALUE),weightKg:number(value.weightKg,'Calculation weight',Number.MIN_VALUE,Number.MAX_VALUE),weightSource:value.weightSource,minutes:number(value.minutes,'Calculation minutes',exerciseLimits.minimumMinutes,exerciseLimits.maximumMinutes),estimatedKcal:number(value.estimatedKcal,'Estimated energy',0,Number.MAX_VALUE),enteredKcal:number(value.enteredKcal,'Entered energy',0,exerciseLimits.maximumKcal),source:text(value.source,'Exercise source',2048),date:date(value.date)};
 }
 export function number(value,name,min=0,max=10000000){if(typeof value!=='number'||!Number.isFinite(value)||value<min||value>max)fail(`${name} must be a number from ${min} to ${max}.`);return value;}

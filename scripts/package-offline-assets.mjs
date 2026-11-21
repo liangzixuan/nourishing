@@ -41,6 +41,7 @@ export async function buildOfflineAssets(){
  for(const {path,body} of generated)contents.set('/'+path,body);
  for(const path of [diary('link[rel="apple-touch-icon"]').attr('href'),...manifestIcons.map(icon=>icon.src)])await visit(path);
  for(const [,path] of licenseNotices)await visit(path);
+ await visit('/general-walking.html');
  const startup=new Set(contents.keys());
  // Styles and their fonts/icons are small shared presentation assets. Cache the
  // full inventory so nested CSS imports cannot stall the updated shell.

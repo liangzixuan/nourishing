@@ -9,7 +9,7 @@ export function estimateExercise(activity,{minutes,weightKg}){
  if(!Number.isFinite(activity?.met)||activity.met<=0)fail('Choose a valid source activity.');
  const restingKcal=3.5*weightKg/200*minutes,grossKcal=activity.met*restingKcal,netKcal=Math.max(activity.met-1,0)*restingKcal;
  if(!Number.isFinite(grossKcal)||!Number.isFinite(restingKcal)||!Number.isFinite(netKcal))fail('The exercise inputs exceed the calculation range.');
- return {version:1,method:'net-met-oxygen-v1',source:{edition:'2024 Adult Compendium',code:activity.code,description:activity.description,met:activity.met,url:activity.source},minutes,weightKg,grossKcal,restingKcal,netKcal,recordable:netKcal<=exerciseLimits.maximumKcal};
+ return {version:1,method:'net-met-oxygen-v1',source:{edition:activity.edition??'2024 Adult Compendium',code:activity.code,description:activity.description,met:activity.met,url:activity.source},minutes,weightKg,grossKcal,restingKcal,netKcal,recordable:netKcal<=exerciseLimits.maximumKcal};
 }
 
 export function exerciseQuery(params,kind){

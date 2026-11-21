@@ -1,3 +1,4 @@
+import {walkingPreset} from './general-walking.mjs';
 import pinned from './data/exercise-compendium-2024.json' with {type:'json'};
 import {createExerciseSearch} from './exercise-search.mjs';
 
@@ -41,3 +42,4 @@ export function createExerciseCatalog(data=pinned){
  });
 }
 export const exerciseCatalog=createExerciseCatalog();
+export const diaryExerciseActivity=code=>walkingPreset(code)??exerciseCatalog.get(code);

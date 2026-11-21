@@ -13,7 +13,11 @@ self.addEventListener('fetch',event=>{
  if(request.method!=='GET'||url.origin!==self.location.origin||url.pathname.startsWith('/api/'))return;
  if(request.mode==='navigate'){
   event.respondWith(fetch(request).catch(async()=>{
-   const cache=await caches.open(CACHE);return await cache.match(['/diary','/offline.html','/diary-shell.html'].includes(url.pathname)?'/diary-shell.html':'/offline.html')||Response.error();
+   const cache=await caches.open(CACHE);
+   if(url.pathname==='/general-walking.html'){
+    const guide=await cache.match(url.pathname);if(guide)return guide;
+   }
+   return await cache.match(['/diary','/offline.html','/diary-shell.html'].includes(url.pathname)?'/diary-shell.html':'/offline.html')||Response.error();
   }));return;
  }
  if(!url.search&&FILES.includes(url.pathname))event.respondWith((async()=>{

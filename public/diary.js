@@ -3,7 +3,7 @@ import './client-errors.js';
 import './pwa.js';
 import {startBackgroundWrites,onBackgroundWriteStatus} from './background-writes.js';
 import {localLibraryItem, localDiaryView} from './local-engine.js';
-import {walkingEfforts} from './local-diary-projection.js';
+import {walkingEfforts,priorWalkingEfforts} from './local-diary-projection.js';
 import {pushBackHandler} from './back-history.js';
 import {startDeviceSync, warmDeviceViews} from './device-sync.js';
 import {startPrivateImages} from './private-images.js';
@@ -293,7 +293,7 @@ function renderDiaryRow(collection, row) {
     const iconName = row.kind === 'exercise' ? 'fitness_center' : row.recipeId || row.mealId ? 'restaurant' : 'nutrition';
     // Older catalog records do not identify whether the user chose a preset or a specific pace.
     const selection=row.exerciseSelection;
-    const walkingEffort=row.kind==='exercise'&&selection?.generalWalking&&row.name===selection.description&&walkingEfforts[selection.code];
+    const walkingEffort=row.kind==='exercise'&&selection?.generalWalking&&row.name===selection.description&&(walkingEfforts[selection.code]??priorWalkingEfforts[selection.code]);
     return mobileDiaryRecord({
       ...swipeOptions,
       id: row.id,

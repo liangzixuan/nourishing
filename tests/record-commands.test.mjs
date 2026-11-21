@@ -65,6 +65,21 @@ test('General Walking uses the selected flat-walking source and keeps directly c
  assert.equal(savedExerciseSettings(state.entries[1]).efforts,null);
  assert.throws(()=>apply(state,'record.correct',{collection:'entries',id:state.entries[1].id,changes:{...fields,code:'17230',duration:15,useEstimate:true}}),{status:400});
 });
+test('General Walking saves the measured effort scale separately from published speed activities',()=>{
+ const state=initialState(),weightKg=state.profile.weight=165*0.45359237;
+ const add=(code,generalWalking)=>apply(state,'exercise.catalog.add',{...fields,code,duration:15,weightKg,useEstimate:true,generalWalking});
+ add('walk-hard',true);
+ const [record]=state.entries;
+ assert.equal(record.caloriesBurned.toFixed(2),'137.52');
+ assert.equal(record.exerciseBasis.met,8);
+ assert.equal(record.exerciseBasis.source,'https://nourishing.app/general-walking.html');
+ apply(state,'record.correct',{collection:'entries',id:record.id,changes:{...fields,code:'walk-very-hard',duration:15,useEstimate:true}});
+ assert.equal(state.entries[0].caloriesBurned.toFixed(2),'176.82');
+ assert.equal(state.entries[0].exerciseSelection.met,10);
+ add('17220',false);
+ assert.equal(state.entries[1].exerciseBasis.met,5.5);
+ assert.throws(()=>add('walk-hard',false),{status:400});
+});
 test('biometric catalog, paired pressure, and custom identity use original log owner',()=>{
  const state=initialState();
  apply(state,'biometric.log',{...fields,selection:{kind:'catalog',id:'weight'},unit:'kg',values:{value:72.5}});
