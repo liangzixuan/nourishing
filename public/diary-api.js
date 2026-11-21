@@ -30,6 +30,7 @@ function invalidationPrefixes(path,body){
   if(/^(?:profile|target|targets|nutrient-target|nutrientTarget|energy|weight-goal|macro)\./.test(type))return TARGET_PREFIXES;
   if(/^(?:fast|fasting)\./.test(type))return FASTING_PREFIXES;
   if(/^(?:food|recipe|meal|favorite|library|selection)\./.test(type))return LIBRARY_PREFIXES;
+  if(/^chart\./.test(type))return ['/api/charts','/api/dashboard'];
   if(/^repeat\./.test(type))return REPEAT_PREFIXES;
   if(/^snapshot\./.test(type))return SNAPSHOT_PREFIXES;
  }
@@ -91,4 +92,8 @@ export function queueCommand(revision,type,payload,{path='/api/workspace/command
 }
 export function queuePhoto(revision,payload,projection={}){
  return queueBackgroundWrite('/api/photos/save',{...payload,revision,requestId:crypto.randomUUID()},projection);
+}
+
+export function readDiaryCalendarMonth(month,signal){
+ return request('/api/diary/calendar?month='+encodeURIComponent(month),undefined,signal);
 }

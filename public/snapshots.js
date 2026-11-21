@@ -2,8 +2,11 @@ import {privateImageAttributes} from './private-images.js';
 import {dc} from './discover-cloud-messages.js';
 import {uiLanguage,t} from './app-language.js';
 import {snapshotListMarkup} from './snapshot-view.js';
-import {request,queueCommand} from './diary-api.js';
-import {queueBackgroundWrite} from './background-writes.js';
+import {request,readDiaryCalendarMonth,queueCommand} from './diary-api.js';
+import {readDeviceCache} from './device-cache.js';
+import {readWriteCopy} from './offline-store.js';
+import {snapshotMediaPath,projectSnapshotList,newestSnapshot} from './snapshot-queue.js';
+import {onBackgroundWriteStatus,queueBackgroundWrite} from './background-writes.js';
 import {escape as e} from './html.js';
 import {bottomNavigation} from './dashboard-source/discover-ui.js';
 import {MobileDiaryCalendar} from './snapshot-source/mobile-diary-calendar.js';
@@ -12,16 +15,21 @@ import {createMessageFormatter} from './dashboard-source/message-formatter.js';
 import {snapshotMessages} from './snapshot-source/snapshot-messages.js';
 const format=createMessageFormatter(snapshotMessages),m=(key)=>format(uiLanguage(),key);
 const icon=name=>`<img src="/snapshot-source/${name}.svg" alt="">`;
-const media=row=>row.localPhoto??'/api/media?'+new URLSearchParams({namespace:'progress_photos',id:row.imageId});
 const dateLabel=day=>new Date(day+'T12:00:00Z').toLocaleDateString(uiLanguage(),{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'});
 const number=value=>Number.isFinite(value)?value.toLocaleString(uiLanguage(),{maximumFractionDigits:1}):'';
-const metadata=row=>Object.fromEntries(['date','time','title','note','vitals'].filter(key=>Object.hasOwn(row,key)).map(key=>[key,structuredClone(row[key])]));
-const fileData=file=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error(dc('photoRead')));reader.readAsDataURL(file);});
 
 /** Source snapshot dialogs; the cloud contract owns normalization, private media and writes. */
 export function mountSnapshots({root,date,onChange=async()=>{},onReady}){
  let disposed=false,rows=[],revision,readSerial=0,busy=false,pending=null,pendingMutation=null,dialog=null,camera=null,calendar=null,focus=null;
- const abort=new AbortController();
+ const abort=new AbortController(),previews=new Map();
+ let ticket,rejected='';
+ function media(row){
+  if(!(row.localPhoto instanceof Blob))return row.localPhoto??snapshotMediaPath(row.imageId);
+  if(!previews.has(row.id))previews.set(row.id,URL.createObjectURL(row.localPhoto));
+  return previews.get(row.id);
+ }
+ function releasePreviews(keep){for(const [id,url] of previews)if(!keep.has(id)){URL.revokeObjectURL(url);previews.delete(id);}}
+ const unsubscribe=onBackgroundWriteStatus(event=>{if(event.rejection&&rows.some(row=>row.id===event.requestId))rejected=event.rejection.message;});
  root.innerHTML='<section class="snapshots ms-root"><p class="snapshot-status" role="status"></p><div class="snapshot-list"></div><input type="file" data-snapshot-gallery accept="image/jpeg,image/png,image/webp" hidden></section>';
  const shell=root.querySelector('.snapshots'),list=shell.querySelector('.snapshot-list'),status=shell.querySelector('[role=status]');
  const alive=()=>!disposed&&shell.isConnected;
@@ -29,9 +37,26 @@ export function mountSnapshots({root,date,onChange=async()=>{},onReady}){
  function message(text,retry=false){if(!alive())return;status.textContent=text;if(retry){const button=document.createElement('button');button.type='button';button.textContent=m('retry');button.onclick=()=>pending?upload():pendingMutation?mutate(...pendingMutation):load();status.append(button);}}
  function setBusy(value){busy=value;const add=shell.querySelector('[data-snapshot-add]');if(add)add.disabled=value||pending!==null;list.querySelectorAll('[data-snapshot-options]').forEach(button=>button.disabled=value);}
  function facts(row){const v=row.vitals??{};return [[t('printDocument.stored.age'),v.age],[t('measurementCatalog.metric.weight'),v.weight?number(v.weight.value)+' '+(v.weight.unit==='lb'?'lbs':v.weight.unit):null],[t('printDocument.profile.bmi'),row.bmi===undefined?null:Number(row.bmi).toLocaleString(uiLanguage(),{maximumFractionDigits:0})],[t('bodyPanel.bodyFat'),v.bodyFat===undefined?null:number(v.bodyFat)+'%']].filter(([,value])=>value!==undefined&&value!==null).map(([label,value])=>`<div><dt>${label}:</dt><dd>${e(value)}</dd></div>`).join('');}
- function render(){list.innerHTML=snapshotListMarkup(rows,{busy:busy||pending!==null,media,dateLabel,facts});list.querySelectorAll('img').forEach(img=>img.onerror=()=>img.replaceWith(Object.assign(document.createElement('span'),{className:'snapshot-missing',textContent:dc('photoUnavailable')})));}
- async function load(){const serial=++readSerial;message(m('loading'));try{const apply=result=>{if(!alive()||serial!==readSerial)return;rows=result.items;revision=result.revision;render();message('');onReady?.();};apply(await request('/api/snapshots',undefined,abort.signal,{onRefresh:result=>{if(!document.querySelector('dialog[open]'))apply(result);}}));}catch(error){if(alive()&&serial===readSerial&&error.name!=='AbortError'){message(error.message,true);onReady?.(false);}}}
- function back(){if(calendar){calendar.close();return true;}camera?.dispose();camera=null;if(!dialog)return false;dialog.close();dialog.remove();dialog=null;if(focus?.isConnected)focus.focus({preventScroll:true});return true;}
+ function render(){releasePreviews(new Set(rows.filter(row=>row.localPhoto instanceof Blob).map(row=>row.id)));list.innerHTML=snapshotListMarkup(rows,{busy:busy||pending!==null,media,dateLabel,facts});list.querySelectorAll('img').forEach(img=>img.onerror=()=>img.replaceWith(Object.assign(document.createElement('span'),{className:'snapshot-missing',textContent:dc('photoUnavailable')})));}
+ async function load(){
+  const serial=++readSerial;
+  const apply=result=>{if(!alive()||serial!==readSerial)return;rows=result.items;revision=result.revision;render();message(rejected);onReady?.();};
+  message(m('loading'));
+  try{
+   const current=(await readDeviceCache('/api/snapshots')).ticket;
+   if(!alive()||serial!==readSerial)return;
+   if(ticket&&(!current||ticket.ownerId!==current.ownerId||ticket.epoch!==current.epoch)){rows=[];render();return;}
+   ticket=current;
+   apply(await request('/api/snapshots',undefined,abort.signal,{onRefresh:result=>{if(!document.querySelector('dialog[open]'))apply(result);}}));
+  }catch(error){
+   if(!alive()||serial!==readSerial||error.name==='AbortError')return;
+   const copy=(!error.status||error.status>=500)?await readWriteCopy().catch(()=>null):null;
+   if(ticket&&copy&&!copy.locked&&copy.ownerId===ticket.ownerId&&copy.ticket.epoch===ticket.epoch&&(copy.snapshot||copy.pending.length)){
+    apply(projectSnapshotList({items:copy.snapshot?.state?.progressSnapshots??[],revision:copy.snapshot?.revision},copy));
+   }else{message(error.message,true);onReady?.(false);}
+  }
+ }
+ function back(){if(calendar)return calendar.back();camera?.dispose();camera=null;if(!dialog)return false;dialog.close();dialog.remove();dialog=null;if(focus?.isConnected)focus.focus({preventScroll:true});return true;}
  function popup(label,markup,kind=''){
   back();focus=document.activeElement;const owner=document.createElement('dialog');owner.className='ms-dialog '+kind;owner.setAttribute('aria-label',label);owner.innerHTML=markup;dialog=owner;
   owner.addEventListener('cancel',event=>{event.preventDefault();back();});
@@ -48,21 +73,21 @@ export function mountSnapshots({root,date,onChange=async()=>{},onReady}){
  async function selectFile(file){
   if(!alive()||busy||pending)return;
   if(file.size>8*1024*1024||!['image/jpeg','image/png','image/webp'].includes(file.type)){message(m('fileError'));return;}
-  setBusy(true);message(m('saving'));
-  try{const dataUrl=await fileData(file);if(!alive())return;pending={dataUrl,date:today(),time:new Date().toTimeString().slice(0,5),title:'',note:'',captureMeasurements:true};}
-  catch(error){message(error.message);}finally{if(alive())setBusy(false);}
-  if(alive()&&pending)await upload();
+  if(!ticket){message(dc('photoUnavailable'));return;}
+  rejected='';
+  pending={file:file.slice(0,file.size,file.type),ticket,body:{requestId:crypto.randomUUID(),revision,date:today(),time:new Date().toTimeString().slice(0,5),title:'',note:'',captureMeasurements:true}};
+  await upload();
  }
  async function upload(){
-  if(!alive()||!pending||busy)return;setBusy(true);message(m('saving'));const operation=pending;
+  if(!alive()||!pending||busy)return;
+  setBusy(true);message(m('saving'));
+  const {file,ticket:owner,body}=pending;
+  const local={id:body.requestId,date:body.date,time:body.time,title:'',note:'',vitals:{},createdAt:new Date().toISOString()};
   try{
-   operation.prepared??=await request('/api/snapshots/prepare',Object.fromEntries(Object.entries(operation).filter(([key])=>!['prepared','body'].includes(key))),abort.signal);
-   if(!alive()||pending!==operation)return;
-   operation.body??={requestId:crypto.randomUUID(),revision:operation.prepared.revision,photo:operation.prepared.photo,...operation.prepared.metadata};
-   const local={...operation.prepared.metadata,id:operation.body.requestId,imageId:operation.prepared.photo.id,createdAt:new Date().toISOString(),vitals:operation.prepared.metadata.vitals??{},localPhoto:operation.prepared.photo.dataUrl};
-   const items=[local,...rows];await queueBackgroundWrite('/api/snapshots/save',operation.body,{snapshots:[local],responses:{'/api/snapshots':{items,revision}}});pending=null;
-   if(alive()){readSerial++;rows=items;render();message('');}void onChange();
-  }catch(error){if(alive()&&error.name!=='AbortError'){if(error.status===409){operation.prepared=null;operation.body=null;}message(error.message,true);}}
+   await queueBackgroundWrite('/api/snapshots/save',body,{snapshotSource:file,snapshots:[local]},owner);
+   pending=null;
+   if(alive()){readSerial++;rows=[{...local,localPhoto:file},...rows];render();message('');}void onChange();
+  }catch(error){if(alive()&&error.name!=='AbortError')message(error.message,true);}
   finally{if(alive())setBusy(false);}
  }
  list.onclick=event=>{
@@ -74,11 +99,11 @@ export function mountSnapshots({root,date,onChange=async()=>{},onReady}){
  function openOptions(row){
   clearMutationRetry();
   const owner=popup(m('options'),[['date','pencil'],['caption','pencil'],['delete','delete']].map(([action,img])=>`<button type="button" class="ms-choice" data-snapshot-action="${action}">${icon(img)}<strong>${e(m(action))}</strong></button>`).join('')+`<nav class="dc-bottom" aria-label="${t('discover.nav.main')}">${bottomNavigation('progress',uiLanguage())}</nav>`,'ms-sheet');
-  owner.querySelectorAll('[data-snapshot-action]').forEach(button=>button.onclick=()=>{back();if(button.dataset.snapshotAction==='date')calendar=new MobileDiaryCalendar({state:{settings:{}},date:row.date,language:uiLanguage(),label:m('date'),showDiaryMarkers:false,onChoose:chosen=>mutate('snapshot.update',{id:row.id,...metadata(row),date:chosen}),onClose:()=>{calendar=null;}});else if(button.dataset.snapshotAction==='caption')caption(row);else remove(row);});
+  owner.querySelectorAll('[data-snapshot-action]').forEach(button=>button.onclick=()=>{back();if(button.dataset.snapshotAction==='date')calendar=new MobileDiaryCalendar({loadMonth:readDiaryCalendarMonth,date:row.date,language:uiLanguage(),label:m('date'),onChoose:chosen=>mutate('snapshot.update',{id:row.id,date:chosen}),onClose:()=>{calendar=null;}});else if(button.dataset.snapshotAction==='caption')caption(row);else remove(row);});
  }
  function caption(row){
   const owner=popup(m('captionTitle'),`<h2>${e(m('captionTitle'))}</h2><textarea data-snapshot-caption maxlength="10000" aria-label="${e(m('captionTitle'))}">${e(row.note)}</textarea><p data-snapshot-error role="alert"></p><footer><button type="button" data-snapshot-back>${e(m('cancel'))}</button><button type="button" data-snapshot-save>${e(m('save'))}</button></footer>`);
-  owner.querySelector('textarea').focus();owner.querySelector('[data-snapshot-save]').onclick=()=>mutate('snapshot.update',{id:row.id,...metadata(row),note:owner.querySelector('textarea').value},owner);
+  owner.querySelector('textarea').focus();owner.querySelector('[data-snapshot-save]').onclick=()=>mutate('snapshot.update',{id:row.id,note:owner.querySelector('textarea').value},owner);
  }
  function remove(row){
   const owner=popup(m('deleteTitle'),`<h2>${e(m('deleteTitle'))}</h2><p>${e(m('deleteHint'))}</p><p data-snapshot-error role="alert"></p><footer><button type="button" data-snapshot-back>${e(m('cancel'))}</button><button type="button" class="ms-danger" data-snapshot-delete>${e(m('delete'))}</button></footer>`);
@@ -86,11 +111,11 @@ export function mountSnapshots({root,date,onChange=async()=>{},onReady}){
  }
  async function mutate(type,payload,owner=null){
   if(!alive()||busy)return;setBusy(true);const output=owner?.querySelector('[role=alert]');if(output)output.textContent='';owner?.querySelectorAll('button:not([data-snapshot-back]),textarea').forEach(node=>node.disabled=true);
-  try{const items=(type==='snapshot.delete'?rows.filter(row=>row.id!==payload.id):rows.map(row=>row.id===payload.id?{...row,...payload}:row)).sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt.localeCompare(a.createdAt));await queueCommand(revision,type,payload,{projection:{responses:{'/api/snapshots':{items,revision}}}});pendingMutation=null;if(!alive())return;readSerial++;rows=items;if(dialog===owner)back();render();message('');void onChange();}
+  try{const items=(type==='snapshot.delete'?rows.filter(row=>row.id!==payload.id):rows.map(row=>row.id===payload.id?{...row,...payload}:row)).sort(newestSnapshot);await queueCommand(revision,type,payload,{ticket});pendingMutation=null;if(!alive())return;readSerial++;rows=items;if(dialog===owner)back();render();message('');void onChange();}
   catch(error){if(!alive())return;const target=output?.isConnected?output:null;if(target)target.textContent=error.message;else{pendingMutation=[type,payload];message(error.message,true);}if(error.status===409){pendingMutation=null;const target=output?.isConnected?output:status,reload=document.createElement('button');reload.type='button';reload.textContent=dc('refreshSnapshots');reload.onclick=()=>{back();void load();};target.append(reload);}}
   finally{if(alive())setBusy(false);owner?.querySelectorAll('button,textarea').forEach(node=>node.disabled=false);}
  }
  window.addEventListener('nourishing-data-changed',()=>{if(alive()&&!dialog&&!calendar&&!busy)void load();},{signal:abort.signal});
  void load();
- return {refresh:load,back,dispose(){disposed=true;readSerial++;abort.abort();back();pending=null;pendingMutation=null;root.replaceChildren();}};
+ return {refresh:load,back,dispose(){disposed=true;readSerial++;abort.abort();unsubscribe();releasePreviews(new Set());calendar?.close();back();pending=null;pendingMutation=null;root.replaceChildren();}};
 }

@@ -35,7 +35,7 @@ export function openFastingEditor({mode='schedule',record,context,refresh,onChan
    if(!schedule&&change?.previousStart&&change.previousStart!==form.elements.start.value&&form.elements.end.value){const zone=data.timeZone,before=scheduledWallInstant(change.previousStart,zone),after=scheduledWallInstant(form.elements.start.value,zone),end=Temporal.Instant.from(edited('end'));const next=Temporal.Instant.fromEpochNanoseconds(end.epochNanoseconds+after.epochNanoseconds-before.epochNanoseconds);form.elements.end.value=next.toZonedDateTimeISO(zone).toPlainDateTime().toString({smallestUnit:'minute'});shiftedEnd=next.toString();}
    sync(form.elements.start);
   }});
-  mutation=fastingMutation({revision:()=>data.revision,host:body,onSaved:saved,onReload:reload});sync();
+  mutation=fastingMutation({revision:()=>data.revision,scheduleZone:schedule?(record?.timeZone??data.timeZone):null,host:body,onSaved:saved,onReload:reload});sync();
   form.onsubmit=event=>{event.preventDefault();if(!form.reportValidity())return;try{const f=form.elements;
    if(schedule){const payload=readSchedule(form,record,record?.id??crypto.randomUUID());delete payload.timeZone;void mutation.run('fasting.schedule.save',payload);return;}
    const completed=record?.end!=null;let goalHours=record?.goalHours??16;if(f.open.checked)goalHours=null;else if(!completed||record?.goalHours===null){goalHours=Number(f.days.value)*24+Number(f.hours.value);if(goalHours<1||goalHours>168)throw Error(t('discover.schedule.durationRange'));}

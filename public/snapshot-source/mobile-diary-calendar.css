@@ -3,8 +3,29 @@
 .mdc-grid button{font-size:min(1rem,9cqi);}
 @media(max-width:360px){.mdc-dialog{width:calc(100% - 8px);}}
 
-.mdc-dialog[open]:not(:has(.mdc-legend)){display:flex;flex-direction:column;height:90dvh;}
+.mdc-dialog[open]{display:flex;flex-direction:column;height:90dvh;}
 .mdc-dialog>header,.mdc-month,.mdc-dialog>footer{flex-shrink:0;}
 .mdc-days{flex:1;display:flex;flex-direction:column;}
 .mdc-weekdays{min-height:42px;align-items:center;flex-shrink:0;}
 .mdc-grid{flex:1;grid-template-rows:repeat(6,minmax(66px,1fr));}
+
+.mdc-dialog{--mdc-logged:color-mix(in srgb,var(--accent) 16%,var(--paper));--mdc-complete:color-mix(in srgb,var(--accent) 38%,var(--paper))}
+.mdc-grid button{position:relative;gap:0}
+.mdc-grid button>span{width:min(52px,100%);aspect-ratio:1;min-height:0}
+.mdc-grid small{position:absolute;top:calc(50% - 1em);align-items:center}
+.mdc-grid button.is-logged>span,.mdc-legend .is-logged{background:var(--mdc-logged)}
+.mdc-grid button.is-complete>span,.mdc-legend .is-complete{background:var(--mdc-complete);box-shadow:none}
+.mdc-grid button.is-today>span,.mdc-legend .is-today{box-shadow:inset 0 0 0 1px var(--accent)}
+.mdc-grid button[aria-pressed=true]>span,.mdc-legend .is-selected{background:var(--accent);color:var(--mobile-on-accent)}
+.mdc-status:empty{display:none}
+.mdc-legend{box-sizing:border-box;width:min(250px,85vw);max-height:85dvh;min-height:min(360px,80dvh);padding:20px 24px;border:0;border-radius:10px;background:var(--paper);color:var(--ink);font:400 calc(15rem / 18)/1.45 Lato,Arial,sans-serif}
+.mdc-legend::backdrop{background:#0009}
+.mdc-legend h2{font:700 calc(21rem / 18)/1.4 Karla,Lato,sans-serif;margin:0 0 2px}
+.mdc-legend p{display:flex;align-items:center;gap:10px;margin:0;min-height:25px}
+.mdc-legend .mdc-marker,.mdc-legend .mdc-state{width:15px;height:15px;border-radius:50%;flex:none}
+.mdc-legend .mdc-fast{height:7px;border-radius:4px}
+.mdc-marker.mdc-biometric{background:transparent;position:relative}
+.mdc-marker.mdc-biometric::before{content:'♥';position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-50%);font-size:1.25em;line-height:1}
+.mdc-grid .mdc-biometric::before{font-size:8px}
+.mdc-legend [data-mdc-back]{position:absolute;bottom:10px;right:12px;padding:8px;border:0;background:transparent;color:var(--green)}
+.mdc-legend [data-mdc-back]:not(:focus-visible){clip-path:inset(50%);width:1px;height:1px;padding:0}

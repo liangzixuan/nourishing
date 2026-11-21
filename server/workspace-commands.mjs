@@ -88,7 +88,7 @@ const COMMAND_FIELDS = {
 
 const LIBRARY_SAVE_TYPES = new Set(['food.save', 'recipe.save', 'meal.save']);
 const REQUIRED_ID_TYPES = new Set(['entry.update', 'entry.delete', 'note.delete']);
-const SKIP_CAPTURE_TYPES = new Set(['food.multi.add', 'food.copy', 'library.edit']);
+const SKIP_CAPTURE_TYPES = new Set(['food.multi.add', 'food.copy', 'library.edit', 'selection.recipe', 'selection.meal']);
 
 const isPlainObject = value => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 const isValidRecordId = value => typeof value === 'string' && value.length > 0 && value.length <= 1000;
@@ -105,6 +105,8 @@ const ACTION_VALIDATORS = {
   'barcode.log': input => validateBarcodeAction(input),
   'photo.log': input => validatePhotoAction(input),
   'food.copy': ({payload}) => validateFoodCopy(payload),
+  'selection.recipe': validateSelectionEditor,
+  'selection.meal': validateSelectionEditor,
   'library.edit': ({payload}) => validateLibraryEdit(payload, {saving: true}),
   'food.save': ({payload}) => validateLibraryDraft('food', payload),
   'recipe.save': ({payload}) => validateLibraryDraft('recipe', payload),
@@ -127,6 +129,13 @@ const ACTION_VALIDATORS = {
     if (targets.length !== 1) invalid('Choose a food.');
   },
 };
+
+function validateSelectionEditor({type,payload}){
+ if(Object.hasOwn(payload,'draft')){
+  if(Object.hasOwn(payload,'name'))invalid('Supply the reviewed draft once.');
+  validateLibraryDraft(type.slice('selection.'.length),payload.draft);
+ }
+}
 
 const GROUP_VALIDATORS = [
   [entryAdjustmentFields, validateEntryAdjustmentAction],
@@ -264,6 +273,7 @@ function libraryPayload(state, {type, payload}) {
 }
 
 function actionFoodRows({type, payload}) {
+  if ((type === 'selection.recipe' || type === 'selection.meal') && payload.draft) return libraryDraftRows(type.slice('selection.'.length),payload.draft);
   if (type === 'library.edit') return libraryDraftRows(payload.kind, payload.draft);
   if (type === 'entry.add' || type === 'repeat.save') return [payload];
   if (type === 'photo.log' || type === 'meal.log' || type === 'text.log') return payload.rows ?? [];

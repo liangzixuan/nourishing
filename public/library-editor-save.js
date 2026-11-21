@@ -6,7 +6,7 @@ import {formatMessage} from './report-source/public/message-format.js';
 
 /** Owns the editor's choice about existing uses; the outbox owns durable saves. */
 export class LibraryEditorSave {
- constructor({kind,revision,host,onChange=()=>{}}){Object.assign(this,{kind,revision,host,onChange});this.disposed=false;this.pending=null;this.review=null;this.serial=0;}
+ constructor({kind,revision,host,onChange=()=>{},selection}){Object.assign(this,{kind,revision,host,onChange,selection});this.disposed=false;this.pending=null;this.review=null;this.serial=0;}
  get locked(){return this.pending!==null;}
  clearReview(){if(this.locked)return;this.controller?.abort();++this.serial;this.review=null;this.section?.remove();this.section=null;}
  showReview(){
@@ -34,7 +34,7 @@ export class LibraryEditorSave {
    this.section?.querySelectorAll('input,button').forEach(node=>node.disabled=true);this.onChange();
   }
   if(this.pending.result)return this.pending.result;
-  try{const result=await saveLocalLibrary(this.kind,this.pending.draft,{mode:this.pending.mode,revision:this.pending.revision});if(!result?.ok||!result.item?.id)throw Error(fc("saveUnconfirmed"));this.pending.result=result;return result;}
+  try{const result=await saveLocalLibrary(this.kind,this.pending.draft,{mode:this.pending.mode,revision:this.pending.revision,selection:this.selection});if(!result?.ok||!result.item?.id)throw Error(fc("saveUnconfirmed"));this.pending.result=result;return result;}
   catch(error){this.pending=null;this.clearReview();this.onChange();throw error;}
  }
  dispose(){this.disposed=true;this.controller?.abort();++this.serial;this.section?.remove();}

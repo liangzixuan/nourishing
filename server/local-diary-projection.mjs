@@ -56,7 +56,9 @@ export {diarySelectionNutrition} from './domain/diary-selection-nutrition.mjs';
 
 export {previewLibraryEditor} from './domain/library-editor-preview.mjs';
 export {prepareLibraryDraft,libraryDraftRows} from './domain/library-editor-draft.mjs';
-export {inspectLibraryUses} from './domain/library-references.mjs';
+export {inspectLibraryUses,checkLibraryDeletion,removeLibraryItem} from './domain/library-references.mjs';
 export {libraryItem,recipePreview,libraryCollectionView} from './domain/library-item-view.mjs';
 
 export {prepareDiaryRecordUpdate,manuallyEditableRecord,sourceRecordReason} from './domain/diary-record-update.mjs';
+
+export {storeChartDefinition} from './domain/chart-definition-store.mjs';

@@ -13,8 +13,12 @@ export function libraryItem(state,kind,resource,entry){
  if(entry&&entry[kind+'Id']!==resource.id)invalid('Choose the entry’s saved item.');
  const item=entry&&kind==='recipe'?recipeForEntry(resource,entry):entry&&kind==='meal'?mealForEntry(resource,entry):resource;
  const options=libraryQuantityOptions(state,kind,item);
- const ingredients=(item.ingredients??item.items??[]).map(row=>{const childKind=row.recipeId?'recipe':'food',child=state[childKind+'s'].find(r=>r.id===row[childKind+'Id']);return {...row,name:child?.name??'Missing ingredient',source:child?.source??null,options:child?libraryQuantityOptions(state,childKind,child):null};});
+ const ingredients=libraryIngredientRows(state,item.ingredients??item.items??[]);
  return {kind,resource,options,ingredients,nutrients:catalog.map(({id,name,unit,category})=>({id,name,unit,category})),energyUnit:state.settings.energyUnit??'kcal',facts:entryFacts(state,{[kind+'Id']:resource.id,amount:1,...(entry??{})})};
+}
+export function libraryIngredientRows(state,items){
+ return items.map(row=>{const childKind=row.recipeId?'recipe':'food',child=state[childKind+'s'].find(r=>r.id===row[childKind+'Id']);return {...row,name:child?.name??'Missing ingredient',source:child?.source??null,options:child?libraryQuantityOptions(state,childKind,child):null};});
+
 }
 
 export function libraryQuantityOptions(state,kind,item){

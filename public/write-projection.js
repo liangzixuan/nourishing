@@ -1,6 +1,6 @@
-import {prepareDiaryRecordUpdate} from './local-diary-projection.js';
+import {prepareDiaryRecordUpdate,storeChartDefinition} from './local-diary-projection.js';
 // Serializable local effects for acknowledged and pending background commands.
-import {applyProfileSettingsProjection,projectDiaryBulkWrite,copiedDiaryRecords} from './local-diary-projection.js';
+import {removeLibraryItem,applyProfileSettingsProjection,projectDiaryBulkWrite,copiedDiaryRecords} from './local-diary-projection.js';
 import {diaryGroupSlots,editDiaryGroupSlot,renameDiaryGroup} from './local-group-rename.js';
 import {mergeEntryUpdate} from './report-source/server/entry-update-fields.mjs';
 import {expandedDiarySources} from './report-source/server/resource-expansion.mjs';
@@ -9,6 +9,7 @@ export function applyWriteToState(state,row,result){
  const replace=(collection,value)=>{state[collection]??=[];const i=state[collection].findIndex(item=>item.id===value.id);if(i<0)state[collection].push(value);else state[collection][i]=value;};
  const remove=(collection,id)=>{state[collection]=(state[collection]??[]).filter(item=>item.id!==id);};
  projectDiaryBulkWrite(state,row.command);
+ if(['food.delete','recipe.delete','meal.delete'].includes(type))removeLibraryItem(state,type.split('.')[0],p.id);
  if(row.projection?.library&&!result?.records){
   const {kind,resource,mode,previousId}=row.projection.library;
   if(mode==='preserve'){const previous=state[kind+'s']?.find(item=>item.id===previousId);if(previous)previous.retired=true;}
@@ -22,7 +23,7 @@ export function applyWriteToState(state,row,result){
    for(const food of foods.values())replace('foods',food);
    const resource=structuredClone(draft.resource),field=draft.kind==='recipe'?'ingredients':'items';
    resource[field]=resource[field].map(item=>foods.has(item.foodId)?{...item,foodId:foods.get(item.foodId).id}:item);
-   replace(draft.kind+'s',{...resource,id:row.command.operationId,name:p.name});
+   replace(draft.kind+'s',{...resource,id:row.command.operationId,name:p.draft?.name??p.name});
   }
  }
  if(type==='records.copy'&&!result?.records){
@@ -51,7 +52,8 @@ export function applyWriteToState(state,row,result){
  if(type==='display.save'||type==='preferences.patch')Object.assign(state.settings,p);
  if(type==='group.editSlot'&&state.settings.groups&&diaryGroupSlots(state.settings)[p.slot-1]===p.from)editDiaryGroupSlot(state,p);
  if(type==='group.rename'&&state.settings.groups?.includes(p.from))renameDiaryGroup(state,p);
- if(row.projection?.chartState){state.settings.mobileCharts=structuredClone(row.projection.chartState.mobileCharts);state.charts=structuredClone(row.projection.chartState.charts);}
+ if(row.projection?.chartState&&type!=='chart.save'){state.settings.mobileCharts=structuredClone(row.projection.chartState.mobileCharts);state.charts=structuredClone(row.projection.chartState.charts);}
+ if(type==='chart.save'&&Array.isArray(state.charts))storeChartDefinition(state,structuredClone(result?.records?.charts?.[0]??p));
  if(type==='entry.ingredients.adjust'){
   const entry=state.entries.find(row=>row.id===p.id);
   if(entry){if(p.kind==='meal'){entry.mealItems=structuredClone(p.items);entry.amount=1;delete entry.quantity;delete entry.unit;delete entry.portionId;}
@@ -78,4 +80,25 @@ export function applyWriteToState(state,row,result){
  if(result?.records){
   for(const [collection,rows] of Object.entries(result.records))for(const record of rows)replace(collection,record);
  }
+}
+
+// Apply one saved definition to every cached view that contains its collection.
+export function projectSavedDefinition(path,view,row,receipt){
+ const {type,payload}=row.command;
+ if(type==='fasting.schedule.save'&&/^\/api\/fasting(?:\?|$)/.test(path)&&view?.schedules){
+  const schedule=receipt?.fastingSchedule??{...payload,timeZone:row.projection.scheduleZone,revision:payload.revision+1,nextStart:null,_pending:true};
+  return {...view,schedules:withRecord(view.schedules,schedule)};
+ }
+ if(type!=='chart.save'||!row.projection?.chartDate||!/^\/api\/charts(?:\?|$)/.test(path)||!view?.saved)return view;
+ const chart=receipt?.records?.charts?.[0]??payload,id='custom:'+chart.id;
+ const cached=row.projection?.chartCard;
+ const card=cached&&row.projection.chartDate===view.to&&(!cached.cycleOverlayEnabled||cached.cycleOverlay.calendar.asOf===view.calendar.asOf)?{...cached,name:chart.name,definition:chart}:null;
+ const selected=new URL(path,'http://localhost').searchParams.get('card');
+ const previous=view.catalog.find(item=>item.id===id);
+ const descriptor={...previous,id,kind:'custom',chartId:chart.id,name:chart.name,settings:{...(card?.settings??previous?.settings),visible:chart.visible}};
+ const cards=card&&(selected===id||!selected&&chart.visible)?withRecord(view.cards,card):view.cards.filter(item=>item.id!==id);
+ return {...view,saved:withRecord(view.saved,card?chart:{...chart,_awaitingPlot:true}),cards,catalog:withRecord(view.catalog,descriptor)};
+}
+function withRecord(rows,item){
+ return rows.some(row=>row.id===item.id)?rows.map(row=>row.id===item.id?item:row):[...rows,item];
 }

@@ -57,14 +57,14 @@ export function applySnapshotCommand(state,action,{photo,asOf}={}){
   if(!photo||photo.id!==value.photoId||photo.mime!=='image/jpeg'||!Buffer.isBuffer(photo.bytes))fail('Choose a valid normalized snapshot photo.');
   const row=source(()=>parseProgressSnapshot({id:randomUUID(),imageId:photo.id,createdAt:clock(asOf),...captured(state,value)}));
   state.progressSnapshots=source(()=>mergeProgressSnapshots(state.progressSnapshots,[row]));
-  return {handled:true,result:{kind:'snapshot',id:row.id}};
+  return {handled:true,result:{kind:'snapshot',id:row.id,records:{progressSnapshots:[structuredClone(row)]}}};
  }
  const existing=find(state,value.id);
  if(action.type==='snapshot.delete'){
   state.progressSnapshots=state.progressSnapshots.filter(row=>row.id!==existing.id);
   return {handled:true,result:{deletedSnapshotId:existing.id,...(!state.progressSnapshots.some(row=>row.imageId===existing.imageId)?{releasedImageId:existing.imageId}:{})}};
  }
- const candidate=source(()=>parseProgressSnapshot({id:existing.id,imageId:existing.imageId,createdAt:existing.createdAt,...metadata(value)}));
+ const candidate=source(()=>parseProgressSnapshot({id:existing.id,imageId:existing.imageId,createdAt:existing.createdAt,...metadata(existing),...metadata(value)}));
  const retained=source(()=>retainMeasurementCapture(existing,candidate.vitals));
  const row=source(()=>parseProgressSnapshot({...candidate,...(retained?{measurementCapture:retained}:{})}));
  state.progressSnapshots=state.progressSnapshots.map(item=>item.id===row.id?row:item);

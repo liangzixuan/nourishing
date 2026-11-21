@@ -60,7 +60,8 @@ export function applyFastingCommand(state, {type, payload}, context) {
       act(candidate, 'settings.save', {discover, dashboard, ...(Object.hasOwn(payload, 'askToStopFast') ? {askToStopFast: payload.askToStopFast} : {})});
     } else if (type === 'fasting.schedule.save') {
       const existing = candidate.fastingPlan?.schedules.find(row => row.id === payload.id);
-      result = saveFastingSchedule(candidate, {...payload, timeZone: existing?.timeZone ?? timeZone, confirmed: true}, now);
+      const view = saveFastingSchedule(candidate, {...payload, timeZone: existing?.timeZone ?? timeZone, confirmed: true}, now);
+      result = {fastingSchedule: view.schedules.find(row => row.id === payload.id)};
     }
     else if (type === 'fasting.schedule.delete') result = deleteFastingSchedule(candidate, payload);
     else if (type === 'fasting.schedule.startNow') result = startScheduledFastNow(candidate, payload, now);

@@ -20,7 +20,7 @@ export function writeReceiptIdentities(row,result){
 
  if(type==='selection.recipe'||type==='selection.meal'){
   const collection=type==='selection.recipe'?'recipes':'meals',id=result?.records?.[collection]?.[0]?.id??result?.item?.id;
-  return Object.fromEntries([...(id?[[operation,id]]:[]),...(result.records?.foods??[]).map((food,index)=>[`${operation}-food-${index}`,food.id])]);
+  return Object.fromEntries([...(id?[[operation,id]]:[]),...(result.records?.foods??[]).slice(0,row.projection?.reusable?.foods?.length).map((food,index)=>[`${operation}-food-${index}`,food.id])]);
  }
  if(type==='records.copy')return Object.fromEntries(Object.entries(result?.records??{}).flatMap(([collection,rows])=>rows.map((item,index)=>[`${operation}-${collection}-${index}`,item.id])));
  if(['photo.log','meal.log','entry.expand'].includes(type)||type==='entry.add'&&row.command.payload.mealId&&result?.records?.entries?.some(item=>item.expandedFrom?.parent?.mealId))return Object.fromEntries(entries.map((id,index)=>[`${operation}-${index}`,id]));

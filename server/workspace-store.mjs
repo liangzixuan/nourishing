@@ -15,7 +15,7 @@ import {initializeHealthExportState, installHealthExportMetadata} from './health
 import {applyWorkspaceCommand, parseCommand, readActionFoods, captureActionFoods} from './workspace-commands.mjs';
 
 const databaseId = 'nourishing';
-const CATALOG_CONTEXT_TYPES = new Set(['food.multi.add', 'food.copy', 'library.edit']);
+const CATALOG_CONTEXT_TYPES = new Set(['food.multi.add', 'food.copy', 'library.edit', 'selection.recipe', 'selection.meal']);
 
 const args = (tableId, id) => ({databaseId, tableId, rowId: id});
 const permissions = owner => [Permission.read(Role.user(owner))];
@@ -61,6 +61,7 @@ function formatCommandResult(revision, saved) {
   return {
     ok: true,
     revision,
+    ...(saved?.fastingSchedule ? {fastingSchedule: saved.fastingSchedule} : {}),
     ...(saved?.records ? {records:saved.records} : {}),
     ...(saved?.counts ? {counts: saved.counts} : {}),
     ...(saved?.entryIds ? {entryIds: saved.entryIds} : {}),

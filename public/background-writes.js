@@ -1,10 +1,11 @@
 import {prepareQueuedDiaryReview} from './diary-preparation.js';
 import {readWriteCopy,persistBackgroundWrite,changeBackgroundWrite,currentPrivateResponseTicket,saveOfflineSnapshot,acknowledgeBackgroundWrite} from './offline-store.js';
 import {discardOfflineChange} from './offline-controls.js';
-import {readDeviceCache} from './device-cache.js';
+import {readDeviceCache,writeDeviceCache} from './device-cache.js';
+import {projectSnapshotList,snapshotMediaPath} from './snapshot-queue.js';
 import {request} from './diary-api.js';
 import {acceptOfflineReceipt,offlineEffectiveState} from './offline-model.js';
-import {applyWriteToState} from './write-projection.js';
+import {applyWriteToState,projectSavedDefinition} from './write-projection.js';
 import {projectLocalDiary,createDisplayView,projectDiaryCalendar,libraryItems} from './local-diary-projection.js';
 import {offlineFailure} from './offline-errors.js';
 
@@ -39,6 +40,25 @@ async function retry(id){
  await changeBackgroundWrite(copy.ticket,id,row=>{row.status='pending';row.error=null;});
  changed();return flushBackgroundWrites();
 }
+async function prepareSnapshotFile(row,ticket){
+ const file=row.projection.snapshotSource;
+ const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(file);});
+ if(!await currentPrivateResponseTicket(ticket))throw new DOMException('Account changed.','AbortError');
+ const {requestId,revision,...metadata}=row.transport.body;
+ const prepared=await request('/api/snapshots/prepare',{...metadata,dataUrl},AbortSignal.timeout(30000));
+ const updated=await changeBackgroundWrite(ticket,requestId,current=>{
+  current.transport.body={requestId,revision,photo:prepared.photo,...prepared.metadata};
+  current.projection.snapshots[0].imageId=prepared.photo.id;
+  delete current.projection.snapshotSource;
+  return structuredClone(current);
+ });
+ const cacheTicket=updated&&await currentPrivateResponseTicket(ticket);
+ if(cacheTicket){
+  const bytes=Uint8Array.from(atob(prepared.photo.dataUrl.split(',')[1]),c=>c.charCodeAt(0));
+  await writeDeviceCache(snapshotMediaPath(prepared.photo.id),new Blob([bytes],{type:'image/jpeg'}),cacheTicket).catch(()=>false);
+ }
+ return updated;
+}
 export async function flushBackgroundWrites(){
  if(running)return running;
  const drain=async()=>{
@@ -58,8 +78,10 @@ export async function flushBackgroundWrites(){
     if(row.command.generation!==copy.snapshot?.identity.generation)throw restored();
     let result;
     if(row.transport){
+     if(row.projection?.snapshotSource)row=await prepareSnapshotFile(row,copy.ticket);
+     if(!row)continue;
      if(row.projection?.diaryReview&&!row.projection.diaryReview.prepared)row=await changeBackgroundWrite(copy.ticket,id,(current,next)=>{prepareQueuedDiaryReview(next.snapshot.state,current);return structuredClone(current);});
-     if(!row.attempted&&row.status!=='unknown'){
+     if(!row.attempted&&(row.status!=='unknown'||row.command.type==='snapshot.add')){
       if(!revision){
        const day=row.command.payload.date??new Date().toLocaleDateString('en-CA');
        revision=(await request('/api/diary?date='+encodeURIComponent(day),undefined,undefined,{fresh:true,canonical:true})).revision;
@@ -69,6 +91,7 @@ export async function flushBackgroundWrites(){
       // Persist that binding first so restart/lost replies retry the exact body.
       row=await changeBackgroundWrite(copy.ticket,id,current=>{current.transport.body.revision=revision;current.attempted=true;return structuredClone(current);});
      }
+     if(!row)continue;
      // Retries first use the exact request. Receipts are checked server-side before
      // revision guards, so a lost acknowledgement cannot turn into a duplicate.
      try{result=await request(row.transport.path,row.transport.body,AbortSignal.timeout(30000),{preserveCache:true});}
@@ -102,7 +125,7 @@ export async function flushBackgroundWrites(){
      await discardOfflineChange(copy,id);
      const latest=await readWriteCopy();
      if(latest&&!latest.pending.length)await verifiedSnapshot(owner,latest.ticket);
-     emit({discarded:true,requestId:id});changed();
+     emit({discarded:true,rejection:error,requestId:id});changed();
      window.dispatchEvent(new Event('nourishing-data-changed'));
      continue;
     }
@@ -118,10 +141,12 @@ export async function flushBackgroundWrites(){
 
 export async function overlayPendingResponse(path,value){
  const copy=await readWriteCopy().catch(()=>null);if(!copy||copy.locked)return value;
+ if(path==='/api/snapshots')return projectSnapshotList(value,copy);
  let result=value;
  for(const row of copy.pending){
   if(!row.transport)continue;
   if(row.projection?.responses?.[path])result=structuredClone(row.projection.responses[path]);
+  else result=projectSavedDefinition(path,result,row);
  }
  if(path==='/api/display'&&copy.snapshot?.state)return {...result,...createDisplayView(offlineEffectiveState(copy))};
  if(path==='/api/library'&&copy.snapshot?.state){

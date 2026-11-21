@@ -8,7 +8,7 @@ import {MobileIngredientDetail} from './suggestion-source/mobile-ingredient-deta
 import {escape as e} from './html.js';
 
 /** One transient search/detail layer. The parent owns the ingredient list. */
-export function openCompositeIngredient({date,items,index,nutrients,energyUnit,onApply,onClose,kind:parentKind='meal',excludeRecipe=null}){
+export function openCompositeIngredient({date,items,index,nutrients,energyUnit,onApply,onClose,kind:parentKind='meal',excludeRecipe=null,selection}){
  const origin=document.activeElement,dialog=document.createElement('dialog');dialog.className='mci-dialog';dialog.setAttribute('aria-label',parentKind==='recipe'?t("mobileCompositeEditor.addIngredient"):t("mobileSuggest.addItem"));document.body.append(dialog);dialog.showModal();
  let search,detail,loading,restore,disposed=false,serial=0,fromSearch=index===undefined;
  const alive=()=>!disposed&&dialog.isConnected;
@@ -19,11 +19,12 @@ export function openCompositeIngredient({date,items,index,nutrients,energyUnit,o
  async function openDetail(kind,id){
   if(search)restore=search.snapshot();clear();const generation=serial;dialog.innerHTML=`<header class="mf-header"><button type="button" data-mci-back aria-label="${e(t("mobileFoodEditor.back"))}">‹</button><h2>${e(fc("mealItemTitle"))}</h2></header><p class="empty" role="status">${e(t("mobileNutrientDetail.loading"))}</p>`;
   try{
-   loading=new AbortController();const item=await localLibraryItem({kind,id})??await request('/api/library/item?'+new URLSearchParams({kind,id}),null,loading.signal);if(!alive()||generation!==serial)return;
+   loading=new AbortController();const inline=kind==='food'&&selection?.foods.find(food=>food.id===id);
+   const item=inline?{resource:inline,options:selection.items.find(row=>row.foodId===id).options}:await localLibraryItem({kind,id})??await request('/api/library/item?'+new URLSearchParams({kind,id}),null,loading.signal);if(!alive()||generation!==serial)return;
    const key=kind+'Id',resource={...item.resource,quantityOptions:item.options},previous=index===undefined?{}:items[index];
    detail=new MobileIngredientDetail({root:dialog,resource,kind:kind+'s',source:previous,language:uiLanguage(),unit:energyUnit,catalog:nutrients,sourceLabel:resource.source?.name??(kind==='recipe'?t("recipeEditor.recipe"):t("mobileSearch.food")),applyLabel:index===undefined?(parentKind==='recipe'?t("mobileCompositeEditor.addToRecipe"):t("mobileSuggest.addToMeal")):t("mobileSuggest.applyQuantity"),
     normalize:quantity=>({[key]:id,...quantity}),
-    preview:(row,signal)=>previewLocalLibrary({kind:'meal',date,draft:{name:'Item preview',items:[row]}},signal),
+    preview:(row,signal)=>previewLocalLibrary({kind:'meal',date,draft:{name:'Item preview',items:[row]}},signal,selection),
     onApply:row=>{onApply(row,{name:resource.name,source:resource.source?.name??(kind==='recipe'?t("recipeEditor.recipe"):t("mobileSearch.food")),options:item.options});close();}});
   }catch(error){if(alive()&&generation===serial)dialog.innerHTML=`<header class="mf-header"><button type="button" data-mci-back aria-label="${e(t("mobileFoodEditor.back"))}">‹</button><h2>${e(fc("mealItemTitle"))}</h2></header><p role="alert">`+e(error.message)+'</p>';}
  }

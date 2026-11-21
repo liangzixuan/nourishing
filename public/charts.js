@@ -3,6 +3,7 @@ import {uiLanguage,t} from './app-language.js';
 import {mountChartDetail} from './chart-detail.js';
 import {mountCgmDetail} from './cgm-detail.js';
 import {escape as e} from './html.js';
+import {onBackgroundWriteStatus} from './background-writes.js';
 import {request,queueCommand} from './diary-api.js';
 import {localWorkspaceState} from './local-engine.js';
 import {chartCardMarkup,mountChartPlots,validateChartView} from './chart-presentation.js';
@@ -23,13 +24,19 @@ export function mountCharts({page,date,show,close,header,content,onChange,onRead
   finally{if(alive()&&id===serial)root.removeAttribute('aria-busy');}
  }
  function render(){
-  plots?.dispose();root.innerHTML=`<div class="mcl-actions"><button type="button" data-manage>${e(cm('manage'))} ${chartArrow}</button><button type="button" data-create>＋ ${e(cm('add'))}</button></div><div class="mcl-list">${data.cards.map(card=>chartCardMarkup(card)).join('')}</div>${data.cards.length?'':`<p class="empty">${dc('noCharts')}</p>`}`;
+  plots?.dispose();root.innerHTML=`<div class="mcl-actions"><button type="button" data-manage>${e(cm('manage'))} ${chartArrow}</button><button type="button" data-create>＋ ${e(cm('add'))}</button></div><div class="mcl-list">${data.cards.map(card=>chartCardMarkup(card)).join('')}</div>${data.cards.length||data.saved.some(chart=>chart.visible&&chart._awaitingPlot)?'':`<p class="empty">${dc('noCharts')}</p>`}`;
+  for(const chart of data.saved.filter(row=>row.visible&&row._awaitingPlot&&!data.cards.some(card=>card.chartId===row.id))){
+   const button=document.createElement('button');button.type='button';button.className='mcl-row';button.textContent=chart.name;
+   button.onclick=()=>openChartDefinition(chart,data,ui);root.querySelector('.mcl-list').append(button);
+  }
   root.querySelector('[data-create]').onclick=()=>openChartDefinition(null,data,ui);root.querySelector('[data-manage]').onclick=manage;
   root.querySelectorAll('[data-chart-open]').forEach(button=>button.onclick=()=>detail(button.dataset.chartOpen));plots=mountChartPlots(root,data);
  }
  async function detail(id){
   let view=data,card=view.cards.find(row=>row.id===id);
   if(!card){
+   const local=view.saved.find(chart=>'custom:'+chart.id===id&&chart._awaitingPlot);
+   if(local){openChartDefinition(local,view,ui);return;}
    showSheet(`${header(dc('chart'))}<p class="empty" role="status">${dc('loadingChart')}</p>`);const pending=content.querySelector('[role=status]');
    try{view=validateChartView(await request('/api/charts?'+new URLSearchParams({to:date(),card:id})));if(!alive()||!pending.isConnected)return;card=view.cards[0];}
    catch(error){if(pending.isConnected)pending.textContent=error.message;return;}
@@ -56,8 +63,9 @@ export function mountCharts({page,date,show,close,header,content,onChange,onRead
    finally{host.querySelectorAll('button,input').forEach(control=>control.disabled=false);}
   });
  }
+ const stopStatus=onBackgroundWriteStatus(event=>{if(alive()&&(event.result?.records?.charts||event.discarded))void load();});
  root.innerHTML=`<p class="empty">${e(cm('loading'))}</p>`;load();
- return {dispose(){disposed=true;serial++;plots?.dispose();disposeDetail();observer.disconnect();},reload:load,openManage(){if(alive()&&data)manage();}};
+ return {dispose(){disposed=true;stopStatus();serial++;plots?.dispose();disposeDetail();observer.disconnect();},reload:load,openManage(){if(alive()&&data)manage();}};
 }
 export function openExport({date,show,header,content}){
  show(`${header(dc('exportData'))}<form class="entry-form"><label class="field-row"><span>${t('discover.nav.report')}</span><select name="kind" aria-label="Export report">${[['daily-nutrients',dc('dailyNutrients')],['daily-energy',t('chartControls.dailyEnergy')],['diary',t('recovery.count.foods')],['exercises',t('activity.exercise')],['biometrics',t('recovery.count.biometrics')],['notes',t('recovery.count.notes')]].map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></label><label class="field-row"><span>${t('recordCleanup.from')}</span><input name="from" aria-label="Export from" type="date" required value="${e(date())}"></label><label class="field-row"><span>To</span><input name="to" aria-label="Export to" type="date" required value="${e(date())}"></label><label class="field-row" data-export-groups><span>${t('chartControls.includeGroupsShort')}</span><input type="checkbox" name="includeGroups"></label><p class="sheet-message" role="status"></p><footer class="entry-actions"><button class="primary" type="submit">${t('chartControls.download')}</button><button type="button" data-export-cancel hidden>${t('common.cancel')}</button></footer></form>`);

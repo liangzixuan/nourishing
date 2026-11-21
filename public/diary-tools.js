@@ -1,16 +1,19 @@
-import {localWorkspaceState} from './local-engine.js';
+import {mountRecipeEditor} from './recipe-editor.js';
+import {mountMealEditor} from './composite-editor.js';
+import {localWorkspaceState,localLibraryView} from './local-engine.js';
 import {createDisplayView,projectLocalDiary} from './local-diary-projection.js';
 import {prepareLocalDiaryReview} from './diary-preparation.js';
 import {request,queueCommand} from './diary-api.js';
 import {mealActionText as mealText} from './meal-action-messages.js';
 import {escape as e} from './html.js';
-import {t} from './app-language.js';
+import {t,uiLanguage} from './app-language.js';
+import {bottomNavigation} from './dashboard-source/discover-ui.js';
 import {coreText} from './core-cloud-messages.js';
 const key=(collection,id)=>JSON.stringify([collection,id]);
 const name=(collection,row)=>collection==='notes'?row.text:collection==='biometrics'?row.type:row.facts?.name??row.name;
 const groupIcons={time:'/shell-source/navigation/plus.svg',sort:'/diary-action-icons/sort.svg',previous:'/diary-action-icons/content-copy.svg',recipe:'/diary-action-icons/plus-circle-outline.svg',meal:'/diary-action-icons/plus-circle-outline.svg',quickAdd:'/diary-action-icons/pencil.svg',copy:'/diary-action-icons/content-copy.svg',paste:'/diary-action-icons/content-paste.svg',nutrition:'/diary-action-icons/format-list-bulleted.svg',delete:'/repeat-source/delete.svg'};
 const button=(label,action,disabled=false)=>`<button type="button" data-diary-tool="${action}" ${disabled?'disabled':''}>${label}</button>`;
-export function createDiaryTools({diary,date,show,close,header,content,render,onChange,onComplete,onReport,onShare,onMealAction,onNutrition}){
+export function createDiaryTools({diary,date,show,close,header,content,render,onChange,onComplete,onReport,onShare,onMealAction,onNutrition,openEntry}){
  let selecting=false,selected=new Set(),clipboard=null;
  const prepare=(input,options)=>prepareLocalDiaryReview(input,diary().revision,options);
  const rows=()=>['entries','notes','biometrics'].flatMap(collection=>(diary()?.[collection]??[]).map(row=>({collection,row})));
@@ -39,8 +42,14 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
  function time(source,title=t('diaryActions.time.set')){const records=refs(source).map(({collection,row})=>({collection,id:row.id,group:row.group??null,time:row.time??''})),revision=diary().revision;actionForm(title,`<label class="field-row"><span>${e(t('appActions.time'))}</span><input name="time" type="time"></label>`,values=>save('records.set-time',{date:date(),time:values.time,records},revision));}
  function remove(source){const records=refs(source),revision=diary().revision;confirm(coreText('tools.deleteEntries'),`<p class="diary-tools-summary">${e(coreText('tools.deleteConfirm',{count:records.length}))}</p>`,t('mobileRepeat.delete'),()=>save('records.delete',{selection:source,confirmed:true},revision));}
  async function reusable(source,kind,title=t('diaryActions.selection.'+kind)){
-  const review=await busy(title,()=>prepare({operation:kind,selection:source}));if(!review)return;
-  actionForm(title,`<label class="field-row"><span>${e(t('settings.name'))}</span><input name="name" maxlength="500" value="${e(review.name)}" required></label><ul class="diary-tools-preview">${review.items.map(item=>`<li>${e(item.name)}<small>${e(item.quantity??item.amount)} ${e(item.unit??coreText('diary.portions'))}</small></li>`).join('')}</ul>`,values=>save('selection.'+kind,{selection:review.selection,fingerprint:review.fingerprint,name:values.name,confirmed:true},review.revision,{diaryReview:review.localReview,reusable:{kind,resource:review.resource,foods:review.foods}}));
+  const result=await busy(title,()=>Promise.all([prepare({operation:kind,selection:source}),localLibraryView().then(view=>view??request('/api/library'))]));
+  if(!result)return;
+  const [selection,data]=result,mount=kind==='recipe'?mountRecipeEditor:mountMealEditor;
+  const common={data,date,show,close,content,openEntry,onSaved:()=>{reset();render();void onChange();}};
+  const imported=prepared=>mountRecipeEditor({...common,imported:prepared,draft:prepared.recipe});
+  const {id,...draft}=selection.resource;
+  mount({...common,draft:{...draft,name:''},selection,saved:{ingredients:selection.items},onImported:imported});
+
  }
 
  function select(source){selecting=true;selected=new Set(refs(source).map(({collection,row})=>key(collection,row.id)));close();render();}
@@ -78,11 +87,12 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
    {id:'select',label:coreText('diary.multiSelectAction')},
    ...(clipboard?[{id:'paste',label:t('mobileCompositeEditor.paste')}]:[]),
    {id:'copy',label:coreText('diary.copyCurrentDay')},
-   {id:'copy-previous',label:coreText('diary.copyPreviousDay')},
-   {id:'clear',label:coreText('diary.clearAllAmounts')},
-   {id:'delete',label:coreText('diary.deleteAll')}
+   {id:'copy-previous',label:coreText('diary.copyPreviousDay'),disabled:diary().completed},
+   {id:'clear',label:coreText('diary.clearAllAmounts'),disabled:diary().completed},
+   {id:'delete',label:coreText('diary.deleteAll'),disabled:diary().completed}
   ];
-  menuSheet(t('nav.diary'),items,async action=>{
+  const icons={complete:'/diary-action-icons/check-circle.svg',report:groupIcons.nutrition,share:'/diary-action-icons/share-nodes.svg','sort-all':'/diary-action-icons/sort-time.svg',select:groupIcons.recipe,copy:groupIcons.copy,paste:groupIcons.paste,'copy-previous':'/diary-action-icons/copy-previous.svg',clear:'/diary-action-icons/clear-amounts.svg',delete:groupIcons.delete};
+  menuSheet(t('nav.diary'),items.map(item=>({...item,icon:icons[item.id]})),async action=>{
    if(action==='select'){selecting=true;selected.clear();close();render();}
    else if(action==='complete'){await onComplete();close();}
    else if(action==='report'){close();onReport();}
@@ -91,7 +101,12 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
    else if(action==='copy-previous')await copyPreviousDay();
    else if(action==='paste')copy(clipboard);
    else await actions[action](all());
-  });
+  },'diary-day-menu');
+  content.insertAdjacentHTML('beforeend',`<nav class="dc-bottom diary-menu-navigation" aria-label="${e(t('discover.nav.main'))}">${bottomNavigation('diary',uiLanguage())}</nav>`);
+  content.querySelector('.diary-menu-navigation').onclick=event=>{
+   const route=event.target.closest('[data-discover]')?.dataset.discover;
+   if(route){close();document.querySelector(`.app-nav [data-discover="${route}"]`)?.click();}
+  };
  }
 
  function selectionMenu(){

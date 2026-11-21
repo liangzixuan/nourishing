@@ -36,7 +36,7 @@ import {mountRecordEditor} from './records.js';
 import {mountRepeats} from './repeats.js';
 import {mobileDiaryHeader, mobileDiaryGroups, mobileDiaryRecord, diarySymbol} from './diary-view.js';
 import {escape as e} from './html.js';
-import {request, command, clearPending, queueCommand, queuePhoto} from './diary-api.js';
+import {request, readDiaryCalendarMonth, command, clearPending, queueCommand, queuePhoto} from './diary-api.js';
 import {mountLibrary} from './library.js';
 import {mountFoodPicker} from './food-picker.js';
 import {mountNutrition} from './nutrition.js';
@@ -160,6 +160,7 @@ const diaryTools = createDiaryTools({
   onReport: () => navigate('discover','report',date),
   onShare: () => {const share=openDiaryShare(diary,{show,header,content});pickerCleanup=Object.assign(share.dispose,{back:share.back});},
   onMealAction: mealAction,
+  openEntry: (kind,id)=>edit({kind,id}),
   onNutrition: selection => openSelectionNutrition({selection,energyUnit:diary.energyUnit,show,header,content}),
 });
 
@@ -435,7 +436,7 @@ function openDiaryCalendar() {
   diaryCalendar = new MobileDiaryCalendar({
     date,
     language: uiLanguage(),
-    loadMonth: (month, signal) => request('/api/diary/calendar?month=' + month, undefined, signal),
+    loadMonth: readDiaryCalendarMonth,
     onChoose: value => {
       void switchDiaryDate(value);
     },

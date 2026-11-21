@@ -1,6 +1,7 @@
 import {dc} from './discover-cloud-messages.js';
 import {uiLanguage,t} from './app-language.js';
 import {request} from './diary-api.js';
+import {onBackgroundWriteStatus} from './background-writes.js';
 import {fastingScreenMarkup,fastingHistoryMarkup,fastingHelpLink} from './fasting-source/discover-fasting.js';
 import {escape as e,symbol,button as b} from './fasting-source/ui.js';
 import {openFastingEditor} from './fasting-source/editor.js';
@@ -47,6 +48,7 @@ export function mountFasting({page,headerRoot,onBack,onChange=async()=>{},initia
  root.addEventListener('change',event=>{if(!data||settingMutation?.blocked)return;const node=event.target;if(node.dataset.pref){const map={fastingEnabled:'enabled',fasting:'showDashboard',fastingDiary:'showDiary',askToStopFast:'askToStopFast'};changeSetting({[map[node.dataset.pref]]:node.checked});return;}if(node.matches('[data-fh-list-all]')){if(node.checked&&data.history.rows.length>100){node.checked=false;status(dc('fastSelectionLimit'));return;}data.history.rows.forEach(row=>node.checked?selected.add(row.id):selected.delete(row.id));}else if(node.dataset.fhListSelect){if(node.checked&&selected.size===100){node.checked=false;status(dc('fastSelectionLimit'));return;}node.checked?selected.add(node.dataset.fhListSelect):selected.delete(node.dataset.fhListSelect);}else return;renderHistory();},{signal:events.signal});
  function changeSetting(payload){settingMutation?.dispose();settingMutation=fastingMutation({revision:()=>data.revision,host:root,onSaved:async()=>{settingMutation.dispose();settingMutation=null;await changed();},onReload:async()=>{settingMutation.dispose();settingMutation=null;await reload();}});void settingMutation.run('fasting.settings',payload);}
  function back(event){if(!alive())return;event.preventDefault();event.stopImmediatePropagation();if(editor){editor.back();return;}if(deletion){closeDelete();return;}if(quick){closeQuick();return;}onBack?.();}
+ const stopStatus=onBackgroundWriteStatus(event=>{if(alive()&&(event.result?.fastingSchedule||event.discarded))void reload();});
  window.addEventListener('nourishing-back',back,{capture:true,signal:events.signal});renderHeader();void reload();
- return {reload,dispose(){disposed=true;sequence++;controller?.abort();events.abort();editor?.dispose();deleteMutation?.dispose();deletion?.close();quickMutation?.dispose();quick?.close();quick?.remove();settingMutation?.dispose();headerRoot?.classList.remove('fasting-heading');}};
+ return {reload,dispose(){disposed=true;stopStatus();sequence++;controller?.abort();events.abort();editor?.dispose();deleteMutation?.dispose();deletion?.close();quickMutation?.dispose();quick?.close();quick?.remove();settingMutation?.dispose();headerRoot?.classList.remove('fasting-heading');}};
 }

@@ -31,7 +31,7 @@ import {parseDiaryCalendar} from './diary-calendar.mjs';
 import {parseFontScale} from './font-scale.mjs';
 import {suggestedMealRecord} from './suggested-meal-record.mjs';
 import {catalogIdentity,catalogMeasurementBasis,sourceLocatorMatches} from './catalog-source.mjs';
-import {inspectLibraryUses} from './library-references.mjs';
+import {checkLibraryDeletion,removeLibraryItem} from './library-references.mjs';
 import {isQuantityUnit} from './quantity-units.mjs';
 import {servingTranslationFields,validateMeasureTranslations} from './measure-translations.mjs';
 import {parseFoodTranslations} from './food-translations.mjs';
@@ -152,7 +152,6 @@ function favoriteReference(s,value){
 function favoriteReferences(s,value){
   const seen=new Set();return array(value,'Favorites').map(item=>{const ref=favoriteReference(s,item),key=JSON.stringify([ref.kind,ref.id]);if(seen.has(key))fail('Favorite references must be unique.');seen.add(key);return ref;});
 }
-function removeFavorite(s,kind,id){if(s.settings.favorites!==undefined)s.settings.favorites=s.settings.favorites.filter(item=>item.kind!==kind||item.id!==id);}
 function expansionLineage(value){
   objectKeys(value,['version','id','date','parent','path','previous'],'Entry expansion history');
   if(value.version!==1)fail('Entry expansion history must use version 1.');
@@ -363,6 +362,8 @@ function saveSelectionDraft(s,p,context){
   if(s[collection].length>=maxRecordCollectionRows||s.foods.length+inline.length>maxRecordCollectionRows)fail('This save would exceed the 100000-row workspace collection format.');
   const candidate=structuredClone(s),ids=new Map();
   for(const food of inline){const input={...food};delete input.id;const saved=act(candidate,'food.save',input);ids.set(food.id,saved.id);}
+  // Capture newly chosen catalog foods after validating the original selection.
+  for(const {foodId} of items){const food=context?.catalogFoods?.get(foodId);if(food&&!ids.has(foodId))ids.set(foodId,captureCatalogFood(candidate,food).id);}
   const draft={...p.draft,[field]:items.map(item=>item.foodId&&ids.has(item.foodId)?{...item,foodId:ids.get(item.foodId)}:item)};
   const saved=act(candidate,`${p.kind}.save`,{...draft,catalogSources:p.catalogSources,barcodeSources:p.barcodeSources},context);Object.assign(s,candidate);return saved;
 }
@@ -634,9 +635,7 @@ export function act(s,type,p={},context={}) {
     }
     case 'library.retirement':applyLibraryRetirement(s,p);break;
     case 'food.delete':case 'recipe.delete':case 'meal.delete': {
-      const kind=type.split('.')[0],{collection,references}=inspectLibraryUses(s,{kind,id:p.id},{allowReadOnly:true});
-      if(['entries','recipes','meals','repeats'].some(key=>references[key].length))fail(`This ${kind} is in use. Remove its diary, recipe, meal and repeat references first.`);
-      remove(s,collection,p.id);removeFavorite(s,kind,p.id);break;
+      const kind=type.split('.')[0];checkLibraryDeletion(s,kind,p.id);removeLibraryItem(s,kind,p.id);break;
     }
     case 'biometric.add': addDiaryRecord(s,'biometrics',parseBiometricRecord(p));break;
     case 'biometric.delete':removeDiaryRecords(s,'biometrics',[p.id]);break;
@@ -714,7 +713,7 @@ export function act(s,type,p={},context={}) {
       s.settings=next;break;
     }
     case 'fast.start':case 'fast.record':case 'fast.end':case 'fast.update':case 'fast.delete':applyFastAction(s,type,p,new Date());break;
-    case 'chart.save':applyChartPreference(s,{type,payload:p});break;
+    case 'chart.save':return {records:{charts:[applyChartPreference(s,{type,payload:p})]}};
     case 'cycle.overlay':{objectKeys(p,['chart','enabled'],'Cycle overlay');if(typeof p.chart!=='string')fail('Choose a supported chart.');s.settings.cycleChartOverlays=updateCycleChartOverlays(s.settings.cycleChartOverlays,{[p.chart]:p.enabled});break;}
     case 'chart.cycle-overlay':applyChartPreference(s,{type,payload:p});break;
     case 'chart.visibility':{objectKeys(p,['id','visible'],'Chart visibility');if(typeof p.visible!=='boolean')fail('Chart visibility must be true or false.');lookup(s,'charts',exactId(p.id)).visible=p.visible;break;}

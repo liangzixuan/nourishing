@@ -15,7 +15,9 @@ export function scheduledFastMarkup(schedules,language='en',timeZone){
   const duration=item.goalHours===null?t('openEnded'):t('hours',{count:number(item.goalHours,language)}),repeat=scheduleRepeatLabel(item,language);
   const end=item.nextStart&&item.goalHours!==null?new Date(Date.parse(item.nextStart)+item.goalHours*3600000).toISOString():null;
   const timestamp=(value,kind)=>b('<time data-schedule-time="'+kind+'" datetime="'+e(value)+'">'+e(fastingTimeLabel(value,language,timeZone))+'</time>','edit-schedule','dc-scheduled-time','data-id="'+e(item.id)+'" data-schedule-field="'+kind+'" aria-label="'+e(t(kind+'Time')+' '+fastingTimeLabel(value,language,timeZone))+'"');
-  return '<section class="dc-scheduled-item"><p><strong>'+e(item.label)+'</strong> '+b(e(t('edit')),'edit-schedule','dc-link','data-id="'+e(item.id)+'"')+'</p><p>'+e(duration)+' - '+e(repeat)+(!item.enabled?' · '+e(t('paused')):'')+'</p><div class="dc-scheduled-times"><div>'+e(t('startTime'))+'<strong>'+(item.nextStart?timestamp(item.nextStart,'start'):e(t('noStart')))+'</strong></div><div>'+e(t('endTime'))+'<strong>'+(item.goalHours===null?e(t('openEnded')):end?timestamp(end,'end'):e(t('noEnd')))+'</strong></div></div></section>';
+  const displayStart=item._pending?'<time datetime="'+e(item.startDate+'T'+item.time)+'">'+e(item.startDate+' '+item.time+' '+item.timeZone)+'</time>':item.nextStart?timestamp(item.nextStart,'start'):e(t('noStart'));
+  const displayEnd=item.goalHours===null?e(t('openEnded')):end?timestamp(end,'end'):e(t('noEnd'));
+  return '<section class="dc-scheduled-item"><p><strong>'+e(item.label)+'</strong> '+b(e(t('edit')),'edit-schedule','dc-link','data-id="'+e(item.id)+'"')+'</p><p>'+e(duration)+' - '+e(repeat)+(!item.enabled?' · '+e(t('paused')):'')+'</p><div class="dc-scheduled-times"><div>'+e(t('startTime'))+'<strong>'+displayStart+'</strong></div>'+(item._pending?'':'<div>'+e(t('endTime'))+'<strong>'+displayEnd+'</strong></div>')+'</div></section>';
  }).join('')+(rows.length?'':b(e(t('schedule')),'schedule-fast','dc-link'))+'</div>';
 }
 export function fastingHelpLink(){

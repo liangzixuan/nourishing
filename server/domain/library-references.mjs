@@ -13,3 +13,13 @@ export function inspectLibraryUses(state,input,{allowReadOnly=false}={}){
  const fingerprint=sha256Hex(JSON.stringify({kind:input.kind,item,references,dependencies:collectResourceDependencies(state,[{[input.kind+'Id']:item.id},...recipes.map(row=>({recipeId:row.id})),...meals.map(row=>({mealId:row.id})),...entries])}));
  return {item,collection,references,view:{kind:input.kind,id:item.id,name:item.name,retired,counts,fingerprint}};
 }
+
+export function checkLibraryDeletion(state,kind,id){
+ const {references}=inspectLibraryUses(state,{kind,id},{allowReadOnly:true});
+ if(['entries','recipes','meals','repeats'].some(key=>references[key].length))invalid(`This ${kind} is in use. Remove its diary, recipe, meal and repeat references first.`);
+}
+export function removeLibraryItem(state,kind,id){
+ const collection=collections.get(kind);
+ state[collection]=state[collection].filter(item=>item.id!==id);
+ if(state.settings.favorites!==undefined)state.settings.favorites=state.settings.favorites.filter(item=>item.kind!==kind||item.id!==id);
+}

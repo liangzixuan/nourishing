@@ -6,6 +6,8 @@ import {resolve} from 'node:path';
 import {chromium} from 'playwright-core';
 import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import {initialState,act} from '../server/domain/workspace.mjs';
+import {fastingView} from '../server/fasting.mjs';
+import {chartSurfaceView} from '../server/dashboard-pinned-charts.mjs';
 import {digest} from '../server/data-codec.mjs';
 import {offlineSnapshot} from '../server/offline.mjs';
 import {createWorkspaceStore} from '../server/workspace-store.mjs';
@@ -37,6 +39,9 @@ async function realQueueFixture(state,run,{losePath,loseType,rejectWrite}={}){
    res.setHeader('Content-Type','application/json');
    if(req.url==='/api/account')return res.end(JSON.stringify({id:owner}));
    if(req.url==='/api/offline')return res.end(JSON.stringify(await store.offlineSnapshot()));
+   const url=new URL(req.url,'http://localhost'),clock={now:new Date(date+'T12:00:00Z'),timeZone:'UTC'};
+   if(url.pathname==='/api/fasting')return res.end(JSON.stringify(fastingView(fixture.state(),clock)));
+   if(url.pathname==='/api/charts')return res.end(JSON.stringify(chartSurfaceView(fixture.state(),Object.fromEntries(url.searchParams),clock)));
    if(req.url.startsWith('/api/diary'))return res.end(JSON.stringify({revision:digest(fixture.state())}));
    let raw='';for await(const chunk of req)raw+=chunk;const body=JSON.parse(raw);sent.push({path:req.url,body});
    const rejected=rejectWrite?.(body);if(rejected)throw rejected;
@@ -425,6 +430,34 @@ test('captured pending entries survive identity acknowledgement but reject later
 });
 
 
+test('an edited selection from a pending copied inline food survives a restart and a lost recipe reply',async()=>{
+ const state=initialState(),sourceDate='2026-11-19',date='2026-11-20';
+ act(state,'entry.add',{name:'Sauce',date:sourceDate,amount:1,nutrients:{calories:20},group:'Lunch'});
+ await realQueueFixture(state,async({page,fixture,flush,initialize,sent})=>{
+  await page.evaluate(async({sourceDate,date})=>{
+   const {queueCommand}=await import('/diary-api.js'),{prepareLocalDiaryReview}=await import('/diary-preparation.js');
+   const {saveLocalLibrary,previewLocalLibrary}=await import('/library-local.js');
+   const revision='a'.repeat(64);
+   const copy=await prepareLocalDiaryReview({operation:'copy',selection:{date:sourceDate,scope:'day'},destination:{date,group:null}},revision);
+   await queueCommand(revision,'records.copy',{selection:copy.selection,destination:copy.destination,fingerprint:copy.fingerprint,confirmed:true},{projection:{diaryReview:copy.localReview}});
+   const selection=await prepareLocalDiaryReview({operation:'recipe',selection:{date,scope:'day'}},revision);
+   const draft={name:'Sauce batch',ingredients:[{foodId:selection.items[0].foodId,amount:3}],servings:2,instructions:'Stir.'};
+   await previewLocalLibrary({kind:'recipe',date,draft},undefined,selection);
+   const saved=await saveLocalLibrary('recipe',draft,{revision,selection});
+   await queueCommand(revision,'entry.add',{date,group:'Lunch',recipeId:saved.item.id,amount:1});
+  },{sourceDate,date});
+  await page.reload();await initialize();await flush();
+  assert.equal(fixture.state().recipes.length,1);
+  await page.reload();await initialize();await flush();
+  const result=fixture.state(),recipe=result.recipes[0];
+  assert.equal(recipe.servings,2);assert.equal(recipe.instructions,'Stir.');
+  assert.equal(recipe.ingredients[0].amount,3);assert.equal(recipe.ingredients[0].foodId,result.foods[0].id);
+  assert.equal(result.foods[0].nutrients.calories,20);assert.equal(result.entries.at(-1).recipeId,recipe.id);
+  const saves=sent.filter(row=>row.body.type==='selection.recipe');
+  assert.equal(saves.length,2);assert.deepEqual(saves[0].body,saves[1].body);
+ },{losePath:'/api/workspace/command',loseType:'selection.recipe'});
+});
+
 test('an open reusable editor follows an earlier recipe acknowledgement before Save',async()=>{
  const state=initialState(),date='2026-11-20';state.foods=[{id:'rice',name:'Rice',grams:100,nutrients:{calories:100}}];act(state,'entry.add',{foodId:'rice',date,amount:1});
  await realQueueFixture(state,async({page,flush,fixture})=>{
@@ -507,4 +540,48 @@ test('offline meal expansion follows a pending meal and parent across restart an
   const copy=await page.evaluate(async()=>(await import('/offline-store.js')).readWriteCopy());
   assert.deepEqual(copy.pending,[]);assert.equal(copy.recordIds[pending.child],saved[0].id);
  },{losePath:'/api/workspace/command',loseType:'entry.expand'});
+});
+
+for(const lost of ['chart.save','fasting.schedule.save'])test('offline chart and fasting editors reconcile after restart and a lost '+lost+' reply',async()=>{
+ await realQueueFixture(initialState(),async({page,fixture,flush,initialize,sent,date})=>{
+  async function mount(surface){
+   await page.evaluate(async({surface,date})=>{
+    window.surface?.dispose();document.body.innerHTML='<main></main><dialog><div></div></dialog>';
+    const page=document.querySelector('main'),sheet=document.querySelector('dialog'),content=sheet.firstChild;
+    const ui={page,date:()=>date,content,header:title=>'<h2>'+title+'</h2>',show:html=>{content.innerHTML=html;sheet.showModal();},close:()=>{sheet.close();content.replaceChildren();}};
+    window.surface=surface==='fasting'?(await import('/fasting.js')).mountFasting(ui):(await import('/charts.js')).mountCharts(ui);
+   },{surface,date});
+  }
+  const pending=()=>page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy()).pending);
+  await mount('fasting');await page.locator('.dc-fast-footer button').click();
+  await page.locator('.fasting-editor [name=label]').fill('Evening fast');
+  await page.locator('.fasting-editor [type=submit]').click();
+  await page.locator('.fasting-editor').waitFor({state:'detached'});
+  await page.locator('[data-fast-section=scheduled] summary').click();
+  await page.getByText('Evening fast',{exact:true}).waitFor();
+  await mount('charts');
+  for(const name of ['Morning weight','Evening weight']){
+   await page.locator('[data-create]').click();await page.getByLabel('Chart Name',{exact:true}).fill(name);
+   await page.locator('[data-mce-save]').click();await page.locator('.mobile-chart-editor').waitFor({state:'detached'});
+  }
+  const queued=await pending();assert.equal(queued.length,3);assert.equal(sent.length,0);
+  const chartIds=queued.slice(1).map(row=>row.command.payload.id);assert.equal(new Set(chartIds).size,2);
+  await page.reload();await initialize();
+  await page.route('**/api/charts?**',route=>route.abort());await page.route('**/api/fasting?**',route=>route.abort());
+  await mount('charts');for(const id of chartIds)await page.locator('[data-chart-open="custom:'+id+'"]').waitFor();
+  await mount('fasting');await page.locator('[data-fast-section=scheduled] summary').click();
+  await page.getByText('Evening fast',{exact:true}).waitFor();await page.getByText(date+' 12:02 UTC',{exact:true}).waitFor();
+  assert.equal(await page.locator('.dc-scheduled-times > div').count(),1);
+  await flush();assert.equal((await pending()).length,lost==='chart.save'?2:3);assert.equal(fixture.state().fastingPlan.schedules.length,1);
+  await page.reload();await initialize();await flush();assert.equal((await pending()).length,0);
+  assert.equal(fixture.state().fastingPlan.schedules.length,1);const attempts=sent.filter(item=>item.body.type===lost);assert.deepEqual(attempts[0],attempts[1]);
+  assert.deepEqual(fixture.state().charts.map(chart=>chart.id),chartIds);
+  const cached=await page.evaluate(async date=>{
+   const {request}=await import('/diary-api.js'),{localWorkspaceState}=await import('/local-engine.js');
+   return {fast:(await request('/api/fasting?limit=25')).schedules,charts:(await request('/api/charts?to='+date)).saved,stateCharts:(await localWorkspaceState()).charts};
+  },date);
+  const schedule=fixture.state().fastingPlan.schedules[0];
+  assert.deepEqual(cached.fast,[{...schedule,nextStart:date+'T12:02:00Z'}]);
+  assert.deepEqual(cached.charts,fixture.state().charts);assert.deepEqual(cached.stateCharts,fixture.state().charts);
+ },{losePath:'/api/workspace/command',loseType:lost});
 });

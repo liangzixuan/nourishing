@@ -1,3 +1,4 @@
+import {storeChartDefinition} from './chart-definition-store.mjs';
 import {parseMobileChartSettings,mobileChartTemplates} from './mobile-chart-settings.mjs';
 import {parseChart} from './chart-metrics.mjs';
 const fail=message=>{throw Object.assign(Error(message),{status:400,code:400,publicMessage:message});};
@@ -23,11 +24,8 @@ export function applyChartPreference(state,action){
  const p=action.payload;
  if(action.type==='chart.display'){applyChartDisplayCommand(state,action);return;}
  if(action.type==='chart.save'){
-  const chart=parseChart(p),index=state.charts.findIndex(row=>row.id===chart.id),previous=state.charts[index],prefs=state.settings.mobileCharts?.custom?.[chart.id];
-  const changed=previous?['primary','secondary'].filter(axis=>JSON.stringify(previous[axis])!==JSON.stringify(chart[axis])):[];
-  if(index<0)state.charts.push(chart);else state.charts[index]=chart;
-  if(prefs)for(const axis of changed)delete prefs[axis+'Unit'];
-  return;
+  const chart=parseChart(p);chart.id??=crypto.randomUUID();
+  return storeChartDefinition(state,chart);
  }
  if(action.type==='chart.cycle-overlay'){
   if(!object(p)||Object.keys(p).some(key=>!['id','enabled'].includes(key))||typeof p.id!=='string'||typeof p.enabled!=='boolean')fail('Choose a chart and whether to show cycle phases.');

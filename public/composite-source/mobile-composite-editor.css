@@ -49,3 +49,13 @@ dialog.mci-dialog{width:100%;max-width:700px;height:100dvh;max-height:100dvh;mar
 .mce-stage.mce-review{padding-inline:0;}.mce-stage.mce-review>h2{font-weight:700;}.mce-review [data-mce-quantity]{margin:0 0 16px;}.mce-review .mrv-serving,.mce-review .mrv-serving:hover{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:16px 14px;background:var(--paper);color:inherit;border:0;border-radius:12px;font:inherit;text-align:left;}.mrv-serving>strong{margin-right:auto;min-width:0;}.mrv-value{min-width:0;text-align:right;overflow-wrap:anywhere;}.mrv-arrow{flex:none;line-height:1;}.mrv-arrow svg{display:block;width:24px;height:24px;}.anchored-menu.mrv-menu{background:var(--paper);color:var(--ink);border:0;border-radius:12px;max-width:calc(100vw - 16px);font:400 1rem/1.4 Lato,sans-serif;}.anchored-menu.mrv-menu button{padding:14px;min-height:48px;overflow-wrap:anywhere;white-space:normal;}.anchored-menu.mrv-menu button[aria-checked=true]{font-weight:700;}.anchored-menu.mrv-menu button:focus-visible{background:#383b50;outline:2px solid var(--green);outline-offset:-2px;}@media(hover:hover){.anchored-menu.mrv-menu button:hover{background:#383b50;}}@media(max-width:360px){.mrv-serving{flex-wrap:wrap;gap:8px;}.mrv-serving>strong{flex:1 0 calc(100% - 40px);}.mrv-value{order:2;text-align:left;flex:1 0 100%;}}
 
 @media(max-width:360px){.mce-footer[data-review] .mce-navigation{flex-direction:column;gap:8px;}.mce-footer[data-review] .mce-navigation button{overflow-wrap:normal;word-break:normal;}}
+
+.mobile-composite-editor .meal-editor>.sheet-header{grid-template-columns:minmax(80px,1fr) minmax(0,auto) minmax(80px,1fr)}
+.mobile-composite-editor .meal-editor>.sheet-header>.icon-button{justify-self:start}
+.mce-header-actions{display:flex;justify-content:flex-end}
+.mce-header-actions button{background:none;color:var(--ink);border:0;min-width:40px;min-height:44px;font:inherit;font-size:1.3rem;cursor:pointer}
+.mce-header-actions [data-mce-help]{font-size:0}
+.mce-header-actions [data-mce-help]::before{content:'';display:inline-block;width:22px;height:22px;background:currentColor;mask:url('/report-mobile-source/score-icons/help-circle-outline.svg') center/contain no-repeat}
+.mce-header-actions [data-mce-help]:focus-visible{outline:2px solid var(--green)}
+.mce-reorder{align-self:flex-end;margin:6px 12px;min-height:36px;background:none;border:0;color:var(--green);font:inherit;cursor:pointer}
+.mce-stage .mce-import{width:66%;border-radius:999px;background:var(--mobile-button-bg);color:var(--mobile-button-ink);min-height:38px}

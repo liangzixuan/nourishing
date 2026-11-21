@@ -32,6 +32,14 @@ export function prepareQueuedDiaryReview(state,row){
  const input=structuredClone(review.input);if(input.selection)delete input.selection.revision;
  assertDiaryReviewGuard(review.guard,diaryReviewGuard(state,input));
  const result=prepareDiaryReview(state,input);
+ if(row.command.payload.draft&&row.projection.reusable){
+  // Inline food IDs derive from diary entry IDs. A preceding receipt can change
+  // the entry ID while the editor is open or its save waits offline.
+  const byEntry=new Map(result.foods.map(food=>[food.source.entryId,food.id]));
+  const ids=Object.fromEntries(row.projection.reusable.foods.map(food=>[food.id,byEntry.get(food.source.entryId)]));
+  remapWriteReferences(row.command.payload.draft,ids);
+  remapWriteReferences(row.transport.body.payload.draft,ids);
+ }
  for(const key of ['selection','fingerprint'])if(result[key]!==undefined){row.command.payload[key]=structuredClone(result[key]);row.transport.body.payload[key]=structuredClone(result[key]);}
  review.prepared=true;
 }

@@ -1,4 +1,5 @@
 import {prepareRecordSelection,prepareRecordCopy,referencedRecordFacts,captureRecordSelection,previewRecordCopy,previewClearAmounts,prepareSelectionDraft} from './diary-selection.mjs';
+import {libraryIngredientRows} from './library-item-view.mjs';
 import {normalizeCompositeDraft} from './composite-draft.mjs';
 import {fail,objectKeys} from './workspace-validation.mjs';
 import {assertDiaryDaysEditable} from './diary-day-status.mjs';
@@ -18,7 +19,7 @@ export function prepareDiaryReview(state,input){
  case 'recipe':case 'meal':{
   const source=prepareSelectionDraft(state,{kind:input.operation,selection:input.selection});
   const context={...state,foods:[...state.foods,...source.inlineFoods]},resource=normalizeCompositeDraft(context,source.kind,source.draft);
-  return {selection:source.selection,fingerprint:source.fingerprint,name:source.draft.name,selectedCount:source.selectedCount,warningCodes:source.warningCodes,resource,foods:source.inlineFoods,items:(source.draft.items??source.draft.ingredients).map(item=>{const kind=item.recipeId?'recipe':'food',resource=context[kind+'s'].find(row=>row.id===item[kind+'Id']);return {...item,name:resource?.name??'Food'};})};
+  return {selection:source.selection,fingerprint:source.fingerprint,name:source.draft.name,selectedCount:source.selectedCount,warningCodes:source.warningCodes,resource,foods:source.inlineFoods,items:libraryIngredientRows(context,source.draft.items??source.draft.ingredients)};
  }
  default:fail('Choose a diary action.');
  }

@@ -1,7 +1,8 @@
 import {remapWriteReferences,writeReceiptIdentities,remapDiaryReviewIdentities} from './write-identities.js';
-import {applyWriteToState} from './write-projection.js';
+import {applyWriteToState,projectSavedDefinition} from './write-projection.js';
 import {projectLocalDiary} from './local-diary-projection.js';
 import {offlineFailure} from './offline-errors.js';
+import {acknowledgedSnapshotList} from './snapshot-queue.js';
 const DB='nourishing-private-offline',channel=typeof BroadcastChannel==='function'?new BroadcastChannel('nourishing-offline'):null;
 let opening;
 
@@ -37,7 +38,12 @@ export async function persistBackgroundWrite(expected,{path,body,projection={}})
   const prior=next.pending.find(row=>row.command.operationId===body.requestId);
   if(prior){if(JSON.stringify(prior.transport)!==JSON.stringify({path,body}))throw Error('This save has changed.');return prior;}
   const row={command:{ownerId:active.ownerId,generation:next.snapshot?.identity.generation??null,operationId:body.requestId,type:body.type??(path==='/api/snapshots/save'?'snapshot.add':path==='/api/note-photos/save'?'note.photo.save':'photo.log'),payload:body.payload??body},transport:{path,body:structuredClone(body)},preview:{},projection:structuredClone(projection),status:'pending',error:null,createdAt:new Date().toISOString()};
-  next.pending.push(row);next.revision++;accounts.put(next);return row;
+  // A photo deleted before its first send has no server record to remove.
+  // Once attempted, keep both writes so an uncertain receipt resolves first.
+  const draft=body.type==='snapshot.delete'&&next.pending.find(item=>item.command.type==='snapshot.add'&&item.command.operationId===body.payload.id&&!item.attempted);
+  if(draft)next.pending=next.pending.filter(item=>item!==draft&&!(item.command.type==='snapshot.update'&&item.command.payload.id===body.payload.id));
+  else next.pending.push(row);
+  next.revision++;accounts.put(next);return row;
  });
 }
 
@@ -64,11 +70,25 @@ export async function acknowledgeBackgroundWrite(expected,id,result){
   for(const [path,value]of Object.entries(row.projection?.responses??{})){
    responses.put({path,value:remapWriteReferences(structuredClone(value),identities),savedAt:0});
   }
+  if(row.command.type.startsWith('snapshot.')){
+   const path='/api/snapshots',cached=responses.get(path);
+   cached.onsuccess=()=>{
+    const base=cached.result?.value??{items:copy.snapshot?.state?.progressSnapshots??[]};
+    responses.put({path,value:acknowledgedSnapshotList(base,row,result),savedAt:0});
+   };
+  }
   // Keep already-open diary screens current while the canonical refresh runs.
-  if(copy.snapshot?.state){
+  const definition=['chart.save','fasting.schedule.save'].includes(row.command.type);
+  if(copy.snapshot?.state||definition){
    const read=responses.getAll();read.onsuccess=()=>{
-    for(const cached of read.result)if(/^\/api\/diary(?:\?|$)/.test(cached.path)&&cached.value?.date){
+    for(const cached of read.result){
+     if(definition){
+      const value=projectSavedDefinition(cached.path,cached.value,row,result);
+      if(value!==cached.value)responses.put({...cached,value:{...value,revision:result.revision},savedAt:0});
+     }
+     if(copy.snapshot?.state&&/^\/api\/diary(?:\?|$)/.test(cached.path)&&cached.value?.date){
      try{responses.put({...cached,value:projectLocalDiary(copy.snapshot.state,cached.value.date,{...cached.value,revision:result.revision}),savedAt:0});}catch{/* A missing local resource is refreshed from the server. */}
+     }
     }
    };
   }

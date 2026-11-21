@@ -2,13 +2,14 @@ import {uiLanguage,t} from './app-language.js';
 import {pushBackHandler} from './back-history.js';
 import {fc,foodActionLabel} from './food-cloud-messages.js';
 import {mountRecipeEditor} from './recipe-editor.js';
+import {deleteLocalLibraryItem} from './library-local.js';
 import {mountMealEditor} from './composite-editor.js';
 import {mountCustomFoodEditor} from './custom-food-editor.js';
 import {openLibrarySharing} from './library-sharing.js';
 import {openFoodPrint} from './library-print.js';
 import {openFavorites,setFavorite} from './library-extras.js';
 import {LibraryRetirement} from './library-tools.js';
-import {request,command} from './diary-api.js';
+import {request} from './diary-api.js';
 import {escape as e} from './html.js';
 import {mobileFoodsHeader,mobileFoodsHome} from './foods-source/mobile-foods-home.js';
 import {mobileLibraryHeader,mobileLibraryCollection,MobileLibrarySheet,MobileLibraryActions} from './foods-source/mobile-library.js';
@@ -50,7 +51,7 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
  function renderItems(){const fragment=document.createElement('template');fragment.innerHTML=collectionMarkup();for(const selector of ['.ml-list','.ml-tools'])page.querySelector(selector).replaceWith(fragment.content.querySelector(selector));bindCollection();}
  const retirement=new LibraryRetirement({onChange:async()=>{await onChange();await reload();}});
  function retireItem(item){return retirement.open({kind:item.kind,id:item.id,onCommitted:({retired})=>{if(retired)item.retired=true;else delete item.retired;}});}
- function retireEditor(itemKind,resource){const button=content.querySelector('[data-library-retire]');return retirement.open({kind:itemKind,id:resource.id,origin:button??content.querySelector('[data-recipe-menu],[data-meal-menu]')??document.activeElement,onCommitted:({retired})=>{if(retired)resource.retired=true;else delete resource.retired;if(button?.isConnected){button.dataset.foodAction=retired?'restore':'retire';button.textContent=foodActionLabel(button.dataset.foodAction);}}});}
+ function retireEditor(itemKind,resource){const button=content.querySelector('[data-library-retire]');return retirement.open({kind:itemKind,id:resource.id,origin:button??document.activeElement,onCommitted:({retired})=>{if(retired)resource.retired=true;else delete resource.retired;if(button?.isConnected){button.dataset.foodAction=retired?'restore':'retire';button.textContent=foodActionLabel(button.dataset.foodAction);}}});}
  function utilities(action){extrasCleanup?.();const options={show,header,content,close,date,openEntry,onChange:async()=>{await onChange();await reload();}};if(action==='favorites')extrasCleanup=openFavorites(options);if(action==='label')editor('food',null,undefined,{focusNutrition:true});if(action==='import')extrasCleanup=openLibrarySharing(options);}
  function libraryOptions(){optionsSheet?.close(false);optionsSheet=new MobileLibrarySheet({label:t("mobileLibrary.options"),items:[{id:'recent',label:t("mobileLibrary.recent"),selected:sort==='recent'},{id:'alphabetical',label:t("mobileLibrary.alphabetical"),selected:sort==='alphabetical'},{id:'retired',label:retired?fc("showActive"):fc("showRetired")},{id:'favorites',label:t("mobileSearch.favorites")},...(kind==='food'?[{id:'label',label:fc("nutritionLabel")}]:[]),{id:'import',label:fc("importShared")}],onChoose:choice=>{if(disposed)return;if(['recent','alphabetical'].includes(choice)){sort=choice;renderItems();}else if(choice==='retired'){retired=!retired;renderItems();}else utilities(choice);}});}
  function itemActions(tab,id){const item=data?.items.find(item=>item.kind+'s'===tab&&item.id===id);if(!item)return;optionsSheet?.close(false);optionsSheet=new MobileLibrarySheet({label:item.name,items:[{id:'edit',label:t("mobileNutrientTargets.edit")},...(!item.retired?[{id:'log',label:foodActionLabel('log')},{id:'favorite',label:item.favorite?fc("removeFavorite"):fc("addFavorite")}]:[]),{id:'share',label:foodActionLabel('share')},{id:'retirement',label:foodActionLabel(item.retired?'restore':'retire')}],onChoose:async choice=>{if(disposed)return;if(choice==='retirement')return retireItem(item);if(choice==='edit')return openItem(item.kind,id);if(choice==='log')return openEntry(item.kind,id);if(choice==='share'){extrasCleanup?.();extrasCleanup=openLibrarySharing({kind:item.kind,id,show,header,content,close,onChange});return;}if(choice==='favorite')try{await setFavorite({kind:item.kind,id,enabled:!item.favorite,revision:data.revision,onChange:async()=>{await onChange();await reload();}});}catch(error){if(!disposed){const status=document.createElement('p');status.className='sheet-message';status.setAttribute('role','status');status.textContent=error.message;page.append(status);}}}});}
@@ -72,14 +73,24 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
 
  function editor(itemKind,saved,draft,importOptions={}){
   foodEditor?.dispose();mealEditor?.dispose();recipeEditor?.dispose();const resource=saved?.resource;
+  const savedChange=async()=>{await reload();void Promise.resolve(onChange()).catch(()=>{});};
+  function confirmDelete(kept){
+   const title=itemKind==='food'?fc('deleteFood'):fc('deleteKind',{kind:labels()[itemKind]});
+   show(header(title)+`<p class="sheet-message">${e(t('libraryLifecycle.deletePrompt',{name:resource.name}))}</p><div class="entry-actions"><button type="button" data-cancel-delete>${e(t('common.cancel'))}</button><button type="button" class="danger" data-confirm-delete>${e(t('mobileRepeat.delete'))}</button></div><p role="status" class="sheet-message"></p>`);
+   const cancel=content.querySelector('[data-cancel-delete]'),confirm=content.querySelector('[data-confirm-delete]'),status=content.querySelector('[role=status]');
+   cancel.onclick=()=>editor(itemKind,saved,kept);
+   confirm.onclick=async()=>{
+    cancel.disabled=confirm.disabled=true;
+    try{await deleteLocalLibraryItem(itemKind,resource.id,data.revision);await savedChange();if(confirm.isConnected)close();}
+    catch(error){status.textContent=error.message;cancel.disabled=confirm.disabled=false;}
+   };
+  }
   if(itemKind==='food'){
-   const savedChange=async()=>{await reload();void Promise.resolve(onChange()).catch(()=>{});};
-   const action=(label,kept)=>{const back=()=>openItem('food',resource.id,kept);if(label==='share')extrasCleanup=openLibrarySharing({kind:'food',id:resource.id,show,header,content,close,onBack:back,onChange:savedChange});else if(label==='print')extrasCleanup=openFoodPrint({id:resource.id,show,header,content,onBack:back});else if(['retire','restore'].includes(label))return retireEditor('food',resource);else if(label==='log')openEntry('food',resource.id);else if(label==='delete'){show(header(fc("deleteFood"))+'<p class="sheet-message">'+e(t('libraryLifecycle.deletePrompt',{name:resource.name}))+`</p><div class="entry-actions"><button type="button" data-cancel-delete>${e(t("common.cancel"))}</button><button type="button" class="danger" data-confirm-delete>${e(t("mobileRepeat.delete"))}</button></div><p role="status" class="sheet-message"></p>`);content.querySelector('[data-cancel-delete]').onclick=()=>editor('food',saved,kept);content.querySelector('[data-confirm-delete]').onclick=async event=>{event.target.disabled=true;try{await command(data.revision,'food.delete',{id:resource.id});await savedChange();close();}catch(error){content.querySelector('[role=status]').textContent=error.message;event.target.disabled=false;}};}};
+   const action=(label,kept)=>{const back=()=>openItem('food',resource.id,kept);if(label==='share')extrasCleanup=openLibrarySharing({kind:'food',id:resource.id,show,header,content,close,onBack:back,onChange:savedChange});else if(label==='print')extrasCleanup=openFoodPrint({id:resource.id,show,header,content,onBack:back});else if(['retire','restore'].includes(label))return retireEditor('food',resource);else if(label==='log')openEntry('food',resource.id);else if(label==='delete')confirmDelete(kept);};
    foodEditor=mountCustomFoodEditor({...importOptions,resource,data,draft,show,close,content,date,openEntry,onSaved:savedChange,onAction:action});return;
   }
   if(itemKind==='meal'||itemKind==='recipe'){
-   const savedChange=async()=>{await reload();void Promise.resolve(onChange()).catch(()=>{});};
-   const action=(label,kept)=>{const back=()=>openItem(itemKind,resource.id,kept);if(label==='share')extrasCleanup=openLibrarySharing({kind:itemKind,id:resource.id,show,header,content,close,onBack:back,onChange:savedChange});else if(['retire','restore'].includes(label))return retireEditor(itemKind,resource);else if(label==='log')openEntry(itemKind,resource.id);else if(label==='delete'){show(header(fc('deleteKind',{kind:labels()[itemKind]}))+'<p class="sheet-message">'+e(t('libraryLifecycle.deletePrompt',{name:resource.name}))+`</p><div class="entry-actions"><button type="button" data-cancel-delete>${e(t("common.cancel"))}</button><button type="button" class="danger" data-confirm-delete>${e(t("mobileRepeat.delete"))}</button></div><p role="status" class="sheet-message"></p>`);content.querySelector('[data-cancel-delete]').onclick=()=>editor(itemKind,saved,kept);content.querySelector('[data-confirm-delete]').onclick=async event=>{event.target.disabled=true;try{await command(data.revision,itemKind+'.delete',{id:resource.id});await savedChange();close();}catch(error){content.querySelector('[role=status]').textContent=error.message;event.target.disabled=false;}};}};
+   const action=(label,kept)=>{if(label==='delete')confirmDelete(kept);};
    const editorMount=itemKind==='recipe'?mountRecipeEditor:mountMealEditor;const mounted=editorMount({...importOptions,onImported:prepared=>editor('recipe',null,prepared.recipe,{imported:prepared}),saved,data,draft,show,close,content,date,onSaved:savedChange,onAction:action,openEntry});if(itemKind==='recipe')recipeEditor=mounted;else mealEditor=mounted;return;
   }
  }
