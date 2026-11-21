@@ -8,6 +8,7 @@ import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import {waitForOutboxIdle} from './fixtures/browser-outbox.mjs';
 import {initialState} from '../server/domain/workspace.mjs';
 import {createDataRepository} from '../server/data-repository.mjs';
+import {digest} from '../server/data-codec.mjs';
 import {createWorkspaceStore} from '../server/workspace-store.mjs';
 import {diaryStoreFixture} from './fixtures/diary-store.mjs';
 import {displayView} from '../server/display-settings.mjs';
@@ -52,5 +53,15 @@ test('Water controls save locally, survive restart and lost replies, and preserv
   if(!await target.locator('[data-mnt-field=custom]').isChecked()){await target.locator('[data-mnt-field=custom]').check();await page.locator('[data-mnt-ready]').waitFor();}
   await target.locator('[data-mnt-field=dailyTarget]').fill('3000');await target.locator('[data-mnt-field=dailyTarget]').dispatchEvent('change');await waitForOutboxIdle(page,()=>fixture.state().settings.targets.water===3000);assert.equal(fixture.state().settings.waterSettings.goalMl,2000);
   await page.keyboard.press('Escape');await page.locator('#sheet').waitFor({state:'hidden'});await page.locator('[data-action=complete-day]').click();await waitForOutboxIdle(page,()=>fixture.state().settings.completedDays.includes(date));await menu();assert.equal(await page.getByRole('menuitem',{name:'Add Glass',exact:true}).isDisabled(),true);assert.equal(await page.getByRole('menuitem',{name:'Add Custom Amount',exact:true}).isDisabled(),true);assert.equal(await page.getByRole('menuitem',{name:'Water Settings',exact:true}).isEnabled(),true);await page.keyboard.press('Escape');assert.equal(await page.getByRole('button',{name:'Remove Last Water Entry'}).isDisabled(),true);assert.equal(fixture.state().biometrics.length,2);assert.deepEqual(errors,[]);
- }catch(error){console.error('Water failure state',JSON.stringify({showWater:fixture.state().settings.showWater,water:fixture.state().settings.waterSettings}));mkdirSync('.local/water',{recursive:true});await page?.screenshot({path:'.local/water/failure.png'}).catch(()=>{});throw error;}finally{release?.();await browser?.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
+ }catch(error){mkdirSync('.local/water',{recursive:true});await page?.screenshot({path:'.local/water/failure.png'}).catch(()=>{});throw error;}finally{release?.();await browser?.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
+});
+
+test('overlapping delivery of one Water save commits one measurement and one receipt',async()=>{
+ const state=initialState(),fixture=diaryStoreFixture(state),store=createWorkspaceStore(fixture.db,'fixture');
+ const command={requestId:crypto.randomUUID(),revision:digest(state),type:'water.add',payload:{date:'2026-11-20',amount:250}};
+ const deliveries=await Promise.allSettled([store.command(command),store.command(command)]);
+ assert.equal(fixture.state().biometrics.length,1);
+ assert.equal(fixture.table('command_receipts').size,1);
+ const committed=deliveries.find(row=>row.status==='fulfilled');
+ assert.ok(committed);assert.deepEqual(await store.command(command),committed.value);
 });
