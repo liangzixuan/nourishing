@@ -54,10 +54,13 @@ export async function localLibraryItem({kind,id,entry}){
  try{return {...libraryItem(view.state,kind,resource,savedEntry),_local:true};}catch{return null;}
 }
 
-export async function localPreviewDiaryItem(payload) {
+export async function localPreviewDiaryItem(payload,reviewedFood) {
   if (!payload || typeof payload !== 'object') return null;
-  const state = await readLocalState();
+  let state = await readLocalState();
   if (!state) return null;
+  if(reviewedFood&&payload.foodId===reviewedFood.id&&!state.foods.some(row=>row.id===reviewedFood.id)){
+    state={...state,foods:[...state.foods,reviewedFood]};
+  }
   try {
     let next;
     if (payload.id) {

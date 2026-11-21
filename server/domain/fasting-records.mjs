@@ -1,4 +1,3 @@
-import {randomUUID} from 'node:crypto';
 import {Temporal} from '@js-temporal/polyfill';
 import {parseFastingRepeat} from './fasting-schedule-contract.mjs';
 import {parseScheduledFast} from './fasting-schedules.mjs';
@@ -46,7 +45,7 @@ const actionFields={
   'fast.update':['id','start','end','goalHours','note','label','repeat'],
   'fast.delete':['id']
 };
-export function applyFastAction(state,type,payload,now){
+export function applyFastAction(state,type,payload,now,createId=()=>crypto.randomUUID()){
   if(!has(actionFields,type))fail('Unknown fasting action.');
   fields(payload,actionFields[type]);
   if(!(now instanceof Date)||!Number.isFinite(now.getTime()))fail('Fasting actions need a valid caller clock.');
@@ -59,7 +58,8 @@ export function applyFastAction(state,type,payload,now){
   if(type==='fast.start'||type==='fast.record'){
     if(records.length>=100000)fail('The fasting collection is full.');
     const start=has(payload,'start')?payload.start:type==='fast.start'?now.toISOString():undefined;
-    record=parseFastRecord({id:randomUUID(),start,end:type==='fast.start'?null:payload.end,goalHours:has(payload,'goalHours')?payload.goalHours:16,...(has(payload,'note')?{note:payload.note}:{}),...(has(payload,'label')?{label:payload.label}:{})});
+    record=parseFastRecord({id:createId(),start,end:type==='fast.start'?null:payload.end,goalHours:has(payload,'goalHours')?payload.goalHours:16,...(has(payload,'note')?{note:payload.note}:{}),...(has(payload,'label')?{label:payload.label}:{})});
+    if(records.some(row=>row.id===record.id))fail('This fast ID already exists.',409);
     if(type==='fast.record'&&record.end===null)fail('A past fast needs an end timestamp.');
   }else{
     if(type==='fast.end'&&!has(payload,'id'))index=records.findIndex(row=>row.end===null);

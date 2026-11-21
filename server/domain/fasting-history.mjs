@@ -1,8 +1,8 @@
-import {createHash} from 'node:crypto';
+import {sha256Hex} from './content-digest.mjs';
 import {parseFastRecord,applyFastAction,compareFastInstants,fastDurationNanoseconds} from './fasting-records.mjs';
 
 const fail=(message,status=400)=>{throw Object.assign(Error(message),{status});};
-const digest=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
+const digest=value=>sha256Hex(JSON.stringify(value));
 function fields(value,required,optional=[]){if(!value||typeof value!=='object'||Array.isArray(value)||required.some(key=>!Object.hasOwn(value,key))||Object.keys(value).some(key=>![...required,...optional].includes(key)))fail('Supply the required fasting history fields only.');}
 function id(value){if(typeof value!=='string'||!value.trim()||value.length>100)fail('Choose a valid fast ID.');return value;}
 function hash(value){if(typeof value!=='string'||!/^[a-f0-9]{64}$/.test(value))fail('Reload the fasting history before reviewing changes.');return value;}

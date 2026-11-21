@@ -1,3 +1,4 @@
+import {projectFastingResponse} from './fasting-source/device.js';
 import {remapWriteReferences,writeReceiptIdentities,remapDiaryReviewIdentities} from './write-identities.js';
 import {applyWriteToState,projectSavedDefinition} from './write-projection.js';
 import {projectLocalDiary} from './local-diary-projection.js';
@@ -16,7 +17,7 @@ function assertTicket(active,copy,expected,{revision=false,unlocked=true}={}){if
 export async function readWriteCopy(){return transact(({active,copy})=>copy?{...copy,ticket:ticket(active,copy)}:null,false);}
 export async function offlineCopy(){const copy=await readWriteCopy();return copy?.snapshot?copy:null;}
 export async function activateOfflineAccount(ownerId,{sessionContext=null}={}){if(typeof ownerId!=='string'||!ownerId)throw offlineFailure('signInFirst');return transact(({active,meta,responses})=>{if(active.ownerId!==ownerId){active={ownerId,epoch:crypto.randomUUID()};resetResponses(active,meta,responses);}active.cacheLocked=false;active.sessionContext=/^[a-f0-9]{64}$/.test(sessionContext??'')?sessionContext:null;meta.put(active,'active');return {...ticket(active,null),...cacheTicket(active)};});}
-export async function saveOfflineSnapshot(snapshot,expected){return transact(({active,copy,accounts,meta,responses})=>{assertTicket(active,copy,expected,{unlocked:false});if(snapshot?.version!==1||snapshot.identity?.ownerId!==active.ownerId||typeof snapshot.identity.generation!=='string'||!snapshot.identity.generation)throw offlineFailure('otherSnapshot');if(copy?.snapshot?.identity.generation===snapshot.identity.generation&&(copy.pending.some(row=>row.transport)||expected.revision!==undefined&&copy.revision!==expected.revision))return {...copy,ticket:ticket(active,copy),snapshotRefreshed:false};if(copy?.snapshot&&copy.snapshot.identity.generation!==snapshot.identity.generation){resetResponses(active,meta,responses);meta.put(active,'active');}const pending=copy?.pending??[];for(const row of pending){if(row.command.generation==null)row.command.generation=snapshot.identity.generation;else if(row.command.generation!==snapshot.identity.generation){row.status='conflict';row.error='The diary was restored. Review this change.';row.messageKey='accountCloud.offlineError.restored';}}const next={ownerId:active.ownerId,snapshot:structuredClone(snapshot),pending,recordIds:copy?.recordIds??{},locked:false,revision:(copy?.revision??0)+1};accounts.put(next);return {...next,ticket:ticket(active,next),snapshotRefreshed:true};});}
+export async function saveOfflineSnapshot(snapshot,expected){return transact(({active,copy,accounts,meta,responses})=>{assertTicket(active,copy,expected,{unlocked:false});if(snapshot?.version!==1||snapshot.identity?.ownerId!==active.ownerId||typeof snapshot.identity.generation!=='string'||!snapshot.identity.generation)throw offlineFailure('otherSnapshot');if(copy?.snapshot?.identity.generation===snapshot.identity.generation&&(copy.pending.some(row=>row.transport)||expected.revision!==undefined&&copy.revision!==expected.revision))return {...copy,ticket:ticket(active,copy),snapshotRefreshed:false};if(copy?.snapshot&&copy.snapshot.identity.generation!==snapshot.identity.generation){resetResponses(active,meta,responses);meta.put(active,'active');}const pending=copy?.pending??[];for(const row of pending){if(row.command.generation==null)row.command.generation=snapshot.identity.generation;else if(row.command.generation!==snapshot.identity.generation){row.status='conflict';row.error='The diary was restored. Review this change.';row.messageKey='accountCloud.offlineError.restored';}}const next={...(copy?.hideMealAdjustmentNotice?{hideMealAdjustmentNotice:true}:{}),...(copy?.fastingContext&&copy.snapshot?.identity.generation===snapshot.identity.generation?{fastingContext:copy.fastingContext}:{}),ownerId:active.ownerId,snapshot:structuredClone(snapshot),pending,recordIds:copy?.recordIds??{},locked:false,revision:(copy?.revision??0)+1};accounts.put(next);return {...next,ticket:ticket(active,next),snapshotRefreshed:true};});}
 export async function changeOfflineCopy(expected,change,{strict=false}={}){return transact(({active,copy,accounts})=>{assertTicket(active,copy,expected,{revision:strict});if(!copy)throw offlineFailure('keepFirst');const next=change(structuredClone(copy));if(!next)return;next.revision=copy.revision+1;accounts.put(next);return {...next,ticket:ticket(active,next)};});}
 export async function lockOfflineAccount(expected){return transact(({active,copy,accounts,meta,responses})=>{if(expected)assertTicket(active,copy,expected,{unlocked:false});active.epoch=crypto.randomUUID();active.cacheLocked=true;resetResponses(active,meta,responses);meta.put(active,'active');if(copy)accounts.put({...copy,locked:true,revision:copy.revision+1});});}
 export async function clearOfflineAccount({discardPending=false}={}){return transact(({active,copy,accounts,meta,copies,responses})=>{const pendingCount=copies.reduce((sum,row)=>sum+row.pending.length,0);if(pendingCount&&!discardPending)throw Object.assign(offlineFailure('syncBeforeSignout'),{pendingCount});accounts.clear();responses.clear();meta.delete('response-lru');meta.put({ownerId:null,epoch:crypto.randomUUID(),cacheRevision:0,cacheLocked:true},'active');},true,true);}
@@ -43,6 +44,8 @@ export async function persistBackgroundWrite(expected,{path,body,projection={}})
   const draft=body.type==='snapshot.delete'&&next.pending.find(item=>item.command.type==='snapshot.add'&&item.command.operationId===body.payload.id&&!item.attempted);
   if(draft)next.pending=next.pending.filter(item=>item!==draft&&!(item.command.type==='snapshot.update'&&item.command.payload.id===body.payload.id));
   else next.pending.push(row);
+  if(body.type==='entry.ingredients.adjust'&&projection.hideMealAdjustmentNotice)next.hideMealAdjustmentNotice=true;
+  if(projection.fastingContext)next.fastingContext=projection.fastingContext;
   next.revision++;accounts.put(next);return row;
  });
 }
@@ -78,10 +81,14 @@ export async function acknowledgeBackgroundWrite(expected,id,result){
    };
   }
   // Keep already-open diary screens current while the canonical refresh runs.
-  const definition=['chart.save','fasting.schedule.save'].includes(row.command.type);
-  if(copy.snapshot?.state||definition){
+  const definition=['chart.save','chart.delete','fasting.schedule.save'].includes(row.command.type);
+  if(copy.snapshot?.state||definition||result.fastingChange){
    const read=responses.getAll();read.onsuccess=()=>{
     for(const cached of read.result){
+     if(result.fastingChange){
+      const value=projectFastingResponse(cached.path,cached.value,copy.snapshot?.state,[result.fastingChange],result.revision);
+      if(value!==cached.value)responses.put({...cached,value:{...value,revision:result.revision},savedAt:0});
+     }
      if(definition){
       const value=projectSavedDefinition(cached.path,cached.value,row,result);
       if(value!==cached.value)responses.put({...cached,value:{...value,revision:result.revision},savedAt:0});

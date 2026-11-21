@@ -9,7 +9,7 @@ import {chromium} from 'playwright-core';
 import {initialState} from '../server/domain/workspace.mjs';
 import {dashboardView} from '../server/dashboard-view.mjs';
 import {reportView} from '../server/nutrition-views.mjs';
-import {coachView,coachAnswer} from '../server/coach-view.mjs';
+import {coachView,coachAnswer,applyCoachCommand} from '../server/coach-view.mjs';
 
 test('Discover opens Coach and follows its selected date into Report and Suggest Food',async()=>{
  const state=initialState(),day='2026-11-15',selected='2026-11-14',context={now:new Date(day+'T18:00:00Z'),timeZone:'UTC'},requests=[],reportRanges=[];
@@ -21,6 +21,7 @@ test('Discover opens Coach and follows its selected date into Report and Suggest
    requests.push(path);res.setHeader('Content-Type','application/json');
    if(path==='/api/dashboard')return res.end(JSON.stringify(dashboardView(state,{date:day},context)));
    if(path==='/api/nutrition-report'){const options=Object.fromEntries(url.searchParams);reportRanges.push({from:options.from,to:options.to});for(const key of ['includeToday','includeSupplements'])options[key]=options[key]==='true';return res.end(JSON.stringify(reportView(state,options,context)));}
+   if(path==='/api/workspace/command'){let raw='';for await(const chunk of req)raw+=chunk;return res.end(JSON.stringify(applyCoachCommand(state,JSON.parse(raw)).result));}
    if(path==='/api/coach/preferences')return res.end(JSON.stringify(coachView(state)));
    if(path==='/api/coach/answer'){let raw='';for await(const chunk of req)raw+=chunk;return res.end(JSON.stringify(coachAnswer(state,JSON.parse(raw))));}
    throw Error('Unexpected API '+path);
@@ -31,10 +32,16 @@ test('Discover opens Coach and follows its selected date into Report and Suggest
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));let browser;
  try{
   browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915}});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',error=>errors.push(error.message));
-  await page.goto(`http://127.0.0.1:${server.address().port}`);await page.locator('[data-discover=coach]').click();await page.getByRole('heading',{name:'Energy balance'}).waitFor();
+  await page.goto(`http://127.0.0.1:${server.address().port}`);await page.locator('[data-discover=coach]').click();
+  await page.locator('[data-coach-preferences]').waitFor();await page.getByRole('button',{name:'Strength',exact:true}).click();
+  await page.locator('[data-coach-preferences] [type=submit]').click();assert.equal(await page.locator('[data-coach-ack] [type=submit]').isDisabled(),true);
+  await page.locator('[data-coach-back]').click();assert.equal(await page.getByRole('button',{name:'Strength',exact:true}).getAttribute('aria-pressed'),'true');
+  assert.equal(requests.includes('/api/coach/answer'),false);assert.equal(requests.includes('/api/workspace/command'),false);
+  await page.locator('[data-coach-preferences] [type=submit]').click();await page.locator('[name=understood]').check();await page.locator('[data-coach-ack] [type=submit]').click();
+  await page.getByRole('heading',{name:'Energy balance'}).waitFor();
   await page.locator('aside input[type=date]').fill(selected);await page.getByRole('button',{name:'Show records',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('[data-coach-report]').disabled);await page.getByRole('button',{name:'View full report',exact:true}).click();
   await page.locator('[data-tab=report][aria-current=page]').waitFor();await page.locator('.mobile-report-toolbar').waitFor();assert.deepEqual(reportRanges.at(-1),{from:selected,to:selected});assert.equal(await page.locator('aside').textContent(),'');
   await page.locator('[data-tab=dashboard]').click();await page.locator('[data-discover=coach]').click();await page.getByRole('heading',{name:'Energy balance'}).waitFor();await page.locator('aside input[type=date]').fill(selected);await page.getByRole('button',{name:'Show records',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('[data-coach-suggest]').disabled);await page.getByRole('button',{name:'Suggest food',exact:true}).click();
-  assert.equal(await page.locator('body').getAttribute('data-suggest'),selected);assert.equal(await page.locator('aside').textContent(),'');assert.deepEqual(errors,[]);assert.ok(requests.every(path=>['/api/dashboard','/api/nutrition-report','/api/coach/preferences','/api/coach/answer'].includes(path)));await page.evaluate(()=>window.mount.dispose());
+  assert.equal(await page.locator('body').getAttribute('data-suggest'),selected);assert.equal(await page.locator('aside').textContent(),'');assert.equal(state.settings.coachPreferences.goals,'Strength');assert.equal(requests.filter(path=>path==='/api/workspace/command').length,1);assert.deepEqual(errors,[]);assert.ok(requests.every(path=>['/api/workspace/command','/api/dashboard','/api/nutrition-report','/api/coach/preferences','/api/coach/answer'].includes(path)));await page.evaluate(()=>window.mount.dispose());
  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
 });

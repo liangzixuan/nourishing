@@ -62,3 +62,5 @@ export {libraryItem,recipePreview,libraryCollectionView} from './domain/library-
 export {prepareDiaryRecordUpdate,manuallyEditableRecord,sourceRecordReason} from './domain/diary-record-update.mjs';
 
 export {storeChartDefinition} from './domain/chart-definition-store.mjs';
+
+export {applyFastingChange,applyFastingCommand,fastingView} from './fasting.mjs';

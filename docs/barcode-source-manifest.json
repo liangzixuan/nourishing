@@ -5,10 +5,11 @@
     "sourceEncoding": "UTF-8",
     "outputEncoding": "UTF-8",
     "transforms": [
-      "Normalize CRLF line endings to LF"
+      "Normalize CRLF line endings to LF",
+      "Keep the camera view visible for manual entry. Submit from the numeric footer and retain the image picker under scanner help."
     ],
     "sourceSha256": "adc2b5049e402583ac219287a2def2dd6772f9a2bb56aa072189346f108eb6ae",
-    "outputSha256": "adc2b5049e402583ac219287a2def2dd6772f9a2bb56aa072189346f108eb6ae"
+    "outputSha256": "996c0e5fe67dffb09afba7647de5f715824a5b52a484a8d3e2e40050a031656f"
   },
   {
     "source": "public/message-formatter.js",

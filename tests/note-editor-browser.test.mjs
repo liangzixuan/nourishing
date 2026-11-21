@@ -32,7 +32,7 @@ test('offline note photo selection survives cancel, restart, queued edits, accou
   await page.goto('http://127.0.0.1:'+server.address().port);await page.waitForFunction(()=>window.ready);
   const open=()=>page.locator('#open').click(),text=page.getByRole('textbox',{name:'Note',exact:true}),save=page.locator('.note-editor [type=submit]');
   const choose=async()=>{await page.locator('[data-note-gallery]').setInputFiles({name:'note.png',mimeType:'image/png',buffer:bytes});await page.waitForFunction(()=>document.querySelector('.note-photo-preview img')?.naturalWidth===20);};
-  await open();await text.waitFor();
+  await open();await text.waitFor();assert.equal(await save.isDisabled(),true);assert.equal(await page.locator('.note-editor input[type=date]').count(),0);
   await page.evaluate(async urls=>{const cache=await caches.open('note-test-shell');await cache.addAll(urls);await navigator.serviceWorker.register('/fixture-sw.js');await navigator.serviceWorker.ready;},[...shell]);
   await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
   await context.setOffline(true);await choose();await page.keyboard.press('Escape');

@@ -60,6 +60,7 @@ export function mountMore({
   let screen = 'home';
   let query = '';
   let scroll = 0;
+  const parents = [];
   let backHandle = null;
 
   const events = new AbortController();
@@ -90,6 +91,7 @@ export function mountMore({
     backHandle = pushBackHandler(() => {
       if (!alive() || screen === 'home') return;
       if (child?.back?.()) return 'keep';
+      if (returnToParent()) return 'keep';
       backHandle = null;
       renderHome();
     });
@@ -109,6 +111,7 @@ export function mountMore({
 
   function renderHome() {
     reset();
+    parents.length = 0;
     screen = 'home';
     document.body.classList.remove('more-destination');
     headerRoot.innerHTML = moreHomeHeader(identity, query);
@@ -159,13 +162,27 @@ export function mountMore({
     window.scrollTo(0, 0);
   }
 
+  function returnToParent() {
+    const parent = parents.pop();
+    if (!parent) return false;
+    navigate(parent);
+    return true;
+  }
+
   function open(id) {
+    const previous = screen;
+    navigate(id);
+    if (screen !== previous && previous !== 'home') parents.push(previous);
+  }
+
+  function navigate(id) {
     if (screen === 'home') scroll = window.scrollY;
-    if (id === 'account') {
-      return childView(id, t('mobileMore.account'), host =>
+    if (id === 'account' || id === 'account-data') {
+      return childView(id, id==='account'?t('mobileMore.account'):coreText('more.accountData'), host =>
         mountAccount({
           root: host,
           embedded: true,
+          section: id,
           onIdentity: value => {
             setIdentity(value.name);
             onAccount(value);
@@ -174,6 +191,7 @@ export function mountMore({
       );
     }
     if (id === 'profile') return childView(id, t('mobileMore.profile'), host => mountProfile({...ui, page: host, headerRoot, onExit: exitToHome}));
+    if (id === 'notifications') return childView(id,coreText('more.notifications'),host=>mountReminders({root:host,notifications:true,...ui}));
     if (id === 'reminders') return childView(id, t('nav.reminders'), host => mountReminders({root: host, ...ui}));
     if (id === 'glucose') return void openGlucose(ui);
     if (id === 'cycle') return void openCycle(ui);
@@ -210,6 +228,17 @@ export function mountMore({
         group(row('backup', coreText('more.backup')) + row('reminders', t('nav.reminders'))),
       );
     }
+    if (id === 'licenses') {
+      const notices = [
+        ['Chart.js','/dashboard-source/chart-LICENSE.md'],
+        ['i18next','/dashboard-source/vendor/i18next/26.7.1/LICENSE'],
+        ['Material Symbols','/discover-assets/MaterialSymbols-LICENSE.txt'],
+        ['Pictogrammers','/more-source/icons/LICENSE'],
+        ['Temporal','/fasting-source/vendor/temporal.LICENSE'],
+        ['JSBI','/fasting-source/vendor/jsbi.LICENSE'],
+      ];
+      return section(id,coreText('more.licenses'),group(notices.map(([name,path])=>link(name,path,true)).join('')));
+    }
     if (id === 'about') {
       return section(
         id,
@@ -219,7 +248,7 @@ export function mountMore({
           '</p><button type="button" class="mm-update-btn" data-more-check-update>' +
           e(coreText('more.checkUpdates')) +
           '</button><p class="mm-update-status" role="status" aria-live="polite"></p></div>' +
-          group(row('account', t('mobileMore.account')) + row('backup', coreText('more.yourData'))),
+          group(row('licenses',coreText('more.licenses')) + row('account', t('mobileMore.account')) + row('backup', coreText('more.yourData'))),
       );
     }
   }
@@ -266,7 +295,7 @@ export function mountMore({
 
   function stepBack() {
     if (screen === 'home') return false;
-    if (child?.back?.()) return true;
+    if (child?.back?.() || returnToParent()) return true;
     exitToHome();
     return true;
   }
@@ -306,7 +335,7 @@ export function mountMore({
     open,
     refreshLanguage() {
       if (screen === 'home') renderHome();
-      else open(screen);
+      else navigate(screen);
     },
     back() {
       return stepBack();

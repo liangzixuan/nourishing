@@ -13,6 +13,7 @@ export function remapWriteReferences(value, identities) {
 export function writeReceiptIdentities(row,result){
  const operation=row.command.operationId,type=row.command.type;
  const entries=result?.records?.entries?.map(item=>item.id)??result?.entryIds??[];
+ if(type==='barcode.log')return entries.length?{[operation]:entries[0]}:{};
  if(['food.save','recipe.save','meal.save','library.edit'].includes(type)){
   const id=result?.item?.id??result?.id;
   return id&&(type!=='library.edit'||row.command.payload.mode==='preserve')?{[operation]:id}:{};
@@ -23,6 +24,15 @@ export function writeReceiptIdentities(row,result){
   return Object.fromEntries([...(id?[[operation,id]]:[]),...(result.records?.foods??[]).slice(0,row.projection?.reusable?.foods?.length).map((food,index)=>[`${operation}-food-${index}`,food.id])]);
  }
  if(type==='records.copy')return Object.fromEntries(Object.entries(result?.records??{}).flatMap(([collection,rows])=>rows.map((item,index)=>[`${operation}-${collection}-${index}`,item.id])));
+ if(type==='food.multi.add'){
+  if(row.command.payload.destination.kind==='recipe'){
+   const recipe=result?.records?.recipes?.[0];
+   if(!recipe?.id||recipe.id!==result.item?.id)throw Error('Missing multi-add recipe receipt.');
+   return {[operation]:recipe.id};
+  }
+  if(!result?.records?.entries||!entries.length||entries.length!==row.projection.entries.length||entries.some(id=>typeof id!=='string'||!id)||new Set(entries).size!==entries.length)throw Error('Incomplete multi-add entry receipt.');
+  return Object.fromEntries(entries.map((id,index)=>[operation+'-'+index,id]));
+ }
  if(['photo.log','meal.log','entry.expand'].includes(type)||type==='entry.add'&&row.command.payload.mealId&&result?.records?.entries?.some(item=>item.expandedFrom?.parent?.mealId))return Object.fromEntries(entries.map((id,index)=>[`${operation}-${index}`,id]));
  if(['entry.add','water.add','snapshot.add','repeat.save','note.add','note.photo.save','exercise.add'].includes(type)){
   const id=entries[0]??result?.records?.biometrics?.[0]?.id??result?.records?.notes?.[0]?.id??result?.item?.id??result?.id;

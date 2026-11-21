@@ -260,7 +260,7 @@ class RecordEditorController {
     if (this.deletePrompt) return this.closeDeletePrompt();
     const activeMenu = this.panel?.menu ?? this.panel?.base?.menu;
     if (activeMenu) return activeMenu.close();
-    if (this.envelope || this.record) return this.exit();
+    if (this.envelope || this.record || this.args.initialSelection) return this.exit();
     if (this.kind === 'biometric' && this.panel?.back()) return;
     if (this.returnTo) {
       const next = this.returnTo;

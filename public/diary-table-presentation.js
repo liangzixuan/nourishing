@@ -30,6 +30,7 @@ export function renderDiaryTableAmount(row,{label=false,energyUnit='kcal',langua
 /** Table cells consume canonical facts. The table policy never changes recorded intake. */
 export function diaryEntryAmount(entry,table,{energyUnit='kcal',language='en'}={}){
  const id=table?.policy.summaryNutrient??'calories';
+ if(id==='none')return '';
  if(isExerciseEntry(entry)){
   if(id!=='calories')return `<span class="diary-table-na">${esc(coreText('notApplicable',{},language))}</span>`;
   const {calories}=exerciseEntryFacts(entry),value=calories===null?'—':amount(displayValue(-calories,'kcal',energyUnit),language)+' '+energyUnit;

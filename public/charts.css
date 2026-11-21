@@ -8,3 +8,9 @@
 .mcl-target-line{border-top:2px dashed var(--ink)}.mcl-fast-line{background:var(--mcl-fasting);height:10px!important}.mcl-cgm-empty{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:8px;pointer-events:none}.mcl-cgm-empty span{color:var(--muted)}
 body{--mcl-fasting:rgba(80,182,190,.16);--mcl-grid:color-mix(in srgb,var(--ink) 45%,transparent)}.chart-canvas canvas{width:100%;height:100%}.chart-source{margin-top:12px;font-size:.85rem}.chart-source p{margin:8px 0}.chart-page{padding:0 16px 16px}.chart-visibility{appearance:none;width:48px;height:28px;border:0;border-radius:20px;background:var(--muted);position:relative;cursor:pointer}.chart-visibility:before{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--ink);transition:transform .15s}.chart-visibility:checked{background:var(--green)}.chart-visibility:checked:before{transform:translateX(20px)}.chart-visibility:disabled{opacity:.5}.chart-visibility:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 @media(max-width:360px){.mcl-actions{gap:4px}.mcl-actions button{font-size:.85rem;gap:4px;padding:4px}.mcl-row{gap:8px;padding:14px 12px}}
+
+#sheet:has([data-chart-manager]){inset:0;margin:0;width:100%;max-width:none;height:100dvh;max-height:none;border:0;border-radius:0;padding:0;background:var(--bg)}
+#sheet:has([data-chart-manager]) .sheet-header{position:sticky;top:0;z-index:2;background:var(--paper)}
+[data-chart-manager]:has(.app-nav){padding-bottom:calc(var(--dc-nav-space,80px) + 16px)}
+[data-chart-manager] .app-nav{position:fixed;bottom:0;inset-inline:0;max-width:none}
+.chart-visibility:checked{background:var(--accent)}

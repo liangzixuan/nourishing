@@ -58,13 +58,13 @@ export const diaryTableNutrients=nutrientDisplayOptions;
 export const defaultDiaryTablePolicy=Object.freeze({version:1,summaryNutrient:'calories',groupSubtotals:'calories'});
 export function parseDiaryTablePolicy(value){
   if(value===undefined||value===null)return null;
-  if(typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==3||!['version','summaryNutrient','groupSubtotals'].every(key=>Object.hasOwn(value,key))||value.version!==1||!options.has(value.summaryNutrient)||!['none','calories','macros','summary'].includes(value.groupSubtotals))fail('Choose a known summary nutrient and a valid group subtotal mode.');
+  if(typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==3||!['version','summaryNutrient','groupSubtotals'].every(key=>Object.hasOwn(value,key))||value.version!==1||(value.summaryNutrient!=='none'&&!options.has(value.summaryNutrient))||!['none','calories','macros','summary'].includes(value.groupSubtotals))fail('Choose a known summary nutrient and a valid group subtotal mode.');
   return {version:1,summaryNutrient:value.summaryNutrient,groupSubtotals:value.groupSubtotals};
 }
 
 /** Project nutrient facts already aggregated by the nutrition owner. */
 export function projectDiaryTable({policy,day,groups}){
   const effective=parseDiaryTablePolicy(policy)??defaultDiaryTablePolicy;
-  const ids=effective.groupSubtotals==='none'?[]:effective.groupSubtotals==='calories'?['calories']:effective.groupSubtotals==='summary'?[effective.summaryNutrient]:['calories','protein',day.carbohydrate?.definition?.mode==='net'?NET_CARBOHYDRATE_TARGET_ID:'carbs','fat'];
-  return {version:1,policy:effective,summary:projectDiaryTarget({...day,id:effective.summaryNutrient}),groups:groups.map(group=>({name:group.name,rows:ids.map(id=>projectDiaryTarget({...group,id}))}))};
+  const ids=effective.groupSubtotals==='none'?[]:effective.groupSubtotals==='calories'?['calories']:effective.groupSubtotals==='summary'?(effective.summaryNutrient==='none'?[]:[effective.summaryNutrient]):['calories','protein',day.carbohydrate?.definition?.mode==='net'?NET_CARBOHYDRATE_TARGET_ID:'carbs','fat'];
+  return {version:1,policy:effective,summary:effective.summaryNutrient==='none'?null:projectDiaryTarget({...day,id:effective.summaryNutrient}),groups:groups.map(group=>({name:group.name,rows:ids.map(id=>projectDiaryTarget({...group,id}))}))};
 }

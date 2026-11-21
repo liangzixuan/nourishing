@@ -20,9 +20,10 @@ const language=state=>Object.hasOwn(coachMessages,state.settings?.appLanguage)?s
 const invalid=message=>{throw Object.assign(Error(message),{code:400,status:400,publicMessage:message});};
 function project(work){try{return work();}catch(error){if([400,409].includes(error.status))throw Object.assign(error,{code:error.status,publicMessage:error.message});throw error;}}
 
-export function coachView(state){return project(()=>{const view=coachPreferencesView(state);return {revision:digest(state),preferencesRevision:view.revision,preferences:view.preferences,choices:{goals,dietaryPreferences:diets},energyUnit:parseEnergyUnit(state.settings.energyUnit??'kcal'),language:language(state)};});}
+export function coachView(state){return project(()=>{const view=coachPreferencesView(state);return {revision:digest(state),setupComplete:state.settings.coachStarted===true||Boolean(state.settings.coachPreferences),preferencesRevision:view.revision,preferences:view.preferences,choices:{goals,dietaryPreferences:diets},energyUnit:parseEnergyUnit(state.settings.energyUnit??'kcal'),language:language(state)};});}
 export const coachCommandFields={'coach.preferences':['preferences','revision']};
-export function applyCoachCommand(state,action){return action.type==='coach.preferences'?{handled:true,result:changeCoachPreferences(state,action.payload)}:{handled:false};}
+export function applyCoachCommand(state,action){if(!Object.hasOwn(coachCommandFields,action.type))return {handled:false};
+ const result=changeCoachPreferences(state,action.payload);state.settings.coachStarted=true;return {handled:true,result};}
 export function coachAnswer(state,input){return project(()=>{
  if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(key=>!['date','question','preferencesRevision'].includes(key)))invalid('Choose a diary date and question.');
  const date=calendarDate(input.date);

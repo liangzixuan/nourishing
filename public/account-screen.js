@@ -1,3 +1,5 @@
+import {coreText} from './core-cloud-messages.js';
+import {moreRow} from './more-source/menu-view.js';
 import {accountDisplay,accountDisplayKey,cacheAccountDisplay} from './account-display.js';
 import {cachedRead} from './device-requests.js';
 import {request as diaryRequest} from './diary-api.js';
@@ -12,7 +14,7 @@ import {rememberOfflineAccount,lockCurrentOffline,leaveOfflineAccount} from './o
 import {disconnectCurrentPush} from './reminders.js';
 import {installButton,refreshInstallButton} from './pwa.js';
 import {createAccountDeletion} from './account-deletion.js';
-export function mountAccount({root,embedded=false,onIdentity=()=>{}}){
+export function mountAccount({root,embedded=false,section,onIdentity=()=>{}}){
 let disposed=false,profileSerial=0;const lifetime=new AbortController();
 const alive=()=>!disposed&&root.isConnected;
 root.classList.add('account-surface');
@@ -68,8 +70,13 @@ async function profile(knownUser=null){
   if(!alive()||serial!==profileSerial)return;
   onIdentity(accountDisplay(user));
   const display=await (embedded?diaryRequest('/api/display',undefined,lifetime.signal):api('/api/display',null,'GET')).catch(()=>null);if(!alive()||serial!==profileSerial)return;if(display?.settings?.appLanguage)applyAppLanguage(display.settings.appLanguage);applyTheme(display?.settings?.theme);applyFontPreferences(display?.settings);
+  if(section==='account-data'){
+   root.innerHTML=`<section class="mm-group">${moreRow('backup',coreText('more.backup'))}<button type="button" class="mm-row delete-account" id="delete-account">${m('accountCloud.deleteAccount')}</button></section>`;
+   root.querySelector('#delete-account').onclick=deletion.open;
+   return;
+  }
   const zone=user.profile.timeZone==='UTC'?Intl.DateTimeFormat().resolvedOptions().timeZone:user.profile.timeZone;
-  root.innerHTML=`${embedded?'':`<h1>${m("mobileMore.account")}</h1>`}${installButton()}<section class="card account-identity"><button type="button" class="account-row" data-account-edit="name" aria-label="${m("accountCloud.editName")}"><span>${m("settings.name")}</span><span class="muted">${escape(user.name)}</span><span aria-hidden="true">&#8250;</span></button><button type="button" class="account-row" data-account-edit="email" aria-label="${m("accountCloud.changeEmail")}"><span>${m("clients.email")}</span><span class="muted">${escape(user.email)}</span><span aria-hidden="true">&#8250;</span></button><button type="button" class="account-row" data-account-edit="password" aria-label="${m("accountCloud.changePassword")}"><span>${m("accountCloud.password")}</span><span class="muted">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</span><span aria-hidden="true">&#8250;</span></button><p class="account-verification">${user.emailVerified?m("accountCloud.emailVerified"):m("accountCloud.emailNotVerified")}</p>${user.emailVerified?'':`<button class="secondary" id="verify">${m("accountCloud.sendVerificationEmail")}</button>`}</section><form><label>${m("reminders.zone")}<input name="timeZone" value="${escape(zone)}" required maxlength="100"></label><label>${m("mobileWeightGoal.units")}<select name="units"><option value="metric">${m("accountCloud.metricUnits")}</option><option value="imperial">${m("accountCloud.imperial")}</option></select></label><button>${m("accountCloud.saveSettings")}</button></form>${notice()}<button class="secondary signout" id="signout">${m("accountCloud.signOut")}</button><button type="button" class="delete-account" id="delete-account">${m("accountCloud.deleteAccount")}</button>`;
+  root.innerHTML=`${embedded?'':`<h1>${m("mobileMore.account")}</h1>`}${installButton()}<section class="card account-identity"><button type="button" class="account-row" data-account-edit="name" aria-label="${m("accountCloud.editName")}"><span>${m("settings.name")}</span><span class="muted">${escape(user.name)}</span><span aria-hidden="true">&#8250;</span></button><button type="button" class="account-row" data-account-edit="email" aria-label="${m("accountCloud.changeEmail")}"><span>${m("clients.email")}</span><span class="muted">${escape(user.email)}</span><span aria-hidden="true">&#8250;</span></button><button type="button" class="account-row" data-account-edit="password" aria-label="${m("accountCloud.changePassword")}"><span>${m("accountCloud.password")}</span><span class="muted">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</span><span aria-hidden="true">&#8250;</span></button><p class="account-verification">${user.emailVerified?m("accountCloud.emailVerified"):m("accountCloud.emailNotVerified")}</p>${user.emailVerified?'':`<button class="secondary" id="verify">${m("accountCloud.sendVerificationEmail")}</button>`}</section>${section==='account'?`<section class="mm-group">${moreRow('account-data',coreText('more.accountData'))}${moreRow('notifications',coreText('more.notifications'))}</section>`: ''}<form><label>${m("reminders.zone")}<input name="timeZone" value="${escape(zone)}" required maxlength="100"></label><label>${m("mobileWeightGoal.units")}<select name="units"><option value="metric">${m("accountCloud.metricUnits")}</option><option value="imperial">${m("accountCloud.imperial")}</option></select></label><button>${m("accountCloud.saveSettings")}</button></form>${notice()}<button class="secondary signout" id="signout">${m("accountCloud.signOut")}</button>${section==='account'?'':`<button type="button" class="delete-account" id="delete-account">${m("accountCloud.deleteAccount")}</button>`}`;
   editor?.dispose();editor=createAccountEditor({root,request:api,onSaved:async identity=>{await profile({...user,...identity});message(m("accountCloud.saved"));}});
   for(const button of root.querySelectorAll('[data-account-edit]'))button.onclick=()=>editor.open(button.dataset.accountEdit,user,button);
   refreshInstallButton();
@@ -77,7 +84,7 @@ async function profile(knownUser=null){
   if(!embedded){const diaryLink=document.createElement('a');diaryLink.href='/diary';diaryLink.textContent='‹ '+m('accountCloud.backToDiary');diaryLink.className='links';root.prepend(diaryLink);}
   form.onsubmit=e=>{e.preventDefault();busy(form,async()=>{await api('/api/profile',Object.fromEntries(new FormData(form)),'PUT');message(m("accountCloud.saved"));});};
   const verify=root.querySelector('#verify');if(verify)verify.onclick=()=>busy(verify.parentElement,async()=>{await api('/api/auth/verification',{});message(m("accountCloud.verificationEmailSent"));});
-  root.querySelector('#delete-account').onclick=deletion.open;
+  root.querySelector('#delete-account')?.addEventListener('click',deletion.open);
   root.querySelector('#signout').onclick=()=>busy(root,async()=>{if(!await leaveOfflineAccount(root))return;await disconnectCurrentPush();await api('/api/auth/logout',{});user=null;root.replaceChildren();location.replace('/login');});
 }
 const mode=embedded?'account':location.pathname.slice(1);

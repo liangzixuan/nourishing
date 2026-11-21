@@ -9,7 +9,8 @@ import {chartArrow,chartTitle,chartSeriesLabel} from './charts-source-view.js';
 import {MobileChartPicker} from './cgm-detail-source/mobile-chart-picker.js';
 import {MobileDiaryCalendar} from './snapshot-source/mobile-diary-calendar.js';
 import {chartPickerOptions} from './custom-chart-source/chart-picker-options.js';
-import {mountCustomChartEditor} from './custom-chart-editor.js';
+import {readDeviceCache} from './device-cache.js';
+import {mountCustomChartEditor,saveChartDefinition,confirmChartDeletion} from './custom-chart-editor.js';
 import {ranges,rangeLabel,bottomNavigation} from './dashboard-source/discover-ui.js';
 import {mobileChartsMessages} from './health-source/public/locales/mobile-charts.js';
 import {createMessageFormatter} from './report-source/public/message-formatter.js';
@@ -22,6 +23,7 @@ export function mountChartDetail(view,id,ui){
  const root=content.querySelector('.chart-detail'),dialog=content.closest('dialog'),abort=new AbortController();
  let card=view.cards.find(row=>row.id===id),plots,picker,disposed=false,busy=false,error='',pending=null,conflict=false,loading=false,editSerial=0,plotPending=false;
  const projectionModule=import('./local-chart-projection.js');
+ const owner=readDeviceCache('/api/diary').then(value=>value.ticket);
  const queued=new Set();
  const chartPath='/api/charts?'+new URLSearchParams({to:view.to,card:id});
  const alive=()=>!disposed&&root.isConnected,scrollHost=()=>dialog??content;
@@ -34,7 +36,7 @@ export function mountChartDetail(view,id,ui){
   if(card.id==='calcium')controls+=toggle('targetLine',m('targetLine'));
   for(const axis of ['primary','secondary']){
    const series=card.series.find(row=>row.id===axis);if(!series?.metric)continue;
-   if(card.kind==="custom"||['metric','nutrient','score'].includes(card.id))controls+=pick(axis,m(card.id==='nutrient'?'selectedNutrient':card.id==='score'?'selectedScore':axis+"Metric"),chartSeriesLabel(series));
+   if(card.kind==="custom"||['metric','nutrient','score'].includes(card.id))controls+=pick(axis,m(card.id==='nutrient'?'selectedNutrient':card.id==='score'?'selectedScore':card.id==='metric'?'selectedMetric':axis+"Metric"),chartSeriesLabel(series));
    if(card.id==='nutrient')controls+=toggle('targetLine',m('targetLine'));
    if(series.displayUnits?.length){controls+=pick(axis+"Unit",m(axis+"Unit"),series.unit??m('chooseUnit'));units.add(axis+"Unit");}
   }
@@ -61,7 +63,7 @@ export function mountChartDetail(view,id,ui){
   if(type)pending={body:{requestId:crypto.randomUUID(),revision:view.revision,type,payload:structuredClone(payload)},saved:false};
   if(!pending)return;busy=true;error='';render();
   try{
-   if(!pending.saved){const result=await request('/api/workspace/command',pending.body);if(result.ok!==true)throw Error(dc('saveConfirm'));pending.saved=true;}
+   if(!pending.saved){const result=await saveChartDefinition(pending.body,view,await owner);if(result.ok!==true)throw Error(dc('saveConfirm'));pending.saved=true;}
    if(pending.body.type==='chart.delete'){pending=null;dispose();close();await ui.afterSave?.();await ui.onChange?.();return;}
    await refresh();if(!alive())return;pending=null;await ui.afterSave?.();await ui.onChange?.();
   }catch(failure){
@@ -105,7 +107,7 @@ export function mountChartDetail(view,id,ui){
    const unit=key.endsWith("Unit"),axis=unit?key.slice(0,-4):key,series=card.series.find(row=>row.id===axis);if(!series?.metric)return;
    if(unit){choices=series.displayUnits.map(value=>({value,label:value}));selected=series.unit;}
    else{const options=chartPickerOptions(view.options,series.metric,'source').filter(row=>series.metric.kind!=='nutrient'||row.metric.kind==='nutrient');choices=options.map(row=>({value:JSON.stringify(row.metric),label:chartSeriesLabel(row)+(row.metric.kind==='biometric'&&options.filter(other=>other.metric.type===row.metric.type).length>1?' ('+(row.metric.unit??m('chooseUnit'))+')':'')}));selected=JSON.stringify(series.metric);search=m('search');}
-   label=m(unit?axis+"Unit":card.id==='nutrient'?'selectedNutrient':card.id==='score'?'selectedScore':axis+"Metric");
+   label=m(unit?axis+"Unit":card.id==='nutrient'?'selectedNutrient':card.id==='score'?'selectedScore':card.id==='metric'?'selectedMetric':axis+"Metric");
   }
   picker=new MobileChartPicker({label,choices,selected,search,anchor,onClose:()=>picker=null,onChoose:value=>preference(key,value)});
  }
@@ -120,7 +122,7 @@ export function mountChartDetail(view,id,ui){
   if(busy||loading||pending||conflict||picker)return;
   if(button.dataset.chartPick)return popup(button.dataset.chartPick,button);
   if(button.hasAttribute('data-chart-edit')){dispose();mountCustomChartEditor(card.definition,view,{...ui,onBack:()=>{const next=mountChartDetail(view,id,ui);ui.onEditor?.(next);}});}
-  if(button.hasAttribute('data-chart-delete'))picker=new MobileChartPicker({label:m('delete'),confirm:{message:m('deleteMessage',{name:card.name}),cancel:m('cancel'),accept:m('delete')},onClose:()=>picker=null,onChoose:()=>save('chart.delete',{id:card.chartId})});
+  if(button.hasAttribute('data-chart-delete'))picker=confirmChartDeletion(card,()=>save('chart.delete',{id:card.chartId}),()=>picker=null);
  },{signal:abort.signal});
  root.addEventListener('change',event=>{if(event.target.dataset.chartSetting&&!busy&&!loading&&!pending&&!conflict)void preference(event.target.dataset.chartSetting,event.target.checked);},{signal:abort.signal});
  async function reload(){if(busy)return;busy=true;render();try{await refresh();conflict=false;error='';}catch(failure){if(alive())error=failure.message;}finally{busy=false;if(alive())render();}}

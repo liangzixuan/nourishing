@@ -55,6 +55,10 @@ function providerError(message, status = 502) {
   return error;
 }
 
+function missingBarcodeProduct() {
+  return Object.assign(providerError('No product was found for this barcode. Check the digits or enter the food label manually.', 400), {errorCode:'barcode.productNotFound'});
+}
+
 function validateBarcode(barcode) {
   if (typeof barcode !== 'string' || !/^\d{8,14}$/.test(barcode)) {
     throw providerError('Enter a barcode containing 8 to 14 digits, including any leading zeros.', 400);
@@ -247,11 +251,11 @@ export async function getBarcodeProduct(barcode, {fetchImpl = fetch} = {}) {
     });
     if (!response.ok) {
       await response.body?.cancel().catch(() => {});
-      if (response.status === 404) throw providerError('No product was found for this barcode. Check the digits or enter the food label manually.', 400);
+      if (response.status === 404) throw missingBarcodeProduct();
       throw providerError(response.status === 429 ? 'Open Food Facts is rate limiting requests. Wait before trying again, or enter the label manually.' : `Open Food Facts returned HTTP ${response.status}. Try again later or enter the label manually.`);
     }
     const document = await readBoundedJson(response, controller);
-    if(document.status===0||(!document.product&&document.result?.id==='product_not_found'))throw providerError('No product was found for this barcode. Check the digits or enter the food label manually.',400);
+    if(document.status===0||(!document.product&&document.result?.id==='product_not_found'))throw missingBarcodeProduct();
     const draft = parseOpenFoodFactsProduct(document.product, barcode);
     draft.source.retrievedAt = new Date().toISOString();
     return draft;

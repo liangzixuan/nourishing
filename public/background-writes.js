@@ -1,3 +1,4 @@
+import {projectFastingResponse} from './fasting-source/device.js';
 import {prepareQueuedDiaryReview} from './diary-preparation.js';
 import {readWriteCopy,persistBackgroundWrite,changeBackgroundWrite,currentPrivateResponseTicket,saveOfflineSnapshot,acknowledgeBackgroundWrite} from './offline-store.js';
 import {discardOfflineChange} from './offline-controls.js';
@@ -150,6 +151,10 @@ export async function overlayPendingResponse(path,value){
  const copy=await readWriteCopy().catch(()=>null);if(!copy||copy.locked)return value;
  if(path==='/api/snapshots')return projectSnapshotList(value,copy);
  let result=value;
+ if(/^\/api\/(?:fasting|dashboard)(?:\?|$)/.test(path)){
+  const changes=copy.pending.filter(row=>!row.command.generation||row.command.generation===copy.snapshot?.identity.generation).map(row=>row.projection?.fastingChange).filter(Boolean);
+  if(changes.length)result=projectFastingResponse(path,result,copy.snapshot?.state?offlineEffectiveState(copy):null,changes,value.revision);
+ }
  for(const row of copy.pending){
   if(!row.transport)continue;
   if(row.projection?.responses?.[path])result=structuredClone(row.projection.responses[path]);

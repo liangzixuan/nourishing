@@ -38,7 +38,7 @@ export function assertOfflineIdentity(command,{ownerId,generation}){if(command.o
 function offlineState(state){
  // Reviews and local edits need the same record and resource facts as the server.
  // Media bytes live in storage, not these records. Food notes remain excluded.
- const copy=Object.fromEntries(['profile','foods','recipes','meals','entries','biometrics','notes','settings','repeats','fasts','charts','progressSnapshots'].filter(key=>state[key]!==undefined).map(key=>[key,structuredClone(state[key])]));
+ const copy=Object.fromEntries(['profile','foods','recipes','meals','entries','biometrics','notes','settings','repeats','fasts','fastingPlan','charts','progressSnapshots'].filter(key=>state[key]!==undefined).map(key=>[key,structuredClone(state[key])]));
  copy.foods=copy.foods.map(({notes,...food})=>food);
  return copy;
 }

@@ -3,11 +3,11 @@ import {fastingRecurrenceDates} from './fasting-recurrence.mjs';
 import {validFastingRecurrence} from './fasting-schedule-contract.mjs';
 import {fastingScheduleViewVersion,fastingScheduleLateMinutes,fastingScheduleRuleCodes,fastingScheduleOutcomes} from './fasting-schedule-contract.mjs';
 import {Temporal} from '@js-temporal/polyfill';
-import {createHash} from 'node:crypto';
+import {sha256Hex} from './content-digest.mjs';
 import {date,parseReportTimeZone} from './calendar.mjs';
 
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
-const editable=['id','revision','label','timeZone','startDate','time','recurrence','interval','custom','days','untilDate','goalHours','enabled'];
+const editable=['id','revision','label','timeZone','startDate','time','recurrence','interval','custom','days','untilDate','goalHours','enabled','note'];
 const stored=[...editable,'armedAt','lastOccurrence'];
 function fields(value,keys,name){if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(k=>!keys.includes(k)))fail(`Invalid ${name} fields.`);}
 function text(value,name,max){if(typeof value!=='string'||!value.trim()||value!==value.trim()||value.length>max)fail(`Invalid ${name}.`);return value;}
@@ -19,6 +19,7 @@ const cmp=Temporal.Instant.compare;
 function day(value){date(value);if(value<'0001-01-01')fail('Use a date from year 0001 through 9999.');return value;}
 function parseEditable(value,{preview=false}={}){
   const result={id:preview&&value.id===undefined?null:id(value.id),revision:preview&&value.revision===undefined?0:revision(value.revision,0),label:text(value.label,'schedule label',200),timeZone:parseReportTimeZone(value.timeZone),startDate:day(value.startDate),time:value.time,recurrence:value.recurrence,days:value.days,untilDate:value.untilDate,goalHours:value.goalHours,enabled:value.enabled};
+  if(value.note!==undefined){if(typeof value.note!=='string'||value.note.length>10000)fail('A fast note must be text of at most 10000 characters.');if(value.note)result.note=value.note;}
   if(typeof result.time!=='string'||!/^([01]\d|2[0-3]):[0-5]\d$/.test(result.time))fail('Use a local HH:mm start time.');
   if(value.custom!==undefined){if(value.custom!==true)fail('Custom recurrence must be true when present.');result.custom=true;}
   result.interval=value.interval===undefined?1:value.interval;
@@ -132,9 +133,9 @@ export function tickFastingSchedules(state,now){
     else if(fasts.some(x=>!x.end))outcome='conflict';
     else{
       if(fasts.length>=100000)fail('The fast collection is full.');
-      fastId='scheduled-'+createHash('sha256').update(JSON.stringify([schedule.id,schedule.revision,start])).digest('hex');
+      fastId='scheduled-'+sha256Hex(JSON.stringify([schedule.id,schedule.revision,start]));
       if(fasts.some(x=>x.id===fastId))fail('The scheduled fast already exists without its consumption cursor.');
-      const fast={id:fastId,start,end:null,goalHours:schedule.goalHours,scheduled:{scheduleId:schedule.id,revision:schedule.revision,label:schedule.label,timeZone:schedule.timeZone,start}};
+      const fast={id:fastId,start,end:null,goalHours:schedule.goalHours,...(schedule.note?{note:schedule.note}:{}),scheduled:{scheduleId:schedule.id,revision:schedule.revision,label:schedule.label,timeZone:schedule.timeZone,start}};
       fasts.push(fast);started.push(structuredClone(fast));
     }
     schedule.lastOccurrence={start,outcome,processedAt:current.toString(),fastId};outcomes.push({scheduleId:schedule.id,...schedule.lastOccurrence});
@@ -166,8 +167,8 @@ export function startScheduledFastNow(state,input,now){
  const next=candidates(schedule,at,1)[0];if(next!==input.start)fail('The next start changed. Reopen it before starting.',409);
  if(state.fasts?.some(f=>!f.end))fail('End the active fast before starting another.',409);
  if((state.fasts?.length??0)>=100000)fail('The fast collection is full.');
- const fastId='scheduled-'+createHash('sha256').update(JSON.stringify([schedule.id,schedule.revision,input.start])).digest('hex');
- const start=at.toString();const fast={id:fastId,start,end:null,goalHours:schedule.goalHours,scheduled:{scheduleId:schedule.id,revision:schedule.revision,label:schedule.label,timeZone:schedule.timeZone,start:input.start}};
+ const fastId='scheduled-'+sha256Hex(JSON.stringify([schedule.id,schedule.revision,input.start]));
+ const start=at.toString();const fast={id:fastId,start,end:null,goalHours:schedule.goalHours,...(schedule.note?{note:schedule.note}:{}),scheduled:{scheduleId:schedule.id,revision:schedule.revision,label:schedule.label,timeZone:schedule.timeZone,start:input.start}};
  schedule.lastOccurrence={start:input.start,outcome:'started-early',processedAt:start,fastId};
  state.fastingPlan=plan;state.fasts=[...(state.fasts??[]),fast];return {replayed:false,fast};
 }

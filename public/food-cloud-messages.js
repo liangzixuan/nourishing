@@ -2,6 +2,9 @@ import {createUITranslator,t} from './app-language.js';
 // Cloud controls only. Food names, source labels and user text never become keys.
 export const foodCloudMessages={
   "en": {
+    "saveMealNotice":"Save Meal",
+    "mealAdjustmentScope":"These changes apply to this diary entry. To edit the saved meal, go to Foods and open Custom Meals.",
+    "hideMealNotice":"Do not show again",
     "photoTooLarge": "Choose a photo smaller than 8 MB.",
     "meal": "Meal",
     "searchLibrary": "Search library",
@@ -180,6 +183,9 @@ export const foodCloudMessages={
     "diaryRefreshed": "Diary refreshed. Check and save again."
   },
   "fr": {
+    "saveMealNotice":"Enregistrer le repas",
+    "mealAdjustmentScope":"Ces modifications s’appliquent à cette entrée du journal. Pour modifier le repas enregistré, ouvrez les repas personnalisés dans Aliments.",
+    "hideMealNotice":"Ne plus afficher",
     "photoTooLarge": "Choisissez une photo de moins de 8 Mo.",
     "meal": "Repas",
     "searchLibrary": "Rechercher dans la bibliothèque",
@@ -358,6 +364,9 @@ export const foodCloudMessages={
     "diaryRefreshed": "Journal actualisé. Vérifiez et enregistrez à nouveau."
   },
   "de": {
+    "saveMealNotice":"Mahlzeit speichern",
+    "mealAdjustmentScope":"Diese Änderungen gelten für diesen Tagebucheintrag. Die gespeicherte Mahlzeit kannst du unter Lebensmittel in deinen eigenen Mahlzeiten bearbeiten.",
+    "hideMealNotice":"Nicht mehr anzeigen",
     "photoTooLarge": "Wählen Sie ein Foto mit weniger als 8 MB.",
     "meal": "Mahlzeit",
     "searchLibrary": "Bibliothek durchsuchen",
@@ -536,6 +545,9 @@ export const foodCloudMessages={
     "diaryRefreshed": "Tagebuch aktualisiert. Prüfen und erneut speichern."
   },
   "pt-BR": {
+    "saveMealNotice":"Salvar refeição",
+    "mealAdjustmentScope":"As alterações se aplicam a este registro do diário. Para editar a refeição salva, abra as refeições personalizadas em Alimentos.",
+    "hideMealNotice":"Não mostrar novamente",
     "photoTooLarge": "Escolha uma foto menor que 8 MB.",
     "meal": "Refeição",
     "searchLibrary": "Pesquisar biblioteca",

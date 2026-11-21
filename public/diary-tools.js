@@ -40,7 +40,14 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
  async function clear(source){const review=await busy(t('diary.clearAmounts'),()=>prepare({operation:'clear',selection:source}));if(!review)return;confirm(t('diary.clearAmounts'),`<p class="diary-tools-summary">${e(coreText('tools.clearConfirm',{count:review.total}))}</p><ul class="diary-tools-preview">${review.examples.map(item=>`<li>${e(item.name)}</li>`).join('')}</ul>`,t('diary.clearAmounts'),()=>save('records.clear-amounts',{selection:review.selection,fingerprint:review.fingerprint,confirmed:true},review.revision,{diaryReview:review.localReview}));}
  function move(source){const records=refs(source).map(({collection,row})=>({collection,id:row.id,group:row.group??null})),revision=diary().revision;actionForm(coreText('tools.moveGroup'),`<label class="field-row"><span>${e(t('mobileFood.group'))}</span><select name="group">${diary().groups.map(g=>`<option>${e(g)}</option>`).join('')}</select></label>`,values=>save('records.move-group',{date:date(),group:values.group,records},revision));}
  function time(source,title=t('diaryActions.time.set')){const records=refs(source).map(({collection,row})=>({collection,id:row.id,group:row.group??null,time:row.time??''})),revision=diary().revision;actionForm(title,`<label class="field-row"><span>${e(t('appActions.time'))}</span><input name="time" type="time"></label>`,values=>save('records.set-time',{date:date(),time:values.time,records},revision));}
- function remove(source){const records=refs(source),revision=diary().revision;confirm(coreText('tools.deleteEntries'),`<p class="diary-tools-summary">${e(coreText('tools.deleteConfirm',{count:records.length}))}</p>`,t('mobileRepeat.delete'),()=>save('records.delete',{selection:source,confirmed:true},revision));}
+ function remove(source){
+  const count=refs(source).length,revision=diary().revision;
+  const title=coreText(count===1?'tools.deleteEntry':'tools.deleteEntries');
+  const prompt=coreText(count===1?'tools.deleteOneConfirm':'tools.deleteConfirm',{count});
+  show(`<section class="diary-delete-confirm"><h2 id="sheet-title">${e(title)}</h2><p>${e(prompt)}</p><p role="status"></p><footer><button type="button" data-close>${e(t('common.cancel'))}</button><button type="button" data-confirm>${e(t('mobileRepeat.delete'))}</button></footer></section>`);
+  const button=content.querySelector('[data-confirm]'),status=content.querySelector('[role=status]');
+  button.onclick=async()=>{button.disabled=true;try{await save('records.delete',{selection:source,confirmed:true},revision);}catch(error){if(status.isConnected){status.textContent=error.message;button.disabled=false;}}};
+ }
  async function reusable(source,kind,title=t('diaryActions.selection.'+kind)){
   const result=await busy(title,()=>Promise.all([prepare({operation:kind,selection:source}),localLibraryView().then(view=>view??request('/api/library'))]));
   if(!result)return;

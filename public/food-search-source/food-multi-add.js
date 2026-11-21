@@ -6,8 +6,8 @@ import {searchSource} from './mobile-food-search-row.js';
 const mode='food-multi-add',sessions=new Map();
 const key=row=>JSON.stringify([row.kind,row.id]);
 export class FoodMultiAdd{
- constructor({root,language,request,defaults,onEdit,onSaved,onChange,ownerId,enabled=false,rows=[],editing=null}){
-  Object.assign(this,{root,language,request,defaults,onEdit,onSaved,onChange,ownerId});if(!ownerId)throw Error('Sign in to use Multi-Add.');if(!sessions.has(ownerId))sessions.set(ownerId,{pending:null,saving:false,panel:null});this.session=sessions.get(ownerId);this.selected=new Map(structuredClone(rows).map(row=>[key(row.selection),row]));this.enabled=enabled;this.editing=editing;this.loading=true;this.version=0;this.abort=new AbortController();this.recovery=new FoodMultiRecovery(ownerId);this.records=[];this.destination={kind:'diary'};this.session.panel=this;
+ constructor({root,language,request,defaults,onEdit,onSaved,onQueue,onChange,ownerId,enabled=false,rows=[],editing=null}){
+  Object.assign(this,{root,language,request,defaults,onEdit,onSaved,onQueue,onChange,ownerId});if(!ownerId)throw Error('Sign in to use Multi-Add.');if(!sessions.has(ownerId))sessions.set(ownerId,{pending:null,saving:false,panel:null});this.session=sessions.get(ownerId);this.selected=new Map(structuredClone(rows).map(row=>[key(row.selection),row]));this.enabled=enabled;this.editing=editing;this.loading=true;this.version=0;this.abort=new AbortController();this.recovery=new FoodMultiRecovery(ownerId);this.records=[];this.destination={kind:'diary'};this.session.panel=this;
   this.m=(k,v)=>formatMessage(language,'multiAdd.'+k,v);this.bar=document.createElement('div');this.bar.className='multi-bar';root.querySelector('.mfs-content').append(this.bar);this.overlay=document.createElement('div');this.overlay.className='multi-overlay';this.overlay.hidden=true;root.append(this.overlay);
   root.addEventListener('click',event=>{const action=event.target.closest('[data-multi]');if(action){event.preventDefault();event.stopPropagation();void this.action(action.dataset.multi,action.dataset.id);}else if(event.target===this.overlay)this.hide();},{signal:this.abort.signal});
   this.overlay.addEventListener('input',event=>{if(this.locked())return;if(event.target.matches('[data-multi-name],[data-multi-servings]')){this.destination={kind:'recipe',name:this.overlay.querySelector('[data-multi-name]').value.trim(),servings:Number(this.overlay.querySelector('[data-multi-servings]').value)};this.schedule();}},{signal:this.abort.signal});
@@ -80,6 +80,17 @@ export class FoodMultiAdd{
  returnFromDetail(){if(!this.editing)return;this.editing=null;this.show();this.render();this.schedule(0);}
  async save(retry){
   if(this.disposed||this.session.saving||this.loading)return;
+  if(!retry&&this.onQueue){
+   if(this.locked()||!this.review||this.checking)return;
+   this.session.saving=true;this.render();
+   try{
+    const result=await this.onQueue(this.review,crypto.randomUUID());
+    this.selected.clear();this.review=null;
+    if(!this.disposed){this.hide();try{await this.onSaved(result);}catch{this.error=this.m('savedReload');}}
+   }catch(error){if(!this.disposed)this.error=error.message;}
+   finally{this.session.saving=false;if(!this.disposed){this.renderBar();this.render();this.onChange();}}
+   return;
+  }
   if(!retry){if(this.locked()||!this.review||this.checking)return;const {input,result}=this.review,payload={requestId:crypto.randomUUID(),revision:result.revision,type:'food.multi.add',payload:{...structuredClone(input),reviewToken:result.reviewToken,confirmed:true}};this.session.pending={ownerId:this.ownerId,mode,payload,body:JSON.stringify(payload),review:structuredClone(this.review),data:{rows:structuredClone([...this.selected.values()])}};}
   const pending=this.session.pending;if(!pending)return;this.session.saving=true;this.error='';this.render();let persisted=false,saved=null;
   try{

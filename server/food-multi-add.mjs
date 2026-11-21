@@ -66,19 +66,30 @@ function parseFoodMultiInput(input,{saving=false}={}){
 }
 export function validateFoodMultiInput(input,options){try{return parseFoodMultiInput(input,options);}catch(error){if(error.status===400)throw Object.assign(error,{code:400,publicMessage:error.message});throw error;}}
 export function foodMultiCatalogReferences(input){return input.rows.filter(row=>row.selection.kind==='catalog').map(row=>row.selection.id);}
-export function previewFoodMultiAdd(state,input,context){return evaluate(state,input,context).review;}
+function writeReviewedSelection(candidate,review){
+ if(review.destination.kind==='diary'){
+  const start=candidate.entries.length;
+  for(const entry of review.entries)act(candidate,'entry.add',entry);
+  return {entries:candidate.entries.slice(start)};
+ }
+ const resource=act(candidate,'recipe.save',{name:review.destination.name,servings:review.destination.servings,ingredients:review.items});
+ return {recipes:[candidate.recipes.find(row=>row.id===resource.id)]};
+}
+
+export function previewFoodMultiAdd(state,input,context){
+ const {candidate,review}=evaluate(state,input,context);
+ const records=writeReviewedSelection(candidate,review);
+ const foods=candidate.foods.slice(state.foods.length);
+ return {...review,projection:{...records,...(foods.length?{foods}:{})}};
+}
+
 export function applyFoodMultiAdd(state,input,context){
  validateFoodMultiInput(input,{saving:true});
  const {candidate,review}=evaluate(state,{destination:input.destination,rows:input.rows},context);
  if(review.reviewToken!==input.reviewToken)fail('Selected items changed. Review them again.',409);
- let result;
- if(review.destination.kind==='diary'){
-  const start=candidate.entries.length;
-  for(const entry of review.entries)act(candidate,'entry.add',entry);
-  result={entryIds:candidate.entries.slice(start).map(row=>row.id)};
- }else{
-  const resource=act(candidate,'recipe.save',{name:review.destination.name,servings:review.destination.servings,ingredients:review.items});
-  result={kind:'recipe',id:resource.id};
- }
- Object.assign(state,candidate);return result;
+ const records=writeReviewedSelection(candidate,review);
+ const foods=candidate.foods.slice(state.foods.length);
+ if(foods.length)records.foods=foods;
+ Object.assign(state,candidate);
+ return records.entries?{entryIds:records.entries.map(row=>row.id),records}:{kind:'recipe',id:records.recipes[0].id,records};
 }

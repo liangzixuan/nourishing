@@ -36,5 +36,5 @@ export function readSchedule(form,existing,id){
  const t=key=>message(form.dataset.language??'en',key),v=form.elements,start=v.start.value,goalHours=v.open.checked?null:Number(v.days.value)*24+Number(v.hours.value);
  if(goalHours!==null&&(!Number.isFinite(goalHours)||goalHours<1||goalHours>168))throw Error(t('schedule.durationRange'));
  const repeat=readRepeatFields(form);if(!validFastingRecurrence(repeat))throw Error(formatMessage(form.dataset.language??'en','fastingSchedules.invalidSchedule'));
- return {id:existing?.id??id,revision:existing?.revision??0,label:v.label.value.trim(),timeZone:existing?.timeZone??form.dataset.timeZone,startDate:start.slice(0,10),time:start.slice(11,16),...repeat,goalHours,enabled:v.enabled?.checked??true};
+ return {id:existing?.id??id,revision:existing?.revision??0,label:v.label.value.trim(),timeZone:existing?.timeZone??form.dataset.timeZone,startDate:start.slice(0,10),time:start.slice(11,16),...repeat,goalHours,enabled:v.enabled?.checked??existing?.enabled??true,...(v.note?{note:v.note.value}:{})};
 }

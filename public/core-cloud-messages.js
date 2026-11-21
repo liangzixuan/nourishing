@@ -1,5 +1,12 @@
 import {createUITranslator} from './app-language.js';
 const rows={
+ 'more.accountData':['Account Data','Données du compte','Kontodaten','Dados da conta'],
+ 'more.notifications':['Notifications','Notifications','Benachrichtigungen','Notificações'],
+ 'more.allowNotifications':['Allow Notifications','Autoriser les notifications','Benachrichtigungen erlauben','Permitir notificações'],
+ 'more.licenses':['Licenses','Licences','Lizenzen','Licenças'],
+ 'display.energyConsumed':['Energy (Consumed)','Énergie (consommée)','Energie (aufgenommen)','Energia (consumida)'],
+ 'display.updateUnit':['Update Unit','Modifier l’unité','Einheit ändern','Alterar unidade'],
+ 'display.selectNutrient':['Select a Nutrient','Choisir un nutriment','Nährstoff wählen','Selecionar nutriente'],
  'diary.toggleGroup':['Expand or collapse group','Développer ou réduire le groupe','Gruppe ein- oder ausklappen','Expandir ou recolher grupo'],
  'diary.groupTime':['Add Group Timestamp','Ajouter une heure au groupe','Uhrzeit für Gruppe hinzufügen','Adicionar horário ao grupo'],
  'diary.groupSort':['Sort Group Entries by Time','Trier le groupe par heure','Gruppeneinträge nach Uhrzeit sortieren','Ordenar grupo por horário'],
@@ -68,6 +75,8 @@ const rows={
  'tools.entries':['{{count}} entries','{{count}} entrées','{{count}} Einträge','{{count}} registros'],
  'tools.clearConfirm':['Set {{count}} food amounts to 0?','Mettre {{count}} quantités à 0 ?','{{count}} Lebensmittelmengen auf 0 setzen?','Zerar {{count}} quantidades de alimentos?'],
  'tools.moveGroup':['Move to group','Déplacer vers un groupe','In Gruppe verschieben','Mover para grupo'],
+ 'tools.deleteEntry':['Delete entry?','Supprimer l’entrée ?','Eintrag löschen?','Excluir registro?'],
+ 'tools.deleteOneConfirm':['Are you sure you want to delete this entry?','Voulez-vous vraiment supprimer cette entrée ?','Diesen Eintrag wirklich löschen?','Tem certeza de que deseja excluir este registro?'],
  'tools.deleteEntries':['Delete entries','Supprimer les entrées','Einträge löschen','Excluir registros'],
  'tools.deleteConfirm':['Delete {{count}} entries?','Supprimer {{count}} entrées ?','{{count}} Einträge löschen?','Excluir {{count}} registros?'],
  'tools.groupOrder':['{{group}} order','Ordre : {{group}}','Reihenfolge für {{group}}','Ordem de {{group}}'],

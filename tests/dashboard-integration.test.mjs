@@ -28,6 +28,8 @@ test('dashboard exposes saved health widgets, opens details and follows diary da
   browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});
   const page=await browser.newPage({viewport:{width:412,height:915}});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',error=>errors.push(error.message));page.on('response',response=>{if(response.status()>=400&&!response.url().endsWith('favicon.ico'))errors.push(response.status()+' '+response.url());});
   await page.goto(`http://127.0.0.1:${server.address().port}`);try{await page.locator('[data-health-card=glucose]').waitFor();}catch(error){throw Error(JSON.stringify({errors,body:await page.locator('body').innerText()}),{cause:error});}
+  await page.locator('[data-discover=streak-stats]').click();await page.getByRole('heading',{name:'All-Time Stats',exact:true}).last().waitFor();
+  assert.deepEqual(await page.locator('.dc-stats dd').allTextContents(),['0','0','1','0']);await page.locator('.dc-stats summary').click();await page.locator('.dc-stats details[open]').waitFor();
   await page.locator('[data-discover=health-glucose]').click();await page.locator('[data-health-date]').click();assert.equal(await page.locator('body').getAttribute('data-diary-date'),date);
   await page.locator('[data-discover=coach]').click();assert.equal(await page.locator('body').getAttribute('data-coach'),'opened');
   await page.getByRole('button',{name:'Dashboard Settings',exact:true}).click();await page.getByRole('switch',{name:'Show Glucose',exact:true}).uncheck();await page.locator('[data-health-card=glucose]').waitFor({state:'detached'});

@@ -61,6 +61,7 @@ function formatCommandResult(revision, saved) {
   return {
     ok: true,
     revision,
+    ...(saved?.fastingChange ? {fastingChange: saved.fastingChange} : {}),
     ...(saved?.fastingSchedule ? {fastingSchedule: saved.fastingSchedule} : {}),
     ...(saved?.records ? {records:saved.records} : {}),
     ...(saved?.counts ? {counts: saved.counts} : {}),
@@ -231,7 +232,7 @@ export function createWorkspaceStore(db, owner) {
         const calendar = loggingBefore ? await loggingCalendar(db, owner, context) : null;
         const action = captureActionFoods(state, {type: input.type, payload: input.payload}, catalogFoods);
         const commandContext = CATALOG_CONTEXT_TYPES.has(input.type) ? {...context, owner, catalogFoods} : context;
-        const saved = applyWorkspaceCommand(state, action, commandContext);
+        const saved = applyWorkspaceCommand(state, action, {...commandContext, requestId:input.requestId});
         finishCloudLogging(state, loggingBefore, input.type, calendar);
         const packed = packWorkspace(state, owner, head.generation);
         const result = formatCommandResult(packed.head.digest, saved);

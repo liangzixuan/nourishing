@@ -6,14 +6,30 @@ import {localLibraryItem} from './local-engine.js';
 import {escape as e} from './html.js';
 import {quantityFields,quantityValue} from './quantity.js';
 import {mountFoodPicker} from './food-picker.js';
+import {readWriteCopy} from './offline-store.js';
+import {readDeviceCache} from './device-cache.js';
 
 export function openEntryAdjustment({kind,date,id,show,close,header,content,onSave,onBack,revision:initialRevision}){
  let view,draft,rows=[],serial=0,timer,pickerCleanup,disposed=false,revision=initialRevision;
+ const owner=readDeviceCache('/api/diary').then(value=>value.ticket);
+ let notice;
  const current=()=>!disposed&&content.isConnected;
  const num=value=>Number.isFinite(value)?new Intl.NumberFormat(uiLanguage(),{maximumFractionDigits:1}).format(value):'—';
  const payload=()=>({kind,date,id,sourceRevision:view.sourceRevision,items:draft.items,...(kind==='recipe'?{basis:draft.basis}:{})});
  const status=(form,message)=>{const element=form.querySelector('[role=status]');if(element?.isConnected)element.textContent=message;};
- function dispose(){disposed=true;serial++;clearTimeout(timer);pickerCleanup?.();}
+ function dispose(){disposed=true;serial++;clearTimeout(timer);notice?.close();pickerCleanup?.();}
+ function confirmMeal(){
+  const dialog=notice=document.createElement('dialog');dialog.className='adjustment-confirm';dialog.setAttribute('aria-labelledby','meal-adjustment-title');
+  dialog.innerHTML=`<h2 id="meal-adjustment-title">${e(fc('saveMealNotice'))}</h2><p>${e(fc('mealAdjustmentScope'))}</p><label><input type="checkbox"> ${e(fc('hideMealNotice'))}</label><footer><button type="button" data-cancel>${e(t('fastingHistory.cancel'))}</button><button type="button" data-confirm>OK</button></footer>`;
+  const back=event=>{event.preventDefault();event.stopImmediatePropagation();dialog.close();};
+  return new Promise(resolve=>{
+   dialog.addEventListener('close',()=>{window.removeEventListener('nourishing-back',back,true);const hide=dialog.querySelector('input').checked;dialog.remove();notice=null;resolve(dialog.returnValue==='save'?{hide}:null);},{once:true});
+   dialog.querySelector('[data-cancel]').onclick=()=>dialog.close();
+   dialog.querySelector('[data-confirm]').onclick=()=>dialog.close('save');
+   dialog.addEventListener('click',event=>{if(event.target!==dialog)return;const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();});
+   document.body.append(dialog);dialog.showModal();window.addEventListener('nourishing-back',back,true);
+  });
+ }
  async function load(){
   const token=++serial;show(header(fc("adjustIngredientsLower"))+`<p class="empty">${e(t("mobileNutrientDetail.loading"))}</p>`);const loading=content.querySelector('.empty');
   try{const result=await localEntryAdjustment({kind,date,id})??await request('/api/diary/ingredients?'+new URLSearchParams({kind,date,id}));if(!current()||token!==serial||!loading.isConnected)return;view=result;revision=result.revision??initialRevision;draft={items:structuredClone(result.items),...(kind==='recipe'?{basis:structuredClone(result.basis)}:{})};rows=result.rows;editor();}
@@ -39,7 +55,16 @@ export function openEntryAdjustment({kind,date,id,show,close,header,content,onSa
   form.querySelector('[data-add]').onclick=()=>{readBasis(form);pick();};
   form.querySelector('ul').onclick=event=>{const remove=event.target.closest('[data-remove]'),edit=event.target.closest('[data-edit]'),replace=event.target.closest('[data-replace]');readBasis(form);if(remove){const index=Number(remove.dataset.remove);draft.items.splice(index,1);rows.splice(index,1);editor();}else if(edit){const index=Number(edit.dataset.edit);quantity(index,rows[index]);}else if(replace)pick(Number(replace.dataset.replace));};
   form.onsubmit=async event=>{event.preventDefault();if(!ready)return;readBasis(form);form.querySelectorAll('button,input,select').forEach(element=>element.disabled=true);status(form,'');
-   try{await queueCommand(revision,'entry.ingredients.adjust',payload());dispose();if(form.isConnected)close();void onSave?.();}
+   try{
+    const ticket=await owner,account=kind==='meal'?await readWriteCopy():null;
+    if(!current()||!form.isConnected)return;
+    let choice;
+    if(kind==='meal'&&!(account?.ownerId===ticket?.ownerId&&account?.hideMealAdjustmentNotice)){
+     choice=await confirmMeal();if(!choice||!current()||!form.isConnected)return;
+    }
+    await queueCommand(revision,'entry.ingredients.adjust',payload(),{ticket,projection:choice?.hide?{hideMealAdjustmentNotice:true}:{}});
+    dispose();if(form.isConnected)close();void onSave?.();
+   }
    catch(error){if(form.isConnected){status(form,error.message);if(error.status===409)reloadButton(form);}}
    finally{if(form.isConnected)form.querySelectorAll('button,input,select').forEach(element=>element.disabled=false);}
   };preview();

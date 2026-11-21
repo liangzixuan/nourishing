@@ -12,8 +12,16 @@ import {chromium} from 'playwright-core';
 
 test('source More menu preserves search and back focus, cloud destinations and device theme',async()=>{
  let theme='dark',revision='one',delayTargets=null,delayAccount=null,accountReads=0,owner='owner-a',origin;const writes=[];
+ const reminders={configured:true,paused:true,revision:0,schedules:[],devices:[{id:'fixture',currentOrigin:true}],recent:[]};
  const vendor=new Map((await barcodeAssets()).map(asset=>['/'+asset.path,asset]));
  const server=createServer(async(req,res)=>{try{
+  if(req.url.startsWith('/api/reminders')){
+   if(req.url==='/api/reminders/settings'){
+    let raw='';for await(const chunk of req)raw+=chunk;
+    const body=JSON.parse(raw);assert.equal(body.revision,reminders.revision);reminders.paused=body.paused;reminders.revision++;
+   }
+   res.setHeader('Content-Type','application/json');return res.end(JSON.stringify(reminders));
+  }
   if(req.url==='/api/offline'){const state=initialState();state.settings.theme=theme;res.setHeader('Content-Type','application/json');return res.end(JSON.stringify(offlineSnapshot(state,{ownerId:owner,generation:'fixture'})));}
   if(req.url.startsWith('/api/diary')){res.setHeader('Content-Type','application/json');return res.end(JSON.stringify({revision}));}
   if(req.url==='/api/display'){if(delayTargets)await delayTargets;res.setHeader('Content-Type','application/json');const state=initialState();state.settings.theme=theme;res.end(JSON.stringify({...displayView(state),revision}));return;}
@@ -44,6 +52,14 @@ test('source More menu preserves search and back focus, cloud destinations and d
   await page.getByRole('button',{name:'Account',exact:true}).click();await page.getByRole('button',{name:'Change email',exact:true}).waitFor();assert.equal(page.url(),origin+'/');assert.equal(await page.getByRole('link',{name:'Back to diary',exact:false}).count(),0);
   await page.getByRole('button',{name:'Edit name',exact:true}).click();await page.getByRole('dialog').waitFor();await page.evaluate(()=>window.more.back());assert.equal(await page.getByRole('dialog').count(),0);assert.equal(await page.getByRole('heading',{name:'Account',exact:true}).count(),1);
   await page.getByRole('button',{name:'Back',exact:true}).click();assert.equal(await search.evaluate(node=>node===document.activeElement),false);
+  await page.locator('[data-more-open=about]').click();await page.locator('[data-more-open=licenses]').click();await page.getByRole('link',{name:'Chart.js',exact:true}).waitFor();
+  await page.goBack();await page.getByRole('heading',{name:'About',exact:true}).waitFor();await page.locator('[data-more-back]').click();
+  await page.locator('[data-more-open=account]').click();await page.locator('[data-more-open=account-data]').click();await page.locator('#delete-account').click();await page.locator('.deletion-close').click();
+  await page.locator('[data-more-back]').click();await page.locator('[data-more-open=notifications]').click();
+  const toggle=page.getByRole('switch',{name:'Allow Notifications',exact:true});await toggle.waitFor();assert.equal(await toggle.isChecked(),false);
+  await toggle.check();await page.locator('[data-reminder-action=add]').waitFor();assert.equal(reminders.paused,false);
+  await toggle.uncheck();await page.locator('[data-reminder-action=add]').waitFor({state:'detached'});assert.equal(reminders.paused,true);
+  await page.locator('[data-more-back]').click();await page.locator('[data-more-open=notifications]').waitFor();await page.locator('[data-more-back]').click();
   const readsBefore=accountReads;await page.getByRole('button',{name:'Account',exact:true}).click();await page.getByRole('button',{name:'Change email',exact:true}).waitFor();assert.equal(accountReads,readsBefore);
   const cached=await page.evaluate(async()=>{const c=await import('/device-cache.js');return {display:(await c.readDeviceCache('/api/account?view=display')).value,auth:(await c.readDeviceCache('/api/account')).value};});assert.equal(cached.display.id,'owner-a');assert.equal(cached.display.privateProviderField,undefined);assert.equal(cached.auth,undefined);
   await page.getByRole('button',{name:'Back',exact:true}).click();owner='owner-b';await page.evaluate(async()=>{await(await import('/device-cache.js')).initializeDeviceCache('owner-b');});

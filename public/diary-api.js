@@ -19,7 +19,8 @@ const SNAPSHOT_PREFIXES=['/api/snapshots','/api/diary','/api/dashboard'];
 
 function invalidationPrefixes(path,body){
  if(path.startsWith('/api/backup/')||path.startsWith('/api/imports/')||path.startsWith('/api/cycle/'))return null;
- if(path==='/api/photos/save'||path==='/api/barcode/save'||path==='/api/diary/tools/save'||path==='/api/diary/ingredients/save'||path==='/api/note-photos/save')return DIARY_PREFIXES;
+ if(path==='/api/barcode/save')return [...LIBRARY_PREFIXES,...DIARY_PREFIXES];
+ if(path==='/api/photos/save'||path==='/api/diary/tools/save'||path==='/api/diary/ingredients/save'||path==='/api/note-photos/save')return DIARY_PREFIXES;
  if(path.startsWith('/api/library/'))return LIBRARY_PREFIXES;
  if(path.startsWith('/api/reminders')||path.startsWith('/api/push/'))return REMINDER_PREFIXES;
  if(path.startsWith('/api/snapshots'))return SNAPSHOT_PREFIXES;

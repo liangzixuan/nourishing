@@ -1,6 +1,7 @@
 import {metricDisplayName} from './report-source/public/metric-language.js';
 import {nutrientDisplayName} from './report-source/public/nutrient-language.js';
 import {biometricCatalogLabel} from './record-source/biometric-catalog-language.js';
+import {scoreName} from './diary-summary-source/score-labels.js';
 import {dc,chartText as cm} from './discover-cloud-messages.js';
 import {uiLanguage,t} from './app-language.js';
 // Presentation extracted from nourishing-local/public/mobile-charts.js:
@@ -12,6 +13,7 @@ import {biometricCatalog} from './offline-source/server/biometric-library.mjs';
 const colors=['#ff6633','#328f95','#c17ccd','#ffb600','#9ca2b1','#6479d9','#57d599','#c1e5e9'];
 export const chartSeriesColor=(series,index,card)=>card?.id==='cgm'&&cgmColors[series.id]?cgmColors[series.id]:({protein:'#57d599',carbohydrate:'#35cada',fat:'#c17ccd',alcohol:'#ffb600',unattributed:'#9ca2b1','total cholesterol':'#ff6633','hdl cholesterol':'#328f95','ldl cholesterol':'#ffb600',triglycerides:'#cf37e6',gki:'#ff6633',glucose:'#328f95',insulin:'#8563a5',ketones:'#bf40bc',rem:'#64cddc',light:'#00b8c7',deep:'#008b91'}[series.id]??colors[index%colors.length]);
 export function chartMetricLabel(row){
+ if(row.metric?.kind==='score')return scoreName({id:row.metric.id,name:metricDisplayName(row,{language:uiLanguage()})});
  const biometric=row.metric?.kind==='biometric'?biometricCatalog.find(item=>item.type===row.metric.type):null;
  return biometric?biometricCatalogLabel({selection:{kind:'catalog',id:biometric.id},label:row.name??biometric.label},uiLanguage()):metricDisplayName(row,{language:uiLanguage()});
 }

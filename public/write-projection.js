@@ -1,4 +1,4 @@
-import {prepareDiaryRecordUpdate,storeChartDefinition} from './local-diary-projection.js';
+import {applyFastingChange,prepareDiaryRecordUpdate,storeChartDefinition} from './local-diary-projection.js';
 // Serializable local effects for acknowledged and pending background commands.
 import {removeLibraryItem,applyProfileSettingsProjection,projectDiaryBulkWrite,copiedDiaryRecords} from './local-diary-projection.js';
 import {diaryGroupSlots,editDiaryGroupSlot,renameDiaryGroup} from './local-group-rename.js';
@@ -8,6 +8,8 @@ export function applyWriteToState(state,row,result){
  const {type,payload:p}=row.command,id=result?.records?.entries?.[0]?.id??result?.records?.biometrics?.[0]?.id??result?.records?.notes?.[0]?.id??result?.item?.id??result?.id??row.command.operationId;
  const replace=(collection,value)=>{state[collection]??=[];const i=state[collection].findIndex(item=>item.id===value.id);if(i<0)state[collection].push(value);else state[collection][i]=value;};
  const remove=(collection,id)=>{state[collection]=(state[collection]??[]).filter(item=>item.id!==id);};
+ const fastingChange=result?.fastingChange??row.projection?.fastingChange;
+ if(fastingChange)applyFastingChange(state,fastingChange);
  projectDiaryBulkWrite(state,row.command);
  if(['food.delete','recipe.delete','meal.delete'].includes(type))removeLibraryItem(state,type.split('.')[0],p.id);
  if(row.projection?.library&&!result?.records){
@@ -16,6 +18,11 @@ export function applyWriteToState(state,row,result){
   replace(kind+'s',{...structuredClone(resource),id:mode==='update'?resource.id:id,_pending:!result});
  }
 
+ if(type==='barcode.log'&&!result?.records){
+  const food=row.projection.barcodeFood;
+  if(!state.foods.some(item=>item.id===food.id))replace('foods',{...food,_pending:!result});
+  if(row.projection.barcodeEntry)replace('entries',{...row.projection.barcodeEntry,id:result?.entryIds?.[0]??row.command.operationId,_pending:!result});
+ }
  if((type==='selection.recipe'||type==='selection.meal')&&!result?.records){
   const draft=row.projection?.reusable;
   if(draft){
@@ -65,6 +72,7 @@ export function applyWriteToState(state,row,result){
  if(type==='group.editSlot'&&state.settings.groups&&diaryGroupSlots(state.settings)[p.slot-1]===p.from)editDiaryGroupSlot(state,p);
  if(type==='group.rename'&&state.settings.groups?.includes(p.from))renameDiaryGroup(state,p);
  if(row.projection?.chartState&&type!=='chart.save'){state.settings.mobileCharts=structuredClone(row.projection.chartState.mobileCharts);state.charts=structuredClone(row.projection.chartState.charts);}
+ if(type==='chart.delete'){remove('charts',p.id);if(state.settings.mobileCharts?.custom)delete state.settings.mobileCharts.custom[p.id];}
  if(type==='chart.save'&&Array.isArray(state.charts))storeChartDefinition(state,structuredClone(result?.records?.charts?.[0]??p));
  if(type==='entry.ingredients.adjust'){
   const entry=state.entries.find(row=>row.id===p.id);
@@ -84,6 +92,10 @@ export function applyWriteToState(state,row,result){
   }
  }
  if(type==='repeat.save')replace('repeats',{...p,id:p.id??id});
+ if(type==='food.multi.add'&&!result?.records){
+  for(const [index,entry] of (row.projection.entries??[]).entries())replace('entries',{...entry,id:row.command.operationId+'-'+index,_pending:true});
+  for(const recipe of row.projection.recipes??[])replace('recipes',{...recipe,id:row.command.operationId,_pending:true});
+ }
  if(type==='photo.log'||type==='meal.log'){
   const rows=row.projection?.entries??p.rows??[];
   if(p.destination&&p.destination.kind!=='diary')return;
@@ -97,11 +109,19 @@ export function applyWriteToState(state,row,result){
 // Apply one saved definition to every cached view that contains its collection.
 export function projectSavedDefinition(path,view,row,receipt){
  const {type,payload}=row.command;
- if(type==='fasting.schedule.save'&&/^\/api\/fasting(?:\?|$)/.test(path)&&view?.schedules){
+ if(type==='fasting.schedule.save'&&!row.projection?.fastingChange&&/^\/api\/fasting(?:\?|$)/.test(path)&&view?.schedules){
   const schedule=receipt?.fastingSchedule??{...payload,timeZone:row.projection.scheduleZone,revision:payload.revision+1,nextStart:null,_pending:true};
   return {...view,schedules:withRecord(view.schedules,schedule)};
  }
- if(type!=='chart.save'||!row.projection?.chartDate||!/^\/api\/charts(?:\?|$)/.test(path)||!view?.saved)return view;
+ if(type==='chart.delete'&&/^\/api\/dashboard(?:\?|$)/.test(path)&&view?.pinnedCharts){
+  return {...view,pinnedCharts:projectSavedDefinition('/api/charts',view.pinnedCharts,row,receipt)};
+ }
+ if(!/^\/api\/charts(?:\?|$)/.test(path)||!view?.saved)return view;
+ if(type==='chart.delete'){
+  const id='custom:'+payload.id;
+  return {...view,saved:view.saved.filter(chart=>chart.id!==payload.id),catalog:view.catalog.filter(card=>card.id!==id),cards:view.cards.filter(card=>card.id!==id)};
+ }
+ if(type!=='chart.save'||!row.projection?.chartDate)return view;
  const chart=receipt?.records?.charts?.[0]??payload,id='custom:'+chart.id;
  const cached=row.projection?.chartCard;
  const card=cached&&row.projection.chartDate===view.to&&(!cached.cycleOverlayEnabled||cached.cycleOverlay.calendar.asOf===view.calendar.asOf)?{...cached,name:chart.name,definition:chart}:null;

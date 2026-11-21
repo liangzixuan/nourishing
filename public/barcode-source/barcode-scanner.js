@@ -112,11 +112,12 @@ export class BarcodeScanner{
       getUserMedia:constraints=>{if(!globalThis.isSecureContext||!navigator.mediaDevices?.getUserMedia)throw Error(this.message('secureCamera'));return navigator.mediaDevices.getUserMedia(constraints);},
       attach:async stream=>{this.video.srcObject=stream;this.video.hidden=false;await this.video.play();},
       decode:async()=>{
-        if(!this.video.videoWidth||!this.video.videoHeight)return {candidates:[],unsupported:[]};
+        if(this.manualOpen||!this.video.videoWidth||!this.video.videoHeight)return {candidates:[],unsupported:[]};
         const scale=Math.min(1,1600/Math.max(this.video.videoWidth,this.video.videoHeight));
         const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(this.video.videoWidth*scale));canvas.height=Math.max(1,Math.round(this.video.videoHeight*scale));
         const context=canvas.getContext('2d',{willReadFrequently:true});context.drawImage(this.video,0,0,canvas.width,canvas.height);
-        return this.decode(context.getImageData(0,0,canvas.width,canvas.height));
+        const result=await this.decode(context.getImageData(0,0,canvas.width,canvas.height));
+        return this.manualOpen?{candidates:[],unsupported:[]}:result;
       },
       onResult:result=>{this.detachVideo();this.showResults(result);},
       onStatus:code=>{this.status.textContent=this.message(code);this.updateControls();},
@@ -135,24 +136,24 @@ export class BarcodeScanner{
     this.mobile=true;this.onClose=onClose;this.mobileAbort=new AbortController();const signal=this.mobileAbort.signal,m=key=>escape(this.message(key)),glyph=name=>`<span class="barcode-symbol" data-glyph="${name}" aria-hidden="true"></span>`;
     const section=this.root.querySelector('.barcode-scanner'),camera=this.root.querySelector('[data-barcode-action=camera]'),stop=this.root.querySelector('[data-barcode-action=stop]'),file=this.root.querySelector('.barcode-file-label'),notes=[...section.querySelectorAll(':scope>.mini-note:not(.barcode-status)')],results=this.root.querySelector('.barcode-results');
     section.classList.add('barcode-fullscreen');section.replaceChildren();
-    section.innerHTML=`<div class="barcode-camera-ui"><header class="barcode-mobile-header"><button type="button" data-barcode-action="close" aria-label="${m('close')}">${glyph('close')}</button><h2>${m('mobileTitle')}</h2></header><div class="barcode-stage"><div class="barcode-guide"><span>${m('frame')}</span></div><div class="barcode-feedback"></div></div><footer class="barcode-mobile-footer"><button type="button" data-barcode-action="torch" aria-pressed="false">${glyph('flash_on')}<span>${m('flash')}</span></button><button type="button" data-barcode-action="manual"><span class="barcode-type-symbol">${glyph('barcode')}${glyph('edit')}</span><span>${m('type')}</span></button></footer></div><div class="barcode-manual-overlay" hidden><section class="barcode-manual-sheet" role="dialog" aria-modal="true" aria-label="${m('type')}"><form data-barcode-manual><h2>${m('type')}</h2><label>${m('number')}<input name="code" required inputmode="numeric" pattern="[0-9]{8,14}" minlength="8" maxlength="14" autocomplete="off"></label><div class="barcode-manual-actions"><button type="button" data-barcode-action="manual-close">${m('cancel')}</button><button type="submit">${m('lookupShort')}</button></div></form><div class="barcode-manual-feedback"></div><div class="barcode-image-choice"></div><details><summary>${m('help')}</summary><div class="barcode-help"></div></details></section></div>`;
-    this.mobileUI=section.querySelector('.barcode-camera-ui');this.stage=section.querySelector('.barcode-stage');this.stage.prepend(this.video);this.feedback=section.querySelector('.barcode-feedback');this.feedback.append(this.status,this.error,results,camera);stop.hidden=true;section.querySelector('.barcode-help').append(...notes,stop);section.querySelector('.barcode-image-choice').append(file);
-    this.manualOverlay=section.querySelector('.barcode-manual-overlay');this.manualForm=section.querySelector('[data-barcode-manual]');
+    section.innerHTML=`<div class="barcode-camera-ui"><header class="barcode-mobile-header"><button type="button" data-barcode-action="close" aria-label="${m('close')}">${glyph('close')}</button><h2>${m('mobileTitle')}</h2><details class="barcode-help-menu"><summary aria-label="${m('help')}" title="${m('help')}">?</summary><div class="barcode-help"></div></details></header><div class="barcode-stage"><div class="barcode-guide"><span>${m('frame')}</span></div><div class="barcode-feedback"></div></div><footer class="barcode-mobile-footer"><button type="button" data-barcode-action="torch" aria-pressed="false">${glyph('flash_on')}<span>${m('flash')}</span></button><div class="barcode-entry"><span class="barcode-type-symbol">${glyph('barcode')}${glyph('edit')}</span><button type="button" data-barcode-action="manual">${m('type')}</button><form data-barcode-manual hidden><input name="code" aria-label="${m('number')}" placeholder="${m('type')}" required inputmode="numeric" pattern="[0-9]{8,14}" minlength="8" maxlength="14" autocomplete="off"><button type="submit" aria-label="${m('lookupShort')}" hidden>&#10003;</button></form></div></footer></div>`;
+    this.mobileUI=section.querySelector('.barcode-camera-ui');this.stage=section.querySelector('.barcode-stage');this.stage.prepend(this.video);this.feedback=section.querySelector('.barcode-feedback');this.feedback.prepend(this.status,this.error,results,camera);stop.hidden=true;section.querySelector('.barcode-help').append(...notes,stop);section.querySelector('.barcode-help').prepend(file);
+    this.manualButton=section.querySelector('[data-barcode-action=manual]');this.manualForm=section.querySelector('[data-barcode-manual]');
     this.manualForm.addEventListener('submit',event=>{event.preventDefault();event.stopPropagation();void this.lookup(this.manualForm.elements.code.value);},{signal});
-    this.manualOverlay.addEventListener('click',event=>{if(event.target===this.manualOverlay)this.closeManual();},{signal});
+    this.manualForm.elements.code.addEventListener('input',()=>this.updateControls(),{signal});
     this.root.addEventListener('keydown',event=>{
       if(event.key==='Escape'){event.preventDefault();event.stopPropagation();if(!this.back())this.onClose();}
-      if(event.key==='Tab'&&this.manualOpen){const controls=[...this.manualOverlay.querySelectorAll('button,input,summary')].filter(node=>!node.disabled&&node.getClientRects().length),first=controls[0],last=controls.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}}
     },{signal});
     this.updateControls();void this.action(camera);
   }
   openManual(){
-    this.stopCamera();this.manualOpen=true;this.manualOverlay.hidden=false;this.mobileUI.inert=true;this.root.querySelector('.barcode-manual-feedback').append(this.feedback);this.manualForm.elements.code.focus();this.updateControls();
+    this.manualOpen=true;this.manualForm.hidden=false;this.manualButton.hidden=true;this.manualForm.elements.code.focus();this.updateControls();
   }
-  closeManual(resume=true){
-    if(!this.manualOpen)return;this.cancelLookup();this.imageGeneration++;this.busy=false;this.manualOpen=false;this.manualOverlay.hidden=true;this.mobileUI.inert=false;this.stage.append(this.feedback);this.root.querySelector('[data-barcode-action=manual]').focus();if(resume)void this.action(this.root.querySelector('[data-barcode-action=camera]'));else this.updateControls();
+  closeManual(){
+    if(!this.manualOpen)return;
+    this.cancelLookup();this.manualOpen=false;this.manualForm.hidden=true;this.manualButton.hidden=false;this.manualButton.focus();this.updateControls();
   }
-  back(){if(!this.manualOpen)return false;this.closeManual();return true;}
+  back(){const help=this.root.querySelector('.barcode-help-menu');if(help?.open){help.open=false;help.querySelector('summary').focus();return true;}if(!this.manualOpen)return false;this.closeManual();return true;}
   cancelLookup(){this.lookupRequest?.abort();this.lookupRequest=null;this.lookupPending=false;}
   async lookup(code,scan){
     if(this.disposed||this.busy||this.lookupPending)return;
@@ -172,7 +173,8 @@ export class BarcodeScanner{
       this.root.querySelector('[data-barcode-action=camera]').hidden=running||this.lookupPending;
       this.root.querySelector('.barcode-guide').hidden=!running;this.status.hidden=running;
       this.manualForm.querySelector('button[type=submit]').disabled=this.busy||this.lookupPending;this.manualForm.elements.code.disabled=this.lookupPending;
-      this.feedback.hidden=!this.manualOpen&&running&&this.error.hidden;
+      this.manualForm.querySelector('button[type=submit]').hidden=!this.manualForm.elements.code.value;
+      this.feedback.hidden=running&&this.error.hidden;
     }
   }
   detachVideo(){this.video.pause();this.video.srcObject=null;this.video.hidden=true;this.updateControls();}
@@ -211,7 +213,7 @@ export class BarcodeScanner{
   async action(control){
     if(this.disposed)return;
     if(control.dataset.barcodeAction==='camera'){
-      if(this.busy||this.lookupPending)return;if(this.manualOpen)this.closeManual(false);this.clearResults();await this.camera.start();this.updateControls();
+      if(this.busy||this.lookupPending)return;if(this.manualOpen)this.closeManual();this.clearResults();await this.camera.start();this.updateControls();
     }else if(control.dataset.barcodeAction==='manual'){
       this.openManual();
     }else if(control.dataset.barcodeAction==='manual-close'){

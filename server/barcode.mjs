@@ -54,5 +54,6 @@ export function previewBarcode(state,input,context){
 export function applyBarcodeLog(state,payload,context){
  validateBarcodeAction({payload});const food=verifyBarcodeReview(payload.reviewToken,context),candidate=withFood(state,food),{reviewToken,saveOnly,...entry}=payload,count=candidate.entries.length;
  if(!saveOnly)act(candidate,'entry.add',{...entry,foodId:food.id});
- Object.assign(state,candidate);return {kind:'food',id:food.id,entryIds:candidate.entries.slice(count).map(row=>row.id)};
+ const entries=candidate.entries.slice(count);Object.assign(state,candidate);
+ return {kind:'food',id:food.id,entryIds:entries.map(row=>row.id),records:{foods:[food],entries}};
 }

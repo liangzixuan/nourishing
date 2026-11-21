@@ -5,6 +5,8 @@ import {mountCgmDetail} from './cgm-detail.js';
 import {escape as e} from './html.js';
 import {onBackgroundWriteStatus} from './background-writes.js';
 import {request,queueCommand} from './diary-api.js';
+import {readDeviceCache} from './device-cache.js';
+import {appendChartNavigation,saveChartDefinition} from './custom-chart-editor.js';
 import {localWorkspaceState} from './local-engine.js';
 import {chartCardMarkup,mountChartPlots,validateChartView} from './chart-presentation.js';
 import {chartArrow,chartTitle} from './charts-source-view.js';
@@ -46,18 +48,30 @@ export function mountCharts({page,date,show,close,header,content,onChange,onRead
   customEditor=mountChartDetail(view,id,ui);detailHost=customEditor.element;
  }
  function manage(){
-  const row=card=>`<div class="mcl-row"><button type="button" class="mcl-custom-name" data-manage-chart="${e(card.id)}"><strong>${e(chartTitle(card))}</strong></button><input type="checkbox" role="switch" class="chart-visibility" aria-label="${e(chartTitle(card))}" data-chart-visible="${e(card.id)}" ${card.settings.visible?'checked':''}></div>`;
+  if(!alive())return;
+  const owner=readDeviceCache('/api/diary').then(value=>value.ticket);
+  const row=card=>{
+   const title=card.kind==='custom'?card.name:cm(card.id==='energy'?'energyManager':card.id);
+   return `<div class="mcl-row"><button type="button" class="mcl-custom-name" data-manage-chart="${e(card.id)}"><strong>${e(title)}</strong></button><input type="checkbox" role="switch" class="chart-visibility" aria-label="${e(title)}" data-chart-visible="${e(card.id)}" ${card.settings.visible?'checked':''}></div>`;
+  };
   const custom=data.catalog.filter(card=>card.kind==="custom"),builtins=data.catalog.filter(card=>card.kind!=="custom");
-  showSheet(`${header(cm('manage'))}<div class="mcl-body" data-chart-manager><div class="mcl-group">${builtins.map(row).join('')}</div>${custom.length?`<h3>${e(cm('custom'))}</h3><div class="mcl-group">${custom.map(row).join('')}</div>`:''}<button type="button" class="mcl-row" data-create-chart><strong>${e(cm('create'))}</strong>${chartArrow}</button><p class="sheet-message" role="status"></p></div>`);
-  const host=content.querySelector('[data-chart-manager]');host.querySelector('[data-create-chart]').onclick=()=>openChartDefinition(null,data,{...ui,onBack:manage});
-  host.querySelectorAll('[data-manage-chart]').forEach(button=>button.onclick=()=>detail(button.dataset.manageChart));
+  showSheet(`${header(cm('manage'))}<div class="mcl-body" data-chart-manager><div class="mcl-group">${builtins.map(row).join('')}</div><h3>${e(cm('custom'))}</h3><div class="mcl-group">${custom.map(row).join('')}</div><button type="button" class="mcl-row" data-create-chart><strong>${e(cm('create'))}</strong>${chartArrow}</button><p class="sheet-message" role="status"></p></div>`);
+  const host=content.querySelector('[data-chart-manager]');
+  appendChartNavigation(host,original=>{close();original.click();});
+  host.querySelector('[data-create-chart]').onclick=()=>openChartDefinition(null,data,{...ui,onBack:manage});
+  host.querySelectorAll('[data-manage-chart]').forEach(button=>button.onclick=()=>{const id=button.dataset.manageChart,chart=data.saved.find(row=>'custom:'+row.id===id);if(chart)openChartDefinition(chart,data,{...ui,onBack:manage,afterDelete:manage});else detail(id);});
   host.querySelectorAll('[data-chart-visible]').forEach(input=>input.onchange=async()=>{
    const previous=!input.checked;host.querySelectorAll('button,input').forEach(control=>control.disabled=true);
-   try{const id=input.dataset.chartVisible,custom=id.startsWith('custom:'),definition=custom?data.saved.find(chart=>chart.id===id.slice(7)):null;
-    const action={type:custom?'chart.save':'chart.display',payload:custom?{...definition,visible:input.checked}:{id,patch:{visible:input.checked}}};
+   try{const id=input.dataset.chartVisible;
+    if(id.startsWith('custom:')){
+     const {_awaitingPlot,...definition}=data.saved.find(chart=>chart.id===id.slice(7));
+     await saveChartDefinition({type:'chart.save',payload:{...definition,visible:input.checked},requestId:crypto.randomUUID(),revision:data.revision},data,await owner);
+     await load();if(host.isConnected)manage();void onChange?.();return;
+    }
+    const action={type:'chart.display',payload:{id,patch:{visible:input.checked}}};
     const state=await localWorkspaceState();if(!state)throw Error(dc('loadingChart'));
     const {projectLocalChart}=await import('./local-chart-projection.js'),next=await projectLocalChart(state,action,data);
-    await queueCommand(data.revision,action.type,action.payload,{projection:{responses:{['/api/charts?'+new URLSearchParams({to:date()})]:next},chartState:next.localChartState}});
+    await queueCommand(data.revision,action.type,action.payload,{ticket:await owner,projection:{responses:{['/api/charts?'+new URLSearchParams({to:date()})]:next},chartState:next.localChartState}});
     if(alive()){data=next;render();if(host.isConnected)manage();}void onChange?.();}
    catch(error){if(host.isConnected){input.checked=previous;host.querySelector('[role=status]').textContent=error.message;}}
    finally{host.querySelectorAll('button,input').forEach(control=>control.disabled=false);}

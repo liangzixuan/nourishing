@@ -12,6 +12,7 @@ import {digest} from '../server/data-codec.mjs';
 import {offlineSnapshot} from '../server/offline.mjs';
 import {createWorkspaceStore} from '../server/workspace-store.mjs';
 import {diaryStoreFixture} from './fixtures/diary-store.mjs';
+import {previewFoodMultiAdd} from '../server/food-multi-add.mjs';
 import {diaryToolsReview} from '../server/diary-tools.mjs';
 
 test('selection-created recipes stay visible in cached library reads before and after lost-ack recovery',async()=>{
@@ -31,7 +32,7 @@ test('selection-created recipes stay visible in cached library reads before and 
  },{losePath:'/api/workspace/command'});
 });
 
-async function realQueueFixture(state,run,{losePath,loseType,rejectWrite}={}){
+async function realQueueFixture(state,run,{losePath,loseType,rejectWrite,commandTime}={}){
  const owner='owner-a',date='2026-11-20',fixture=diaryStoreFixture(state,owner),store=createWorkspaceStore(fixture.db,owner),sent=[];let lose=Boolean(losePath);
  const server=createServer(async(req,res)=>{try{
   if(req.url==='/'){res.setHeader('Content-Type','text/html');return res.end('<main></main>');}
@@ -45,7 +46,7 @@ async function realQueueFixture(state,run,{losePath,loseType,rejectWrite}={}){
    if(req.url.startsWith('/api/diary'))return res.end(JSON.stringify({revision:digest(fixture.state())}));
    let raw='';for await(const chunk of req)raw+=chunk;const body=JSON.parse(raw);sent.push({path:req.url,body});
    const rejected=rejectWrite?.(body);if(rejected)throw rejected;
-   const result=req.url==='/api/offline/commands'?await store.offlineCommand(body):await store.command(body,async()=>null,{owner,asOf:date+'T12:00:00Z',timeZone:'UTC'});
+   const result=req.url==='/api/offline/commands'?await store.offlineCommand(body):await store.command(body,async()=>null,{owner,asOf:commandTime??date+'T12:00:00Z',timeZone:'UTC'});
    if(lose&&req.url===losePath&&(!loseType||body.type===loseType)){lose=false;throw {code:503,message:'Lost acknowledgement'};}
    return res.end(JSON.stringify(result));
   }
@@ -544,6 +545,7 @@ test('offline meal expansion follows a pending meal and parent across restart an
 
 for(const lost of ['chart.save','fasting.schedule.save'])test('offline chart and fasting editors reconcile after restart and a lost '+lost+' reply',async()=>{
  await realQueueFixture(initialState(),async({page,fixture,flush,initialize,sent,date})=>{
+  await page.clock.setFixedTime(new Date(date+'T12:00:00Z'));
   async function mount(surface){
    await page.evaluate(async({surface,date})=>{
     window.surface?.dispose();document.body.innerHTML='<main></main><dialog><div></div></dialog>';
@@ -570,8 +572,8 @@ for(const lost of ['chart.save','fasting.schedule.save'])test('offline chart and
   await page.route('**/api/charts?**',route=>route.abort());await page.route('**/api/fasting?**',route=>route.abort());
   await mount('charts');for(const id of chartIds)await page.locator('[data-chart-open="custom:'+id+'"]').waitFor();
   await mount('fasting');await page.locator('[data-fast-section=scheduled] summary').click();
-  await page.getByText('Evening fast',{exact:true}).waitFor();await page.getByText(date+' 12:02 UTC',{exact:true}).waitFor();
-  assert.equal(await page.locator('.dc-scheduled-times > div').count(),1);
+  await page.getByText('Evening fast',{exact:true}).waitFor();await page.locator('[data-schedule-time=start][datetime="'+date+'T12:02:00Z"]').waitFor();
+  assert.equal(await page.locator('.dc-scheduled-times > div').count(),2);
   await flush();assert.equal((await pending()).length,lost==='chart.save'?2:3);assert.equal(fixture.state().fastingPlan.schedules.length,1);
   await page.reload();await initialize();await flush();assert.equal((await pending()).length,0);
   assert.equal(fixture.state().fastingPlan.schedules.length,1);const attempts=sent.filter(item=>item.body.type===lost);assert.deepEqual(attempts[0],attempts[1]);
@@ -584,4 +586,124 @@ for(const lost of ['chart.save','fasting.schedule.save'])test('offline chart and
   assert.deepEqual(cached.fast,[{...schedule,nextStart:date+'T12:02:00Z'}]);
   assert.deepEqual(cached.charts,fixture.state().charts);assert.deepEqual(cached.stateCharts,fixture.state().charts);
  },{losePath:'/api/workspace/command',loseType:lost});
+});
+
+test('custom chart deletion and visibility survive an offline restart, account switch and lost deletion receipt',async()=>{
+ const state=initialState(),hidden={version:2,id:'kept',name:'Kept chart',primary:{kind:'biometric',type:'weight',unit:'kg'},secondary:null,days:7,visible:true,cycleOverlay:false};
+ state.charts=[hidden];
+ await realQueueFixture(state,async({page,fixture,flush,initialize,sent,date})=>{
+  const mount=()=>page.evaluate(async date=>{
+   window.surface?.dispose();document.body.innerHTML='<main></main><dialog><div></div></dialog>';
+   const page=document.querySelector('main'),sheet=document.querySelector('dialog'),content=sheet.firstChild;
+   window.surface=(await import('/charts.js')).mountCharts({page,date:()=>date,content,header:title=>'<h2>'+title+'</h2>',show:html=>{content.innerHTML=html;sheet.showModal();},close:()=>{sheet.close();content.replaceChildren();}});
+  },date);
+  const queued=()=>page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy()).pending);
+  const current=()=>page.evaluate(async date=>{
+   const {localWorkspaceState}=await import('/local-engine.js'),{request}=await import('/diary-api.js');
+   const lists=await Promise.all([date,'2026-11-19'].map(to=>request('/api/charts?to='+to)));
+   return {charts:(await localWorkspaceState()).charts,lists:lists.map(view=>({saved:view.saved.map(row=>[row.id,row.visible]),cards:view.cards.filter(row=>row.kind==='custom').map(row=>row.id),catalog:view.catalog.filter(row=>row.kind==='custom').map(row=>[row.id,row.settings.visible])}))};
+  },date);
+  await mount();await current();await page.route('**/api/charts?**',route=>route.abort());
+  await page.route('**/api/workspace/command',route=>route.abort());
+  await page.locator('[data-create]').click();await page.getByLabel('Chart Name',{exact:true}).fill('Temporary chart');
+  await page.locator('[data-mce-save]').click();await page.locator('.mobile-chart-editor').waitFor({state:'detached'});
+  const id=(await queued())[0].command.payload.id;
+  await page.locator('[data-manage]').click();await page.locator('[data-manage-chart="custom:'+id+'"]').click();
+  await page.getByLabel('Chart Name',{exact:true}).fill('Edited offline');await page.locator('[data-mce-save]').click();
+  await page.locator('.mobile-chart-editor').waitFor({state:'detached'});
+  await page.locator('[data-chart-open="custom:'+id+'"]').click();await page.locator('[data-chart-delete]').click();
+  await page.locator('[data-mcp-confirm]').click();
+  await page.waitForFunction(()=>!document.querySelector('dialog').open,null,{timeout:3500});
+  assert.deepEqual((await queued()).map(row=>row.command.type),['chart.save','chart.save','chart.delete']);
+  await page.locator('[data-manage]').click();await page.locator('[data-chart-visible="custom:kept"]').uncheck();
+  await page.waitForFunction(()=>!document.querySelector('[data-chart-open="custom:kept"]'));
+  await page.locator('[data-manage-chart="custom:kept"]').click();await page.locator('[data-mce-delete]').click();await page.locator('[data-mcp-cancel]').click();
+  assert.equal(await page.locator('[data-mce-delete]').isVisible(),true);assert.equal((await queued()).length,4);
+  const assertCached=async()=>{
+   const cached=await current();assert.deepEqual(cached.charts,[{...hidden,visible:false}]);
+   for(const view of cached.lists)assert.deepEqual(view,{saved:[['kept',false]],cards:[],catalog:[['custom:kept',false]]});
+  };
+  await assertCached();
+  await page.reload();await initialize();await mount();await page.locator('[data-manage]').click();
+  assert.equal(await page.locator('[data-chart-visible="custom:kept"]').isChecked(),false);assert.equal(await page.locator('[data-manage-chart="custom:'+id+'"]').count(),0);
+  await page.locator('[data-manage-chart="custom:kept"]').click();await page.locator('[data-mce-delete]').click();
+  await page.evaluate(async()=>{await(await import('/device-cache.js')).initializeDeviceCache('owner-b');});
+  await page.locator('[data-mcp-confirm]').click();await page.locator('[data-mce-error]').filter({hasText:/./}).waitFor();
+  assert.equal(await page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy())?.pending.length??0),0);
+  await page.reload();await initialize();assert.equal((await queued()).length,4);assert.equal(sent.length,0);
+  await page.unroute('**/api/charts?**');await current();await page.route('**/api/charts?**',route=>route.abort());
+  await page.unroute('**/api/workspace/command');await flush();assert.equal((await queued()).length,2);
+  await page.reload();await initialize();await flush();
+  assert.deepEqual(await queued(),[]);assert.deepEqual(fixture.state().charts,[{...hidden,visible:false}]);await assertCached();
+  const attempts=sent.filter(row=>row.body.type==='chart.delete');assert.equal(attempts.length,2);assert.deepEqual(attempts[0],attempts[1]);
+  assert.deepEqual((await page.evaluate(async()=>(await(await import('/local-engine.js')).localWorkspaceState()).charts)),fixture.state().charts);
+ },{losePath:'/api/workspace/command',loseType:'chart.delete'});
+});
+
+test('fasting history, starts and stops persist from the visible offline controls',async()=>{
+ const state=initialState(),original={id:'original',label:'Original',start:'2026-11-17T10:00:00Z',end:'2026-11-18T02:00:00Z',goalHours:16};
+ state.fasts=[original];
+ await realQueueFixture(state,async({page,fixture,initialize,flush,sent,date})=>{
+  const noon=date+'T12:01:00.000Z',before=date+'T12:00:00.000Z';
+  await page.clock.setFixedTime(new Date(before));page.setDefaultTimeout(5500);
+  const mount=async(initialAction)=>page.evaluate(async initialAction=>{
+   window.surface?.dispose();document.body.innerHTML='<main></main>';window.surface=(await import('/fasting.js')).mountFasting({page:document.querySelector('main'),initialAction});
+  },initialAction);
+  const open=section=>page.locator('[data-fast-section='+section+'] summary').click();
+  const action=name=>page.locator('[data-discover='+name+']').click();
+  const editor=page.locator('.fasting-editor'),quick=page.locator('.fasting-quick');
+  const save=async()=>{await editor.locator('[type=submit]').click();await editor.waitFor({state:'detached'});};
+  const confirm=async()=>{await quick.locator('[data-confirm-fast]').click();await quick.waitFor({state:'detached'});};
+  const pending=()=>page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy()).pending);
+  await mount();await open('history');await action('past-fast');await editor.locator('[name=label]').fill('Lunch');await save();
+  const lunch=page.locator('[data-fast-history-row]').filter({hasText:'Lunch'});await lunch.locator('[data-discover=history-edit]').click();await editor.locator('[name=label]').fill('Updated lunch');await save();
+  await mount('new');await quick.locator('input').check();assert.equal(await quick.locator('select').isDisabled(),true);await confirm();
+  await page.clock.setFixedTime(new Date(noon));await mount('end');await confirm();await open('history');
+  assert.equal(await page.locator('[data-fast-history-row]').count(),3);
+  await page.route('**/api/fasting?**',route=>route.abort());
+  await page.reload();await initialize();await mount();await open('history');await lunch.getByText('Updated lunch',{exact:true}).waitFor();
+  await lunch.locator('[data-fh-list-delete]').click();await page.locator('[data-fast-delete=cancel]').click();await lunch.locator('[data-fh-list-select]').check();await page.locator('[data-fh-list-delete-selected]').click();await page.locator('[data-fast-delete=confirm]').click();await lunch.waitFor({state:'detached'});
+  await open('scheduled');await page.locator('.dc-fast-footer [data-discover=schedule-fast]').click();await editor.locator('[name=label]').fill('Evening');await save();
+  const schedule=page.locator('.dc-scheduled-item').filter({hasText:'Evening'});await schedule.locator('[data-discover=edit-schedule]').first().click();await editor.locator('[name=label]').fill('Evening edited');await editor.locator('[name=note]').fill('Evening note');await save();await schedule.locator('[data-discover=start-scheduled]').click();await confirm();
+  await mount('end');await confirm();await open('scheduled');await schedule.locator('[data-discover=edit-schedule]').first().click();await editor.locator('[data-delete-fast]').click();await page.locator('[data-fast-delete=confirm]').click();await schedule.waitFor({state:'detached'});
+  assert.equal((await pending()).length,10);assert.deepEqual(fixture.state().fasts,[original]);
+  await page.evaluate(async()=>{const {initializeDeviceCache}=await import('/device-cache.js');await initializeDeviceCache('owner-b');});
+  assert.equal(await page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy())?.pending.length??0),0);
+  await mount();await page.locator('[data-fasting-status]').waitFor();assert.equal(await page.locator('[data-fast-history-row]').count(),0);
+  await initialize();await mount();await open('history');
+  assert.equal(await page.locator('[data-fast-history-row]').count(),3);
+  await flush();assert.equal((await pending()).length,10);await page.reload();await initialize();await flush();
+  assert.equal((await pending()).length,0);const attempts=sent.filter(row=>row.body.type==='fast.record');assert.deepEqual(attempts[0],attempts[1]);
+  const canonical=fixture.state();assert.equal(canonical.fastingPlan.schedules.length,0);assert.equal(canonical.fasts.length,3);assert.deepEqual(canonical.fasts[0],original);
+  assert.deepEqual(canonical.fasts.slice(1).map(row=>[row.start,row.end,row.goalHours]),[[before,noon,null],[noon.replace('.000',''),noon,16]]);
+  assert.equal(canonical.fasts.at(-1).scheduled.label,'Evening edited');assert.equal(canonical.fasts.at(-1).note,'Evening note');
+  assert.deepEqual(await page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy()).snapshot.state.fasts),canonical.fasts);
+ },{losePath:'/api/workspace/command',loseType:'fast.record',commandTime:'2026-11-20T12:01:00Z'});
+});
+
+test('reviewed Multi-Add survives restart and applies dependent changes to canonical records after a lost reply',async()=>{
+ const state=initialState(),date='2026-11-20',owner='owner-a';
+ const foodId=act(state,'food.save',{name:'Rice',serving:'100 g',grams:100,nutrients:{calories:100}}).id;
+ const rows=[1,2].map(amount=>({id:crypto.randomUUID(),selection:{kind:'foods',id:foodId},entry:{date,time:'',group:'Lunch',amount}}));
+ const reviews=['diary','recipe'].map(kind=>{
+  const destination=kind==='diary'?{kind}:{kind,name:'Two portions',servings:2},input={rows,destination};
+  return {input,result:previewFoodMultiAdd(state,input,{owner}),id:crypto.randomUUID()};
+ });
+ await realQueueFixture(state,async({page,fixture,flush,initialize,sent})=>{
+  await page.evaluate(async reviews=>{
+   const {queueCommand}=await import('/diary-api.js');
+   for(const {input,result,id} of reviews)await queueCommand(result.revision,'food.multi.add',{...input,reviewToken:result.reviewToken,confirmed:true},{projection:result.projection,requestId:id});
+   await queueCommand(reviews[0].result.revision,'entry.delete',{id:reviews[0].id+'-0'});
+  },reviews);
+  await page.reload();await initialize();
+  const local=await page.evaluate(async()=>(await import('/local-engine.js')).localWorkspaceState());
+  assert.equal(local.entries.length,1);assert.equal(local.entries[0].amount,2);
+  assert.equal(local.recipes[0].id,reviews[1].id);assert.equal(fixture.state().entries.length,0);
+  await flush();assert.equal(fixture.state().entries.length,2);await flush();
+  assert.deepEqual(sent[0].body,sent[1].body);assert.equal(fixture.state().recipes.length,1);
+  assert.equal(fixture.state().entries.length,1);assert.equal(fixture.state().entries[0].amount,2);
+  const copy=await page.evaluate(async()=>(await import('/offline-store.js')).readWriteCopy());
+  assert.deepEqual(copy.pending,[]);assert.deepEqual(copy.snapshot.state.recipes,fixture.state().recipes);
+  assert.deepEqual(copy.snapshot.state.entries,fixture.state().entries);
+ },{losePath:'/api/workspace/command',loseType:'food.multi.add'});
 });

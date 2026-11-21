@@ -1,3 +1,4 @@
+import {readDeviceCache} from './device-cache.js';
 import './client-errors.js';
 import './pwa.js';
 import {startBackgroundWrites,onBackgroundWriteStatus} from './background-writes.js';
@@ -39,6 +40,7 @@ import {escape as e} from './html.js';
 import {request, readDiaryCalendarMonth, command, clearPending, queueCommand, queuePhoto} from './diary-api.js';
 import {mountLibrary} from './library.js';
 import {mountFoodPicker} from './food-picker.js';
+import {openFastingAction} from './fasting.js';
 import {mountNutrition} from './nutrition.js';
 import {applyTheme} from './appearance.js';
 import {waterPolicy,waterRecordAmount,newestWaterEntry,openWaterAmount,openWaterMenu,mountWaterSettings} from './water.js';
@@ -245,7 +247,9 @@ function selectTab(id) {
   shell.select(id);
 }
 
+let diaryFastingAction;
 function leaveView() {
+  diaryFastingAction?.dispose();diaryFastingAction=null;
   waterPanel?.dispose();waterPanel=null;waterMenu?.close(false);waterMenu=null;waterAmount?.close();waterAmount=null;
   diaryCalendar?.close();
   diaryTools.reset();
@@ -382,7 +386,7 @@ function runAddAction(kind, initialGroup) {
     barcode: () => barcode(),
     all: () => openAddMenu(initialGroup),
     suggest: () => openInsights(),
-    fast: () => navigate('discover', 'new-fast'),
+    fast: () => {diaryFastingAction?.dispose();diaryFastingAction=openFastingAction({page,initialAction:'new',onChange:()=>load({reuseUnchanged:true})});},
     biometric: () => recordEditor('biometric', undefined, initialGroup),
     note: () => recordEditor('note', undefined, initialGroup),
     exercise: () => recordEditor('exercise', undefined, initialGroup),
@@ -720,6 +724,7 @@ async function search(restore = null, {applied, selected} = {}) {
   if (!diary) return;
   if (!diary.groups.includes(group)) group = defaultGroup(diary.groups);
   show(`${header(t('diary.addFood'))}<div class="diary-picker"></div>`);
+  const ownerTicket=readDeviceCache('/api/diary').then(result=>result.ticket);
   const picker = mountFoodPicker(content.querySelector('.diary-picker'), {
     onPick: (kind, id) => {
       const snapshot = picker.snapshot();
@@ -731,6 +736,16 @@ async function search(restore = null, {applied, selected} = {}) {
       ownerId: account.id,
       defaults: restore?.defaults ?? {date, group, time: new Date().toTimeString().slice(0, 5)},
       restore,
+      onQueue: async (review, requestId) => {
+        const ticket=await ownerTicket;
+        if(!ticket||ticket.ownerId!==account.id)throw Error(coreText('request.unavailable'));
+        const {input,result}=review;
+        if(!result.projection)throw Error(coreText('request.unavailable'));
+        await queueCommand(result.revision,'food.multi.add',{...input,reviewToken:result.reviewToken,confirmed:true},{
+          ticket,requestId,projection:result.projection,
+        });
+        return input.destination.kind==='recipe'?{item:{kind:'recipe',id:requestId}}:{};
+      },
       onEdit: async row => {
         const snapshot = picker.snapshot();
         const serial = searchId;
@@ -779,6 +794,7 @@ function searchBarcode(mode, snapshot) {
     mode,
     show,
     close: returnToSearch,
+    onMissing: returnToSearch,
     header: barcodeHeader,
     content,
     date: () => date,
@@ -1010,6 +1026,7 @@ function barcode(mode = 'camera') {
     mode,
     show,
     close,
+    onMissing: () => search(),
     header,
     content,
     date: () => date,
