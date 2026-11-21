@@ -7,7 +7,7 @@ import {libraryToolsView} from '../server/library-tools.mjs';
 
 function fixture(){const state=initialState();const food=act(state,'food.save',{name:'Rice',serving:'100 g',grams:100,milliliters:150,nutrients:{calories:130,protein:3},notes:'Keep this note',portions:[{id:'bowl',label:'Bowl',grams:200,translations:[{locale:'fr',label:'Bol'}]}]}).id;const recipe=act(state,'recipe.save',{name:'Rice recipe',servings:2,ingredients:[{foodId:food,amount:2}],cookedWeightGrams:200,batchVolumeMl:300,source:'https://example.com/recipe',instructions:'Cook rice.'}).id;return {state,food,recipe};}
 function run(state,type,payload){return act(state,type,payload);}
-function portionsEdit(state,kind,id,portions){const draft={id,portions},context={owner:'fixture'},review=previewLibraryEdit(state,{kind,draft},context);return applyLibraryEdit(state,{kind,draft,reviewToken:review.reviewToken,mode:'update',confirmed:true},context);}
+function portionsEdit(state,kind,id,portions){const draft={id,portions},context={owner:'fixture'},review=previewLibraryEdit(state,{kind,draft},context);return applyLibraryEdit(state,{kind,draft,mode:'update'},context);}
 test('food portion edits preserve identity, translations, notes and nutrition',()=>{
  const {state,food}=fixture(),before=structuredClone(state.foods.find(row=>row.id===food));
  portionsEdit(state,'food',food,[{id:'bowl',label:'Large bowl',grams:250},{id:'cup',label:'Cup',milliliters:150}]);

@@ -86,8 +86,8 @@ export async function command(revision,type,payload){
  const result=await request(path,pending.body);pending=null;return result;
 }
 
-export function queueCommand(revision,type,payload,{path='/api/workspace/command',projection={},requestId=crypto.randomUUID()}={}){
- return queueBackgroundWrite(path,{revision,type,payload,requestId},projection);
+export function queueCommand(revision,type,payload,{path='/api/workspace/command',projection={},requestId=crypto.randomUUID(),ticket}={}){
+ return queueBackgroundWrite(path,{revision,type,payload,requestId},projection,ticket);
 }
 export function queuePhoto(revision,payload,projection={}){
  return queueBackgroundWrite('/api/photos/save',{...payload,revision,requestId:crypto.randomUUID()},projection);

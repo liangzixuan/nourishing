@@ -19,8 +19,8 @@ async function verifiedSnapshot(owner,ticket){
  const saved=await saveOfflineSnapshot(snapshot,ticket);return {...snapshot,snapshotRefreshed:saved.snapshotRefreshed};
 }
 export function onBackgroundWriteStatus(listener){listeners.add(listener);return()=>listeners.delete(listener);}
-export async function queueBackgroundWrite(path,body,projection={}){
- const {ticket}=await readDeviceCache('/api/diary');
+export async function queueBackgroundWrite(path,body,projection={},ownerTicket){
+ const ticket=ownerTicket??(await readDeviceCache('/api/diary')).ticket;
  if(!ticket)throw Error('Device storage is unavailable. Reopen Nourishing and try again.');
  const row=await persistBackgroundWrite(ticket,{path,body,projection});
  changed();schedule();return {ok:true,queued:true,requestId:row.command.operationId,revision:body.revision};

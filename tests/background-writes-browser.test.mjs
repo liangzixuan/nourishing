@@ -443,3 +443,35 @@ test('an open reusable editor follows an earlier recipe acknowledgement before S
   assert.equal(fixture.state().meals.length,1);
  });
 });
+
+
+test('offline library create, dependent edits and diary additions reconcile once after a lost reply and reload',async()=>{
+ const state=initialState();
+ await realQueueFixture(state,async({page,fixture,initialize,flush,sent,date})=>{
+  const local=await page.evaluate(async date=>{
+   const {saveLocalLibrary,previewLocalLibrary}=await import('/library-local.js');
+   const {queueCommand}=await import('/diary-api.js');
+   const {localLibraryItem,localLibraryView}=await import('/local-engine.js');
+   const food=await saveLocalLibrary('food',{name:'Offline oats',grams:100,nutrients:{calories:100}});
+   const recipe=await saveLocalLibrary('recipe',{name:'Offline recipe',servings:2,ingredients:[{foodId:food.item.id,amount:2}]});
+   const meal=await saveLocalLibrary('meal',{name:'Offline meal',items:[{recipeId:recipe.item.id,amount:1}]});
+   await queueCommand(undefined,'entry.add',{mealId:meal.item.id,date,amount:1});
+   await saveLocalLibrary('food',{id:food.item.id,name:'Edited oats',nutrientEdits:[{kind:'manual',values:{calories:200}}]});
+   const preview=await previewLocalLibrary({kind:'meal',draft:{id:meal.item.id},date});
+   return {food:food.item.id,recipe:recipe.item.id,meal:meal.item.id,preview:preview.nutrition.totals.calories,item:await localLibraryItem(meal.item),list:await localLibraryView()};
+  },date);
+  assert.equal(local.preview,200);assert.equal(local.item.facts.nutrients.calories,200);assert.equal(local.list.items.length,3);assert.equal(fixture.state().foods.length,0);
+  await flush();assert.equal(fixture.state().foods.length,1);assert.equal(fixture.state().recipes.length,0);
+  await page.reload();await initialize();await flush();
+  assert.equal(fixture.state().foods.length,1);assert.equal(fixture.state().recipes.length,1);assert.equal(fixture.state().meals.length,1);assert.equal(fixture.state().entries.length,1);
+  assert.equal(fixture.state().foods[0].name,'Edited oats');assert.equal(fixture.state().foods[0].nutrients.calories,200);
+  const after=await page.evaluate(async local=>{
+   const {localLibraryItem}=await import('/local-engine.js'),{readWriteCopy}=await import('/offline-store.js');
+   return {item:await localLibraryItem({kind:'meal',id:local.meal}),pending:(await readWriteCopy()).pending};
+  },local);
+  assert.equal(after.item.resource.id,fixture.state().meals[0].id);assert.equal(after.item.facts.nutrients.calories,200);assert.deepEqual(after.pending,[]);
+  const attempts=sent.filter(row=>row.body.type==='food.save');assert.equal(attempts.length,2);assert.deepEqual(attempts[0].body,attempts[1].body);
+  assert.equal(fixture.state().recipes[0].ingredients[0].foodId,fixture.state().foods[0].id);
+  assert.equal(fixture.state().entries[0].mealId,fixture.state().meals[0].id);
+ },{losePath:'/api/library/command',loseType:'food.save'});
+});

@@ -1,8 +1,8 @@
 import {vitaminActivityDefinition,parseVitaminActivityForms} from './domain/vitamin-activity.mjs';
-import {normalizeLibraryDraft} from './domain/workspace.mjs';
+import {normalizeLibraryDraft} from './domain/library-normalization.mjs';
 import {projectFoodLabelDraft,projectFoodManualDraft,foodLabelRows} from './domain/food-label-draft.mjs';
 import {labelProfiles} from './domain/nutrition-label.mjs';
-import {prepareNamedPortions} from './library-tools.mjs';
+import {prepareNamedPortions} from './domain/named-portions.mjs';
 import {catalog} from './domain/nutrition.mjs';
 import {availableQuantityUnits} from './domain/quantity-units.mjs';
 const fail=message=>{throw Object.assign(Error(message),{status:400,code:400,publicMessage:message});};

@@ -1,35 +1,38 @@
-import {pauseLifeCommandFields, preparePauseLifeCommand} from './pause-life-settings.mjs';
-import {displayCommandFields, prepareDisplayCommand} from './display-settings.mjs';
-import {libraryDraftFields, validateLibraryDraft, prepareLibraryDraft, libraryDraftRows} from './library-drafts.mjs';
-import {validateLibraryEdit, applyLibraryEdit} from './library-edit.mjs';
-import {recipePreview} from './library-view.mjs';
-import {validateFoodCopy, applyFoodCopy} from './food-copy.mjs';
-import {foodEditorLabelView} from './food-editor.mjs';
-import {validateFoodMultiInput, foodMultiCatalogReferences, applyFoodMultiAdd} from './food-multi-add.mjs';
+import {collectResourceDependencies} from './domain/resource-dependencies.mjs';
+import {withoutFoodNotes} from './domain/food-notes.mjs';
+import {validateLibraryPreview,previewLibraryEditor} from './domain/library-editor-preview.mjs';
+import {pauseLifeCommandFields,preparePauseLifeCommand} from './pause-life-settings.mjs';
+import {displayCommandFields,prepareDisplayCommand} from './display-settings.mjs';
+import {libraryDraftFields,validateLibraryDraft,prepareLibraryDraft,libraryDraftRows} from './library-drafts.mjs';
+import {validateLibraryEdit,applyLibraryEdit} from './library-edit.mjs';
+
+import {validateFoodCopy,applyFoodCopy} from './food-copy.mjs';
+
+import {validateFoodMultiInput,foodMultiCatalogReferences,applyFoodMultiAdd} from './food-multi-add.mjs';
 import {parseAddMenu} from './domain/add-menu.mjs';
-import {diaryDisplayCommandFields, prepareDiaryDisplayCommand} from './diary-display-settings.mjs';
-import {healthCommandFields, applyHealthCommand} from './health-controls.mjs';
-import {chartDisplayCommandFields, applyChartDisplayCommand} from './dashboard-pinned-charts.mjs';
-import {librarySharingCommandFields, validateSharedImport, applySharedImport} from './library-sharing.mjs';
-import {coachCommandFields, applyCoachCommand} from './coach-view.mjs';
-import {textLogCommandFields, validateTextLog, applyTextLog} from './text-log.mjs';
-import {libraryExtrasCommandFields, prepareLibraryExtrasCommand, libraryExtrasCatalogReferences} from './library-extras.mjs';
-import {notePhotoCommandFields, validateNotePhotoAction, applyNotePhotoCommand} from './note-photos.mjs';
-import {diaryToolCommandFields, applyDiaryToolsCommand} from './diary-tools.mjs';
-import {barcodeCommandFields, validateBarcodeAction, applyBarcodeLog} from './barcode.mjs';
-import {dashboardCommandFields, applyDashboardCommand} from './dashboard-view.mjs';
-import {entryAdjustmentFields, validateEntryAdjustmentAction, prepareEntryAdjustmentCommand} from './entry-adjustments.mjs';
+import {diaryDisplayCommandFields,prepareDiaryDisplayCommand} from './diary-display-settings.mjs';
+import {healthCommandFields,applyHealthCommand} from './health-controls.mjs';
+import {chartDisplayCommandFields,applyChartDisplayCommand} from './dashboard-pinned-charts.mjs';
+import {librarySharingCommandFields,validateSharedImport,applySharedImport} from './library-sharing.mjs';
+import {coachCommandFields,applyCoachCommand} from './coach-view.mjs';
+import {textLogCommandFields,validateTextLog,applyTextLog} from './text-log.mjs';
+import {libraryExtrasCommandFields,prepareLibraryExtrasCommand,libraryExtrasCatalogReferences} from './library-extras.mjs';
+import {notePhotoCommandFields,validateNotePhotoAction,applyNotePhotoCommand} from './note-photos.mjs';
+import {diaryToolCommandFields,applyDiaryToolsCommand} from './diary-tools.mjs';
+import {barcodeCommandFields,validateBarcodeAction,applyBarcodeLog} from './barcode.mjs';
+import {dashboardCommandFields,applyDashboardCommand} from './dashboard-view.mjs';
+import {entryAdjustmentFields,validateEntryAdjustmentAction,prepareEntryAdjustmentCommand} from './entry-adjustments.mjs';
 import {libraryToolCommandFields} from './library-tools.mjs';
-import {profileSettingsCommandFields, applyProfileSettingsCommand} from './profile-settings.mjs';
-import {snapshotCommandFields, validateSnapshotAction, applySnapshotCommand} from './snapshots.mjs';
-import {fastingCommandFields, applyFastingCommand} from './fasting.mjs';
-import {foodInsightCommandFields, prepareFoodInsightCommand} from './food-insights.mjs';
-import {validateMealLog, applyMealLog} from './meal-commands.mjs';
-import {photoCommandFields, validatePhotoAction, applyPhotoLog} from './photo-commands.mjs';
-import {act, captureCatalogFood, previewLibraryDraft} from './domain/workspace.mjs';
-import {repeatCommandFields, validateRepeatAction} from './repeat-commands.mjs';
-import {recordCommandFields, applyRecordCommand} from './record-commands.mjs';
-import {targetPolicyCommandFields, prepareTargetPolicyCommand} from './target-policy-commands.mjs';
+import {profileSettingsCommandFields,applyProfileSettingsCommand} from './profile-settings.mjs';
+import {snapshotCommandFields,validateSnapshotAction,applySnapshotCommand} from './snapshots.mjs';
+import {fastingCommandFields,applyFastingCommand} from './fasting.mjs';
+import {foodInsightCommandFields,prepareFoodInsightCommand} from './food-insights.mjs';
+import {validateMealLog,applyMealLog} from './meal-commands.mjs';
+import {photoCommandFields,validatePhotoAction,applyPhotoLog} from './photo-commands.mjs';
+import {act,captureCatalogFood} from './domain/workspace.mjs';
+import {repeatCommandFields,validateRepeatAction} from './repeat-commands.mjs';
+import {recordCommandFields,applyRecordCommand} from './record-commands.mjs';
+import {targetPolicyCommandFields,prepareTargetPolicyCommand} from './target-policy-commands.mjs';
 import {invalid} from './request-errors.mjs';
 
 const COMMAND_FIELDS = {
@@ -76,7 +79,7 @@ const COMMAND_FIELDS = {
   'food.save': libraryDraftFields.food,
   'recipe.save': libraryDraftFields.recipe,
   'meal.save': libraryDraftFields.meal,
-  'library.edit': ['kind', 'draft', 'reviewToken', 'mode', 'confirmed'],
+  'library.edit': ['kind', 'draft', 'mode'],
   'food.delete': ['id'],
   'recipe.delete': ['id'],
   'meal.delete': ['id'],
@@ -233,6 +236,15 @@ export function applyWorkspaceCommand(state, input, context = {}) {
     const collections=input.type.startsWith('selection.')?['foods','recipes','meals']:['entries','biometrics','notes'];
     const before=tracked?Object.fromEntries(collections.map(collection=>[collection,new Set(state[collection].map(row=>row.id))])):null;
     const saved=dispatchCommand(state, input, context);
+    if(LIBRARY_SAVE_TYPES.has(input.type)||input.type==='library.edit'){
+      const graph=collectResourceDependencies(state,[{[saved.kind+'Id']:saved.id}]);
+      const records=Object.fromEntries(['foods','recipes','meals'].map(key=>[key,graph[key].map(row=>structuredClone(key==='foods'?withoutFoodNotes(row):row))]));
+      if(input.type==='library.edit'&&input.payload.mode==='preserve'){
+        const key=input.payload.kind+'s',old=state[key].find(row=>row.id===input.payload.draft.id);
+        records[key].push(structuredClone(key==='foods'?withoutFoodNotes(old):old));
+      }
+      return {...saved,records};
+    }
     if(!tracked)return saved;
     const records={};
     for(const collection of collections){
@@ -299,30 +311,8 @@ export function captureActionFoods(state, input, foods) {
   return action;
 }
 
-export function validateLibraryPreview(input) {
-  const allowedKeys = ['kind', 'draft', 'date', 'quantity', 'labelView'];
-  const validKind = ['food', 'recipe', 'meal'].includes(input?.kind);
-  const invalidLabelTarget = input?.labelView !== undefined && input.kind !== 'food';
-  if (!isPlainObject(input) || Object.keys(input).some(k => !allowedKeys.includes(k)) || !validKind || invalidLabelTarget) {
-    invalid('Choose a library item.');
-  }
-  if (input.labelView !== undefined && !isPlainObject(input.labelView)) {
-    invalid('Choose a label view.');
-  }
-  return validateLibraryDraft(input.kind, input.draft, {editing: true});
-}
-
-export function previewLibrary(state, input) {
-  const action = validateLibraryPreview(input);
-  try {
-    const {labelView, ...preview} = input;
-    const result = previewLibraryDraft(state, {...preview, draft: libraryPayload(state, action)});
-    return {
-      ...result,
-      ...(input.kind === 'recipe' ? {recipe: recipePreview(state, result.resource, input.quantity)} : {}),
-      ...(labelView ? {labelView: foodEditorLabelView(result.resource, labelView)} : {}),
-    };
-  } catch (error) {
-    rethrowDomainError(error);
-  }
+export {validateLibraryPreview} from './domain/library-editor-preview.mjs';
+export function previewLibrary(state,input){
+ try{validateLibraryPreview(input);return previewLibraryEditor(state,input,prepareLibraryDraft(state,input.kind,input.draft));}
+ catch(error){rethrowDomainError(error);}
 }

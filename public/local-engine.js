@@ -1,15 +1,12 @@
+import {libraryItem,libraryCollectionView} from './local-diary-projection.js';
+import {remapWriteReferences} from './write-identities.js';
 // Local-first read & nutrition preview engine backed by the persisted IndexedDB offline snapshot.
 // Computes libraryItem and previewDiaryItem in ~1ms without network round-trips whenever the
 // referenced item is present in the local workspace snapshot; returns null to fall back to the server.
 
 import {offlineCopy} from './offline-store.js';
 import {offlineEffectiveState} from './offline-model.js';
-import {catalog} from './report-source/server/nutrient-catalog.mjs';
-import {calculateSelectionNutrition, calculateSummary, entryFacts} from './report-source/server/nutrition.mjs';
-import {availableQuantityUnits} from './report-source/server/quantity-units.mjs';
-import {recipeWeight} from './report-source/server/recipe-weight.mjs';
-import {recipeForEntry} from './report-source/server/recipe-entry.mjs';
-import {mealForEntry} from './report-source/server/meal-entry.mjs';
+import {calculateSelectionNutrition} from './report-source/server/nutrition.mjs';
 import {convertEnergy} from './report-source/server/energy-units.mjs';
 import {mergeEntryUpdate} from './report-source/server/entry-update-fields.mjs';
 
@@ -36,7 +33,7 @@ export async function localWorkspaceView() {
       cachedState = offlineEffectiveState(copy);
       cachedIdentity = identity;
     }
-    return {state:cachedState,recordIds:copy.recordIds??{}};
+    return {state:cachedState,recordIds:copy.recordIds??{},revision:copy.snapshot.revision};
   } catch { return null; }
 }
 export async function localWorkspaceState() {
@@ -44,56 +41,17 @@ export async function localWorkspaceState() {
 }
 const readLocalState = localWorkspaceState;
 
-function quantityOptions(state, kind, item) {
-  const grams = kind === 'recipe' ? recipeWeight(item, state).grams : kind === 'food' ? item.grams : null;
-  const volume = kind === 'recipe' ? item.batchVolumeMl : kind === 'food' ? item.milliliters : null;
-  return [
-    ['servings', kind === 'meal' ? 'meal' : item.serving ?? 'serving'],
-    ...availableQuantityUnits({grams, milliliters: volume}).map(unit => [unit.id, unit.label]),
-    ...(kind === 'recipe' ? [['batch', 'Full recipe']] : []),
-    ...(item.portions ?? []).map(p => ['portion:' + p.id, p.label]),
-  ];
+export async function localLibraryView(){
+ const view=await localWorkspaceView();
+ return view?libraryCollectionView(view.state,view.revision):null;
 }
-
-export async function localLibraryItem({kind, id, entry}) {
-  if (!LIBRARY_KINDS.includes(kind) || !id) return null;
-  const state = await readLocalState();
-  if (!state) return null;
-  const resource = (state[kind + 's'] ?? []).find(row => row.id === id);
-  if (!resource) return null;
-  const savedEntry = entry?.id ? (state.entries ?? []).find(row => row.id === entry.id) ?? entry : entry;
-  if (savedEntry && savedEntry[kind + 'Id'] !== resource.id) return null;
-  try {
-    const item =
-      savedEntry && kind === 'recipe'
-        ? recipeForEntry(resource, savedEntry)
-        : savedEntry && kind === 'meal'
-          ? mealForEntry(resource, savedEntry)
-          : resource;
-    const options = quantityOptions(state, kind, item);
-    const ingredients = (item.ingredients ?? item.items ?? []).map(row => {
-      const childKind = row.recipeId ? 'recipe' : 'food';
-      const child = (state[childKind + 's'] ?? []).find(r => r.id === row[childKind + 'Id']);
-      return {
-        ...row,
-        name: child?.name ?? 'Missing ingredient',
-        source: child?.source ?? null,
-        options: child ? quantityOptions(state, childKind, child) : null,
-      };
-    });
-    return {
-      kind,
-      resource,
-      options,
-      ingredients,
-      nutrients: catalog.map(({id: nutrientId, name, unit, category}) => ({id: nutrientId, name, unit, category})),
-      energyUnit: state.settings?.energyUnit ?? 'kcal',
-      facts: entryFacts(state, savedEntry ?? {[kind + 'Id']: resource.id, amount: 1}),
-      _local: true,
-    };
-  } catch {
-    return null;
-  }
+export async function localLibraryItem({kind,id,entry}){
+ if(!LIBRARY_KINDS.includes(kind)||!id)return null;
+ const view=await localWorkspaceView();if(!view)return null;
+ const source=remapWriteReferences({id,entry:entry?structuredClone(entry):undefined},view.recordIds);
+ const resource=view.state[kind+'s']?.find(row=>row.id===source.id);if(!resource)return null;
+ const savedEntry=source.entry?.id?view.state.entries.find(row=>row.id===source.entry.id)??source.entry:source.entry;
+ try{return {...libraryItem(view.state,kind,resource,savedEntry),_local:true};}catch{return null;}
 }
 
 export async function localPreviewDiaryItem(payload) {

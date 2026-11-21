@@ -13,14 +13,20 @@ import {escape as e} from './html.js';
 import {mobileFoodsHeader,mobileFoodsHome} from './foods-source/mobile-foods-home.js';
 import {mobileLibraryHeader,mobileLibraryCollection,MobileLibrarySheet,MobileLibraryActions} from './foods-source/mobile-library.js';
 import {icon} from './foods-source/icons.js';
-import {localLibraryItem} from './local-engine.js';
+import {localLibraryItem,localLibraryView} from './local-engine.js';
 import {mealActionText} from './meal-action-messages.js';
 const labels=()=>({food:t("mobileSearch.food"),recipe:t("recipeEditor.recipe"),meal:fc("meal")});
 export function mountLibrary({page,show,close,header,content,date,openEntry,onChange,headerRoot}){
  let data,kind='food',screen='home',sort='recent',retired=false,query='',disposed=false,serial=0,extrasCleanup,optionsSheet,foodEditor,mealEditor,recipeEditor,collectionBack=null;
  const leaveCollection=({popHistory=true}={})=>{screen='home';query='';if(collectionBack){const handle=collectionBack;collectionBack=null;handle.release({popHistory});}render();};
  const alive=id=>!disposed&&id===serial;
- async function reload(){const id=++serial;try{const apply=value=>{if(alive(id)){data=value;render();}};apply(await request('/api/library',undefined,undefined,{onRefresh:value=>{if(!document.querySelector('dialog[open]'))apply(value);}}));}catch(error){if(alive(id))page.innerHTML=`<p class="empty">${e(error.message)}</p><button type="button" data-library-retry>${e(t("mobileSuggest.retry"))}</button>`;}}
+ async function reload(){
+  const id=++serial,apply=value=>{if(alive(id)){data=value;render();}};
+  const local=await localLibraryView();if(local){apply(local);return;}
+  try{apply(await request('/api/library',undefined,undefined,{onRefresh:async value=>{if(!document.querySelector('dialog[open]'))apply(await localLibraryView()??value);}}));}
+  catch(error){if(alive(id))page.innerHTML=`<p class="empty">${e(error.message)}</p><button type="button" data-library-retry>${e(t("mobileSuggest.retry"))}</button>`;}
+ }
+
  function renderHeader(markup){if(headerRoot){headerRoot.hidden=false;headerRoot.innerHTML=markup;return '';}return `<header class="library-inline-header">${markup}</header>`;}
  function collectionMarkup(){return mobileLibraryCollection({items:data.items.filter(item=>item.kind===kind&&item.retired===retired&&item.name.toLocaleLowerCase().includes(query.toLocaleLowerCase())),tab:kind+'s',query,sort,retired,language:uiLanguage(),icon});}
  function bindCollection(){
@@ -62,19 +68,19 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
  const itemMenu=new MobileLibraryActions({root:page,onChoose:itemActions});
  page.addEventListener('click',select);
  headerRoot?.addEventListener('click',select);
- async function openItem(itemKind,id,keptDraft,{copy=false}={}){show(header(labels()[itemKind])+`<p class="empty">${e(t("mobileNutrientDetail.loading"))}</p>`);const loading=content.querySelector('.empty');try{const item=await localLibraryItem({kind:itemKind,id})??await request('/api/library/item?'+new URLSearchParams({kind:itemKind,id}));if(!data)data=await request('/api/library');if(!disposed&&loading.isConnected){if(copy){const resource={...item.resource};delete resource.id;editor(itemKind,{...item,resource:undefined},keptDraft??{name:mealActionText('copyName',{name:resource.name}),items:structuredClone(resource.items)});}else editor(itemKind,item,keptDraft);}}catch(error){if(!disposed&&loading.isConnected)loading.textContent=error.message;}}
+ async function openItem(itemKind,id,keptDraft,{copy=false}={}){show(header(labels()[itemKind])+`<p class="empty">${e(t("mobileNutrientDetail.loading"))}</p>`);const loading=content.querySelector('.empty');try{const item=await localLibraryItem({kind:itemKind,id})??await request('/api/library/item?'+new URLSearchParams({kind:itemKind,id}));if(!data)data=await localLibraryView()??await request('/api/library');if(!disposed&&loading.isConnected){if(copy){const resource={...item.resource};delete resource.id;editor(itemKind,{...item,resource:undefined},keptDraft??{name:mealActionText('copyName',{name:resource.name}),items:structuredClone(resource.items)});}else editor(itemKind,item,keptDraft);}}catch(error){if(!disposed&&loading.isConnected)loading.textContent=error.message;}}
 
  function editor(itemKind,saved,draft,importOptions={}){
   foodEditor?.dispose();mealEditor?.dispose();recipeEditor?.dispose();const resource=saved?.resource;
   if(itemKind==='food'){
-   const savedChange=async()=>{await onChange();await reload();};
+   const savedChange=async()=>{await reload();void Promise.resolve(onChange()).catch(()=>{});};
    const action=(label,kept)=>{const back=()=>openItem('food',resource.id,kept);if(label==='share')extrasCleanup=openLibrarySharing({kind:'food',id:resource.id,show,header,content,close,onBack:back,onChange:savedChange});else if(label==='print')extrasCleanup=openFoodPrint({id:resource.id,show,header,content,onBack:back});else if(['retire','restore'].includes(label))return retireEditor('food',resource);else if(label==='log')openEntry('food',resource.id);else if(label==='delete'){show(header(fc("deleteFood"))+'<p class="sheet-message">'+e(t('libraryLifecycle.deletePrompt',{name:resource.name}))+`</p><div class="entry-actions"><button type="button" data-cancel-delete>${e(t("common.cancel"))}</button><button type="button" class="danger" data-confirm-delete>${e(t("mobileRepeat.delete"))}</button></div><p role="status" class="sheet-message"></p>`);content.querySelector('[data-cancel-delete]').onclick=()=>editor('food',saved,kept);content.querySelector('[data-confirm-delete]').onclick=async event=>{event.target.disabled=true;try{await command(data.revision,'food.delete',{id:resource.id});await savedChange();close();}catch(error){content.querySelector('[role=status]').textContent=error.message;event.target.disabled=false;}};}};
-   foodEditor=mountCustomFoodEditor({...importOptions,resource,data,draft,show,close,content,date,onSaved:savedChange,onAction:action,onReload:async kept=>{await reload();if(resource)openItem('food',resource.id,kept);else editor('food',null,kept,importOptions);}});return;
+   foodEditor=mountCustomFoodEditor({...importOptions,resource,data,draft,show,close,content,date,onSaved:savedChange,onAction:action});return;
   }
   if(itemKind==='meal'||itemKind==='recipe'){
-   const savedChange=async()=>{await onChange();await reload();};
+   const savedChange=async()=>{await reload();void Promise.resolve(onChange()).catch(()=>{});};
    const action=(label,kept)=>{const back=()=>openItem(itemKind,resource.id,kept);if(label==='share')extrasCleanup=openLibrarySharing({kind:itemKind,id:resource.id,show,header,content,close,onBack:back,onChange:savedChange});else if(['retire','restore'].includes(label))return retireEditor(itemKind,resource);else if(label==='log')openEntry(itemKind,resource.id);else if(label==='delete'){show(header(fc('deleteKind',{kind:labels()[itemKind]}))+'<p class="sheet-message">'+e(t('libraryLifecycle.deletePrompt',{name:resource.name}))+`</p><div class="entry-actions"><button type="button" data-cancel-delete>${e(t("common.cancel"))}</button><button type="button" class="danger" data-confirm-delete>${e(t("mobileRepeat.delete"))}</button></div><p role="status" class="sheet-message"></p>`);content.querySelector('[data-cancel-delete]').onclick=()=>editor(itemKind,saved,kept);content.querySelector('[data-confirm-delete]').onclick=async event=>{event.target.disabled=true;try{await command(data.revision,itemKind+'.delete',{id:resource.id});await savedChange();close();}catch(error){content.querySelector('[role=status]').textContent=error.message;event.target.disabled=false;}};}};
-   const editorMount=itemKind==='recipe'?mountRecipeEditor:mountMealEditor;const mounted=editorMount({...importOptions,onImported:prepared=>editor('recipe',null,prepared.recipe,{imported:prepared}),saved,data,draft,show,close,content,date,onSaved:savedChange,onAction:action,onReload:async()=>{await reload();if(resource)openItem(itemKind,resource.id);else editor(itemKind,null);},openEntry});if(itemKind==='recipe')recipeEditor=mounted;else mealEditor=mounted;return;
+   const editorMount=itemKind==='recipe'?mountRecipeEditor:mountMealEditor;const mounted=editorMount({...importOptions,onImported:prepared=>editor('recipe',null,prepared.recipe,{imported:prepared}),saved,data,draft,show,close,content,date,onSaved:savedChange,onAction:action,openEntry});if(itemKind==='recipe')recipeEditor=mounted;else mealEditor=mounted;return;
   }
  }
  render();reload();return {reload,openItem,dispose(){disposed=true;serial++;if(collectionBack){collectionBack.release({popHistory:false});collectionBack=null;}retirement.dispose();foodEditor?.dispose();mealEditor?.dispose();recipeEditor?.dispose();extrasCleanup?.();optionsSheet?.close(false);itemMenu.dispose();data=null;page.removeEventListener('click',select);headerRoot?.removeEventListener('click',select);document.body.classList.remove('foods-home-mobile','mobile-library');}};

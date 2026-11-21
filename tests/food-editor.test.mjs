@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {initialState} from '../server/domain/workspace.mjs';
 import {applyWorkspaceCommand,previewLibrary} from '../server/workspace-commands.mjs';
 const date='2026-11-16',base={name:'Test bowl',serving:'bowl',grams:200,nutrients:{calories:200,fiber:0,protein:10}},basis={serving:'bowl',grams:200,milliliters:null,portions:[]};
-const save=(state,draft)=>{if(!draft.id)return applyWorkspaceCommand(state,{type:'food.save',payload:draft});const {reviewToken}=previewLibraryEdit(state,{kind:'food',draft},{owner:'fixture'});return applyWorkspaceCommand(state,{type:'library.edit',payload:{kind:'food',draft,reviewToken,mode:'update',confirmed:true}},{owner:'fixture'});};
+const save=(state,draft)=>{if(!draft.id)return applyWorkspaceCommand(state,{type:'food.save',payload:draft});const {reviewToken}=previewLibraryEdit(state,{kind:'food',draft},{owner:'fixture'});return applyWorkspaceCommand(state,{type:'library.edit',payload:{kind:'food',draft,mode:'update'}},{owner:'fixture'});};
 test('ordered label/profile/basis/manual edits produce identical canonical preview and atomic save',()=>{
  const state=initialState(),draft={...base,portions:[{id:'cup',label:'Cup',grams:100}],nutrientEdits:[
   {kind:'label',profile:'us-2016',quantity:{quantity:100,unit:'g'},basis,values:{fat:{percent:'10',unit:'g'}}},

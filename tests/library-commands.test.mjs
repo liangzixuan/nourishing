@@ -6,7 +6,7 @@ import {applyWorkspaceCommand,previewLibrary,captureActionFoods} from '../server
 import {entryFacts} from '../server/domain/nutrition.mjs';
 import {libraryView,libraryItem} from '../server/library-view.mjs';
 const run=(s,type,payload)=>applyWorkspaceCommand(s,{type,payload});
-const edit=(state,kind,draft)=>{const {reviewToken}=previewLibraryEdit(state,{kind,draft},{owner:'fixture'});return applyWorkspaceCommand(state,{type:'library.edit',payload:{kind,draft,reviewToken,mode:'update',confirmed:true}},{owner:'fixture'});};
+const edit=(state,kind,draft)=>{const {reviewToken}=previewLibraryEdit(state,{kind,draft},{owner:'fixture'});return applyWorkspaceCommand(state,{type:'library.edit',payload:{kind,draft,mode:'update'}},{owner:'fixture'});};
 const draft={name:'Test grain',grams:100,serving:'100 g',nutrients:{calories:200,protein:10}};
 test('custom food, recipe and meal use the original source quantities in the diary',()=>{
  const s=initialState();const f=run(s,'food.save',draft);assert.ok(f.id);

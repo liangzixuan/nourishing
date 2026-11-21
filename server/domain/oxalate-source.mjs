@@ -1,5 +1,6 @@
 import Big from 'big.js';
-import {isDeepStrictEqual} from 'node:util';
+import {contentDigestInput} from './content-digest-input.mjs';
+const sameSourceFacts=(left,right)=>contentDigestInput(left)===contentDigestInput(right);
 import dataset from './data/wake-oxalate-v1.json' with {type:'json'};
 
 // Keep v1 pinned when adding a future dataset. Stored snapshots are assertions
@@ -36,6 +37,6 @@ export function parseFoodOxalateSource(food){
   const value=food.oxalateSource;
   if(!object(value)||!object(value.row))fail('The oxalate source snapshot is incomplete. Review and apply the source again.');
   const canonical=previewOxalateSource({rowId:value.row.id,grams:mass(food.grams)});
-  if(!isDeepStrictEqual(value,canonical.oxalateSource)||food.nutrients?.oxalate!==canonical.mgPerServing)fail('The oxalate source snapshot, serving grams and nutrient amount must agree. Review and apply the source again.');
+  if(!sameSourceFacts(value,canonical.oxalateSource)||food.nutrients?.oxalate!==canonical.mgPerServing)fail('The oxalate source snapshot, serving grams and nutrient amount must agree. Review and apply the source again.');
   return {oxalateSource:canonical.oxalateSource};
 }

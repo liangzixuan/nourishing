@@ -1,5 +1,7 @@
+import {previewLocalLibrary} from './library-local.js';
 import {uiLanguage,t} from './app-language.js';
 import {fc} from './food-cloud-messages.js';
+import {localLibraryItem} from './local-engine.js';
 import {request} from './diary-api.js';
 import {mountFoodPicker} from './food-picker.js';
 import {MobileIngredientDetail} from './suggestion-source/mobile-ingredient-detail.js';
@@ -17,11 +19,11 @@ export function openCompositeIngredient({date,items,index,nutrients,energyUnit,o
  async function openDetail(kind,id){
   if(search)restore=search.snapshot();clear();const generation=serial;dialog.innerHTML=`<header class="mf-header"><button type="button" data-mci-back aria-label="${e(t("mobileFoodEditor.back"))}">‹</button><h2>${e(fc("mealItemTitle"))}</h2></header><p class="empty" role="status">${e(t("mobileNutrientDetail.loading"))}</p>`;
   try{
-   loading=new AbortController();const item=await request('/api/library/item?'+new URLSearchParams({kind,id}),null,loading.signal);if(!alive()||generation!==serial)return;
+   loading=new AbortController();const item=await localLibraryItem({kind,id})??await request('/api/library/item?'+new URLSearchParams({kind,id}),null,loading.signal);if(!alive()||generation!==serial)return;
    const key=kind+'Id',resource={...item.resource,quantityOptions:item.options},previous=index===undefined?{}:items[index];
    detail=new MobileIngredientDetail({root:dialog,resource,kind:kind+'s',source:previous,language:uiLanguage(),unit:energyUnit,catalog:nutrients,sourceLabel:resource.source?.name??(kind==='recipe'?t("recipeEditor.recipe"):t("mobileSearch.food")),applyLabel:index===undefined?(parentKind==='recipe'?t("mobileCompositeEditor.addToRecipe"):t("mobileSuggest.addToMeal")):t("mobileSuggest.applyQuantity"),
     normalize:quantity=>({[key]:id,...quantity}),
-    preview:(row,signal)=>request('/api/library/preview',{kind:'meal',date,draft:{name:'Item preview',items:[row]}},signal),
+    preview:(row,signal)=>previewLocalLibrary({kind:'meal',date,draft:{name:'Item preview',items:[row]}},signal),
     onApply:row=>{onApply(row,{name:resource.name,source:resource.source?.name??(kind==='recipe'?t("recipeEditor.recipe"):t("mobileSearch.food")),options:item.options});close();}});
   }catch(error){if(alive()&&generation===serial)dialog.innerHTML=`<header class="mf-header"><button type="button" data-mci-back aria-label="${e(t("mobileFoodEditor.back"))}">‹</button><h2>${e(fc("mealItemTitle"))}</h2></header><p role="alert">`+e(error.message)+'</p>';}
  }

@@ -8,6 +8,12 @@ export function applyWriteToState(state,row,result){
  const replace=(collection,value)=>{state[collection]??=[];const i=state[collection].findIndex(item=>item.id===value.id);if(i<0)state[collection].push(value);else state[collection][i]=value;};
  const remove=(collection,id)=>{state[collection]=(state[collection]??[]).filter(item=>item.id!==id);};
  projectDiaryBulkWrite(state,row.command);
+ if(row.projection?.library&&!result?.records){
+  const {kind,resource,mode,previousId}=row.projection.library;
+  if(mode==='preserve'){const previous=state[kind+'s']?.find(item=>item.id===previousId);if(previous)previous.retired=true;}
+  replace(kind+'s',{...structuredClone(resource),id:mode==='update'?resource.id:id,_pending:!result});
+ }
+
  if((type==='selection.recipe'||type==='selection.meal')&&!result?.records){
   const draft=row.projection?.reusable;
   if(draft){

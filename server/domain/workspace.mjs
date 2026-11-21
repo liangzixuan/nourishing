@@ -1,4 +1,6 @@
-import {normalizeCompositeDraft} from './composite-draft.mjs';
+import {previewLibraryResource} from './library-editor-preview.mjs';
+import {normalizeLibraryDraft as normalizeLibraryDraftCore,foodPortions,foodSource,retainSourceReviews} from './library-normalization.mjs';
+
 import {parseWaterSettings} from './water-settings.mjs';
 import {fail,array,objectKeys,exactId,maxRecordCollectionRows} from './workspace-validation.mjs';
 import {nutrients} from './nutrient-values.mjs';
@@ -31,11 +33,11 @@ import {suggestedMealRecord} from './suggested-meal-record.mjs';
 import {catalogIdentity,catalogMeasurementBasis,sourceLocatorMatches} from './catalog-source.mjs';
 import {inspectLibraryUses} from './library-references.mjs';
 import {isQuantityUnit} from './quantity-units.mjs';
-import {servingTranslationFields,portionTranslationFields,validateMeasureTranslations} from './measure-translations.mjs';
+import {servingTranslationFields,validateMeasureTranslations} from './measure-translations.mjs';
 import {parseFoodTranslations} from './food-translations.mjs';
 import {parseFoodNotes,withoutFoodNotes} from './food-notes.mjs';
 import {notePhotoFields} from './note-photo-fields.mjs';
-import {foodSourceFacts,catalogSourceId,catalogSnapshotId,customCatalogSource} from './food-catalog-identity.mjs';
+import {foodSourceFacts,catalogSourceId,catalogSnapshotId} from './food-catalog-identity.mjs';
 import {text,time,number,biometricIdentity,parseNoteFields,parseBiometricFields,parseFoodDiaryFields,requiredRecordGroup,optionalRecordGroup,parseExerciseFields,waterLimits} from './diary-record-fields.mjs';
 export {text,number} from './diary-record-fields.mjs';
 import {assertDiaryDaysEditable} from './diary-day-status.mjs';
@@ -71,22 +73,22 @@ import {parseDashboardSettings} from './dashboard-settings.mjs';
 import {parseCycleDisplay} from './cycle-values.mjs';
 import {parseCycleChartOverlays,updateCycleChartOverlays} from './cycle-overlay-settings.mjs';
 import {normalizeChart} from './chart-migration.mjs';
-import { randomUUID,createHash } from 'node:crypto';
-import { isDeepStrictEqual } from 'node:util';
-import { catalog,entryFacts,isExerciseEntry,calculateSummary,calculateSelectionNutrition } from './nutrition.mjs';
-import { seedFoods } from './seed-foods.mjs';
+import {randomUUID,createHash} from 'node:crypto';
+import {isDeepStrictEqual} from 'node:util';
+import {catalog,entryFacts,isExerciseEntry,calculateSummary,calculateSelectionNutrition} from './nutrition.mjs';
+import {seedFoods} from './seed-foods.mjs';
 import {canonicalFoodQuantityEntry,parseVolume,resolveFoodQuantity,parseServingAmount} from './food-quantity.mjs';
 import {parseFoodClassification,foodWithoutClassification} from './food-classification.mjs';
-import {parseLibraryStatus,withoutLibraryStatus,libraryStatusForSave,isActiveLibraryItem} from './library-status.mjs';
+import {parseLibraryStatus,withoutLibraryStatus,isActiveLibraryItem} from './library-status.mjs';
 import {applyLibraryRetirement} from './library-retirement.mjs';
 import {parseFoodTaxonomy} from './food-taxonomy.mjs';
 import {parseMealSuggestionPolicy} from './meal-suggestion-policy.mjs';
 import {recipePortionFields} from './recipe-portions.mjs';
 import {parseRecipeSourceQuantity} from './recipe-measurement.mjs';
 import {recipeWeightContext} from './recipe-weight.mjs';
-import { photoMetadata,photoReviewMetadata } from './photo-records.mjs';
+import {photoMetadata,photoReviewMetadata} from './photo-records.mjs';
 import {textReviewMetadata} from './text-records.mjs';
-import { healthMeasurementSource } from './health-records.mjs';
+import {healthMeasurementSource} from './health-records.mjs';
 import {parseGlucoseTimelinePolicy} from './glucose-timeline.mjs';
 import {parseEnergyPolicy} from './energy-policy.mjs';
 import {parseMacroPolicy} from './macro-policy.mjs';
@@ -103,7 +105,7 @@ import {recipeEntryFields,recipeForEntry} from './recipe-entry.mjs';
 import {parseReferencedQuantity} from './resource-quantity.mjs';
 import {collectResourceDependencies,orderRecipeDependencies,recipeAncestors} from './resource-dependencies.mjs';
 import {expandedDiarySources} from './resource-expansion.mjs';
-import { calculateTargetSetup,validateTargetSetupRecord,setupTargetKeys } from './target-setup.mjs';
+import {calculateTargetSetup,validateTargetSetupRecord,setupTargetKeys} from './target-setup.mjs';
 import {parseCarbohydratePolicy,parseCarbohydrateBasis,NET_CARBOHYDRATE_TARGET_ID} from './carbohydrate-policy.mjs';
 
 export const localDate = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
@@ -137,15 +139,6 @@ function validateMeasuredConsumers(s,reference,id,next){
   if(reference==='recipeId')ids.add(id);
   for(const recipe of affected)recipePortionFields(recipe,candidate);
   for(const row of resourceConsumers(candidate))if(row.quantity!==undefined&&(row[reference]===id||ids.has(row.recipeId)))parseReferencedQuantity(candidate,row);
-}
-function foodPortions(value){
-  const portions=array(value,'Food portions',1000).map(p=>{
-    if(!p||typeof p!=='object'||Array.isArray(p))fail('Each food portion must be an object with an ID, label and measured weight.');
-    const field=Object.hasOwn(p,'milliliters')?'milliliters':'grams';
-    if(Object.hasOwn(p,'grams')&&Object.hasOwn(p,'milliliters'))fail('A food portion must use one measured basis: grams or millilitres.');
-    return {id:exactId(p.id,'Portion ID',200),label:text(p.label,'Portion label',500),[field]:number(p[field],`Portion ${field}`,0.000001,10000000),...portionTranslationFields(p)};
-  });
-  if(new Set(portions.map(p=>p.id)).size!==portions.length)fail('Portion IDs must be unique.');return portions;
 }
 function validateFoodMeasures(food){
   parseVolume(food.milliliters);
@@ -400,7 +393,6 @@ function applyRecordCopy(s,p){
   });
   for(const {collection,record}of copies)s[collection].push(record);
 }
-function foodSource(value) {if(value===undefined)return 'User-provided label or manual entry';if(typeof value==='string')return text(value,'Food source',2000);if(!value||typeof value!=='object'||Array.isArray(value))fail('Food source must be text or a metadata object.');text(value.name,'Source name',200);const encoded=JSON.stringify(value);if(Buffer.byteLength(encoded)>32768)fail('Food provenance exceeds 32 KiB.');return JSON.parse(encoded);}
 function recipeReviewMetadata(value) {
   if(!value||typeof value!=='object'||Array.isArray(value)||value.version!==1)fail('Invalid recipe import provenance.');
   const originals=array(value.originalIngredients,'Original recipe ingredients',1000);
@@ -414,10 +406,6 @@ function recipeReviewMetadata(value) {
   rows.forEach((row,index)=>{if(!row||row.id!==String(index))fail('Invalid recipe provenance row identity.');text(row.original,'Reviewed ingredient line',10000);});
   const encoded=JSON.stringify(value);if(Buffer.byteLength(encoded)>16777216)fail('Recipe provenance exceeds 16 MiB.');
   return JSON.parse(encoded);
-}
-function recipeCopySource(value){
-  if(!value||typeof value!=='object'||Array.isArray(value))fail('Recipe copy history must be an object.');
-  return {id:exactId(value.id,'Original recipe ID',100),name:text(value.name,'Original recipe name',300),createdAt:timestamp(value.createdAt,'Recipe copy time')};
 }
 function portableEntryBasis(row){
   const basis=parseCarbohydrateBasis(row);
@@ -511,14 +499,6 @@ function saveCompositeLibraryDraft(state,kind,input,options={}){
   const id=persistLibraryDraft(candidate,kind,next);
   state.foods=candidate.foods;state[collection]=candidate[collection];return {kind,id};
 }
-function retainSourceReviews(next,previous,input,contentKeys){
-  const changed=Boolean(previous&&contentKeys.some(key=>!isDeepStrictEqual(previous[key]??null,next[key]??null)));
-  for(const [key,parse]of [['photoReview',photoReviewMetadata],['textReview',textReviewMetadata]]){
-    const supplied=input[key]===undefined?undefined:parse(input[key]);
-    const source=previous?.[key]??supplied;if(source===undefined)continue;
-    const review=parse(source);next[key]={...review,modifiedAfterReview:review.modifiedAfterReview||changed};
-  }
-}
 export function readDiaryQuantity(s,input){
   objectKeys(input,['date','id'],'Diary quantity');
   const {selection,records}=prepareRecordSelection(s,{date:input.date,scope:'selected',records:[{collection:'entries',id:input.id}]});
@@ -581,48 +561,10 @@ function clearDiaryAmounts(s,p){
   for(const {old,next}of planned)s.entries[s.entries.indexOf(old)]=next;
 }
 
-function normalizeFoodDraft(s,p){
-      parseLibraryStatus(p);
-      const notes=parseFoodNotes(p),translations=parseFoodTranslations(p);
-      const oxalateSource=parseFoodOxalateSource(p);
-      const classification=parseFoodClassification(p);
-      const carbohydrateBasis=parseCarbohydrateBasis(p);
-      if(p.id&&lookup(s,'foods',p.id).readOnly)fail('Catalog source foods are read-only. Create a custom copy to change values.');
-      const previous=p.id?lookup(s,'foods',p.id):null,provenance=foodSource(p.source===undefined?previous?.source:p.source);
-      const source=foodSource(customCatalogSource(provenance));
-      const dataQuality=source?.userModified?'User-modified food. Values were entered locally; original source facts remain in the provenance. Review the serving basis and label values.':typeof p.dataQuality==='string'?p.dataQuality.slice(0,4000):previous?.dataQuality||'';
-      const volume=parseVolume(p.milliliters);
-      const next={...(volume===null?{}:{milliliters:volume}),id:p.id,name:text(p.name,'Food name',500),serving:text(p.serving||'1 serving','Serving',100),grams:p.grams===null||p.grams===undefined&&volume!==null?null:number(p.grams??100,'Grams',0.001,100000),barcode:p.barcode?text(p.barcode,'Barcode',100):'',nutrients:nutrients(p.nutrients||{}),portions:foodPortions(p.portions===undefined?(previous?.portions??[]):p.portions),source,dataQuality,sample:false,...notes,...translations,...servingTranslationFields(p),...classification,...carbohydrateBasis,...oxalateSource,...parseFoodTaxonomy(p),...libraryStatusForSave(p,previous)};
-      for(const portion of next.portions)resolveFoodQuantity(next,{quantity:1,unit:'portion',portionId:portion.id});
-      return next;
-}
-function normalizeRecipeDraft(s,p){
-      parseLibraryStatus(p);
-      const suppliedReview=p.importReview===undefined?null:recipeReviewMetadata(p.importReview);
-      if(p.copyOf!==undefined&&(p.id||p.copiedFrom!==undefined||p.importReview!==undefined||p.photoReview!==undefined||p.textReview!==undefined))fail('Create a recipe copy as a new recipe; its source history is retained automatically.');
-      const copied=p.copyOf!==undefined?lookup(s,'recipes',exactId(p.copyOf,'Recipe copy source',100)):null;
-      const previous=p.id?lookup(s,'recipes',p.id):null;
-      const next=normalizeCompositeDraft(s,'recipe',p,{previous,copied});
-      if(copied){
-        next.copiedFrom={id:copied.id,name:copied.name,createdAt:new Date().toISOString()};
-        if(copied.importReview)next.importReview={...structuredClone(copied.importReview),modifiedAfterImport:true};
-      }else if(previous?.importReview){const changed=['name','servings','ingredients','instructions','source','batchVolumeMl'].some(key=>!isDeepStrictEqual(previous[key],next[key]))||(previous.cookedWeightGrams??null)!==next.cookedWeightGrams;next.importReview={...previous.importReview,modifiedAfterImport:previous.importReview.modifiedAfterImport||changed};}
-      else if(p.importReview!==undefined)next.importReview=suppliedReview;
-      retainSourceReviews(next,copied??previous,p,['servings','ingredients','cookedWeightGrams','batchVolumeMl']);
-      if(!copied&&(previous?.copiedFrom||p.copiedFrom!==undefined))next.copiedFrom=recipeCopySource(previous?.copiedFrom||p.copiedFrom);
-      return next;
-}
-function normalizeMealDraft(s,p){
-      const previous=p.id?lookup(s,'meals',p.id):null,next=normalizeCompositeDraft(s,'meal',p,{previous});
-      retainSourceReviews(next,previous,p,['items']);
-      return next;
-}
+// Import provenance is validated on the server before the shared draft normalizer.
 export function normalizeLibraryDraft(state,kind,draft){
-  if(!draft||typeof draft!=='object'||Array.isArray(draft))fail('Supply a library draft.');
-  if(kind==='food')return normalizeFoodDraft(state,draft);
-  if(kind==='recipe')return normalizeRecipeDraft(state,draft);
-  if(kind==='meal')return normalizeMealDraft(state,draft);
-  fail('Choose a custom food, recipe or meal.');
+  if(kind==='recipe'&&draft?.importReview!==undefined)draft={...draft,importReview:recipeReviewMetadata(draft.importReview)};
+  return normalizeLibraryDraftCore(state,kind,draft);
 }
 /** Review an unsaved library item through the save validator and diary quantity owner.
  * A separate hypothetical identity keeps existing diary consumers unchanged.
@@ -631,7 +573,6 @@ export function previewLibraryDraft(state,input,options={}){
   objectKeys(input,['kind','draft','date','quantity','selectionReview','catalogSources','barcodeSources'],'Library draft preview');
   const kind=input.kind;
   if(!['food','recipe','meal'].includes(kind))fail('Choose a custom food, recipe or meal.');
-  const collection={food:'foods',recipe:'recipes',meal:'meals'}[kind];
   const day=date(input.date),quantity=input.quantity===undefined?{amount:1}:input.quantity;
   objectKeys(quantity,['amount','quantity','unit','portionId'],'Library preview quantity');
   let context=state;
@@ -641,11 +582,7 @@ export function previewLibraryDraft(state,input,options={}){
     context={...state,foods:[...state.foods,...inline]};
   }
   context=resolveLibraryIngredientSources(context,input,options);
-  const resource=normalizeLibraryDraft(context,kind,input.draft),id=randomUUID();
-  const candidate={...context,[collection]:[...context[collection],{...resource,id}]};
-  const item={...entry(candidate,{...quantity,[kind+'Id']:id,date:day}),id:randomUUID()};
-  candidate.entries=[...state.entries,item];
-  return {version:1,resource,nutrition:calculateSelectionNutrition(candidate,day,[item.id])};
+  return previewLibraryResource(context,kind,normalizeLibraryDraft(context,kind,input.draft),day,quantity);
 }
 // Keep the food editor's response shape while sharing all preview semantics.
 export function previewFoodDraft(state,input){
