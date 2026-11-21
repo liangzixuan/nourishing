@@ -31,7 +31,7 @@ Status terms: **different** = observed mismatch; **missing** = reference action 
 
 | D9 | Medium | Diary group settings, 160/166–167 | Different: switch-and-Rename list instead of inline group fields. | Current group, subtotal and quick-add settings inspected. Imported-data controls require scope review because Health Connect is excluded. |
 | D10 | Medium | Suggest Food overflow, 206 | Different: large technical settings dialog instead of compact Reset Filters menu. | Browser. Remove implementation details from the primary flow. |
-| D11 | High | Water, 33–42 | Missing menu/settings: plus opens a generic amount editor; Add Glass, Add Custom Amount and Water Settings flow absent. | Browser and `public/diary.js`. Full-size references 33, 34 and 36 confirm an anchored Add Glass / Add Custom Amount / Water Settings menu, unit-aware custom amount sheet, visibility/group/target-bar settings, unit selector, goal wheel and container size. Current source hard-codes a 250 mL action and L totals. Full-size reference 35 also shows separate goals: 8/64 fl oz for water tracking and 8.0/125.1 fl oz for total nutrient water, eight glass controls with plus/minus, and a logged Water row in Uncategorized. Current source uses the nutrient target as the widget goal and has no glass row or separate total-water bar. References 41/42 show two glasses added and removed. Check settings persistence and exact removal behavior; do not infer all CRUD from those still images. |
+| D11 | High | Water, 33–42 | Implemented locally: anchored add menu, compact custom amount sheet, settings, separate drinking goal and total-water target, glass controls and configured diary group. | Real-queue browser checks cover immediate additions, custom amount removal, restart, lost replies, settings persistence, More/Diary cache consistency, goal-wheel extension, Back/outside dismissal and completed-day controls. Rendered menu, custom amount, settings, group list and expanded widget compared with references. Existing water-row editing and installed-device behavior remain unverified in this pass. |
 | D12 | Medium | Suggest Food results, 207–214 | Different macro layout; removing an ingredient has no Undo. | Browser with one synthetic custom food. Quantity edit updates totals locally. Production suggestion quality not tested. |
 | D13 | Medium | Oracle, 242–251 | Bottom navigation absent from current modal. | Main form, category/ranking controls, results and back paths inspected. Ranking semantics remain unverified. |
 | D14 | Low | Repeat Items, 193–203 | Search placeholder displays mojibake; one serving displays as “1 servings”. | Browser. Local save appeared immediately; fixture sync failed because its command adapter omitted the catalog reader. This is not evidence of a production save failure. |
@@ -66,7 +66,7 @@ Ranges identify reference states, not a blanket pass. The local extracted invent
 | Add to Diary, 2–3 | Structure checked | Edit/reorder/hide options, each destination and return |
 | Biometrics, 5–23 | Grid and heart-rate editor structure checked | Category icons, all picker states, multi-value measurements, create/edit/delete, completed-day handling |
 | Notes, 25–32 | Unverified | Text/photo/time/group, create/edit/cancel/delete |
-| Water, 33–42 | Different: D11; full-size expanded widget and settings compared with current source | Implement and verify add glass/custom amount/settings, separate drinking/nutrient goals, units/container, visibility, persistence and removal |
+| Water, 33–42 | Implemented and checked locally: D11 | Existing water-row editing and installed-device verification; exact icon artwork differs |
 | Food search/detail/options, 43–55 | Unverified | Tabs, sorting, multi-add, serving, details, options menus and CRUD |
 | Recipe editor, 60–79 | Different: D6 | All four stages, import, ingredients, serving basis, advanced controls, category, review, edit/delete |
 | Exercise, 80–94 | Unverified | Category list, effort/duration/energy/group, create/edit/delete |
@@ -116,7 +116,7 @@ The live site reports 1.0.15. Public version, diary preparation, background writ
 
 ### Water reference clarification
 
-The [current mobile water guide](https://support.cronometer.com/hc/en-us/articles/18018883315988-Mobile-Water-Tracking), checked November 20, states that minus removes the newest water entry in full, including a custom amount. The total-water bar includes food and beverages and opens the nutrient target editor. This resolves the removal ambiguity left by references 35/41/42. It is documentation evidence, not a new device test. The saved screenshots remain the visual authority. No Water implementation change is claimed yet.
+The [current mobile water guide](https://support.cronometer.com/hc/en-us/articles/18018883315988-Mobile-Water-Tracking), checked November 20, states that minus removes the newest water entry in full, including a custom amount. The total-water bar includes food and beverages and opens the nutrient target editor. This resolves the removal ambiguity left by references 35/41/42. It is documentation evidence, not a new device test. The saved screenshots remain the visual authority. Implementation and verification are recorded below.
 
 
 ### Automatic background reconciliation (1.0.16)
@@ -126,3 +126,12 @@ Release commit `9176c90` removes the global background-save review banner and pe
 The rapid single-device regression sends 16 additions, edits and settings changes. Without revision chaining it makes 31 requests; with the fix it makes 16, retains all changes and leaves no pending commands. The full isolated release candidate passed 648 local tests and the production Astro build. The exact rejection previously seen on the user's device was not captured; these checks establish the stale-revision path and automatic reconciliation behavior.
 
 The live site reports 1.0.16. Version, diary entrypoint, background writes, Device storage and core message assets match the tested release candidate. The removed sync-notice module returns 404 and is absent from the offline asset list. [GitHub CI and all Appwrite deployments passed](https://github.com/liangzixuan/nourishing/actions/runs/44847393307). The site, reminders, scheduler and account-cleanup deployments all reached ready. Installed-device confirmation remains unperformed. The broader interface audit remains open.
+
+
+### Water controls and shared settings (1.0.17 candidate)
+
+The Water widget uses its own drinking goal and container size. Its total-water bar retains the independent nutrient target. Add Glass and Add Custom Amount use the selected unit and diary group; minus removes the newest whole water entry. Hiding diary rows retains their nutrition. Water Settings is reachable from Diary and More → Display, including when the widget is hidden.
+
+The custom amount sheet follows reference 34, with one amount row and the current unit. Back dismisses it without leaving Diary. The goal wheel extends its bounded set of rows as the user scrolls. A shared display projection now reads the effective local account state, preventing stale More settings after edits from Diary. The total-water target editor also saves through the durable background queue. Validation uses a copy of local state before enqueueing, so a failed local save cannot change the cached baseline.
+
+All 651 local tests passed. A subsequent screenshot check exposed shared menu positioning/reset styles scoped only to Targets; those styles now belong to the shared AnchoredMenu stylesheet. Water, Targets and Display browser checks passed after that correction. Additional Water checks passed for completed-day disabled controls. Screenshots are retained locally under `.local/water/`; they are synthetic browser fixtures, not a new installed-phone inspection. Build and cloud release verification remain pending. The broader audit stays open.

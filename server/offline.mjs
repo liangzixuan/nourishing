@@ -10,7 +10,7 @@ export const offlinePayloadFields=Object.freeze({
  'entry.quantity':['date','id','revision','quantity'],
  'entry.details':['date','id','revision','changes','confirmed'],
  'note.add':['date','time','group','text'],
- 'water.add':['date','time','amount'],
+ 'water.add':['date','time','group','amount'],
  'exercise.add':['date','time','group','name','duration','calories','confirmed'],
  'exercise.correct':['collection','id','revision','changes','confirmed'],
  'note.correct':['collection','id','revision','changes','confirmed'],

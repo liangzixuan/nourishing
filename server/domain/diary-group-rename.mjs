@@ -2,6 +2,7 @@ import {parseDiaryGroupOrder} from './diary-order.mjs';
 import {healthConnectGroup} from './health-import-group.mjs';
 import {parseDiaryGroups} from './diary-group-display.mjs';
 import {parseDiaryQuickAdd} from './diary-quick-add.mjs';
+import {parseWaterSettings} from './water-settings.mjs';
 
 const fail=(message,status=400)=>{throw Object.assign(Error(message),{status});};
 const collections=['entries','biometrics','notes','repeats'];
@@ -18,6 +19,7 @@ export function renameDiaryGroup(state,input){
   if(next.diaryQuickAdd!=null){const policy=parseDiaryQuickAdd(next.diaryQuickAdd,groups);next.diaryQuickAdd=parseDiaryQuickAdd({...policy,shortcuts:policy.shortcuts.map(row=>row.group===from?{...row,group:to}:row)},next.groups);}
   if(next.diaryGroupOrder!=null){const policy=parseDiaryGroupOrder(next.diaryGroupOrder,groups);next.diaryGroupOrder=parseDiaryGroupOrder({...policy,groups:policy.groups.map(row=>row.group===from?{...row,group:to}:row)},next.groups);}
   if(healthConnectGroup(state.settings)===from)next.healthConnectGroup=to;
+  if(next.waterSettings!=null){const policy=parseWaterSettings(next.waterSettings,groups);next.waterSettings=parseWaterSettings({...policy,group:policy.group===from?to:policy.group},next.groups);}
   // Only live assignments are renamed. Source facts, reviewed packets, replay
   // receipts, copy lineage and recovery history retain their original facts.
   const assigned=collections.flatMap(collection=>state[collection].filter(row=>row.group===from));

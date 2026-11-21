@@ -1,23 +1,24 @@
+import {createDisplayView} from './domain/display-view.mjs';
 import {parseFontScale} from './domain/font-scale.mjs';
 import {parseAppLanguage} from './domain/app-language.mjs';
-import {parseDiaryGroups,resolveDiaryGroups} from './domain/diary-group-display.mjs';
-import {parseDiaryQuickAdd,diaryQuickAddActions} from './domain/diary-quick-add.mjs';
-import {defaultDiaryCalendar,parseDiaryCalendar} from './domain/diary-calendar.mjs';
+import {parseDiaryGroups} from './domain/diary-group-display.mjs';
+import {parseDiaryQuickAdd} from './domain/diary-quick-add.mjs';
+import {parseDiaryCalendar} from './domain/diary-calendar.mjs';
 import {digest} from './data-codec.mjs';
 import {parseEnergyUnit} from './domain/energy-units.mjs';
-import {defaultDiaryDisplayPolicy,parseDiaryDisplayPolicy,defaultDiaryTablePolicy,parseDiaryTablePolicy,diaryTableNutrients} from './domain/diary-display.mjs';
+import {parseDiaryTablePolicy} from './domain/diary-display.mjs';
 import {prepareDiaryDisplayCommand} from './diary-display-settings.mjs';
+import {parseWaterSettings} from './domain/water-settings.mjs';
 const visibility=['showTimestamp','showEnergy','showMacros','showWater'];
-export const displayCommandFields={'display.save':['appLanguage','fontScale','matchDeviceFontSize','energyUnit','theme',...visibility,'diaryDisplay','diaryTable','diaryCalendar','diaryGroups','diaryQuickAdd','alwaysExpandMeals']};
+export const displayCommandFields={'display.save':['appLanguage','fontScale','matchDeviceFontSize','energyUnit','theme',...visibility,'diaryDisplay','diaryTable','diaryCalendar','diaryGroups','diaryQuickAdd','alwaysExpandMeals','waterSettings']};
 const fail=message=>{throw Object.assign(Error(message),{status:400});};
-export function displayView(state){
- const source=state.settings;
- return {revision:digest(state),quickAddActions:diaryQuickAddActions,summaryNutrients:diaryTableNutrients.map(({id,name,unit})=>({id,name,unit})),settings:{appLanguage:parseAppLanguage(source.appLanguage??'en'),fontScale:parseFontScale(source.fontScale),matchDeviceFontSize:source.matchDeviceFontSize===true,groups:[...source.groups],diaryGroups:resolveDiaryGroups(source),diaryQuickAdd:source.diaryQuickAdd===undefined?{version:1,shortcuts:[]}:parseDiaryQuickAdd(source.diaryQuickAdd,source.groups)??{version:1,shortcuts:[]},alwaysExpandMeals:source.alwaysExpandMeals===true,diaryCalendar:parseDiaryCalendar(source.diaryCalendar)??{...defaultDiaryCalendar},energyUnit:parseEnergyUnit(source.energyUnit??'kcal'),theme:source.theme??'dark',...Object.fromEntries(visibility.map(key=>[key,source[key]!==false])),diaryDisplay:parseDiaryDisplayPolicy(source.diaryDisplay)??structuredClone(defaultDiaryDisplayPolicy),diaryTable:parseDiaryTablePolicy(source.diaryTable)??{...defaultDiaryTablePolicy}}};
-}
+export function displayView(state){return {revision:digest(state),...createDisplayView(state)};}
+
 export function prepareDisplayCommand(state,{type,payload}){
  if(type!=='display.save')return {type,payload};
  if(!payload||typeof payload!=='object'||Array.isArray(payload)||!Object.keys(payload).length||Object.keys(payload).some(key=>!displayCommandFields[type].includes(key)))fail('Choose a display setting.');
  const patch={};
+ if(Object.hasOwn(payload,'waterSettings'))patch.waterSettings=parseWaterSettings(payload.waterSettings,state.settings.groups);
  if(Object.hasOwn(payload,'appLanguage'))patch.appLanguage=parseAppLanguage(payload.appLanguage);
  if(Object.hasOwn(payload,'fontScale'))patch.fontScale=parseFontScale(payload.fontScale);
  if(Object.hasOwn(payload,'matchDeviceFontSize')){if(typeof payload.matchDeviceFontSize!=='boolean')fail('Choose whether to use browser text size.');patch.matchDeviceFontSize=payload.matchDeviceFontSize;}

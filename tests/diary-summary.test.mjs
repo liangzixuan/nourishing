@@ -59,8 +59,8 @@ test('source diary carousel, rings, water, actions and disposal work on a phone 
   await page.locator('[data-md-page-id=macros] [data-id=protein]').click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).id,'protein');
   await page.locator('[data-md-dot="2"]').click();assert.equal(await page.locator('[data-md-page-id=highlights]').isVisible(),true);
   await page.locator('[data-md-dot="3"]').click();assert.equal(await page.locator('[data-md-page-id=scores]').isVisible(),true);await page.locator('[data-md-page-id=scores] [data-action=score-details]').first().click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).action,'score-details');
-  await page.getByRole('button',{name:'Add water',exact:true}).click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).action,'water-custom');assert.equal(await page.locator('.md-water').getAttribute('open'),null);
-  await page.locator('.md-water summary').click();await page.getByRole('button',{name:'Add 250 mL'}).click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).amount,250);
+  await page.locator('[data-action=water-menu]').click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).action,'water-menu');assert.equal(await page.locator('.md-water').getAttribute('open'),null);
+  await page.locator('.md-water summary').click();await page.locator('.water-glasses [data-action=water]').click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).amount,236.5882365);
   await page.locator('.md-fasting summary').click();await page.getByRole('button',{name:'Open Fasting'}).click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).action,'open-fasting');
   await page.locator('[data-md-dot="0"]').click();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   mkdirSync('.local/ui-parity',{recursive:true});await page.screenshot({path:'.local/ui-parity/diary-summary-restored.png'});

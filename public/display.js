@@ -12,13 +12,15 @@ import {request,queueCommand} from './diary-api.js';
 import {applyTheme} from './appearance.js';
 import {moreBackHeader} from './more-source/menu-view.js';
 import {MobileDisplay} from './display-source/mobile-display.js';
+import {mountWaterSettings} from './water.js';
+import {waterText} from './water-messages.js';
 /** Owns the Display projection; durable writes use the shared background queue. */
 export function mountDisplay({root,headerRoot,onChange=async()=>{},date=()=>new Date().toLocaleDateString('en-CA')}){
  let disposed=false,view,controller,child;const navigation={screen:'home'};const abort=new AbortController();
  const alive=()=>!disposed&&root.isConnected;
  const stopStatus=onBackgroundWriteStatus(event=>{if(event.saved&&alive()&&view)view={...view,revision:event.result.revision??view.revision};});
  async function load(){child?.dispose();child=null;controller?.dispose();controller=null;root.textContent=coreText('loading');try{view=await request('/api/display',undefined,abort.signal);if(!alive())return;applyAppLanguage(view.settings.appLanguage);applyFontPreferences(view.settings);controller=new MobileDisplay({root,settings:view.settings,summaryNutrients:view.summaryNutrients,quickAddActions:view.quickAddActions,navigation,onTitle:title=>{if(headerRoot)headerRoot.innerHTML=moreBackHeader(title);},onSave:save,onReload:load,onDestination:destination});}catch(error){if(!alive())return;root.replaceChildren();const status=document.createElement('p');status.className='mds-status';status.setAttribute('role','status');status.textContent=error.message;const retry=document.createElement('button');retry.className='mds-row';retry.textContent=coreText('retry');retry.onclick=load;root.append(status,retry);}}
- function destination(id){if(!['pauseLife','dashboard'].includes(id))return;controller?.dispose();controller=null;if(id==='dashboard'){openDashboardSettings();return;}if(headerRoot)headerRoot.innerHTML=moreBackHeader(t('mobileDisplay.pauseLife'));child=mountPauseLife({root,onChange});}
+ function destination(id){if(!['pauseLife','dashboard','water'].includes(id))return;controller?.dispose();controller=null;if(id==='dashboard'){openDashboardSettings();return;}if(id==='water'){if(headerRoot)headerRoot.innerHTML=moreBackHeader(waterText('settings'));child=mountWaterSettings({root,settings:view.settings,groups:view.settings.groups,onSave:save});return;}if(headerRoot)headerRoot.innerHTML=moreBackHeader(t('mobileDisplay.pauseLife'));child=mountPauseLife({root,onChange});}
  function openDashboardSettings(){
   let active=true,dashboard,screen='settings',saving=Promise.resolve();const path='/api/dashboard?'+new URLSearchParams({date:date()});
   child={dispose(){active=false;},back(){if(screen==='streak'){screen='settings';render();return true;}return false;}};

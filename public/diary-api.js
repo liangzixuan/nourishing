@@ -27,7 +27,7 @@ function invalidationPrefixes(path,body){
   const type=body.type;
   if(/^(?:entry|note|biometric|water|day|records|photo|barcode)\./.test(type))return DIARY_PREFIXES;
   if(/^(?:display|pause-life)\./.test(type))return DISPLAY_PREFIXES;
-  if(/^(?:profile|target|targets|nutrient-target|energy|weight-goal|macro)\./.test(type))return TARGET_PREFIXES;
+  if(/^(?:profile|target|targets|nutrient-target|nutrientTarget|energy|weight-goal|macro)\./.test(type))return TARGET_PREFIXES;
   if(/^(?:fast|fasting)\./.test(type))return FASTING_PREFIXES;
   if(/^(?:food|recipe|meal|favorite|library|selection)\./.test(type))return LIBRARY_PREFIXES;
   if(/^repeat\./.test(type))return REPEAT_PREFIXES;

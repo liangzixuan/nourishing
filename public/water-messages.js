@@ -1,0 +1,24 @@
+import {createUITranslator} from './app-language.js';
+const rows={
+ water:['Water','Eau','Wasser','Água'],
+ settings:['Water Settings','Réglages de l’eau','Wassereinstellungen','Configurações de água'],
+ addGlass:['Add Glass','Ajouter un verre','Glas hinzufügen','Adicionar copo'],
+ custom:['Add Custom Amount','Ajouter une quantité','Eigene Menge hinzufügen','Adicionar quantidade'],
+ remove:['Remove Last Water Entry','Supprimer la dernière entrée d’eau','Letzten Wassereintrag entfernen','Remover último registro de água'],
+ showWidget:['Show water widget','Afficher le widget d’eau','Wasser-Widget anzeigen','Mostrar widget de água'],
+ showEntries:['Show water widget entries in diary','Afficher les entrées d’eau dans le journal','Wassereinträge im Tagebuch anzeigen','Mostrar registros de água no diário'],
+ showTotal:['Show total water nutrient target bar','Afficher la barre d’objectif total en eau','Zielleiste für Gesamtwasser anzeigen','Mostrar barra de meta de água total'],
+ group:['Diary Group','Groupe du journal','Tagebuchgruppe','Grupo do diário'],
+ current:['Current Selected Group','Groupe sélectionné','Aktuell ausgewählte Gruppe','Grupo selecionado'],
+ units:['Units','Unités','Einheiten','Unidades'],
+ goal:['Daily Water Tracking Goal','Objectif quotidien d’eau','Tägliches Trinkziel','Meta diária de água'],
+ container:['Container Size','Taille du récipient','Behältergröße','Tamanho do recipiente'],
+ glass:['1 Water Glass =','1 verre d’eau =','1 Glas Wasser =','1 copo de água ='],
+ glasses:['{{count}} glasses','{{count}} verres','{{count}} Gläser','{{count}} copos'],
+ total:['Total Water','Eau totale','Gesamtwasser','Água total'],
+ amount:['Amount','Quantité','Menge','Quantidade'],
+ add:['Add','Ajouter','Hinzufügen','Adicionar'],
+ close:['Close','Fermer','Schließen','Fechar'],
+ failed:['Could not save this change.','Impossible d’enregistrer cette modification.','Änderung konnte nicht gespeichert werden.','Não foi possível salvar esta alteração.'],
+};
+export const waterText=createUITranslator(Object.fromEntries(['en','fr','de','pt-BR'].map((language,i)=>[language,Object.fromEntries(Object.entries(rows).map(([key,values])=>[key,values[i]]))])));

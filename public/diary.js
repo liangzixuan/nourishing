@@ -40,6 +40,9 @@ import {mountLibrary} from './library.js';
 import {mountFoodPicker} from './food-picker.js';
 import {mountNutrition} from './nutrition.js';
 import {applyTheme} from './appearance.js';
+import {waterPolicy,waterRecordAmount,newestWaterEntry,openWaterAmount,openWaterMenu,mountWaterSettings} from './water.js';
+import {waterText} from './water-messages.js';
+import {moreBackHeader} from './more-source/menu-view.js';
 
 const page = document.querySelector('#page');
 const dateBar = document.querySelector('#diary-date');
@@ -88,6 +91,7 @@ let library = null;
 let nutrition = null;
 let more = null;
 let summaryPanel = null;
+let waterPanel=null,waterMenu=null,waterAmount=null;
 let pickerCleanup;
 let account;
 let accountReady = false;
@@ -234,6 +238,7 @@ function selectTab(id) {
 }
 
 function leaveView() {
+  waterPanel?.dispose();waterPanel=null;waterMenu?.close(false);waterMenu=null;waterAmount?.close();waterAmount=null;
   diaryCalendar?.close();
   diaryTools.reset();
   if (repeatsBackHandle) {
@@ -280,14 +285,15 @@ function renderDiaryRow(collection, row) {
     });
   }
   const isNote = collection === 'notes';
+  const waterAmount=isNote?null:waterRecordAmount(diary,row);
   const thumb = isNote ? notePhotoThumbnail(row) : '';
   return mobileDiaryRecord({
     id: row.id,
     collection,
-    name: isNote ? row.text : row.type,
-    meta: e(time),
-    amount: isNote ? '' : `${num(row.value, 20)} ${e(row.unit)}`,
-    icon: diarySymbol(isNote ? 'description' : 'monitor_heart'),
+    name: isNote ? row.text : waterAmount?waterText('water'):row.type,
+    meta: e(waterAmount?[time,waterAmount].filter(Boolean).join(' · '):time),
+    amount: isNote ? '' : waterAmount?`0.0 ${e(diary.energyUnit??'kcal')}`:`${num(row.value, 20)} ${e(row.unit)}`,
+    icon: waterAmount?'<img class="water-row-icon" src="/record-source/biometric-icons/water.svg" alt="">':diarySymbol(isNote ? 'description' : 'monitor_heart'),
     selectBox: diaryTools.selectBox(collection, row),
     action: isNote ? 'edit-note' : 'edit-biometric',
     extra: thumb
@@ -593,6 +599,13 @@ function navigate(next, initialTab = 'dashboard', reportDate) {
       navigate('diary');
     });
   }
+  if(next==='water'){
+    selectTab('diary-tab');dateBar.hidden=true;headerRoot.hidden=false;
+    headerRoot.innerHTML=moreBackHeader(waterText('settings'));
+    waterPanel=mountWaterSettings({root:page,settings:diary.presentation.settings,groups:diary.groups,onSave:async patch=>{await queueCommand(diary.revision,'display.save',patch);await load({reuseUnchanged:true});}});
+    headerRoot.querySelector('[data-more-back]').onclick=()=>{if(!waterPanel?.back())navigate('diary');};
+    return;
+  }
   if (next === 'foods') {
     selectTab('foods-tab');
     library = mountLibrary({...common, openEntry: (kind, id) => edit({id, kind})});
@@ -629,24 +642,7 @@ function sourceTargets() {
 }
 
 function openCustomWaterSheet() {
-  show(
-    header(t('activity.addWater')) +
-      `<form class="entry-form"><label class="field-row"><span>${e(t('mobileFood.amount'))} (mL)</span><input name="amount" type="number" min="1" step="any" value="250" required></label><p class="sheet-message" role="status"></p><footer class="entry-actions"><button class="primary">${e(t('activity.addToDiary'))}</button></footer></form>`,
-  );
-  const form = content.querySelector('form');
-  let saving = false;
-  form.onsubmit = async event => {
-    event.preventDefault();
-    if(saving)return;
-    saving=true;
-    const amount = Number(form.elements.amount.value);
-    const targetDate = date;
-    const entryTime = new Date().toTimeString().slice(0, 5);
-    try{await queueCommand(diary.revision,'water.add',{date:targetDate,time:entryTime,amount});}catch(error){saving=false;form.querySelector('[role=status]').textContent=error.message;return;}
-    close();
-    await load({reuseUnchanged:true});
-
-  };
+  waterAmount?.close();waterAmount=openWaterAmount({policy:waterPolicy(diary),onAdd:amount=>SUMMARY_ACTIONS.water({amount,refresh:false}),onAdded:()=>load({reuseUnchanged:true})});
 }
 
 const SUMMARY_ACTIONS = {
@@ -658,10 +654,15 @@ const SUMMARY_ACTIONS = {
   water: async input => {
     const targetDate = date;
     const entryTime = new Date().toTimeString().slice(0, 5);
-    await queueCommand(diary.revision,'water.add',{date:targetDate,time:entryTime,amount:input.amount});
-    await load({reuseUnchanged:true});
+    const policy=waterPolicy(diary);
+    await queueCommand(diary.revision,'water.add',{date:targetDate,time:entryTime,group:policy.group??(diary.groups.includes(group)?group:defaultGroup(diary.groups)),amount:input.amount??policy.containerMl});
+    if(input.refresh!==false)await load({reuseUnchanged:true});
   },
   'water-custom': openCustomWaterSheet,
+  'water-menu':input=>{waterMenu?.close(false);waterMenu=openWaterMenu(input.anchor,action=>void summaryAction({action}),{completed:diary.completed});},
+  'water-settings':()=>navigate('water'),
+  'water-remove':async input=>{const row=newestWaterEntry(diary);if(!row||row.id!==input.id)return;await queueCommand(diary.revision,'biometric.delete',{id:row.id});await load({reuseUnchanged:true});},
+  'water-target':()=>{pickerCleanup=mountTargetsSheet({date:()=>date,show,close,header,content,onChange:load,initialScreen:'nutrients',initialNutrient:'water'});},
   'nutrient-contributors': input =>
     openNutrientDetail({
       nutrient: input.id,

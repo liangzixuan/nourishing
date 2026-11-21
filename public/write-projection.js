@@ -39,7 +39,7 @@ export function applyWriteToState(state,row,result){
  if(type==='record.correct'){const old=state[p.collection]?.find(item=>item.id===p.id);if(old)replace(p.collection,{...old,...p.changes,...(p.collection==='entries'?{caloriesBurned:p.changes.calories}:{}),_pending:!result});}
  if(type==='note.photo.save')for(const note of row.projection?.notes??[])replace('notes',{...note,id:p.id??id,_pending:!result});
 
- if(type==='water.add')replace('biometrics',{id,date:p.date,time:p.time,type:'Water',unit:'mL',value:p.amount,_pending:!result});
+ if(type==='water.add')replace('biometrics',{id,date:p.date,time:p.time,...(Object.hasOwn(p,'group')?{group:p.group}:{}),type:'Water',unit:'mL',value:p.amount,_pending:!result});
  if(type==='day.complete'){state.settings.completedDays=(state.settings.completedDays??[]).filter(day=>day!==p.date);if(p.completed)state.settings.completedDays.push(p.date);}
  if(type==='display.save'||type==='preferences.patch')Object.assign(state.settings,p);
  if(type==='group.rename'&&state.settings.groups?.includes(p.from))renameDiaryGroup(state,p);

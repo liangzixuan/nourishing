@@ -5,7 +5,7 @@ import {applyDiaryRecordCorrection} from './domain/diary-record-correction.mjs';
 import {parseCustomBiometrics} from './domain/biometric-library.mjs';
 
 export const recordCommandFields=Object.freeze({
- 'water.add':['date','time','amount'],
+ 'water.add':['date','time','group','amount'],
  'exercise.add':['date','time','group','name','duration','calories'],
  'exercise.catalog.add':['date','time','group','code','duration','weightKg','useEstimate','calories'],
  'biometric.log':['selection','unit','values','date','time','group'],

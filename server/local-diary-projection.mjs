@@ -3,6 +3,8 @@ import {diarySummaryPresentation} from './diary-summary.mjs';
 import {diaryToolsPresentation} from './diary-presentation.mjs';
 import {mergeEntryUpdate} from './domain/entry-update-fields.mjs';
 import {setDiaryGroupOrder,sortAllDiaryEntriesByTime} from './domain/diary-order.mjs';
+import {nutrientTargetSettingsPatch,nutrientTargetCustomPatch} from './domain/nutrient-target-edit.mjs';
+export {createNutrientTargetsView} from './domain/nutrient-target-view.mjs';
 export {copiedDiaryRecords} from './domain/diary-record-copy.mjs';
 export {libraryItems} from './domain/library-list.mjs';
 
@@ -10,6 +12,7 @@ export {libraryItems} from './domain/library-list.mjs';
  * Server validation remains authoritative; projection must also work after an
  * acknowledgement, when the server returns no changed-record payload. */
 export function projectDiaryBulkWrite(state,{type,payload:p}){
+ if(type==='nutrientTarget.patch'||type==='nutrientTarget.setCustom'){Object.assign(state.settings,(type==='nutrientTarget.patch'?nutrientTargetSettingsPatch:nutrientTargetCustomPatch)(state,p));return;}
  if(type==='diary.sort-all'){sortAllDiaryEntriesByTime(state);return;}
  if(type==='diary.order'){state.settings.diarySort=p.mode;return;}
  if(type==='group.order'){setDiaryGroupOrder(state,p);return;}
@@ -44,3 +47,7 @@ export {applyProfileSettingsProjection} from './domain/profile-settings-command.
 export {projectDiaryCalendar} from './domain/diary-calendar.mjs';
 
 export {prepareDiaryReview,diaryReviewGuard,assertDiaryReviewGuard} from './domain/diary-preparation.mjs';
+export {resolveWaterSettings,parseWaterSettings,waterToMilliliters,waterFromMilliliters,waterUnits} from './domain/water-settings.mjs';
+export {isLoggedWater,loggedWaterMilliliters} from './domain/water-measurement.mjs';
+
+export {createDisplayView} from './domain/display-view.mjs';

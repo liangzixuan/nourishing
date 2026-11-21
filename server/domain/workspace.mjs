@@ -1,4 +1,5 @@
 import {normalizeCompositeDraft} from './composite-draft.mjs';
+import {parseWaterSettings} from './water-settings.mjs';
 import {fail,array,objectKeys,exactId,maxRecordCollectionRows} from './workspace-validation.mjs';
 import {nutrients} from './nutrient-values.mjs';
 export {nutrients} from './nutrient-values.mjs';
@@ -713,7 +714,7 @@ export function act(s,type,p={},context={}) {
     }
     case 'biometric.add': addDiaryRecord(s,'biometrics',parseBiometricRecord(p));break;
     case 'biometric.delete':removeDiaryRecords(s,'biometrics',[p.id]);break;
-    case 'water.add':addDiaryRecord(s,'biometrics',parseBiometricRecord({...p,type:'Water',value:number(p.amount,'Water',waterLimits.minimumMl,waterLimits.maximumMl),unit:'mL'}));break;
+    case 'water.add':addDiaryRecord(s,'biometrics',parseBiometricRecord({...p,type:'Water',value:number(p.amount,'Water',waterLimits.minimumMl,waterLimits.maximumMl),unit:'mL'},s.settings.groups));break;
     case 'exercise.add':addDiaryRecord(s,'entries',exerciseRecord(s,p));break;
     case 'exercise.catalog.add':addDiaryRecord(s,'entries',catalogExerciseRecord(s,p));break;
     case 'exercise.update': {if(Object.hasOwn(p,'exerciseBasis'))fail('The initial exercise calculation cannot be changed.');const old=lookup(s,'entries',p.id);if(old.kind!=='exercise')fail('This is not an exercise entry.');const next={id:old.id,...exerciseRecord(s,{...old,calories:old.caloriesBurned,...p})};assertDiaryDaysEditable(s,[old.date,next.date]);s.entries[s.entries.indexOf(old)]=next;break;}
@@ -767,6 +768,8 @@ export function act(s,type,p={},context={}) {
       if(Object.hasOwn(p,'customBiometrics')){const definitions=parseCustomBiometrics(p.customBiometrics);if(parseCustomBiometrics(s.settings.customBiometrics??[]).some(row=>!definitions.some(next=>next.name===row.name&&next.unit===row.unit)))throw Object.assign(Error('Use the reviewed custom-biometric deletion flow to remove a definition and its history.'),{status:409});next.customBiometrics=definitions;}
       if(Object.hasOwn(p,'diaryGroups')){const policy=parseDiaryGroups(p.diaryGroups,next.groups);if(policy===null)delete next.diaryGroups;else next.diaryGroups=policy;}
       else if(next.diaryGroups&&Object.hasOwn(p,'groups'))next.diaryGroups=parseDiaryGroups({...next.diaryGroups,hiddenGroups:next.diaryGroups.hiddenGroups.filter(group=>next.groups.includes(group))},next.groups);
+      if(Object.hasOwn(p,'waterSettings')){const policy=parseWaterSettings(p.waterSettings,next.groups);if(policy===null)delete next.waterSettings;else next.waterSettings=policy;}
+      else if(next.waterSettings&&Object.hasOwn(p,'groups'))parseWaterSettings(next.waterSettings,next.groups);
       if(Object.hasOwn(p,'diaryQuickAdd')){const policy=parseDiaryQuickAdd(p.diaryQuickAdd,next.groups);if(policy===null)delete next.diaryQuickAdd;else next.diaryQuickAdd=policy;}
       else if(next.diaryQuickAdd&&Object.hasOwn(p,'groups'))next.diaryQuickAdd=parseDiaryQuickAdd({...next.diaryQuickAdd,shortcuts:next.diaryQuickAdd.shortcuts.filter(row=>next.groups.includes(row.group))},next.groups);
       if(Object.hasOwn(p,'diaryGroupOrder')){const policy=parseDiaryGroupOrder(p.diaryGroupOrder,next.groups);if(policy===null)delete next.diaryGroupOrder;else next.diaryGroupOrder=policy;}

@@ -5,12 +5,13 @@ import {mobileDiarySummary,MobileDiary,diarySymbol} from './diary-summary-source
 import {escape as e} from './html.js';
 import {scoreName} from './diary-summary-source/score-labels.js';
 import {request} from './diary-api.js';
+import {waterWidgetMarkup} from './water.js';
 
 const labels=()=>({energy:coreText('diary.energy'),target:t('mobileDiary.target'),consumed:t('mobileDiary.consumed'),expenditure:t('mobileDiary.expenditure'),remaining:t('mobileDiary.remaining'),macros:coreText('diary.macros'),highlights:coreText('diary.highlights'),scores:t('mobileScoreSettings.title'),summary:coreText('diary.daily'),report:coreText('diary.allNutrients'),selected:t('mobileNutrientDetail.selection'),previous:coreText('diary.previousSummary'),next:coreText('diary.nextSummary')});
 const icons=Object.fromEntries(Object.entries({check:'check_circle',back:'chevron_left',chevron:'chevron_right',plus:'add',more:'more_vert'}).map(([key,name])=>[key,diarySymbol(name)]));
-const number=(value,digits=1)=>Number.isFinite(value)?value.toLocaleString(uiLanguage(),{maximumFractionDigits:digits}):'—';
 const nutrientName=row=>nutrientDisplayName(row,uiLanguage());
 let macroMode=null;
+let waterExpanded=false;
 
 function summaryMarkup(diary,facts=diary.summary,summary=diary.summary){
  const {presentation={settings:{},scores:[]}}=diary;
@@ -19,9 +20,9 @@ function summaryMarkup(diary,facts=diary.summary,summary=diary.summary){
 const waitingMarkup=(message=coreText('diary.loadingSelection'),retry=false)=>`<section class="md-summary md-selection-status" data-md-summary role="status"><p>${e(message)}</p>${retry?`<button type="button" data-summary-retry>${e(coreText('retry'))}</button>`:''}</section>`;
 function duration(seconds){if(!Number.isFinite(seconds))return '';const minutes=Math.floor(Math.max(0,seconds)/60);return `${Math.floor(minutes/60)}h ${String(minutes%60).padStart(2,'0')}m`;}
 export function diarySummaryMarkup(diary,selection){
- const {summary,presentation={settings:{},scores:[]}}=diary,water=summary.hydration,fast=presentation.fasting;
+ const {summary,presentation={settings:{},scores:[]}}=diary,fast=presentation.fasting;
  const fasting=fast?.visible===false?'':`<details class="md-fasting"><summary><strong>${e(t('nav.fasting'))}</strong><span class="md-group-chevron">${icons.chevron}</span></summary><div class="md-fasting-body">${fast?.active?`<strong data-diary-fast-clock>${e(duration(fast.elapsedSeconds))}</strong>`:''}<button type="button" data-action="open-fasting">${e(t('dashboard.openFast'))}</button></div></details>`;
- const hydration=presentation.settings.showWater===false?'':`<details class="md-water"><summary><button type="button" data-action="water-custom" class="md-group-add" aria-label="${e(t('activity.addWater'))}">${icons.plus}</button><div><strong>${e(t('mobileDiary.water'))}</strong><small>${number(water.logged/1000,2)} / ${number(water.target===null?null:water.target/1000,1)} L</small></div><span class="md-group-chevron">${icons.chevron}</span></summary><div class="md-water-actions"><button type="button" data-action="water" data-amount="250">${e(coreText('diary.addWater',{amount:number(250,0)}))}</button><button type="button" data-action="water-custom">${e(t('mobileExpenditure.custom'))}</button></div></details>`;
+ const hydration=waterWidgetMarkup(diary,{expanded:waterExpanded});
  return (selection?.records.length?waitingMarkup():summaryMarkup(diary))+fasting+hydration;
 }
 
@@ -40,13 +41,14 @@ export function mountDiarySummary({root,diary,onAction,selection,onReload}){
   }catch(error){if(disposed)return;conflict=error.status===409;panel.update(waitingMarkup(error.message,true),diary.summary);if(conflict)root.querySelector('[data-summary-retry]').textContent=coreText('diary.reload');}
  }
  if(!ready)void loadSelection();
- const actions=new Set(['mobile-diary-energy','edit-day-targets','nutrient-contributors','configure-diary-display','all-nutrients','choose-scores','score-details','open-fasting','water','water-custom']);
+ const actions=new Set(['mobile-diary-energy','edit-day-targets','nutrient-contributors','configure-diary-display','all-nutrients','choose-scores','score-details','open-fasting','water','water-custom','water-menu','water-remove','water-settings','water-target']);
+ root.addEventListener('toggle',event=>{if(event.target.matches('.md-water'))waterExpanded=event.target.open;},{capture:true,signal:controller.signal});
  root.addEventListener('click',event=>{
   if(event.target.closest('[data-summary-retry]')){void(conflict?onReload?.():loadSelection());return;}
   const button=event.target.closest('[data-action]');if(!button)return;
   const action=button.dataset.action;
   if(action==='toggle-macro-display'){macroMode=(macroMode??facts.diaryDisplay?.policy.macroDisplay??'consumed')==='remaining'?'consumed':'remaining';panel.update(summaryMarkup(diary,facts,chartSummary),chartSummary);return;}
-  if(actions.has(action)){event.preventDefault();onAction({action,id:button.dataset.id,kind:button.dataset.kind,amount:button.dataset.amount?Number(button.dataset.amount):undefined});}
+  if(actions.has(action)){event.preventDefault();onAction({action,id:button.dataset.id,kind:button.dataset.kind,anchor:button,amount:button.dataset.amount?Number(button.dataset.amount):undefined});}
  },{signal:controller.signal});
  const initial=diary.presentation?.fasting,started=performance.now();
  const updateClock=()=>{const target=root.querySelector('[data-diary-fast-clock]');if(target&&initial?.status==='active')target.textContent=duration(initial.elapsedSeconds+(performance.now()-started)/1000);};

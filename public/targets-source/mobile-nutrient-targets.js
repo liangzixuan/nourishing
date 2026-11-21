@@ -7,14 +7,14 @@ import {convertEnergy} from '../report-source/server/energy-units.mjs';
 import {LibraryReviewDialog} from './library-review-dialog.js';
 const question='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 4"/><path d="M12 16v1"/></svg>';
 export class MobileNutrientTargets{
- constructor({root,header,date,language,request,save,onNavigate,onNotice}){
-  Object.assign(this,{root,header,date,language,request,save,onNavigate,onNotice});this.m=key=>formatMessage(language,'mobileNutrientTargets.'+key);this.controller=new AbortController();this.category=null;this.error='';this.loading=false;this.saving=false;this.unknown=false;this.view=null;this.disposed=false;
+ constructor({root,header,date,language,request,save,onNavigate,onNotice,initialNutrient=null}){
+  Object.assign(this,{root,header,date,language,request,save,onNavigate,onNotice,initialNutrient});this.m=key=>formatMessage(language,'mobileNutrientTargets.'+key);this.controller=new AbortController();this.category=null;this.error='';this.loading=false;this.saving=false;this.unknown=false;this.view=null;this.disposed=false;
   root.addEventListener('click',event=>this.click(event),{signal:this.controller.signal});root.addEventListener('change',event=>void this.change(event),{signal:this.controller.signal});void this.load();
  }
  name(row){return nutrientDisplayName(row,this.language)}
  button(label,attrs){return `<button type="button" ${attrs}>${label}</button>`}
  headerTitle(){this.header.querySelector('h1').textContent=this.m(this.category?'group.'+this.category:'title');this.header.querySelector('[data-mt-menu]').hidden=!!this.category;}
- async load(){if(this.disposed)return;this.loading=true;this.error='';this.render();try{const view=await this.request('/api/nutrient-targets?'+new URLSearchParams({date:this.date}),{signal:this.controller.signal});if(this.disposed)return;if(view?.version!==1||view.date!==this.date||!Array.isArray(view.groups)||view.groups.length!==6||!Array.isArray(view.highlighted))throw Error(this.m('failed'));this.view=view;}catch(error){if(!this.disposed)this.error=error.message||this.m('failed');}finally{this.loading=false;if(!this.disposed)this.render();}}
+ async load(){if(this.disposed)return;this.loading=true;this.error='';this.render();try{const view=await this.request('/api/nutrient-targets?'+new URLSearchParams({date:this.date}),{signal:this.controller.signal});if(this.disposed)return;if(view?.version!==1||view.date!==this.date||!Array.isArray(view.groups)||view.groups.length!==6||!Array.isArray(view.highlighted))throw Error(this.m('failed'));this.view=view;if(this.initialNutrient){this.category=view.groups.find(group=>group.nutrients.some(row=>row.id===this.initialNutrient))?.id??null;this.initialNutrient=null;}}catch(error){if(!this.disposed)this.error=error.message||this.m('failed');}finally{this.loading=false;if(!this.disposed)this.render();}}
  render(){
   if(this.disposed)return;this.headerTitle();const scroll=window.scrollY,m=this.m,view=this.view,busy=this.loading||this.saving||this.unknown;
   const status=`<div class="mnt-status" ${!this.error&&!this.loading&&!this.saving?'hidden':''}>${this.error?`<p role="alert">${e(this.error)}</p>${this.button(e(m('reload')),'data-mnt-reload')}`:`<p role="status">${e(m(this.saving?'saving':'loading'))}</p>`}</div>`;
