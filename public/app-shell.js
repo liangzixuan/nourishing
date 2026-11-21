@@ -22,6 +22,18 @@ export function createAppShell({headerRoot,dateBar,navigation}){
  };
 }
 
+// Route the copied navigation controls through the live application shell.
+export function appendShellNavigation(root,navigate){
+ const navigation=document.querySelector('.app-shell > .app-nav');
+ if(!navigation)return;
+ const clone=navigation.cloneNode(true),originals=[...navigation.querySelectorAll('button')];
+ clone.querySelectorAll('[id]').forEach(node=>node.removeAttribute('id'));
+ clone.querySelectorAll('button').forEach((button,index)=>{
+  button.onclick=()=>navigate(originals[index]);
+ });
+ root.append(clone);
+}
+
 export function discoverHeader({root,tab,onTab,onNews,onSettings,ready=true}){
  const tabs=['dashboard','charts','report','snapshots'].map(id=>[id,t('discover.nav.'+id)]);
  const settingsLabel={dashboard:t('discover.title.dashboard-settings'),charts:coreText('charts.manage'),report:t('discover.title.report-settings')}[tab];

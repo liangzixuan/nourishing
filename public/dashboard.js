@@ -1,3 +1,4 @@
+import {appendShellNavigation} from './app-shell.js';
 import {renderDashboardSettings} from './dashboard-settings.js';
 import {carbohydrateDisplayLabel} from './report-source/public/carbohydrate-description.js';
 import {nutrientDisplayName} from './report-source/public/nutrient-language.js';
@@ -107,6 +108,7 @@ export function mountDashboard({root,date,show,close,header,content,onChange,onR
  function streakStats(){
   const stats=data.streaks,rows=[['food','nutrition'],['exercise','directions_run'],['metric','vital_signs'],['fast','timer']];
   show(`<header class="sheet-header dc-stats-header"><button type="button" class="icon-button" data-stats-back aria-label="${e(t('discover.back'))}">‹</button><h2 id="sheet-title">${e(message('title.streaks'))}</h2>${ib('share',t('discover.shareStreak'),'share-streak')}</header><section class="dashboard-panel"><div class="dc-stats"><div class="dc-stats-summary"><div>${e(message('streak.longest'))}</div><strong>${number(stats.longest)}</strong><div>${e(message('streak.dayUnit'))}</div></div><details><summary aria-label="${e(t('mobileScoreSettings.help'))}">?</summary><p>${e(dc('streakHelp'))}</p></details><section><h2>${e(message('title.streaks'))}</h2><dl>${rows.map(([key,symbol])=>`<div><dt>${icon(symbol)} ${e(message('streak.'+key))}</dt><dd>${number(stats.savedCounts[key])}</dd></div>`).join('')}</dl></section></div></section>`);
+  appendShellNavigation(content,original=>{close();original.click();});
   content.querySelector('[data-stats-back]').onclick=close;
   content.querySelector('[data-discover=share-streak]').onclick=()=>openStreakShare(stats,{show,header,content,language});
  }

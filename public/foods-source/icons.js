@@ -1,6 +1,8 @@
 // Original icon paths from the local app's app.js iconPaths.
 const paths={
   "food": "M8 3v7M5 3v5c0 3 6 3 6 0V3M8 10v11M18 3c-4 4-4 10 0 10V3v18",
+  "meal": "M3 3h18v18H3zM7 6v4m2-4v4m2-4v4c0 2-4 2-4 0m2 2v6m7-6v6m0-12c-2 0-2 6 0 6s2-6 0-6z",
+  "imageAdd": "M13 5H3v15h17v-8M4 17l5-5 4 4 2-2 4 5M18 2v7m-3.5-3.5h7",
   "target": "M21 12a9 9 0 1 1-9-9M17 12a5 5 0 1 1-5-5M12 12l9-9M17 3h4v4",
   "spark": "m12 3 2.7 6.3L21 12l-6.3 2.7L12 21l-2.7-6.3L3 12l6.3-2.7Z",
   "repeat": "m17 2 4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3",

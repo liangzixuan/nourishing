@@ -1,3 +1,4 @@
+import {appendShellNavigation} from './app-shell.js';
 import {dc,chartText,customChartText as cm} from './discover-cloud-messages.js';
 import {uiLanguage,t} from './app-language.js';
 import {request,queueCommand} from './diary-api.js';
@@ -6,19 +7,6 @@ import {readDeviceCache} from './device-cache.js';
 import {escape as e} from './html.js';
 import {MobileChartPicker} from './cgm-detail-source/mobile-chart-picker.js';
 import {MobileChartEditor,defaultChartMetrics} from './custom-chart-source/mobile-chart-editor.js';
-
-// Route the copied navigation controls through the live application shell.
-export function appendChartNavigation(root,navigate){
- const navigation=document.querySelector('.app-shell > .app-nav');
- if(!navigation)return;
- const clone=navigation.cloneNode(true),originals=[...navigation.querySelectorAll('button')];
- clone.querySelectorAll('[id]').forEach(node=>node.removeAttribute('id'));
- clone.querySelectorAll('button').forEach((button,index)=>{
-  button.dataset.mceNav='';
-  button.onclick=()=>navigate(originals[index]);
- });
- root.append(clone);
-}
 
 export function confirmChartDeletion(chart,onChoose,onClose){
  const picker=new MobileChartPicker({label:chartText('delete'),confirm:{message:cm('deleteQuestion'),cancel:chartText('cancel'),accept:cm('yes')},onChoose,onClose});
@@ -55,10 +43,10 @@ export function mountCustomChartEditor(chart,data,ui){
  let disposed=false,busy=false,pending=null,conflict=false;
  const alive=()=>!disposed&&root.isConnected;
  const error=root.querySelector('[data-mce-error]');
- function controls(){editor.setSaving(busy||!!pending||conflict);root.querySelector('[data-mce-back]').disabled=busy;root.querySelectorAll('[data-mce-nav]').forEach(button=>button.disabled=busy);const save=form.querySelector('[data-mce-save]');save.disabled=busy||conflict;save.textContent=busy?t('recipeImport.saving'):pending?t('mobileSuggest.retry'):cm('save');root.querySelector('[data-mce-reload]').hidden=!conflict;root.querySelector('[data-mce-reload]').disabled=busy;}
+ function controls(){editor.setSaving(busy||!!pending||conflict);root.querySelector('[data-mce-back]').disabled=busy;root.querySelectorAll('.app-nav button').forEach(button=>button.disabled=busy);const save=form.querySelector('[data-mce-save]');save.disabled=busy||conflict;save.textContent=busy?t('recipeImport.saving'):pending?t('mobileSuggest.retry'):cm('save');root.querySelector('[data-mce-reload]').hidden=!conflict;root.querySelector('[data-mce-reload]').disabled=busy;}
  function dispose(){if(disposed)return;disposed=true;confirmation?.close();editor.dispose();abort.abort();observer.disconnect();}
  function back(){if(confirmation){confirmation.close();return;}if(editor.back())return;if(busy)return;dispose();(ui.onBack??close)();}
- if(!ui.afterDelete)appendChartNavigation(root,original=>{if(!busy){dispose();close();original.click();}});
+ if(!ui.afterDelete)appendShellNavigation(root,original=>{if(!busy){dispose();close();original.click();}});
  async function save(event){
   event.preventDefault();return submit();
  }

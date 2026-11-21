@@ -133,6 +133,15 @@ test('source Targets home and nutrient children work through production routes a
   {const before=attempts.length;await page.getByRole('button',{name:'Macro Scheduler',exact:true}).click();await page.locator('[data-mts-ready]').waitFor();await page.locator('[data-mt-back]').click();assert.equal(attempts.length,before);}
   await page.getByRole('button',{name:'Energy Expenditure',exact:true}).click();await page.locator('[data-mee-ready]').waitFor();await page.locator('[data-mt-back]').click();
   await page.getByRole('button',{name:'Nutrition Scores',exact:true}).click();await page.locator('[name=showScores]').waitFor();
+  const scoreScreen=page.locator('.mss-screen');
+  const measureScore=()=>scoreScreen.evaluate(root=>{
+   const header=root.querySelector('.sheet-header').getBoundingClientRect(),list=root.querySelector('.ds-list button').getBoundingClientRect(),toggle=root.querySelector('.ds-setting')?.getBoundingClientRect();
+   return {gap:(toggle??list).top-header.bottom,row:list.height,...(toggle?{toggle:toggle.height,section:list.top-toggle.bottom}:{})};
+  });
+  assert.deepEqual(await measureScore(),{gap:16,row:57,toggle:60,section:43});
+  await scoreScreen.locator('[data-slot="0"]').click();assert.deepEqual(await measureScore(),{gap:16,row:57});
+  await page.keyboard.press('Escape');await scoreScreen.locator('[data-slot="0"]').waitFor();
+  assert.equal(await scoreScreen.locator('[data-slot="0"]').evaluate(el=>document.activeElement===el),true);
   await page.locator('[data-slot="0"]').click();assert.deepEqual(await page.locator('[data-choice]:visible').evaluateAll(rows=>rows.map(row=>row.dataset.choice)),['overall','vitamins','minerals','electrolytes','antioxidants','immune','metabolism','bone','blood','oral','dataQuality','keto','plant','womens','mens','calciumAbsorption']);
   await page.locator('.mss-other summary').click();assert.equal(await page.locator('.mss-other [data-choice]:visible').count(),6);
   await page.locator('.mss-screen [data-back]').click();await page.getByRole('button',{name:'Help',exact:true}).click();await page.getByText(/Selecting one that is already shown/).waitFor();
