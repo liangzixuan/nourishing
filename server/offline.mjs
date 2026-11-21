@@ -44,7 +44,7 @@ function offlineState(state){
 }
 export function offlineSnapshot(state,{ownerId,generation,now=new Date()}){
  const quantityReviews={};for(const row of state.entries){if(row.kind==='exercise')continue;try{const {revision,kind}=readDiaryQuantity(state,{date:row.date,id:row.id});quantityReviews[row.id]={revision,kind};}catch(error){if(![400,409].includes(error.status))throw error;quantityReviews[row.id]={error:error.message};}}
- return {version:1,identity:{ownerId,generation},savedAt:now.toISOString(),state:offlineState(state),quantityReviews,noteReviews:readDiaryRecordReviews(state,'notes'),biometricReviews:readDiaryRecordReviews(state,'biometrics'),exerciseReviews:readDiaryRecordReviews(state,'entries'),foodVersions:Object.fromEntries(state.foods.map(food=>[food.id,digest(offlineFoodVersionFacts(food))])),biometricConfiguredPairs:configuredBiometricPairs(state)};
+ return {version:1,revision:digest(state),identity:{ownerId,generation},savedAt:now.toISOString(),state:offlineState(state),quantityReviews,noteReviews:readDiaryRecordReviews(state,'notes'),biometricReviews:readDiaryRecordReviews(state,'biometrics'),exerciseReviews:readDiaryRecordReviews(state,'entries'),foodVersions:Object.fromEntries(state.foods.map(food=>[food.id,digest(offlineFoodVersionFacts(food))])),biometricConfiguredPairs:configuredBiometricPairs(state)};
 }
 const recordReview=(state,collection,id)=>{const {revision,editable,reason}=readDiaryRecordCorrection(state,{collection,id});return {revision,editable,reason};};
 /** The cloud store owns account authentication, receipt replay and atomic persistence. */

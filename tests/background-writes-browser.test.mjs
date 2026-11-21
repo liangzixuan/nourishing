@@ -39,7 +39,7 @@ async function realQueueFixture(state,run,{losePath,loseType,rejectWrite}={}){
    if(req.url==='/api/offline')return res.end(JSON.stringify(await store.offlineSnapshot()));
    if(req.url.startsWith('/api/diary'))return res.end(JSON.stringify({revision:digest(fixture.state())}));
    let raw='';for await(const chunk of req)raw+=chunk;const body=JSON.parse(raw);sent.push({path:req.url,body});
-   const rejected=rejectWrite?.();if(rejected)throw rejected;
+   const rejected=rejectWrite?.(body);if(rejected)throw rejected;
    const result=req.url==='/api/offline/commands'?await store.offlineCommand(body):await store.command(body,async()=>null,{owner,asOf:date+'T12:00:00Z',timeZone:'UTC'});
    if(lose&&req.url===losePath&&(!loseType||body.type===loseType)){lose=false;throw {code:503,message:'Lost acknowledgement'};}
    return res.end(JSON.stringify(result));
@@ -54,37 +54,36 @@ async function realQueueFixture(state,run,{losePath,loseType,rejectWrite}={}){
  finally{await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
 }
 
-test('sync retries stay quiet; blocked saves show one review action and clear after recovery',async()=>{
+test('temporary failures retain writes; irreconcilable changes settle silently and later writes continue',async()=>{
  let failure={code:503,message:'Unable to connect. Please try again.'};
  await realQueueFixture(initialState(),async({page,flush,date,sent,fixture})=>{
   await page.evaluate(async date=>{
-   const {createSyncNotice}=await import('/sync-notice.js');
-   const notice=document.querySelector('main');notice.innerHTML='<span data-editor-error>Keep this editor error</span>';
-   const update=createSyncNotice({notice,review:()=>{window.reviewOpened=true;}});
-   (await import('/background-writes.js')).onBackgroundWriteStatus(update);
    await(await import('/diary-api.js')).queueCommand('a'.repeat(64),'water.add',{date,amount:250});
+   await(await import('/diary-api.js')).queueCommand('a'.repeat(64),'water.add',{date,amount:500});
   },date);
   await flush();await flush();
-  assert.equal(await page.locator('[data-sync-notice]').count(),0);
-  assert.equal((await page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy()).pending)).length,1);
+  assert.equal((await page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy()).pending)).length,2);
   failure={code:409,message:'Your data has changed. Please try again.'};
   await flush();
-  const notice=page.locator('[data-sync-notice]');
-  assert.equal(await notice.innerText(),'A change needs your review. Review');
-  assert.equal(await notice.locator('button').count(),1);
-  const requests=sent.length;await flush();await flush();
-  assert.equal(sent.length,requests);assert.equal(await notice.count(),1);
-  await notice.getByRole('button',{name:'Review',exact:true}).click();assert.equal(await page.evaluate(()=>window.reviewOpened),true);
-  failure=null;
-  await page.evaluate(async()=>{
-   const store=await import('/offline-store.js'),copy=await store.readWriteCopy();
-   await store.changeBackgroundWrite(copy.ticket,copy.pending[0].command.operationId,row=>{row.status='pending';row.error=null;});
-  });
-  await flush();assert.equal(await notice.count(),0);
-  assert.equal(await page.locator('[data-editor-error]').innerText(),'Keep this editor error');
-  assert.equal(fixture.state().biometrics.length,1);
   assert.equal((await page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy()).pending)).length,0);
- },{rejectWrite:()=>failure});
+  assert.deepEqual(fixture.state().biometrics.map(row=>row.value),[500]);
+  const requests=sent.length;await flush();assert.equal(sent.length,requests);
+  assert.equal(await page.evaluate(async()=>{const {readWriteCopy}=await import('/offline-store.js'),{offlineEffectiveState}=await import('/offline-model.js');return offlineEffectiveState(await readWriteCopy()).biometrics.length;}),1);
+ },{rejectWrite:body=>body.payload?.amount===250?failure:null});
+});
+
+test('a retained conflict from an earlier app version retries against the latest revision automatically',async()=>{
+ await realQueueFixture(initialState(),async({page,flush,date,fixture,store})=>{
+  await page.evaluate(async date=>{
+   const result=await(await import('/diary-api.js')).queueCommand('a'.repeat(64),'water.add',{date,amount:250});
+   const storage=await import('/offline-store.js'),copy=await storage.readWriteCopy();
+   await storage.changeBackgroundWrite(copy.ticket,result.requestId,row=>{row.status='conflict';row.error='Review this change.';});
+  },date);
+  await store.command({requestId:crypto.randomUUID(),revision:digest(fixture.state()),type:'note.add',payload:{date,text:'Other device'}});
+  await flush();
+  assert.equal((await page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy()).pending)).length,0);
+  assert.equal(fixture.state().notes[0].text,'Other device');assert.equal(fixture.state().biometrics[0].value,250);
+ });
 });
 
 test('copied mixed records appear locally and keep edit identities through a lost acknowledgement and restart',async()=>{
@@ -116,15 +115,39 @@ test('copied mixed records appear locally and keep edit identities through a los
  },{losePath:'/api/workspace/command'});
 });
 
+test('rapid single-device adds and edits use each preceding receipt revision without conflict retries',async()=>{
+ const seed=initialState();seed.foods=[{id:'rice',name:'Rice',grams:100,nutrients:{calories:100}}];
+ await realQueueFixture(seed,async({page,fixture,flush,date,sent})=>{
+  const initialRevision=digest(seed);
+  await page.evaluate(async({date,revision})=>{
+   const {queueCommand}=await import('/diary-api.js');
+   for(let index=0;index<12;index++)await queueCommand(revision,'water.add',{date,amount:250});
+   const entry=await queueCommand(revision,'entry.add',{date,foodId:'rice',amount:1});
+   await queueCommand(revision,'entry.update',{id:entry.requestId,amount:2,date});
+   await queueCommand(revision,'display.save',{showWater:false});
+   await queueCommand(revision,'display.save',{showWater:true});
+  },{date,revision:initialRevision});
+  await flush();
+  assert.equal(sent.length,16,'Each command should succeed on its first send');
+  assert.equal(fixture.state().entries[0]?.amount,2);
+  assert.equal(new Set(sent.map(row=>row.body.revision)).size,16,'Each save uses the preceding receipt revision');
+  assert.equal(sent[0].body.revision,initialRevision);
+  assert.equal(fixture.state().biometrics.length,12);
+  assert.equal(fixture.state().entries[0].amount,2);
+  assert.equal(fixture.state().settings.showWater,true);
+  assert.equal((await page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy()).pending)).length,0);
+ });
+});
+
 test('calendar markers reflect local visibility changes before and after sync instead of stale responses',async()=>{
  const state=initialState();act(state,'food.save',{name:'Rice',serving:'100 g',grams:100,nutrients:{calories:100}});
  act(state,'entry.add',{foodId:state.foods[0].id,date:'2026-11-20',group:'Lunch',amount:1});
  await realQueueFixture(state,async({page,flush})=>{
-  const change=visible=>page.evaluate(async visible=>{
+  const change=visible=>page.evaluate(async ({visible,revision})=>{
    const {readWriteCopy}=await import('/offline-store.js');
    const {queueCommand}=await import('/diary-api.js');
-   const copy=await readWriteCopy();await queueCommand(copy.snapshot.revision,'display.save',{diaryCalendar:{version:1,food:visible,exercise:true,biometric:true,note:true,fast:true}});
-  },visible);
+   await queueCommand(revision,'display.save',{diaryCalendar:{version:1,food:visible,exercise:true,biometric:true,note:true,fast:true}});
+  },{visible,revision:digest(state)});
   const markers=stale=>page.evaluate(async stale=>{
    const {overlayPendingResponse}=await import('/background-writes.js');
    return (await overlayPendingResponse('/api/diary/calendar?month=2026-11',{month:'2026-11',markers:stale,completedDays:[],calendar:{asOf:'2026-11-20T12:00:00Z',timeZone:'UTC'}})).markers;
@@ -289,7 +312,7 @@ test('rapid add/edit/delete replays through real receipts across restart and lat
  }finally{await browser.close();await new Promise(r=>server.close(r));}
 });
 
-test('restore generations stay blocked across Retry and a malformed snapshot never authorizes replay',{timeout:30000},async()=>{
+test('restored diary edits settle silently while malformed snapshots retain unsent changes',{timeout:30000},async()=>{
  const owner='owner-a',state=initialState();let generation='original',malformed=false,restoreOnWrite=false;const sent=[];
  const snapshot=()=>offlineSnapshot(state,{ownerId:owner,generation});
  const server=createServer(async(req,res)=>{
@@ -310,21 +333,19 @@ test('restore generations stay blocked across Retry and a malformed snapshot nev
   const cache=await import('/device-cache.js'),store=await import('/offline-store.js');
   const ticket=await cache.initializeDeviceCache('owner-a');await store.saveOfflineSnapshot(snapshot,ticket);
   Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>false});
-  const writes=await import('/background-writes.js');writes.onBackgroundWriteStatus(status=>{if(status.retry)window.retryPending=status.retry;});
   return (await(await import('/diary-api.js')).queueCommand('a'.repeat(64),'water.add',{date:'2026-11-20',amount:250})).requestId;
  },snapshot());
  const flush=()=>page.evaluate(async()=>{Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>true});return(await import('/background-writes.js')).flushBackgroundWrites();});
  const pending=()=>page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy()).pending);
  try{
   await page.goto('http://127.0.0.1:'+server.address().port);const id=await queue();generation='restored';await flush();
-  let rows=await pending();assert.equal(rows.length,1);assert.equal(rows[0].command.operationId,id);assert.equal(rows[0].command.generation,'original');assert.equal(rows[0].status,'conflict');assert.equal(sent.length,0);
-  await page.evaluate(()=>window.retryPending());rows=await pending();assert.equal(rows[0].status,'conflict');assert.equal(rows[0].messageKey,'accountCloud.offlineError.restored');assert.equal(sent.length,0);
-  await page.reload();await page.evaluate(async()=>await(await import('/device-cache.js')).initializeDeviceCache('owner-a'));await flush();assert.equal((await pending())[0].command.operationId,id);assert.equal(sent.length,0);
+  assert.equal((await pending()).length,0);assert.equal(sent.length,0);
+  await page.reload();await page.evaluate(async()=>await(await import('/device-cache.js')).initializeDeviceCache('owner-a'));await flush();assert.equal((await pending()).length,0);assert.equal(sent.length,0);
   // A fresh command cannot bypass the version check with an unrecognized response.
   await page.evaluate(async()=>await(await import('/offline-store.js')).clearOfflineAccount({discardPending:true}));await queue();malformed=true;
   await assert.rejects(flush(),/could not be verified/);assert.equal((await pending()).length,1);assert.equal(sent.length,0);
-  malformed=false;restoreOnWrite=true;await flush();assert.equal(sent.length,1);rows=await pending();assert.equal(rows[0].status,'conflict');assert.equal(rows[0].command.generation,'restored');
-  await page.evaluate(()=>window.retryPending());assert.equal(sent.length,1);assert.equal((await pending())[0].status,'conflict');
+  malformed=false;restoreOnWrite=true;await flush();assert.equal(sent.length,1);assert.equal((await pending()).length,0);
+  await flush();assert.equal(sent.length,1);assert.equal((await pending()).length,0);
  }finally{await browser.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
 });
 

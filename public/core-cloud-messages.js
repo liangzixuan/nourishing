@@ -15,8 +15,6 @@ const rows={
  'diary.selectedRecipe':['Create Recipe from Selection','Créer une recette à partir de la sélection','Rezept aus Auswahl erstellen','Criar receita com a seleção'],
  'diary.selectedMeal':['Create Meal from Selection','Créer un repas à partir de la sélection','Mahlzeit aus Auswahl erstellen','Criar refeição com a seleção'],
  'diary.selectedNutrition':['Show Nutrition Summary','Afficher le résumé nutritionnel','Nährstoffübersicht anzeigen','Mostrar resumo nutricional'],
- 'sync.reviewNeeded':['A change needs your review.','Une modification nécessite votre attention.','Eine Änderung muss geprüft werden.','Uma alteração precisa da sua revisão.'],
- 'sync.review':['Review','Vérifier','Prüfen','Revisar'],
  'more.storage':['Device storage','Stockage sur l’appareil','Gerätespeicher','Armazenamento no dispositivo'],
  'more.version':['Version {{version}}','Version {{version}}','Version {{version}}','Versão {{version}}'],
  'diary.recipeCreated':['Recipe created','Recette créée','Rezept erstellt','Receita criada'],

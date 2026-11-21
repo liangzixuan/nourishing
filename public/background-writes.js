@@ -1,5 +1,6 @@
 import {prepareQueuedDiaryReview} from './diary-preparation.js';
 import {readWriteCopy,persistBackgroundWrite,changeBackgroundWrite,currentPrivateResponseTicket,saveOfflineSnapshot,acknowledgeBackgroundWrite} from './offline-store.js';
+import {discardOfflineChange} from './offline-controls.js';
 import {readDeviceCache} from './device-cache.js';
 import {request} from './diary-api.js';
 import {acceptOfflineReceipt,offlineEffectiveState} from './offline-model.js';
@@ -47,18 +48,27 @@ export async function flushBackgroundWrites(){
   const account=await request('/api/account');if(account.id!==owner)return;
   // Compare restore generations before replay. This is background work; no editor
   // waits for the snapshot download. Refresh preserves every pending command.
-  let {snapshotRefreshed}=await verifiedSnapshot(owner,copy.ticket);
+  let {snapshotRefreshed,revision}=await verifiedSnapshot(owner,copy.ticket);
   while(true){
    copy=await readWriteCopy();
    if(!copy||copy.locked||copy.ownerId!==owner||copy.ticket.epoch!==epoch||!await currentPrivateResponseTicket(copy.ticket))return;
    let row=copy.pending[0];if(!row)return;
    const id=row.command.operationId;
-   if(row.status==='conflict'){emit({error:Error(row.error??'Review this change.'),requiresAttention:true,requestId:id,retry:()=>retry(id)});return;}
    try{
     if(row.command.generation!==copy.snapshot?.identity.generation)throw restored();
     let result;
     if(row.transport){
      if(row.projection?.diaryReview&&!row.projection.diaryReview.prepared)row=await changeBackgroundWrite(copy.ticket,id,(current,next)=>{prepareQueuedDiaryReview(next.snapshot.state,current);return structuredClone(current);});
+     if(!row.attempted&&row.status!=='unknown'){
+      if(!revision){
+       const day=row.command.payload.date??new Date().toLocaleDateString('en-CA');
+       revision=(await request('/api/diary?date='+encodeURIComponent(day),undefined,undefined,{fresh:true,canonical:true})).revision;
+      }
+      // Editors retain their local revision while saves run in the background.
+      // Bind a new request to the latest acknowledged revision just before send.
+      // Persist that binding first so restart/lost replies retry the exact body.
+      row=await changeBackgroundWrite(copy.ticket,id,current=>{current.transport.body.revision=revision;current.attempted=true;return structuredClone(current);});
+     }
      // Retries first use the exact request. Receipts are checked server-side before
      // revision guards, so a lost acknowledgement cannot turn into a duplicate.
      try{result=await request(row.transport.path,row.transport.body,AbortSignal.timeout(30000),{preserveCache:true});}
@@ -70,6 +80,7 @@ export async function flushBackgroundWrites(){
       const day=row.command.payload.date??new Date().toLocaleDateString('en-CA');
       const latest=await request('/api/diary?date='+encodeURIComponent(day),undefined,undefined,{fresh:true,canonical:true});
       if(!latest?.revision)throw error;
+      revision=latest.revision;
       // Preserve identity and payload when rebasing an unsaved command.
       await changeBackgroundWrite(copy.ticket,id,current=>{current.transport.body.revision=latest.revision;});
       result=await request(row.transport.path,{...row.transport.body,revision:latest.revision},AbortSignal.timeout(30000),{preserveCache:true});
@@ -79,12 +90,24 @@ export async function flushBackgroundWrites(){
      result=await request('/api/offline/commands',row.command,AbortSignal.timeout(30000),{preserveCache:true});
      await changeBackgroundWrite(copy.ticket,id,(_current,next)=>Object.assign(next,acceptOfflineReceipt(next,row,result,{snapshotRefreshed})));
     }
+    revision=result.revision??null;
     retryDelay=1000;emit({saved:true,result,requestId:id});changed();
     window.dispatchEvent(new Event('nourishing-data-changed'));
    }catch(error){
     const permanent=error.status>=400&&error.status<500&&![401,408,429].includes(error.status);
-    await changeBackgroundWrite(copy.ticket,id,current=>{current.status=permanent?'conflict':'unknown';current.error=permanent?error.message:'Sync interrupted. Retry to check this change.';if(error.messageKey)current.messageKey=error.messageKey;else if(!permanent)current.messageKey='accountCloud.offlineError.syncInterrupted';}).catch(()=>{});
-    emit({error,requiresAttention:permanent,requestId:id,retry:()=>retry(id)});changed();if(!permanent)retryLater();return;
+    if(permanent){
+     // A rejected edit must not block unrelated changes. A 409 has already been
+     // retried against the current revision; keep the server version if it still
+     // cannot apply. Never treat a timeout or lost acknowledgement as rejection.
+     await discardOfflineChange(copy,id);
+     const latest=await readWriteCopy();
+     if(latest&&!latest.pending.length)await verifiedSnapshot(owner,latest.ticket);
+     emit({discarded:true,requestId:id});changed();
+     window.dispatchEvent(new Event('nourishing-data-changed'));
+     continue;
+    }
+    await changeBackgroundWrite(copy.ticket,id,current=>{current.status='unknown';current.error=null;delete current.messageKey;}).catch(()=>{});
+    emit({error,requestId:id,retry:()=>retry(id)});changed();retryLater();return;
    }
   }
  };
