@@ -11,6 +11,7 @@ import {readDeviceCache} from './device-cache.js';
 import {mountFoodEntry} from './food-entry.js';
 import {mealActionText} from './meal-action-messages.js';
 import {convertEnergy} from './dashboard-source/energy-units.mjs';
+import {icon} from './foods-source/icons.js';
 
 export function openEntryAdjustment({kind,date,id,show,close,header,content,onSave,onBack,revision:initialRevision}){
  let view,draft,rows=[],serial=0,timer,pickerCleanup,disposed=false,revision=initialRevision;
@@ -70,7 +71,8 @@ export function openEntryAdjustment({kind,date,id,show,close,header,content,onSa
    const row=rows[index],label=row?.name??fc('ingredient');
    const controls=`<button type="button" class="icon-button" data-replace="${index}" aria-label="${e(fc('replaceIngredientNumber',{number:index+1}))}">↻</button><button type="button" class="icon-button" data-remove="${index}" aria-label="${e(fc('removeIngredient',{number:index+1}))}">×</button>`;
    const meal=kind==='meal';
-   return `<li><button type="button" data-edit="${index}"><strong>${e(label)}</strong><small>${e(itemLabel(item,row))}</small>${meal?'<span data-item-energy></span>':''}</button>${meal?`<details class="adjustment-item-actions"><summary aria-label="${e(t('mobileFood.options')+' · '+label)}">⋮</summary>${controls}</details>`:controls}</li>`;
+   const ingredientIcon=item.recipeId?icon('food'):'<span aria-hidden="true" class="adjustment-food-icon"></span>';
+   return `<li><button type="button" data-edit="${index}">${meal?ingredientIcon:''}<strong>${e(label)}</strong><small>${e(itemLabel(item,row))}</small>${meal?'<span data-item-energy></span>':''}</button>${meal?`<details class="adjustment-item-actions"><summary aria-label="${e(t('mobileFood.options')+' · '+label)}">⋮</summary>${controls}</details>`:controls}</li>`;
   }).join('');
  }
  function editor(){
@@ -78,7 +80,7 @@ export function openEntryAdjustment({kind,date,id,show,close,header,content,onSa
   const meal=kind==='meal',title=meal?mealActionText('adjust'):fc('adjustIngredientsLower');
   const addLabel=meal?t('recipeEditor.addItem'):fc('addIngredientLower');
   const saveLabel=meal?t('mobileFood.save'):t('progress.saveChanges');
-  const heading=meal?`<div class="adjustment-meal-name"><strong>${e(view.name)}</strong><span data-total-energy></span></div>`:`<p class="adjustment-scope">${e(fc('entryOnly'))}</p>`;
+  const heading=meal?`<div class="adjustment-meal-name">${icon('food')}<strong>${e(view.name)}</strong><span data-total-energy></span></div>`:`<p class="adjustment-scope">${e(fc('entryOnly'))}</p>`;
   const addButton=`<button type="button" class="more-results" data-add>${e(addLabel)}</button>`;
   show(`${header(title)}<form class="entry-form entry-adjustment ${meal?'meal-adjustment':''}">${heading}<ul class="adjustment-items">${ingredientRows()}</ul>${meal?'':addButton+basisFields()+'<div class="nutrition-preview" aria-live="polite"></div>'}<p class="sheet-message" role="status"></p><footer class="entry-actions">${meal?addButton:`<button type="button" data-back>${e(t('mobileFoodEditor.back'))}</button>`}<button type="submit" class="primary" disabled>${e(saveLabel)}</button></footer></form>`);
   const form=content.querySelector('form'),save=form.querySelector('[type=submit]');let ready=false;

@@ -2,3 +2,4 @@
 .anchored-menu button{display:block;width:100%;min-height:44px;padding:12px 16px;border:0;background:none;text-align:left;color:inherit;font:inherit;cursor:pointer}
 .anchored-menu button:disabled{opacity:.45;cursor:default}.anchored-menu button:focus-visible{outline:2px solid var(--green);outline-offset:-2px;background:var(--pale)}.anchored-menu button[aria-checked=true]{font-weight:700}
 .anchored-menu::backdrop{background:transparent}
+.anchored-menu [data-menu-command=restore]::before{content:"";display:inline-block;vertical-align:middle;width:24px;height:24px;flex:none;margin-right:12px;background:var(--ink);mask:url(/macro-energy-source/restore.svg) center/contain no-repeat}

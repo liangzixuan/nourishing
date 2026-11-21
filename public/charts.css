@@ -7,10 +7,23 @@
 .mcl-body{padding:16px 0}.mcl-body>h3{text-align:center;font:700 1.1rem Karla,Lato,sans-serif;margin:24px 0}.mcl-group{border-radius:12px;overflow:hidden;background:var(--paper);margin-bottom:16px}.mcl-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:14px 16px;border:0;width:100%;color:inherit;background:var(--paper);font:inherit;text-align:left;margin:0;box-sizing:border-box}.mcl-row+.mcl-row{border-top:1px solid var(--line)}.mcl-row strong{font:700 1rem/1.3 Karla,Lato,sans-serif;min-width:0;overflow-wrap:anywhere}.mcl-row input[type=checkbox]{flex:none}.mcl-custom-name{background:none;border:0;color:inherit;padding:0;flex:1;text-align:left;min-width:0;min-height:32px}.mcl-body>.mcl-card{margin-bottom:16px}.mcl-body [role=alert]{margin:0 16px 12px;color:var(--red)}.mcl-body [hidden],.mcl-card [hidden],[data-custom-dates][hidden]{display:none}
 .mcl-target-line{border-top:2px dashed var(--ink)}.mcl-fast-line{background:var(--mcl-fasting);height:10px!important}.mcl-cgm-empty{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:8px;pointer-events:none}.mcl-cgm-empty span{color:var(--muted)}
 body{--mcl-fasting:rgba(80,182,190,.16);--mcl-grid:color-mix(in srgb,var(--ink) 45%,transparent)}.chart-canvas canvas{width:100%;height:100%}.chart-source{margin-top:12px;font-size:.85rem}.chart-source p{margin:8px 0}.chart-page{padding:0 16px 16px}.chart-visibility{appearance:none;width:48px;height:28px;border:0;border-radius:20px;background:var(--muted);position:relative;cursor:pointer}.chart-visibility:before{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--ink);transition:transform .15s}.chart-visibility:checked{background:var(--green)}.chart-visibility:checked:before{transform:translateX(20px)}.chart-visibility:disabled{opacity:.5}.chart-visibility:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+/* Discover overview cards */
+.discover-mobile .topbar:has([data-tab=charts].active){margin-bottom:0}
+.chart-page .mcl-actions{margin:4px 0 18px}
+.chart-page .mcl-actions button{min-height:44px;font-size:.8rem;gap:8px}
+.chart-page .mcl-actions [data-manage]{flex:0 1 50%;justify-content:space-between}
+.mcl-actions .mcl-add-icon,.chart-page .mcl-arrow{width:20px;height:20px;flex:none}
+.chart-page .mcl-card{padding:13px 14px;border-radius:10px}
+.chart-page .mcl-card-title{padding-bottom:6px}
+.chart-page .mcl-card-title h2{font-size:.9rem;line-height:1.25}
+.chart-page .mcl-legend,.chart-page .mcl-dates{font-size:.78rem;line-height:1.25}
+.chart-page .mcl-dates{margin-top:14px}
 @media(max-width:360px){.mcl-actions{gap:4px}.mcl-actions button{font-size:.85rem;gap:4px;padding:4px}.mcl-row{gap:8px;padding:14px 12px}}
 
 #sheet:has([data-chart-manager]){inset:0;margin:0;width:100%;max-width:none;height:100dvh;max-height:none;border:0;border-radius:0;padding:0;background:var(--bg)}
 #sheet:has([data-chart-manager]) .sheet-header{position:sticky;top:0;z-index:2;background:var(--paper)}
 [data-chart-manager]:has(.app-nav){padding-bottom:calc(var(--dc-nav-space,80px) + 16px)}
 [data-chart-manager] .app-nav{position:fixed;bottom:0;inset-inline:0;max-width:none}
+.chart-manager-header{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;text-align:center}.chart-manager-header [data-manager-back]{min-height:44px;font-size:1.5rem}.chart-manager-header h2{grid-column:2}
+[data-chart-manager] .mcl-row:has([data-manage-chart]){padding-block:0}.mcl-row [data-manage-chart]{align-self:stretch;min-height:56px}.mcl-row[data-create-chart]{text-align:left}
 .chart-visibility:checked{background:var(--accent)}

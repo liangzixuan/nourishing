@@ -113,5 +113,7 @@ export function createMobileChartView(state,input,clock={}){
   const cycleOverlayEnabled=cycleEnabled(descriptor),cycle=cycleOverlayEnabled?{cycleOverlay:mobileCycleOverlay(cycleCapture,descriptor.range,days.map(day=>day.date),data.capture?.window)}:{};
   return {...descriptor,dates:days.map(day=>day.date),plot:'lines',...data,target,fasting,cycleOverlayEnabled,...cycle};
  });
- return {version:1,to,calendar,preferences,catalog:descriptors.map(({definition,...row})=>row),cards};
+ // An observation can explicitly record an unknown or unsupplied phase.
+ const hasRecordedPhases=(state.cycleRecords??[]).some(row=>row.metric==='phase'&&row.date<calendar.today);
+ return {version:1,to,calendar,hasRecordedPhases,preferences,catalog:descriptors.map(({definition,...row})=>row),cards};
 }

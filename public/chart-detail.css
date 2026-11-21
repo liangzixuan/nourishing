@@ -3,8 +3,8 @@
 #sheet:has(.chart-detail){width:100%;max-width:none;height:100dvh;max-height:none;inset:0;margin:0;border:0;border-radius:0;padding:0;background:var(--bg)}
 #sheet:has(.chart-detail)>#sheet-content{padding:0}
 .chart-detail{margin:0;color:var(--ink);font:400 1rem/1.35 Lato,sans-serif}
-.chart-detail>.sheet-header{position:sticky;top:0;z-index:3;min-height:72px;display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;background:var(--paper);border-radius:0 0 16px 16px;padding:10px}
-.chart-detail>.sheet-header h2{font:700 1.2rem/1.3 Karla,Lato,sans-serif;text-align:center;margin:0;overflow-wrap:anywhere}
+.chart-detail>.sheet-header{position:sticky;top:0;z-index:3;min-height:56px;display:grid;grid-template-columns:40px minmax(0,1fr) 40px;align-items:center;background:var(--paper);border-radius:0 0 16px 16px;padding:8px}
+.chart-detail>.sheet-header h2{font:700 1.05rem/1.3 Karla,Lato,sans-serif;text-align:center;margin:0;overflow-wrap:anywhere}
 .chart-detail .mcl-row>span{display:flex;align-items:center;justify-content:flex-end;gap:6px;max-width:56%;text-align:right;overflow-wrap:anywhere}
 .chart-detail [data-chart-pick] .mcl-arrow{width:18px;height:18px;transform:rotate(90deg)}
 .chart-detail .mcl-text-button{display:block;width:100%;border:0;background:none;color:var(--green);font:700 1rem/1.3 Karla,Lato,sans-serif;padding:16px;text-transform:uppercase;min-height:48px}
@@ -12,4 +12,9 @@
 .chart-detail .mcl-body{padding:16px 0 calc(100px + env(safe-area-inset-bottom))}
 .chart-detail .dc-bottom{position:fixed;z-index:5;bottom:0;left:0;right:0}
 .chart-detail .mcl-group{margin-top:16px;border-radius:12px;overflow:hidden}
-.chart-detail .mcl-row{min-height:56px;padding:16px}
+.chart-detail .mcl-row{min-height:52px;padding:12px 16px}
+.chart-detail .mcl-plot{height:clamp(210px,29dvh,290px)}
+.chart-detail .mcl-legend{display:grid;gap:2px;font-size:.87rem}
+.chart-detail .mcl-dates{font-size:.87rem}
+.mcp-picker.mcp-chart-control{width:clamp(160px,52vw,280px);max-width:calc(100vw - 28px);padding:4px 16px}
+.mcp-chart-control [data-mcp-choice]{min-height:44px;padding:9px 0}

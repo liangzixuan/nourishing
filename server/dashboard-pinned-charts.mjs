@@ -7,6 +7,6 @@ export {chartDisplayCommandFields,applyChartDisplayCommand} from './domain/chart
 
 export function chartSurfaceView(state,input,clock){
  const view=createMobileChartView(state,input,clock);
- return {...view,revision:digest(state),options:chartMetricOptions(state),saved:state.charts,cards:view.cards.map(card=>({...card,unitChoices:Object.fromEntries(['primary','secondary'].map(axis=>[axis,card.kind==='custom'?(card.definition[axis]?chartDisplayUnits(card.definition[axis]):[]):mobileChartUnitChoices(state,card.id,axis,card.settings)]))}))};
+ return {...view,revision:digest(state),options:chartMetricOptions(state,view.preferences),saved:state.charts,cards:view.cards.map(card=>({...card,unitChoices:Object.fromEntries(['primary','secondary'].map(axis=>[axis,card.kind==='custom'?(card.definition[axis]?chartDisplayUnits(card.definition[axis]):[]):mobileChartUnitChoices(state,card.id,axis,card.settings)]))}))};
 }
 export function dashboardPinnedCharts(state,to,clock){return chartSurfaceView(state,{to,surface:'dashboard'},clock);}

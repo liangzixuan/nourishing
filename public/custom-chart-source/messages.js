@@ -14,6 +14,11 @@ add:['Add Right Y-Axis','Ajouter un axe Y droit','Rechte Y-Achse hinzufügen','A
 remove:['Remove right axis','Supprimer l’axe droit','Rechte Achse entfernen','Remover eixo direito'],
 save:['Save Chart','Enregistrer','Diagramm speichern','Salvar gráfico'],
 search:['Search','Rechercher','Suchen','Pesquisar'],
+deleteQuestion:['Are you sure you want to delete the chart?','Voulez-vous supprimer ce graphique ?','Möchten Sie dieses Diagramm wirklich löschen?','Tem certeza de que deseja excluir o gráfico?'],
+yes:['Yes','Oui','Ja','Sim'],
+other:['More metrics','Autres mesures','Weitere Messgrößen','Mais métricas'],
+totalCarbs:['Carbs (Total)','Glucides (totaux)','Kohlenhydrate (gesamt)','Carboidratos (totais)'],
+netCarbs:['Carbs (Net)','Glucides (nets)','Kohlenhydrate (netto)','Carboidratos (líquidos)'],
 back:['Back','Retour','Zurück','Voltar'],
 noMatches:['No matches','Aucun résultat','Keine Treffer','Nenhum resultado'],
 chooseUnit:['Choose a unit','Choisir une unité','Einheit wählen','Escolher unidade']

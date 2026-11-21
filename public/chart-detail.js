@@ -49,13 +49,14 @@ export function mountChartDetail(view,id,ui){
    if(p.range!=="custom")controls+=toggle('includeToday',m('includeToday'));
    controls+=toggle('zoom',m('zoom'))+toggle('showFasting',m('showFasting'));
   }
-  controls+=toggle('showOnDashboard',m('showOnDashboard'))+toggle('showCycle',dc('cyclePhases'),card.cycleOverlayEnabled);
+  controls+=toggle('showOnDashboard',m('showOnDashboard'));
+  if(card.kind==='custom'||card.cycleOverlayEnabled||view.hasRecordedPhases)controls+=toggle('showCycle',dc('cyclePhases'),card.cycleOverlayEnabled);
   root.innerHTML=`<header class="sheet-header"><button type="button" class="icon-button" data-chart-back aria-label="${t('discover.back')}">‹</button><h2 id="sheet-title">${e(chartTitle(card))}</h2></header><div class="mcl-body"><p role="alert" ${error?'':'hidden'}>${e(error)}${pending?`<button type="button" data-chart-retry>${t('reminders.retry')}</button>`:''}${conflict?`<button type="button" data-chart-reload>${dc('reloadChart')}</button>`:''}</p>${plotPending?`<p role="status">${e(dc('loadingChart'))}</p>`:''}${chartCardMarkup(card,{detail:true})}<div class="mcl-group">${controls}</div>${card.kind==="custom"?`<button type="button" class="mcl-text-button" data-chart-edit>${e(m('edit'))}</button><button type="button" class="mcl-text-button" data-chart-delete>${e(m('delete'))}</button>`:''}</div><nav class="dc-bottom" aria-label="${e(t('discover.nav.main'))}">${bottomNavigation('trends',uiLanguage())}</nav>`;
   for(const control of root.querySelectorAll('input,button:not([data-discover])'))control.disabled=busy||loading&&!control.hasAttribute('data-chart-back')||!!pending&&!control.hasAttribute('data-chart-retry')&&!control.hasAttribute('data-chart-back')||conflict&&!control.hasAttribute('data-chart-reload')&&!control.hasAttribute('data-chart-back');
   root.dataset.chartBusy=String(busy||loading);plots=mountChartPlots(root,{...view,cards:[card]});scrollHost().scrollTop=scroll;
  }
- async function refresh(){
-  const expected=editSerial,next=validateChartView(await request(chartPath,undefined,abort.signal));
+ async function refresh(fresh=false){
+  const expected=editSerial,next=validateChartView(await request(chartPath,undefined,abort.signal,{fresh}));
   if(alive()&&expected===editSerial){const nextCard=next.cards.find(row=>row.id===id);if(!nextCard)throw Error(dc('chartUnavailable'));view=next;card=nextCard;}
  }
  async function save(type,payload){
@@ -78,12 +79,12 @@ export function mountChartDetail(view,id,ui){
    if(state){const {projectLocalChart}=await projectionModule;projected=await projectLocalChart(state,{type,payload},view,id);}
    let next=projected??{...view,cards:view.cards.map(row=>row.id===id?{...row,settings:{...row.settings,...(type==='chart.display'?payload.patch:{})}}:row)};
    const nextCard=next.cards.find(row=>row.id===id),projection={responses:{[chartPath]:next},...(projected?{chartState:projected.localChartState}:{})};
-   const result=await queueCommand(view.revision,type,payload,{projection});queued.add(result.requestId);
+   const result=await queueCommand(view.revision,type,payload,{projection,ticket:await owner});queued.add(result.requestId);
    if(!alive())return;view=next;card=nextCard;plotPending=!projected;void ui.afterSave?.();void ui.onChange?.();
   }catch(failure){if(alive()){card=before;view=beforeView;error=failure.message;}}
   finally{busy=false;if(alive())render();}
  }
- const stopStatus=onBackgroundWriteStatus(event=>{if(!alive())return;if(event.saved&&queued.delete(event.requestId)){view={...view,revision:event.result.revision??view.revision};void ui.afterSave?.();void ui.onChange?.();if(plotPending)void refresh().then(()=>{plotPending=false;if(alive())render();}).catch(failure=>{error=failure.message;if(alive())render();});}});
+ const stopStatus=onBackgroundWriteStatus(event=>{if(!alive())return;if(event.saved&&queued.delete(event.requestId)){view={...view,revision:event.result.revision??view.revision};void ui.afterSave?.();void ui.onChange?.();if(plotPending||card.cycleCoveredDates)void refresh(true).then(()=>{plotPending=false;if(alive())render();}).catch(failure=>{error=failure.message;if(alive())render();});}});
  function preference(key,value){
   if(key==='showCycle'&&card.kind==="custom")return savePreference('chart.cycle-overlay',{id:card.chartId,enabled:value});
   if(['primary','secondary'].includes(key)){
@@ -99,17 +100,28 @@ export function mountChartDetail(view,id,ui){
   if(['from','to'].includes(key)){
    picker=new MobileDiaryCalendar({date:p[key],language:uiLanguage(),showDiaryMarkers:false,label:m(key==='from'?'customFrom':'customTo'),onClose:()=>picker=null,onChoose:value=>preference(key,value)});return;
   }
-  let choices,selected,label,search;const axisUnit=card.axisUnits?.find(axis=>axis.key===key);
+  let choices,selected,label,search,choose=value=>preference(key,value);const axisUnit=card.axisUnits?.find(axis=>axis.key===key);
   if(axisUnit){choices=axisUnit.choices.map(value=>({value,label:value}));selected=axisUnit.unit;label=m(key);}
   else if(key==='range'){choices=ranges.filter(([value])=>value!=='today').map(([value])=>({value,label:rangeLabel(value,uiLanguage())}));selected=p.range;label=m('range');}
   else if(key==='grouping'||key==='dayFilter'){choices=(key==='grouping'?["day",'hour','minute']:['all','nonempty',"complete"]).map(value=>({value,label:m(value)}));selected=p[key];label=m(key==='dayFilter'?"days":key);}
   else{
    const unit=key.endsWith("Unit"),axis=unit?key.slice(0,-4):key,series=card.series.find(row=>row.id===axis);if(!series?.metric)return;
    if(unit){choices=series.displayUnits.map(value=>({value,label:value}));selected=series.unit;}
-   else{const options=chartPickerOptions(view.options,series.metric,'source').filter(row=>series.metric.kind!=='nutrient'||row.metric.kind==='nutrient');choices=options.map(row=>({value:JSON.stringify(row.metric),label:chartSeriesLabel(row)+(row.metric.kind==='biometric'&&options.filter(other=>other.metric.type===row.metric.type).length>1?' ('+(row.metric.unit??m('chooseUnit'))+')':'')}));selected=JSON.stringify(series.metric);search=m('search');}
+   else if(card.id==='metric'){
+    const options=chartPickerOptions(view.options,series.metric,'source');
+    choices=chartPickerOptions(options,series.metric,'metric').map(row=>({value:row.metric.type,label:chartSeriesLabel(row)})).sort((a,b)=>a.label.localeCompare(b.label,uiLanguage()));
+    selected=series.metric.type;
+    choose=type=>{
+     const sources=options.filter(row=>row.metric.type===type);
+     if(sources.length===1)return preference(key,JSON.stringify(sources[0].metric));
+     // A display conversion does not change the recorded series being plotted.
+     const units=sources.map(row=>({value:JSON.stringify(row.metric),label:chartSeriesLabel(row)+' ('+(row.metric.unit??m('chooseUnit'))+')'}));
+     picker=new MobileChartPicker({label,choices:units,selected:JSON.stringify(series.metric),anchor,presentation:'chart-control',onClose:()=>picker=null,onChoose:value=>preference(key,value)});
+    };
+   }else{const options=chartPickerOptions(view.options,series.metric,'source').filter(row=>series.metric.kind!=='nutrient'||row.metric.kind==='nutrient');choices=options.map(row=>({value:JSON.stringify(row.metric),label:chartSeriesLabel(row)+(row.metric.kind==='biometric'&&options.filter(other=>other.metric.type===row.metric.type).length>1?' ('+(row.metric.unit??m('chooseUnit'))+')':'')}));selected=JSON.stringify(series.metric);search=m('search');}
    label=m(unit?axis+"Unit":card.id==='nutrient'?'selectedNutrient':card.id==='score'?'selectedScore':card.id==='metric'?'selectedMetric':axis+"Metric");
   }
-  picker=new MobileChartPicker({label,choices,selected,search,anchor,onClose:()=>picker=null,onChoose:value=>preference(key,value)});
+  picker=new MobileChartPicker({label,choices,selected,search,anchor,presentation:card.kind==='builtin'&&!search?'chart-control':'menu',onClose:()=>picker=null,onChoose:choose});
  }
  function dispose(){if(disposed)return;disposed=true;stopStatus();abort.abort();picker?.close();plots?.dispose();observer.disconnect();}
  function back(){if(picker){picker.close();return;}dispose();close();}
@@ -126,7 +138,7 @@ export function mountChartDetail(view,id,ui){
  },{signal:abort.signal});
  root.addEventListener('change',event=>{if(event.target.dataset.chartSetting&&!busy&&!loading&&!pending&&!conflict)void preference(event.target.dataset.chartSetting,event.target.checked);},{signal:abort.signal});
  async function reload(){if(busy)return;busy=true;render();try{await refresh();conflict=false;error='';}catch(failure){if(alive())error=failure.message;}finally{busy=false;if(alive())render();}}
- const handleBack=event=>{if(!alive()||picker)return;event.preventDefault();event.stopImmediatePropagation();back();};
+ const handleBack=event=>{if(!alive()||picker&&event.type==='cancel')return;event.preventDefault();event.stopImmediatePropagation();back();};
  dialog?.addEventListener('cancel',handleBack,{capture:true,signal:abort.signal});window.addEventListener('nourishing-back',handleBack,{capture:true,signal:abort.signal});
  const observer=new MutationObserver(()=>{if(!root.isConnected)dispose();});observer.observe(content,{childList:true});
  // Paint the captured card at once; refresh without delaying navigation or controls.

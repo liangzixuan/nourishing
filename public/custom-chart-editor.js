@@ -5,7 +5,7 @@ import {localWorkspaceState} from './local-engine.js';
 import {readDeviceCache} from './device-cache.js';
 import {escape as e} from './html.js';
 import {MobileChartPicker} from './cgm-detail-source/mobile-chart-picker.js';
-import {MobileChartEditor} from './custom-chart-source/mobile-chart-editor.js';
+import {MobileChartEditor,defaultChartMetrics} from './custom-chart-source/mobile-chart-editor.js';
 
 // Route the copied navigation controls through the live application shell.
 export function appendChartNavigation(root,navigate){
@@ -21,7 +21,9 @@ export function appendChartNavigation(root,navigate){
 }
 
 export function confirmChartDeletion(chart,onChoose,onClose){
- return new MobileChartPicker({label:chartText('delete'),confirm:{message:chartText('deleteMessage',{name:chart.name}),cancel:chartText('cancel'),accept:chartText('delete')},onChoose,onClose});
+ const picker=new MobileChartPicker({label:chartText('delete'),confirm:{message:cm('deleteQuestion'),cancel:chartText('cancel'),accept:cm('yes')},onChoose,onClose});
+ picker.dialog.classList.add('mce-delete-confirm');picker.dialog.setAttribute('aria-description',chart.name);
+ return picker;
 }
 
 export async function saveChartDefinition(change,data,ticket){
@@ -44,7 +46,7 @@ export function mountCustomChartEditor(chart,data,ui){
  const {show,content,close}=ui;
  const owner=readDeviceCache('/api/diary').then(value=>value.ticket);
  const {_awaitingPlot,...definition}=chart??{};
- const draft=chart?definition:{version:2,name:'',primary:{kind:'biometric',type:"weight",unit:'kg'},secondary:null,days:7,visible:true,cycleOverlay:false};
+ const draft=chart?definition:{version:2,name:'',primary:structuredClone(defaultChartMetrics.biometric),secondary:null,days:7,visible:true,cycleOverlay:false};
  show(`<section class="mobile-chart-editor"><header class="sheet-header"><button type="button" class="icon-button" data-mce-back aria-label="${t('discover.back')}">‹</button><h2 id="sheet-title">${e(cm(chart?'edit':'create'))}</h2></header><p class="mce-intro">${dc('twoAxes')}</p><p data-mce-error role="alert"></p><button type="button" data-mce-reload hidden>${dc('reloadLatestChart')}</button><form></form></section>`);
  const root=content.querySelector('.mobile-chart-editor'),form=root.querySelector('form'),dialog=content.closest('dialog'),abort=new AbortController();
  let confirmation;

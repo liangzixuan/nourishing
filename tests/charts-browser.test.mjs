@@ -28,6 +28,15 @@ test('source chart details share plots, immediate controls, child cancellation a
  try{
   browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));await page.goto(base);await page.evaluate(async state=>{const ticket=await(await import('/device-cache.js')).initializeDeviceCache('fixture');await(await import('/offline-store.js')).saveOfflineSnapshot({version:1,identity:{ownerId:'fixture',generation:'fixture'},state},ticket);},state());
   await page.getByRole('button',{name:'Try again',exact:true}).click();await page.locator('[data-chart-open=metric]').waitFor();
+  const energyPlot=page.locator('canvas[data-chart-plot=energy]');
+  await page.waitForFunction(()=>window.Chart?.getChart(document.querySelector('canvas[data-chart-plot=energy]')));
+  const overview=await energyPlot.evaluate(canvas=>{
+   const chart=window.Chart.getChart(canvas);
+   return {dates:chart.scales.x.ticks.map(t=>t.label),energy:chart.scales.y.ticks.map(t=>t.value),
+    empty:chart.data.datasets.every(s=>s.data.every(p=>p.y===null))};
+  });
+  assert.deepEqual(overview,{dates:['Nov 9','Nov 12','Nov 15'],energy:[0,2,4,6,8,10],empty:true});
+  await energyPlot.click({position:{x:35,y:30}});assert.equal(await page.locator('.chart-detail').count(),0);
   const flushWrites=()=>page.evaluate(async()=>await(await import('/background-writes.js')).flushBackgroundWrites());
   const ready=async()=>{await page.locator('.chart-detail[data-chart-busy=false]').waitFor();await flushWrites();await page.waitForFunction(()=>document.querySelector('.chart-page')?.getAttribute('aria-busy')!=='true');};
   const pick=async(key,value)=>{await page.locator('[data-chart-pick="'+key+'"]').click();await page.locator('.mcp-picker [data-mcp-choice]').filter({hasText:value}).click();await ready();};
@@ -53,7 +62,27 @@ test('source chart details share plots, immediate controls, child cancellation a
   await page.getByRole('switch',{name:'Show on Dashboard',exact:true}).check();await ready();
   mkdirSync('.local/chart-detail',{recursive:true});await page.screenshot({path:'.local/chart-detail/custom.png'});await back();
   await page.getByRole('button',{name:'Manage Charts',exact:true}).click();await page.locator('[data-chart-visible="custom:weight"]').uncheck();await page.waitForFunction(()=>!document.querySelector('[data-chart-open="custom:weight"]'));await page.locator('[data-chart-visible=metric]').uncheck();await page.waitForFunction(()=>!document.querySelector('#page [data-chart-open=metric]'));await page.locator('[data-chart-manager] input:not([disabled])').first().waitFor();await page.locator('[data-chart-visible=metric]').check();await page.waitForFunction(()=>!!document.querySelector('#page [data-chart-open=metric]'));await page.locator('[data-chart-manager] input:not([disabled])').first().waitFor();await page.keyboard.press('Escape');
-  await page.locator('[data-chart-open=energy]').click();await ready();assert.equal(await page.locator('[data-chart-setting=zoom],[data-chart-setting=includeToday],[data-chart-setting=showFasting],[data-chart-setting=targetLine]').count(),0);await page.locator('.chart-detail [data-discover=shell-dashboard]').click();await page.waitForFunction(()=>!document.querySelector('#sheet').open);
+  await page.locator('[data-chart-open=energy]').click();await ready();assert.equal(await page.locator('[data-chart-setting=zoom],[data-chart-setting=includeToday],[data-chart-setting=showFasting],[data-chart-setting=targetLine],[data-chart-setting=showCycle]').count(),0);await page.locator('.chart-detail [data-discover=shell-dashboard]').click();await page.waitForFunction(()=>!document.querySelector('#sheet').open);
+  await page.locator('[data-chart-open=metric]').click();await ready();
+  assert.equal(await page.locator('[data-chart-setting=showCycle]').count(),0);
+  const menu=page.locator('.mcp-chart-control'),metricButton=page.locator('[data-chart-pick=primary]');
+  before=attempts.length;await metricButton.click();
+  assert.equal(await menu.getByRole('button',{name:'Weight',exact:true}).count(),1);
+  assert.equal(await menu.locator('[aria-current=true]').evaluate(node=>node.matches(':focus')&&node.getBoundingClientRect().bottom<=node.closest('dialog').getBoundingClientRect().bottom+1),true);
+  await menu.getByRole('button',{name:'Weight',exact:true}).click();await menu.getByRole('button',{name:'Weight (lbs)',exact:true}).waitFor();
+  await page.evaluate(()=>window.dispatchEvent(new Event('nourishing-back',{cancelable:true})));await menu.waitFor({state:'detached'});assert.equal(await metricButton.isVisible(),true);assert.equal(attempts.length,before);
+  await metricButton.click();const touch=await page.context().newCDPSession(page);
+  for(const [type,y] of [['touchStart',515],['touchMove',470],['touchMove',380],['touchEnd',null]]){
+   await touch.send('Input.dispatchTouchEvent',{type,touchPoints:y===null?[]:[{x:16,y}]});
+  }
+  await menu.waitFor({state:'detached'});await touch.detach();assert.equal(await metricButton.isVisible(),true);assert.equal(attempts.length,before);
+  const xBounds=()=>page.evaluate(()=>{const {min,max}=Object.values(window.Chart.instances).find(chart=>chart.canvas.closest('.chart-detail')).scales.x;return [min,max];});
+  const fullBounds=await xBounds();await page.getByRole('switch',{name:'Zoom to Fit',exact:true}).check();await ready();
+  const zoomBounds=await xBounds();assert.ok(zoomBounds[0]>fullBounds[0]);assert.equal(zoomBounds[1],fullBounds[1]);assert.equal(state().settings.mobileCharts.charts.metric.zoom,true);
+  await page.getByRole('switch',{name:'Zoom to Fit',exact:true}).uncheck();await ready();assert.deepEqual(await xBounds(),fullBounds);
+  await pick('primaryUnit','lbs');assert.equal(state().settings.mobileCharts.charts.metric.primaryUnit,'lbs');assert.equal(state().settings.mobileCharts.charts.metric.primary,undefined);
+  await metricButton.click();await menu.getByRole('button',{name:'Weight',exact:true}).click();await menu.getByRole('button',{name:'Weight (lbs)',exact:true}).click();await ready();
+  assert.deepEqual(state().settings.mobileCharts.charts.metric.primary,{kind:'biometric',type:'weight',unit:'lbs'});await back();
   await page.locator('[data-chart-open=nutrient]').click();await ready();assert.equal(await page.locator('[data-chart-setting=targetLine]').count(),1);await pick('grouping','Hour');assert.equal(state().settings.mobileCharts.charts.nutrient.grouping,'hour');await page.locator('[data-chart-pick=primary]').click();await page.getByRole('searchbox').fill('Protein');await page.locator('.mcp-picker').getByRole('button',{name:'Protein',exact:true}).click();await ready();assert.equal(state().settings.mobileCharts.charts.nutrient.primary.id,'protein');await page.waitForFunction(()=>Object.values(window.Chart.instances).some(chart=>chart.canvas.closest('.chart-detail')));assert.equal(await page.evaluate(()=>Object.values(window.Chart.instances).filter(chart=>chart.canvas.closest('.chart-detail')).every(chart=>chart.data.datasets[0].data.every(point=>point.y===null))),true);await back();
   await page.evaluate(()=>window.openDashboard());await page.locator('[data-chart-open="custom:weight"]').click();await ready();await page.waitForFunction(()=>Object.values(window.Chart.instances).some(chart=>chart.canvas.closest('.chart-detail')));assert.equal(await page.locator('.chart-detail canvas').count(),1);
   await pick('dayFilter','Completed');assert.equal(state().settings.mobileCharts.custom.weight.dayFilter,'complete');
