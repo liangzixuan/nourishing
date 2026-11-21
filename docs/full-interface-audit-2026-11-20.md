@@ -21,7 +21,7 @@ Status terms: **different** = observed mismatch; **missing** = reference action 
 | D1 | High | Diary day menu, 56/216 | Corrected locally: nine-action bottom sheet, with Paste shown after Copy. Complete Day, Daily Report, widget sharing, sorting, previous-day copy and Delete All now have entry points. | Browser assertions cover all nine labels and sharing selection/preview/download. Full action journeys and installed-device checks remain open. Sharing follows the public guide; exact current widget graphics remain unverified. |
 | D2 | High | Diary multi-select, 57–59/217–222 | Corrected locally: Multi Select Mode header, six-action overflow, whole-row selection, recipe creation and nutrition summary. | Browser checks cover mixed-row disabled actions, whole-row toggles, nutrition and recipe cancellation. Recipe/meal creation still uses a compact name/ingredient form; the complete staged editor remains a gap. |
 | R4 | High | Diary bulk actions and selection creation | Local projections now cover copy, clear amounts, move group, timestamps, bulk delete, ordering, and creation of recipes/meals. Cached Foods lists derive from the same effective local state. | Canonical/local comparisons and real-queue browser checks cover lost acknowledgements, restart, identity reconciliation, and visible created recipes. This does not establish every CRUD journey. |
-| R5 | High | Diary copy/clear/create selection | Reviews require a network request before progressing. | Source: `public/diary-tools.js`. Reuse canonical preparation over the local snapshot; retain stale-source protection. |
+| R5 | High | Diary copy/clear/create selection | Local implementation now prepares capture, copy, clear amounts, recipes and meals from the device snapshot using shared canonical rules. | Focused real-queue tests pass for pending identities, lost replies, restart and source changes. All 646 local tests and the production build pass; deployment pending. First launch without a snapshot still uses the server. Entry expansion and nutrition review remain separate network-bound paths. |
 | D3 | Medium | Report, 133–143 | Different: long lists of source-specific nutrient variants appear by default, with repeated empty rows and extra coverage/detail text. | Browser + Report renderer. Retain source data, but show the concise user-facing nutrient set by default. |
 | D4 | Medium | Report settings, 134–137 | Different: Days Displayed uses a native select rather than the reference choice screen. Extra More fold. | Browser. Date Range list exists; Custom Range currently uses two native date fields. |
 | D5 | Medium | Dashboard summary, 324 | Different: missing inline period and adjustment icon; macro rows differ. | Browser. Cards exist, but card existence does not establish parity. |
@@ -43,7 +43,7 @@ Status terms: **different** = observed mismatch; **missing** = reference action 
 
 ### Local verification in progress
 
-Bulk actions and selection creation now project into device state and reconcile canonical receipt identities. The cached Foods list uses that state so a new recipe remains visible after a lost server response and reload. Browser tests cover this path, mixed food/note/water copying, selection navigation, disabled actions, and local storage failure. Network-bound preparation remains open under R5.
+Bulk actions and selection creation now project into device state and reconcile canonical receipt identities. The cached Foods list uses that state so a new recipe remains visible after a lost server response and reload. Browser tests cover this path, mixed food/note/water copying, selection navigation, disabled actions, and local storage failure. R5 now has shared local preparation for capture/copy/clear/create, with all local regression checks passing; release verification remains pending.
 
 Transient sync errors stay silent; blocked changes have one concise Review action. Error details remain in Device storage. Tests cover retained pending changes, retry recovery and lost acknowledgements. Widget sharing follows the [public sharing guide](https://support.cronometer.com/hc/en-us/articles/21818099650836-Mobile-Social-Sharing), with local image generation and a tested image-download fallback. Native device sharing is not yet verified for the new Diary flow.
 
@@ -100,3 +100,14 @@ Health Connect and deliberately removed native integrations remain excluded. OS-
 3. Correct Diary menus, selection and related navigation.
 4. Correct remaining confirmed interface gaps by journey; verify each changed state and CRUD path.
 5. Run the relevant gates, then CI/deployment and installed PWA checks. Do not label the release comprehensive while required states remain unverified.
+
+
+### Local preparation follow-up (1.0.15, deployment pending)
+
+The device snapshot now retains canonical recipe/meal metadata and diary record history. Shared review fingerprints sort object keys and omit private food notes, so serialization order does not create false conflicts. Food notes remain excluded from the snapshot; media bytes remain in separate storage.
+
+A queued review retains its reviewed facts. After prior saves reconcile temporary identities, the queue verifies those facts and prepares its final fingerprint in the same IndexedDB transaction, before sending. A lost response retries that exact prepared payload. Changed source amounts, food facts or copy destinations still require review.
+
+Focused browser checks cover an offline entry immediately used for recipe creation and copying, exact meal/copy retries after a lost acknowledgement, and copied pending records after identity reconciliation. Pure checks compare device-snapshot reviews to server reviews for mixed records and recipes with metadata/history. These checks do not establish all Diary CRUD or interface parity.
+
+Validation: all 646 tests passed after correcting a shared Repeat quantity import. The production Astro build passed. The real queue also verifies an editor saved after an earlier recipe acknowledgement; its receipt uses the canonical resource ID. CI, production asset checks and installed-device verification are not yet claimed.

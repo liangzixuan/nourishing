@@ -1,3 +1,17 @@
+import {fail,objectKeys,exactId} from './workspace-validation.mjs';
+import {date} from './calendar.mjs';
+import {healthSource} from './health-records.mjs';
+export function recordCopyLineage(p,collection){
+  if(p.copiedFrom===undefined)return {};
+  if(p.source!==undefined||p.repeatId!==undefined)fail('Copied records cannot retain an active health import or repeat identity.');
+  const value=p.copiedFrom;objectKeys(value,['version','collection','id','date','source','repeatId'],'Record copy history');
+  if(value.version!==1||value.collection!==collection)fail('Record copy history must match its record collection.');
+  if((value.source!==undefined&&collection!=='biometrics')||(value.repeatId!==undefined&&collection!=='entries'))fail('Health origins belong to biometric copies and repeat origins belong to diary entry copies.');
+  const result={version:1,collection,id:exactId(value.id,'Original record ID'),date:date(value.date)};
+  if(value.source!==undefined)result.source=healthSource(value.source);
+  if(value.repeatId!==undefined)result.repeatId=exactId(value.repeatId,'Original repeat ID');
+  return {copiedFrom:result};
+}
 // Copy origins remain historical facts; they must never become active import or
 // repeat identities. Both the local projection and canonical save use this shape.
 export function copiedDiaryRecords(records,destination,makeId){

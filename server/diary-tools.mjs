@@ -1,5 +1,6 @@
+import {prepareDiaryReview} from './domain/diary-preparation.mjs';
 export {diaryEnergy,diaryToolsPresentation} from './diary-presentation.mjs';
-import {act,prepareRecordSelection,captureRecordSelection,previewRecordCopy,previewClearAmounts,prepareSelectionDraft,normalizeLibraryDraft,removeDiaryRecords,previewEntryExpansion} from './domain/workspace.mjs';
+import {act,prepareRecordSelection,prepareSelectionDraft,removeDiaryRecords,previewEntryExpansion} from './domain/workspace.mjs';
 import {digest} from './data-codec.mjs';
 import {sortAllDiaryEntriesByTime} from './domain/diary-order.mjs';
 import {calculateSummary,calculateSelectionNutrition,isExerciseEntry} from './domain/nutrition.mjs';
@@ -32,15 +33,7 @@ export function diaryToolsReview(state,input){
    const chartSummary=entryIds.length?{...day,consumedEnergy:facts.consumedEnergy,energy:{...day.energy,consumed,remaining:Number.isFinite(consumed)?day.energy.target-consumed:null}}:day;
    review={selection:source.selection,facts,chartSummary};break;
   }
-  case 'capture':review=captureRecordSelection(state,input.selection);break;
-  case 'copy':review=previewRecordCopy(state,{selection:input.selection,destination:input.destination});break;
-  case 'clear':review=previewClearAmounts(state,{selection:input.selection});break;
-  case 'recipe':case 'meal':{
-   const source=prepareSelectionDraft(state,{kind:input.operation,selection:input.selection});
-   const context={...state,foods:[...state.foods,...source.inlineFoods]},resource=normalizeLibraryDraft(context,source.kind,source.draft);
-   review={selection:source.selection,fingerprint:source.fingerprint,name:source.draft.name,selectedCount:source.selectedCount,warningCodes:source.warningCodes,resource,foods:source.inlineFoods,items:(source.draft.items??source.draft.ingredients).map(item=>{const kind=item.recipeId?'recipe':'food',resource=context[kind+'s'].find(row=>row.id===item[kind+'Id']);return {...item,name:resource?.name??'Food'};})};break;
-  }
-  default:fail('Choose a diary action.');
+  default:review=prepareDiaryReview(state,input);break;
  }
  return {...review,revision:digest(state)};
 }

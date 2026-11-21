@@ -1,4 +1,4 @@
-import {remapWriteReferences,writeReceiptIdentities} from './write-identities.js';
+import {remapWriteReferences,writeReceiptIdentities,remapDiaryReviewIdentities} from './write-identities.js';
 import {applyWriteToState} from './write-projection.js';
 import {projectLocalDiary} from './local-diary-projection.js';
 import {offlineFailure} from './offline-errors.js';
@@ -33,6 +33,7 @@ export async function persistBackgroundWrite(expected,{path,body,projection={}})
   if(active.cacheLocked)throw offlineFailure('signInFirst');
   const next=copy??{ownerId:active.ownerId,snapshot:null,pending:[],locked:false,revision:0};
   body=remapWriteReferences(structuredClone(body),next.recordIds??{});projection=remapWriteReferences(structuredClone(projection),next.recordIds??{});
+  remapDiaryReviewIdentities(projection.diaryReview,next.recordIds??{});
   const prior=next.pending.find(row=>row.command.operationId===body.requestId);
   if(prior){if(JSON.stringify(prior.transport)!==JSON.stringify({path,body}))throw Error('This save has changed.');return prior;}
   const row={command:{ownerId:active.ownerId,generation:next.snapshot?.identity.generation??null,operationId:body.requestId,type:body.type??(path==='/api/snapshots/save'?'snapshot.add':path==='/api/note-photos/save'?'note.photo.save':'photo.log'),payload:body.payload??body},transport:{path,body:structuredClone(body)},preview:{},projection:structuredClone(projection),status:'pending',error:null,createdAt:new Date().toISOString()};
@@ -59,7 +60,7 @@ export async function acknowledgeBackgroundWrite(expected,id,result){
   if(copy.snapshot?.state)applyWriteToState(copy.snapshot.state,row,result);
   copy.recordIds={...copy.recordIds,...identities};
   copy.pending=copy.pending.filter(item=>item.command.operationId!==id);
-  for(const item of copy.pending)remapWriteReferences(item,identities);
+  for(const item of copy.pending){remapWriteReferences(item,identities);remapDiaryReviewIdentities(item.projection?.diaryReview,identities);}
   for(const [path,value]of Object.entries(row.projection?.responses??{})){
    responses.put({path,value:remapWriteReferences(structuredClone(value),identities),savedAt:0});
   }

@@ -1,3 +1,4 @@
+import {prepareQueuedDiaryReview} from './diary-preparation.js';
 import {readWriteCopy,persistBackgroundWrite,changeBackgroundWrite,currentPrivateResponseTicket,saveOfflineSnapshot,acknowledgeBackgroundWrite} from './offline-store.js';
 import {readDeviceCache} from './device-cache.js';
 import {request} from './diary-api.js';
@@ -50,13 +51,14 @@ export async function flushBackgroundWrites(){
   while(true){
    copy=await readWriteCopy();
    if(!copy||copy.locked||copy.ownerId!==owner||copy.ticket.epoch!==epoch||!await currentPrivateResponseTicket(copy.ticket))return;
-   const row=copy.pending[0];if(!row)return;
+   let row=copy.pending[0];if(!row)return;
    const id=row.command.operationId;
    if(row.status==='conflict'){emit({error:Error(row.error??'Review this change.'),requiresAttention:true,requestId:id,retry:()=>retry(id)});return;}
    try{
     if(row.command.generation!==copy.snapshot?.identity.generation)throw restored();
     let result;
     if(row.transport){
+     if(row.projection?.diaryReview&&!row.projection.diaryReview.prepared)row=await changeBackgroundWrite(copy.ticket,id,(current,next)=>{prepareQueuedDiaryReview(next.snapshot.state,current);return structuredClone(current);});
      // Retries first use the exact request. Receipts are checked server-side before
      // revision guards, so a lost acknowledgement cannot turn into a duplicate.
      try{result=await request(row.transport.path,row.transport.body,AbortSignal.timeout(30000),{preserveCache:true});}

@@ -4,10 +4,6 @@ import {offlineFoodVersionFacts} from './domain/offline-food-version.mjs';
 import {readDiaryRecordCorrection,readDiaryRecordReviews,applyDiaryRecordCorrection} from './domain/diary-record-correction.mjs';
 import {configuredBiometricPairs} from './domain/biometric-library.mjs';
 import {applyBiometricLog} from './domain/biometric-logging.mjs';
-import {compactFoodSource} from './domain/catalog-source.mjs';
-import {recipeEntryFields} from './domain/recipe-entry.mjs';
-import {parseCompositeSources} from './domain/composite-source.mjs';
-import {canonicalFoodQuantityEntry} from './domain/food-quantity.mjs';
 
 export const offlinePayloadFields=Object.freeze({
  'entry.add':['date','time','group','foodId','amount','quantity','unit','portionId'],
@@ -39,15 +35,11 @@ export function parseOfflineCommand(input){
  return json(input);
 }
 export function assertOfflineIdentity(command,{ownerId,generation}){if(command.ownerId!==ownerId||command.generation!==generation)fail('This offline copy belongs to another account or an earlier restore.',409);}
-const pick=(value,keys)=>Object.fromEntries(keys.filter(key=>Object.hasOwn(value??{},key)).map(key=>[key,structuredClone(value[key])]));
 function offlineState(state){
+ // Reviews and local edits need the same record and resource facts as the server.
+ // Media bytes live in storage, not these records. Food notes remain excluded.
  const copy=Object.fromEntries(['profile','foods','recipes','meals','entries','biometrics','notes','settings','repeats','fasts','charts','progressSnapshots'].filter(key=>state[key]!==undefined).map(key=>[key,structuredClone(state[key])]));
- copy.foods=state.foods.map(food=>({...pick(food,['id','name','serving','grams','milliliters','nutrients','carbohydrateBasis','portions','classification','translations','categoryId','tags','retired','readOnly']),...(food.source!==undefined?{source:compactFoodSource(food.source)}:{})}));
- copy.recipes=state.recipes.map(recipe=>pick(recipe,['id','name','servings','cookedWeightGrams','batchVolumeMl','ingredients','portions','retired']));
- copy.meals=state.meals.map(meal=>pick(meal,['id','name','items','retired']));
- copy.entries=state.entries.map(row=>canonicalFoodQuantityEntry({...pick(row,['id','date','time','group','name','kind','foodId','recipeId','mealId','amount','quantity','unit','portionId','portionLabel','grams','nutrients','carbohydrateBasis','source','duration','caloriesBurned','exerciseCalories','calories']),...recipeEntryFields(row),...(row.mealItems!==undefined?{mealItems:parseCompositeSources(row.mealItems)}:{})}));
- copy.notes=state.notes.map(row=>pick(row,['id','date','time','group','text','imageId']));
- copy.biometrics=state.biometrics.map(row=>pick(row,['id','date','time','group','type','unit','value','source','copiedFrom']));
+ copy.foods=copy.foods.map(({notes,...food})=>food);
  return copy;
 }
 export function offlineSnapshot(state,{ownerId,generation,now=new Date()}){

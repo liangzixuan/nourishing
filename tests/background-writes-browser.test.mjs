@@ -29,7 +29,7 @@ test('selection-created recipes stay visible in cached library reads before and 
  },{losePath:'/api/workspace/command'});
 });
 
-async function realQueueFixture(state,run,{losePath,rejectWrite}={}){
+async function realQueueFixture(state,run,{losePath,loseType,rejectWrite}={}){
  const owner='owner-a',date='2026-11-20',fixture=diaryStoreFixture(state,owner),store=createWorkspaceStore(fixture.db,owner),sent=[];let lose=Boolean(losePath);
  const server=createServer(async(req,res)=>{try{
   if(req.url==='/'){res.setHeader('Content-Type','text/html');return res.end('<main></main>');}
@@ -41,7 +41,7 @@ async function realQueueFixture(state,run,{losePath,rejectWrite}={}){
    let raw='';for await(const chunk of req)raw+=chunk;const body=JSON.parse(raw);sent.push({path:req.url,body});
    const rejected=rejectWrite?.();if(rejected)throw rejected;
    const result=req.url==='/api/offline/commands'?await store.offlineCommand(body):await store.command(body,async()=>null,{owner,asOf:date+'T12:00:00Z',timeZone:'UTC'});
-   if(lose&&req.url===losePath){lose=false;throw {code:503,message:'Lost acknowledgement'};}
+   if(lose&&req.url===losePath&&(!loseType||body.type===loseType)){lose=false;throw {code:503,message:'Lost acknowledgement'};}
    return res.end(JSON.stringify(result));
   }
   res.setHeader('Content-Type','text/javascript');res.end(await readFile(resolve('public','.'+req.url.split('?')[0])));
@@ -326,4 +326,97 @@ test('restore generations stay blocked across Retry and a malformed snapshot nev
   malformed=false;restoreOnWrite=true;await flush();assert.equal(sent.length,1);rows=await pending();assert.equal(rows[0].status,'conflict');assert.equal(rows[0].command.generation,'restored');
   await page.evaluate(()=>window.retryPending());assert.equal(sent.length,1);assert.equal((await pending())[0].status,'conflict');
  }finally{await browser.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
+});
+
+
+test('offline entry can immediately become a recipe and copy through acknowledgement loss and restart',async()=>{
+ const state=initialState();state.foods=[{id:'rice',name:'Rice',grams:100,nutrients:{calories:100}}];
+ await realQueueFixture(state,async({page,fixture,flush,initialize,date})=>{
+  const reviews=[];page.on('request',request=>{if(request.url().includes('/api/diary/tools/review'))reviews.push(request.url());});
+  const local=await page.evaluate(async date=>{
+   const {queueCommand}=await import('/diary-api.js'),{prepareLocalDiaryReview}=await import('/diary-preparation.js');
+   const {readWriteCopy}=await import('/offline-store.js'),{offlineEffectiveState}=await import('/offline-model.js');
+   const revision='a'.repeat(64),entry=await queueCommand(revision,'entry.add',{foodId:'rice',date,amount:2,group:'Lunch'});
+   const selection={date,scope:'selected',records:[{collection:'entries',id:entry.requestId}]};
+   const recipe=await prepareLocalDiaryReview({operation:'recipe',selection},revision);
+   await queueCommand(revision,'selection.recipe',{selection:recipe.selection,fingerprint:recipe.fingerprint,name:'Offline rice',confirmed:true},{projection:{diaryReview:recipe.localReview,reusable:{kind:'recipe',resource:recipe.resource,foods:recipe.foods}}});
+   const copy=await prepareLocalDiaryReview({operation:'copy',selection,destination:{date:'2026-11-21',group:null}},revision);
+   await queueCommand(revision,'records.copy',{selection:copy.selection,destination:copy.destination,fingerprint:copy.fingerprint,confirmed:true},{projection:{diaryReview:copy.localReview}});
+   const effective=offlineEffectiveState(await readWriteCopy());
+   return {entries:effective.entries.length,recipes:effective.recipes.map(row=>row.name)};
+  },date);
+  assert.deepEqual(local,{entries:2,recipes:['Offline rice']});assert.deepEqual(reviews,[]);
+  await flush();assert.equal(fixture.state().entries.length,1);
+  await page.reload();await initialize();await flush();
+  const pending=await page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy()).pending);
+  assert.deepEqual(pending.map(row=>({type:row.command.type,error:row.error})),[]);
+  assert.equal(fixture.state().entries.length,2);assert.equal(fixture.state().recipes.length,1);
+  assert.equal(fixture.state().recipes[0].name,'Offline rice');
+  assert.ok(fixture.state().entries.every(row=>row.amount===2&&row.foodId==='rice'));
+  await page.reload();await initialize();await flush();assert.equal(fixture.state().entries.length,2);assert.equal(fixture.state().recipes.length,1);
+ },{losePath:'/api/workspace/command'});
+});
+
+
+for(const operation of ['meal','copy'])test(`locally prepared ${operation} retries the exact saved payload after a lost reply`,async()=>{
+ const state=initialState(),date='2026-11-20';act(state,'entry.add',{name:'Sauce',date,amount:2,nutrients:{calories:20}});
+ await realQueueFixture(state,async({page,fixture,flush,initialize,sent})=>{
+  await page.evaluate(async({operation,date})=>{
+   const {queueCommand}=await import('/diary-api.js'),{prepareLocalDiaryReview}=await import('/diary-preparation.js');
+   const {readWriteCopy}=await import('/offline-store.js');
+   const selection={date,scope:'day'},revision='a'.repeat(64);
+   const review=await prepareLocalDiaryReview({operation,selection,...(operation==='copy'?{destination:{date:'2026-11-21',group:null}}:{})},revision);
+   await queueCommand(revision,operation==='copy'?'records.copy':'selection.meal',{selection:review.selection,fingerprint:review.fingerprint,confirmed:true,...(operation==='copy'?{destination:review.destination}:{name:'Local sauce'})},{projection:{diaryReview:review.localReview,...(operation==='meal'?{reusable:{kind:'meal',resource:review.resource,foods:review.foods}}:{})}});
+  },{operation,date});
+  await flush();
+  const prepared=await page.evaluate(async()=>{const copy=await(await import('/offline-store.js')).readWriteCopy();return copy.pending[0];});
+  assert.equal(prepared.projection.diaryReview.prepared,true);assert.equal(prepared.status,'unknown',JSON.stringify({error:prepared.error,sent}));
+  const saved=structuredClone(fixture.state());
+  await page.reload();await initialize();await flush();
+  assert.deepEqual(fixture.state(),saved);
+  assert.deepEqual(sent.at(-1).body.payload,prepared.transport.body.payload);
+  assert.equal((await page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy()).pending)).length,0);
+ },{losePath:'/api/workspace/command',loseType:operation==='copy'?'records.copy':'selection.meal'});
+});
+
+test('captured pending entries survive identity acknowledgement but reject later source edits',async()=>{
+ const state=initialState();state.foods=[{id:'rice',name:'Rice',grams:100,nutrients:{calories:100}}];
+ await realQueueFixture(state,async({page,flush,date})=>{
+  const captured=await page.evaluate(async date=>{
+   const {queueCommand}=await import('/diary-api.js'),{prepareLocalDiaryReview}=await import('/diary-preparation.js');
+   const revision='a'.repeat(64),entry=await queueCommand(revision,'entry.add',{foodId:'rice',date,amount:2,group:'Lunch'});
+   return prepareLocalDiaryReview({operation:'capture',selection:{date,scope:'selected',records:[{collection:'entries',id:entry.requestId}]}},revision);
+  },date);
+  await flush();
+  const check=async()=>page.evaluate(async captured=>{
+   const {prepareLocalDiaryReview}=await import('/diary-preparation.js');
+   try{return await prepareLocalDiaryReview({operation:'copy',selection:captured.selection,destination:{date:'2026-11-21',group:null}},captured.revision,{captured:captured.localReview});}
+   catch(error){return {status:error.status,error:error.message};}
+  },captured);
+  const review=await check();assert.equal(review.total,1);assert.notEqual(review.selection.records[0].id,captured.selection.records[0].id);
+  await page.evaluate(async review=>{
+   await(await import('/diary-api.js')).queueCommand(review.revision,'entry.update',{id:review.selection.records[0].id,date:review.selection.date,foodId:'rice',amount:3,group:'Lunch'});
+  },review);
+  assert.equal((await check()).status,409);
+ });
+});
+
+
+test('an open reusable editor follows an earlier recipe acknowledgement before Save',async()=>{
+ const state=initialState(),date='2026-11-20';state.foods=[{id:'rice',name:'Rice',grams:100,nutrients:{calories:100}}];act(state,'entry.add',{foodId:'rice',date,amount:1});
+ await realQueueFixture(state,async({page,flush,fixture})=>{
+  const laterReview=await page.evaluate(async date=>{
+   const {queueCommand}=await import('/diary-api.js'),{prepareLocalDiaryReview}=await import('/diary-preparation.js');
+   const selection={date,scope:'day'},revision='a'.repeat(64),review=await prepareLocalDiaryReview({operation:'recipe',selection},revision);
+   await queueCommand(revision,'selection.recipe',{selection:review.selection,fingerprint:review.fingerprint,name:'First recipe',confirmed:true},{projection:{diaryReview:review.localReview,reusable:{kind:'recipe',resource:review.resource,foods:review.foods}}});
+   return prepareLocalDiaryReview({operation:'meal',selection},revision);
+  },date);
+  await flush();assert.equal(fixture.state().recipes.length,1);
+  await page.evaluate(async review=>{
+   await(await import('/diary-api.js')).queueCommand(review.revision,'selection.meal',{selection:review.selection,fingerprint:review.fingerprint,name:'Later meal',confirmed:true},{projection:{diaryReview:review.localReview,reusable:{kind:'meal',resource:review.resource,foods:review.foods}}});
+  },laterReview);
+  await flush();
+  assert.deepEqual(await page.evaluate(async()=>{const copy=await(await import('/offline-store.js')).readWriteCopy();const {diaryReviewGuard}=await import('/local-diary-projection.js');return copy.pending.map(row=>({error:row.error,expected:row.projection.diaryReview.guard,actual:diaryReviewGuard(copy.snapshot.state,row.projection.diaryReview.input)}));}),[]);
+  assert.equal(fixture.state().meals.length,1);
+ });
 });

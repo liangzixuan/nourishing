@@ -13,7 +13,10 @@ export function remapWriteReferences(value, identities) {
 export function writeReceiptIdentities(row,result){
  const operation=row.command.operationId,type=row.command.type;
  const entries=result?.records?.entries?.map(item=>item.id)??result?.entryIds??[];
- if(type==='selection.recipe'||type==='selection.meal')return Object.fromEntries([[operation,result.id],...(result.records?.foods??[]).map((food,index)=>[`${operation}-food-${index}`,food.id])]);
+ if(type==='selection.recipe'||type==='selection.meal'){
+  const collection=type==='selection.recipe'?'recipes':'meals',id=result?.records?.[collection]?.[0]?.id??result?.item?.id;
+  return Object.fromEntries([...(id?[[operation,id]]:[]),...(result.records?.foods??[]).map((food,index)=>[`${operation}-food-${index}`,food.id])]);
+ }
  if(type==='records.copy')return Object.fromEntries(Object.entries(result?.records??{}).flatMap(([collection,rows])=>rows.map((item,index)=>[`${operation}-${collection}-${index}`,item.id])));
  if(['photo.log','meal.log','entry.expand'].includes(type)||type==='entry.add'&&row.command.payload.mealId&&result?.records?.entries?.some(item=>item.expandedFrom?.parent?.mealId))return Object.fromEntries(entries.map((id,index)=>[`${operation}-${index}`,id]));
  if(['entry.add','water.add','snapshot.add','repeat.save','note.add','note.photo.save','exercise.add'].includes(type)){
@@ -21,4 +24,8 @@ export function writeReceiptIdentities(row,result){
   if(id&&!(type==='note.photo.save'&&row.command.payload.id))return {[operation]:id};
  }
  return {};
+}
+
+export function remapDiaryReviewIdentities(review,identities){
+ for(const ids of Object.values(review?.guard?.libraryIds??{}))for(let i=0;i<ids.length;i++)ids[i]=identities[ids[i]]??ids[i];
 }

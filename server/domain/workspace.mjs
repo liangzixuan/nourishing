@@ -1,5 +1,11 @@
+import {normalizeCompositeDraft} from './composite-draft.mjs';
+import {fail,array,objectKeys,exactId,maxRecordCollectionRows} from './workspace-validation.mjs';
+import {nutrients} from './nutrient-values.mjs';
+export {nutrients} from './nutrient-values.mjs';
+import {referencedRecordFacts,copyCollections,prepareRecordSelection,recordSelectionRevision,prepareRecordCopy,prepareSelectionDraft,previewClearAmounts,reviewQuantity} from './diary-selection.mjs';
+export {prepareRecordSelection,captureRecordSelection,prepareSelectionDraft,previewRecordCopy,previewClearAmounts} from './diary-selection.mjs';
 import {applyChartPreference} from './chart-display-command.mjs';
-import {copiedDiaryRecords} from './diary-record-copy.mjs';
+import {copiedDiaryRecords,recordCopyLineage} from './diary-record-copy.mjs';
 import {mergeEntryUpdate} from './entry-update-fields.mjs';
 import {parseProfileDemographics} from './profile-demographics.mjs';
 import {scoreDisplayPatch} from './score-display-controls.mjs';
@@ -15,7 +21,6 @@ import {parseAddMenu} from './add-menu.mjs';
 import {contentDigest} from './content-digest.mjs';
 import {parseDiscoverSettings} from './discover-settings.mjs';
 import {DIARY_EXPANSION_VERSION} from './diary-expansion-contract.mjs';
-import {clearAmountWarningCodes} from './diary-clear-contract.mjs';
 import {capabilities} from './capabilities.mjs';
 export {capabilities} from './capabilities.mjs';
 import {parseAppLanguage} from './app-language.mjs';
@@ -76,12 +81,11 @@ import {applyLibraryRetirement} from './library-retirement.mjs';
 import {parseFoodTaxonomy} from './food-taxonomy.mjs';
 import {parseMealSuggestionPolicy} from './meal-suggestion-policy.mjs';
 import {recipePortionFields} from './recipe-portions.mjs';
-import {recipeServingFields} from './recipe-portion-schema.mjs';
 import {parseRecipeSourceQuantity} from './recipe-measurement.mjs';
-import {parseCookedWeightGrams,recipeWeightContext} from './recipe-weight.mjs';
+import {recipeWeightContext} from './recipe-weight.mjs';
 import { photoMetadata,photoReviewMetadata } from './photo-records.mjs';
 import {textReviewMetadata} from './text-records.mjs';
-import { healthSource, healthMeasurementSource } from './health-records.mjs';
+import { healthMeasurementSource } from './health-records.mjs';
 import {parseGlucoseTimelinePolicy} from './glucose-timeline.mjs';
 import {parseEnergyPolicy} from './energy-policy.mjs';
 import {parseMacroPolicy} from './macro-policy.mjs';
@@ -95,9 +99,9 @@ import {parseDiaryDisplayPolicy,parseDiaryTablePolicy} from './diary-display.mjs
 import {resourceReference} from './resource-reference.mjs';
 import {parseCompositeSources} from './composite-source.mjs';
 import {recipeEntryFields,recipeForEntry} from './recipe-entry.mjs';
-import {parseReferencedQuantity,parseCompositeItems} from './resource-quantity.mjs';
+import {parseReferencedQuantity} from './resource-quantity.mjs';
 import {collectResourceDependencies,orderRecipeDependencies,recipeAncestors} from './resource-dependencies.mjs';
-import {expandResourceQuantity,expandedDiarySources} from './resource-expansion.mjs';
+import {expandedDiarySources} from './resource-expansion.mjs';
 import { calculateTargetSetup,validateTargetSetupRecord,setupTargetKeys } from './target-setup.mjs';
 import {parseCarbohydratePolicy,parseCarbohydrateBasis,NET_CARBOHYDRATE_TARGET_ID} from './carbohydrate-policy.mjs';
 
@@ -119,15 +123,6 @@ export function initialState({demo=false}={}) {
   };
 }
 
-const fail = message => { throw Object.assign(new Error(message), {status:400}); };
-const maxRecordCollectionRows=100000;
-const array = (value,name,max=maxRecordCollectionRows) => { if(!Array.isArray(value)||value.length>max) fail(`${name} must be an array of at most ${max} items.`); return value; };
-export function nutrients(value) {
-  if(!value||typeof value!=='object'||Array.isArray(value)) fail('Nutrients must be an object.');
-  const allowed=new Set(catalog.map(x=>x.id)); const result={};
-  for(const [key,val] of Object.entries(value)) { if(!allowed.has(key)) fail(`Unknown nutrient: ${key}`); if(val===null||val==='') continue; result[key]=number(val,key); }
-  return result;
-}
 function lookup(s,collection,id) { const item=s[collection].find(x=>x.id===id); if(!item) fail(`${collection} item does not exist.`); return item; }
 function save(s,collection,item) { if(item.id) { const old=lookup(s,collection,item.id); Object.assign(old,item); } else s[collection].push({...item,id:randomUUID()}); }
 function remove(s,collection,id) { lookup(s,collection,id); s[collection]=s[collection].filter(x=>x.id!==id); }
@@ -164,21 +159,6 @@ function favoriteReferences(s,value){
   const seen=new Set();return array(value,'Favorites').map(item=>{const ref=favoriteReference(s,item),key=JSON.stringify([ref.kind,ref.id]);if(seen.has(key))fail('Favorite references must be unique.');seen.add(key);return ref;});
 }
 function removeFavorite(s,kind,id){if(s.settings.favorites!==undefined)s.settings.favorites=s.settings.favorites.filter(item=>item.kind!==kind||item.id!==id);}
-function exactId(value,name='Record ID',max=1000){text(value,name,max);return value;}
-function objectKeys(value,keys,name){
-  if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(key=>!keys.includes(key)))fail(`${name} contains invalid fields.`);
-}
-function recordCopyLineage(p,collection){
-  if(p.copiedFrom===undefined)return {};
-  if(p.source!==undefined||p.repeatId!==undefined)fail('Copied records cannot retain an active health import or repeat identity.');
-  const value=p.copiedFrom;objectKeys(value,['version','collection','id','date','source','repeatId'],'Record copy history');
-  if(value.version!==1||value.collection!==collection)fail('Record copy history must match its record collection.');
-  if((value.source!==undefined&&collection!=='biometrics')||(value.repeatId!==undefined&&collection!=='entries'))fail('Health origins belong to biometric copies and repeat origins belong to diary entry copies.');
-  const result={version:1,collection,id:exactId(value.id,'Original record ID'),date:date(value.date)};
-  if(value.source!==undefined)result.source=healthSource(value.source);
-  if(value.repeatId!==undefined)result.repeatId=exactId(value.repeatId,'Original repeat ID');
-  return {copiedFrom:result};
-}
 function expansionLineage(value){
   objectKeys(value,['version','id','date','parent','path','previous'],'Entry expansion history');
   if(value.version!==1)fail('Entry expansion history must use version 1.');
@@ -245,10 +225,6 @@ function timestamp(value,name) { const d=new Date(value); if(!Number.isFinite(d.
 function repeatMatches(r,day){
   return r.enabled!==false&&day>=r.startDate&&(!r.endDate||day<=r.endDate)&&r.days.includes(new Date(`${day}T12:00:00Z`).getUTCDay());
 }
-function referencedRecordFacts(s,records){
-  const graph=collectResourceDependencies(s,records);if(graph.missing.length)fail('A referenced food, recipe or meal is missing.');
-  return ['foods','recipes','meals'].flatMap(collection=>graph[collection].map(record=>({collection,id:record.id,record:withoutLibraryStatus(record)})));
-}
 function repeatSource(s,r,day){
   const quantity=parseReferencedQuantity(s,r).source;
   const source=entry(s,{...quantity,group:r.group,time:r.time,date:day});
@@ -302,29 +278,6 @@ function exerciseRecord(s,p) {return {...parseExerciseFields({...p,group:p.group
 
 export function parseBiometricRecord(p,groups){const record={...parseBiometricFields(p),...recordCopyLineage(p,'biometrics')};Object.assign(record,optionalRecordGroup(p,groups));if(p.source!==undefined)record.source=healthMeasurementSource(p.source,record);return record;}
 export function parseNoteRecord(p,groups){return {...parseNoteFields(p),...optionalRecordGroup(p,groups),...recordCopyLineage(p,'notes'),...notePhotoFields(p)};}
-const copyCollections=['entries','biometrics','notes'];
-export function prepareRecordSelection(s,selection){
-  objectKeys(selection,['date','scope','records','group','revision'],'Record selection');
-  if(selection.revision!==undefined&&(selection.scope!=='selected'||typeof selection.revision!=='string'||!/^[a-f0-9]{64}$/.test(selection.revision)))fail('Copied selection revision is invalid.');
-  const sourceDate=date(selection.date);
-  let normalized,records;
-  if(selection.scope==='selected'){
-    if(selection.group!==undefined)fail('Selected records cannot also select a group.');
-    const seen=new Set(),refs=array(selection.records,'Selected records').map(ref=>{
-      objectKeys(ref,['collection','id'],'Selected record');if(!copyCollections.includes(ref.collection))fail('Choose a diary record collection.');
-      const id=exactId(ref.id),key=JSON.stringify([ref.collection,id]);if(seen.has(key))fail('Select each record once.');seen.add(key);return {collection:ref.collection,id};
-    });
-    normalized={date:sourceDate,scope:'selected',records:refs};records=refs.map(ref=>{const row=s[ref.collection].find(item=>item.id===ref.id);if(!row||row.date!==sourceDate)throw Object.assign(Error('A selected record no longer belongs to this date. Review the records again.'),{status:409});return {collection:ref.collection,row};});
-  }else if(selection.scope==='group'){
-    if(selection.records!==undefined||typeof selection.group!=='string'||!s.settings.groups.includes(selection.group))fail('Choose an existing source group without a record selection.');
-    normalized={date:sourceDate,scope:'group',group:selection.group};records=copyCollections.flatMap(collection=>s[collection].filter(row=>row.date===sourceDate&&row.group===selection.group).map(row=>({collection,row})));
-  }else if(selection.scope==='day'){
-    if(selection.records!==undefined||selection.group!==undefined)fail('A full day cannot also select records or a group.');
-    normalized={date:sourceDate,scope:'day'};records=copyCollections.flatMap(collection=>s[collection].filter(row=>row.date===sourceDate).map(row=>({collection,row})));
-  }else fail('Choose selected records, a diary group or a full day.');
-  if(selection.revision!==undefined){if(selection.revision!==recordSelectionRevision(s,records))throw Object.assign(Error('The copied records or their foods changed. Copy the selection again before pasting.'),{status:409});normalized.revision=selection.revision;}
-  return {selection:normalized,records};
-}
 function resolveGroupedRecordSelection(s,input,extraFields=[]){
   const refs=array(input.records,'Selected records');
   if(!refs.length)fail('Select at least one diary record.');
@@ -362,48 +315,6 @@ function moveRecordGroups(s,input){
   // changing it, and retain all current source facts and record identities.
   assertDiaryDaysEditable(s,records.map(({row})=>row.date));
   for(const {row}of records)row.group=input.group;
-}
-function recordSelectionRevision(s,records){return createHash('sha256').update(JSON.stringify({records,resources:referencedRecordFacts(s,records.filter(item=>item.collection==='entries').map(item=>item.row))})).digest('hex');}
-export function captureRecordSelection(s,input){
-  const prepared=prepareRecordSelection(s,input);if(!prepared.records.length)fail('Select at least one record to copy.');
-  return {selection:{date:prepared.selection.date,scope:'selected',records:prepared.records.map(({collection,row})=>({collection,id:row.id})),revision:recordSelectionRevision(s,prepared.records)},total:prepared.records.length};
-}
-function prepareRecordCopy(s,p){
-  objectKeys(p,['selection','destination'],'Record copy review');
-  const destination=p.destination;objectKeys(destination,['date','group'],'Copy destination');const targetDate=date(destination.date);
-  if(!Object.hasOwn(destination,'group')||(destination.group!==null&&(typeof destination.group!=='string'||!s.settings.groups.includes(destination.group))))fail('Choose an existing destination group or keep the original groups.');
-  const {selection:normalized,records}=prepareRecordSelection(s,p.selection);
-  const target={date:targetDate,group:destination.group},collections=new Set(records.map(item=>item.collection)),groups=new Set(records.filter(item=>item.collection==='entries').map(item=>target.group??item.row.group));
-  const targets=copyCollections.filter(collection=>collections.has(collection)).flatMap(collection=>s[collection].filter(row=>row.date===targetDate&&(collection!=='entries'||groups.has(row.group))).map(row=>({collection,row})));
-  const fingerprint=createHash('sha256').update(JSON.stringify({selection:normalized,destination:target,records,resources:referencedRecordFacts(s,records.filter(item=>item.collection==='entries').map(item=>item.row)),targets})).digest('hex');
-  return {selection:normalized,destination:target,records,targets,fingerprint};
-}
-export function prepareSelectionDraft(s,input){
-  objectKeys(input,['kind','selection'],'Reusable item selection');if(!['recipe','meal'].includes(input.kind))fail('Choose a recipe or meal draft.');
-  const {selection,records}=prepareRecordSelection(s,input.selection);
-  if(!records.length)fail('Select at least one food entry.');
-  if(records.some(item=>item.collection!=='entries'||isExerciseEntry(item.row)))fail('Select food, recipe or meal entries only. Activities, measurements and notes cannot become ingredients.');
-  const libraryIds=Object.fromEntries(['foods','recipes','meals'].map(collection=>[collection,s[collection].map(row=>row.id)]));
-  const fingerprint=createHash('sha256').update(JSON.stringify({kind:input.kind,selection,records,resources:referencedRecordFacts(s,records.map(item=>item.row)),libraryIds})).digest('hex');
-  const inlineFoods=[],usedIds=new Set(libraryIds.foods),rows=[];let expanded=false;
-  const append=row=>{if(rows.length>=1000)fail('This selection expands beyond the 1,000-item recipe or meal format. Select fewer entries.');rows.push(row);};
-  for(const {row}of records){
-    const reference=resourceReference(row);
-    if(!reference){
-      if(!row.nutrients||typeof row.nutrients!=='object')fail('This entry has no reusable food reference or nutrient facts.');
-      let index=0,id;do{id='draft-food:'+createHash('sha256').update(JSON.stringify({id:row.id,date:row.date,index:index++})).digest('hex');}while(usedIds.has(id));usedIds.add(id);
-      const food={id,name:row.name,serving:'1 recorded serving',grams:null,nutrients:nutrients(row.nutrients),...parseCarbohydrateBasis(row),source:{name:'Diary entry snapshot',entryId:row.id,date:row.date}};
-      inlineFoods.push(food);append({foodId:id,amount:parseServingAmount(row.amount)});continue;
-    }
-    if(reference==='mealId'||row.recipeOverride)expanded=true;
-    for(const item of expandResourceQuantity(s,row,{target:'items'}))append(item.source);
-  }
-  const draft=input.kind==='recipe'?{name:`Recipe from ${selection.date}`,servings:1,cookedWeightGrams:null,ingredients:rows,instructions:'',source:`Diary selection ${selection.date}`}:{name:`Meal from ${selection.date}`,items:rows};
-  const warningCodes=['original-records'];
-  if(expanded)warningCodes.push('expanded-items');
-  if(inlineFoods.length)warningCodes.push('inline-snapshots');
-  if(input.kind==='recipe')warningCodes.push('unmeasured-cooked-weight');
-  return {kind:input.kind,selection,fingerprint,draft,inlineFoods,selectedCount:records.length,warningCodes};
 }
 function expandedDiaryItems(s,original){
   const normalized=entry(s,original);
@@ -473,23 +384,6 @@ function saveSelectionDraft(s,p,context){
   const saved=act(candidate,`${p.kind}.save`,{...draft,catalogSources:p.catalogSources,barcodeSources:p.barcodeSources},context);Object.assign(s,candidate);return saved;
 }
 // Resolved food quantities have one preview representation shared by copy and repeat.
-function reviewQuantity(facts){return facts.quantity===undefined?{kind:'servings',value:facts.amount}:facts.unit==='batch'?{kind:'batch',value:facts.quantity}:facts.unit==='portion'?{kind:'portion',value:facts.quantity,label:facts.portionLabel}:{kind:'measurement',value:facts.quantity,unit:facts.unit};}
-function copyPresentationFacts(s,collection,row){
-  if(collection==='notes'){if(typeof row.text!=='string')fail('The source note has no valid text.');return {name:null,detail:{kind:'note',text:row.text.length>160?row.text.slice(0,159)+'…':row.text}};}
-  if(collection==='biometrics')return {name:row.type,detail:{kind:'measurement',value:row.value,unit:row.unit}};
-  if(row.kind==='exercise')return {name:row.name,detail:{kind:'exercise',duration:row.duration,caloriesBurned:row.caloriesBurned??null}};
-  const facts=entryFacts(s,row);return {name:facts.name,detail:{kind:'quantity',quantity:reviewQuantity(facts)}};
-}
-export function previewRecordCopy(s,p){
-  const prepared=prepareRecordCopy(s,p),counts={entries:0,biometrics:0,notes:0};let repeatedEntryCount=0,healthImportedCount=0;
-  const items=prepared.records.map(({collection,row})=>{
-    recordCopyLineage(row,collection);
-    counts[collection]++;const healthImported=!!(row.source||row.copiedFrom?.source),repeatLinked=!!(row.repeatId||row.copiedFrom?.repeatId);if(healthImported)healthImportedCount++;if(repeatLinked)repeatedEntryCount++;
-    return {collection,id:row.id,...copyPresentationFacts(s,collection,row),time:row.time,...(Object.hasOwn(row,'group')?{group:row.group}:{}),hasPhoto:!!row.photo||(collection==='notes'&&!!row.imageId),healthImported,repeatLinked};
-  });
-  return {version:1,energyUnit:parseEnergyUnit(s.settings.energyUnit??'kcal'),selection:prepared.selection,destination:prepared.destination,fingerprint:prepared.fingerprint,counts,total:items.length,items,repeatedEntryCount,healthImportedCount,targetCount:prepared.targets.length};
-}
-
 function applyRecordCopy(s,p){
   objectKeys(p,['selection','destination','fingerprint','confirmed'],'Record copy');
   if(p.confirmed!==true||typeof p.fingerprint!=='string'||!/^[a-f0-9]{64}$/.test(p.fingerprint))fail('Review and confirm the selected records before copying.');
@@ -677,15 +571,6 @@ function updateEntry(s,p){
   const {old,next}=prepareEntryUpdate(s,p);s.entries[s.entries.indexOf(old)]=next;
 }
 
-export function previewClearAmounts(s,input){
-  objectKeys(input,['selection'],'Clear amounts review');
-  const prepared=prepareRecordSelection(s,input.selection),records=prepared.records.filter(({collection,row})=>collection==='entries'&&!isExerciseEntry(row));
-  if(!records.length)fail('No food entries are selected to clear.');
-  const selection={date:prepared.selection.date,scope:'selected',records:records.map(({row})=>({collection:'entries',id:row.id}))};
-  return {selection,fingerprint:recordSelectionRevision(s,records),total:records.length,changed:records.filter(({row})=>(row.quantity??row.amount)!==0).length,
-    examples:records.slice(0,10).map(({row})=>{const facts=entryFacts(s,row);return {id:row.id,name:facts.name,amount:row.amount??null,quantity:row.quantity??null,unit:row.unit??null,portionLabel:facts.portionLabel??null};}),
-    warningCodes:[...clearAmountWarningCodes]};
-}
 function clearDiaryAmounts(s,p){
   objectKeys(p,['selection','fingerprint','confirmed'],'Clear amounts confirmation');
   if(p.confirmed!==true||typeof p.fingerprint!=='string'||!/^[a-f0-9]{64}$/.test(p.fingerprint))fail('Review and confirm the amounts before clearing them.');
@@ -718,11 +603,7 @@ function normalizeRecipeDraft(s,p){
       if(p.copyOf!==undefined&&(p.id||p.copiedFrom!==undefined||p.importReview!==undefined||p.photoReview!==undefined||p.textReview!==undefined))fail('Create a recipe copy as a new recipe; its source history is retained automatically.');
       const copied=p.copyOf!==undefined?lookup(s,'recipes',exactId(p.copyOf,'Recipe copy source',100)):null;
       const previous=p.id?lookup(s,'recipes',p.id):null;
-      const volume=parseVolume(p.batchVolumeMl,'Measured full-recipe volume',10000000);
-      const next={...libraryStatusForSave(copied?withoutLibraryStatus(p):p,previous),...parseFoodTaxonomy(p),...recipeServingFields(p),...(volume===null?{}:{batchVolumeMl:volume}),...servingTranslationFields(p),id:p.id,name:text(p.name,'Recipe name',300),servings:number(p.servings,'Servings',0.001,100000),cookedWeightGrams:parseCookedWeightGrams(p.cookedWeightGrams),ingredients:parseCompositeItems(s,p.ingredients),instructions:typeof p.instructions==='string'?p.instructions.slice(0,100000):'',source:typeof p.source==='string'?p.source.slice(0,2000):''};
-      const candidate={...s,recipes:[...s.recipes.filter(row=>row.id!==next.id),next]};
-      orderRecipeDependencies(candidate,[next]);
-      Object.assign(next,recipePortionFields({...next,portions:p.portions===undefined?(previous?.portions??copied?.portions):p.portions},candidate));
+      const next=normalizeCompositeDraft(s,'recipe',p,{previous,copied});
       if(copied){
         next.copiedFrom={id:copied.id,name:copied.name,createdAt:new Date().toISOString()};
         if(copied.importReview)next.importReview={...structuredClone(copied.importReview),modifiedAfterImport:true};
@@ -733,7 +614,7 @@ function normalizeRecipeDraft(s,p){
       return next;
 }
 function normalizeMealDraft(s,p){
-      const previous=p.id?lookup(s,'meals',p.id):null,next={...libraryStatusForSave(p,previous),id:p.id,name:text(p.name,'Meal name',300),items:parseCompositeItems(s,p.items)};
+      const previous=p.id?lookup(s,'meals',p.id):null,next=normalizeCompositeDraft(s,'meal',p,{previous});
       retainSourceReviews(next,previous,p,['items']);
       return next;
 }

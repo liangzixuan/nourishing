@@ -1,6 +1,6 @@
 {
   "name": "nourishing",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "private": true,
   "type": "module",
   "engines": {
@@ -17,6 +17,7 @@
     "@astrojs/node": "11.1.13",
     "@google/genai": "3.3.0",
     "@js-temporal/polyfill": "0.5.1",
+    "@noble/hashes": "2.4.0",
     "astro": "7.4.12",
     "big.js": "7.0.1",
     "cheerio": "1.2.0",
