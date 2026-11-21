@@ -58,6 +58,7 @@ export {createDisplayView} from './domain/display-view.mjs';
 
 export {diarySelectionNutrition} from './domain/diary-selection-nutrition.mjs';
 
+export {previewFoodLabel} from './food-editor.mjs';
 export {previewLibraryEditor} from './domain/library-editor-preview.mjs';
 export {prepareLibraryDraft,libraryDraftRows} from './domain/library-editor-draft.mjs';
 export {inspectLibraryUses,checkLibraryDeletion,removeLibraryItem} from './domain/library-references.mjs';

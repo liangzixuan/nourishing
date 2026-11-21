@@ -28,6 +28,11 @@ export function prepareFoodEditorDraft(state,payload){
  }
  return food;
 }
+// Editing the printed label needs only the opened food and its unsaved draft.
+export function previewFoodLabel(saved,draft,options){
+ const resource=prepareFoodEditorDraft({foods:saved?[saved]:[]},draft);
+ return {resource,labelView:foodEditorLabelView(resource,options)};
+}
 // Label provenance owns authored shares. Do not infer vitamin forms from nutrient ratios.
 function authoredVitaminForms(source,id){
  if(source?.labelEditVersion===1&&Array.isArray(source.labelEdits)){
