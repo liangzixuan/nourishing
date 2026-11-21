@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {initialState,act} from '../server/domain/workspace.mjs';
 import {applyRecordCommand} from '../server/record-commands.mjs';
 import {recordOptions,recordView,exerciseSearch,exerciseEstimateView,exerciseCatalogView} from '../server/record-views.mjs';
+import {savedExerciseSettings} from '../server/domain/catalog-exercise.mjs';
 const date='2026-11-14',fields={date,time:'12:00',group:'Lunch'};
 const apply=(state,type,payload)=>applyRecordCommand(state,{type,payload});
 test('manual exercise and catalog exercise use source validation and retain calculation basis',()=>{
@@ -17,6 +18,28 @@ test('manual exercise and catalog exercise use source validation and retain calc
  assert.equal(state.entries[1].duration,45);assert.deepEqual(state.entries[1].exerciseBasis,basis);
  assert.throws(()=>apply(state,'exercise.add',{...fields,name:'Forged source',duration:30,calories:100,exerciseBasis:basis}),{status:400});
  state.profile.weight=81;assert.throws(()=>apply(state,'exercise.catalog.add',{...fields,code:activity.code,duration:30,weightKg:80,useEstimate:true}),{status:409});
+});
+test('walking corrections use recorded weight and validated catalogue efforts, retain explicit manual values and preserve original facts',()=>{
+ const state=initialState();state.profile.weight=80;
+ const add={...fields,code:'17170',duration:10,weightKg:80,useEstimate:true};
+ apply(state,'exercise.catalog.add',add);
+ const first=state.entries[0],original=structuredClone(first.exerciseBasis);
+ delete first.exerciseSelection;
+ assert.equal(savedExerciseSettings(first).useEstimate,true);
+ state.profile.weight=120;
+ const changes={...fields,code:'17190',duration:15,useEstimate:true};
+ const correct=changes=>apply(state,'record.correct',{collection:'entries',id:first.id,changes});
+ for(const invalid of [{...changes,code:'01003'},{...changes,weightKg:100},{...changes,met:15},{...changes,calories:1}])assert.throws(()=>correct(invalid));
+ correct(changes);
+ const estimated=(3.8-1)*(3.5*80/200*15);
+ assert.equal(state.entries[0].caloriesBurned,estimated);
+ assert.equal(state.entries[0].exerciseSelection.code,'17190');
+ assert.deepEqual(state.entries[0].exerciseBasis,original);
+ correct({...changes,calories:estimated,useEstimate:false});
+ assert.equal(savedExerciseSettings(state.entries[0]).useEstimate,false,'A manual value equal to the estimate remains manual');
+ act(state,'day.complete',{date,completed:true});assert.throws(()=>correct(changes),{status:409});
+ act(state,'day.complete',{date,completed:false});state.entries[0].source={kind:'health-connect'};
+ assert.throws(()=>correct(changes),{status:409});
 });
 test('biometric catalog, paired pressure, and custom identity use original log owner',()=>{
  const state=initialState();

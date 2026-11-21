@@ -53,7 +53,7 @@ import {validateRdfaSource} from './recipe-rdfa.mjs';
 import {validatePlainRecipeSource} from './recipe-plain-text.mjs';
 import {validateJsonLdSource} from './recipe-jsonld.mjs';
 import {canonicalizeBodyComposition} from './body-composition-migration.mjs';
-import {catalogExerciseRecord} from './catalog-exercise.mjs';
+import {catalogExerciseRecord,parseExerciseSelection} from './catalog-exercise.mjs';
 import {exerciseCatalog} from './exercise-catalog.mjs';
 import {parseCustomBiometrics} from './biometric-library.mjs';
 import {parseHealthSync,mergeHealthSync,healthImportBlock} from './health-reconciliation-state.mjs';
@@ -268,7 +268,7 @@ function saveRepeat(s,p){
   // reference when the user changes between food, recipe and meal.
   if(p.id){const previous=lookup(s,'repeats',p.id);s.repeats[s.repeats.indexOf(previous)]=next;}else s.repeats.push(next);
 }
-function exerciseRecord(s,p) {return {...parseExerciseFields({...p,group:p.group||s.settings.groups[0]},s.settings.groups),...(p.photo===undefined?{}:{photo:photoMetadata(p.photo)}),...recordCopyLineage(p,'entries')};}
+function exerciseRecord(s,p) {return {...parseExerciseFields({...p,group:p.group||s.settings.groups[0]},s.settings.groups),...(p.exerciseSelection?{exerciseSelection:parseExerciseSelection(p.exerciseSelection,p.exerciseBasis)}:{}),...(p.photo===undefined?{}:{photo:photoMetadata(p.photo)}),...recordCopyLineage(p,'entries')};}
 
 export function parseBiometricRecord(p,groups){const record={...parseBiometricFields(p),...recordCopyLineage(p,'biometrics')};Object.assign(record,optionalRecordGroup(p,groups));if(p.source!==undefined)record.source=healthMeasurementSource(p.source,record);return record;}
 export function parseNoteRecord(p,groups){return {...parseNoteFields(p),...optionalRecordGroup(p,groups),...recordCopyLineage(p,'notes'),...notePhotoFields(p)};}
@@ -643,7 +643,7 @@ export function act(s,type,p={},context={}) {
     case 'water.add':addDiaryRecord(s,'biometrics',parseBiometricRecord({...p,type:'Water',value:number(p.amount,'Water',waterLimits.minimumMl,waterLimits.maximumMl),unit:'mL'},s.settings.groups));break;
     case 'exercise.add':addDiaryRecord(s,'entries',exerciseRecord(s,p));break;
     case 'exercise.catalog.add':addDiaryRecord(s,'entries',catalogExerciseRecord(s,p,exerciseCatalog.get(p.code)));break;
-    case 'exercise.update': {if(Object.hasOwn(p,'exerciseBasis'))fail('The initial exercise calculation cannot be changed.');const old=lookup(s,'entries',p.id);if(old.kind!=='exercise')fail('This is not an exercise entry.');const next={id:old.id,...exerciseRecord(s,{...old,calories:old.caloriesBurned,...p})};assertDiaryDaysEditable(s,[old.date,next.date]);s.entries[s.entries.indexOf(old)]=next;break;}
+    case 'exercise.update': {if(Object.hasOwn(p,'exerciseBasis')||Object.hasOwn(p,'exerciseSelection'))fail('Use the catalogue editor to change the exercise calculation.');const old=lookup(s,'entries',p.id);if(old.kind!=='exercise')fail('This is not an exercise entry.');const next={id:old.id,...exerciseRecord(s,{...old,calories:old.caloriesBurned,...p})};assertDiaryDaysEditable(s,[old.date,next.date]);s.entries[s.entries.indexOf(old)]=next;break;}
     case 'note.add':{const record=parseNoteRecord(p,s.settings.groups);addDiaryRecord(s,'notes',record);break;}
     case 'note.delete':removeDiaryRecords(s,'notes',[p.id]);break;
     case 'repeat.save':saveRepeat(s,p);break;

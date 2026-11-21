@@ -1,4 +1,5 @@
 import {recordEditorData,saveRecordCommand} from './record-local.js';
+import {savedExerciseSettings,walkingEfforts} from './local-diary-projection.js';
 import {dc} from './discover-cloud-messages.js';
 import {uiLanguage, t} from './app-language.js';
 import {request} from './diary-api.js';
@@ -54,15 +55,13 @@ function buildExerciseSubmitAction({activity, record, form, unit, correction}) {
   };
   if (activity) {
     const useEstimate = f.useEstimate.value === 'true';
+    const displayedCalories=Number(f.calories.value);
+    const calories=record&&displayedCalories===convertEnergy(record.caloriesBurned,'kcal',unit)?record.caloriesBurned:convertEnergy(displayedCalories,unit,'kcal');
+    const calculation = {...common,code:f.code.value,useEstimate,...(useEstimate?{}:{calories})};
+    if(record)return {type:'record.correct',payload:correction(calculation)};
     return {
       type: 'exercise.catalog.add',
-      payload: {
-        ...common,
-        code: f.code.value,
-        weightKg: Number(f.weightKg.value),
-        useEstimate,
-        ...(useEstimate ? {} : {calories: convertEnergy(Number(f.calories.value), unit, 'kcal')}),
-      },
+      payload: {...calculation,weightKg:Number(f.weightKg.value)},
     };
   }
   const changes = {...common, name: f.name.value, calories: convertEnergy(Number(f.calories.value), unit, 'kcal')};
@@ -369,7 +368,21 @@ class RecordEditorController {
     });
   }
 
-  exerciseEditor({activity, choices, titleKey, from, draft} = {}) {
+  async savedExerciseEditor(){
+    const saved=savedExerciseSettings(this.record);
+    if(!saved)return this.exerciseEditor();
+    const walking=Object.hasOwn(walkingEfforts,saved.activity.code);
+    let choices=[saved.activity];
+    if(walking){
+      try{
+        const catalog=await request('/api/records/exercise-catalog',null,this.abort.signal);
+        choices=Object.keys(walkingEfforts).map(code=>code===saved.activity.code?saved.activity:catalog.items.find(row=>row.code===code)).filter(Boolean);
+      }catch{/* The retained activity still supports duration and calorie edits offline. */}
+    }
+    if(this.alive())this.exerciseEditor({activity:saved.activity,choices,titleKey:walking?'generalWalking':null,saved});
+  }
+
+  exerciseEditor({activity, choices, titleKey, from, draft, saved} = {}) {
     const value = this.record ?? draft ?? {};
     const unit = this.options.energyUnit;
     const group = resolveDefaultGroup(this.options, this.record, value, this.args.initialGroup);
@@ -407,7 +420,8 @@ class RecordEditorController {
           activity,
           choices,
           titleKey,
-          api: async () => this.options.exerciseWeight,
+          api: async () => saved?.weight??this.options.exerciseWeight,
+          manual: saved?!saved.useEstimate:false,
           onCustom: next => this.exerciseEditor({from, draft: next}),
         })
       : new MobileExerciseEditor({dialog: this.sheet, message});
@@ -513,7 +527,7 @@ class RecordEditorController {
       if (!this.alive()) return;
       if (this.detail) this.record = this.detail.record;
       if (this.kind === 'exercise') {
-        if (this.record) this.exerciseEditor();
+        if (this.record) await this.savedExerciseEditor();
         else this.exerciseBrowser();
       } else {
         this.biometricEditor();

@@ -6,6 +6,7 @@ import {uiLanguage,t} from './app-language.js';
 import {ReportEnergyChart,energyChartMarkup} from './report-mobile-source/report-energy-chart.js';
 import {MobileReportNutrientDetail,validateReportNutrientDetail} from './report-mobile-source/mobile-report-nutrient-detail.js';
 import {request} from './diary-api.js';
+import {pushBackHandler} from './back-history.js';
 import {mobileNutrientName} from './mobile-nutrient-groups.js';
 import {nutrientDisplayName} from './report-source/public/nutrient-language.js';
 import {carbohydrateDisplayLabel} from './report-source/public/carbohydrate-description.js';
@@ -18,7 +19,7 @@ const action=(label,id,extra='')=>`<button type="button" class="dc-button" data-
 
 // Adapt the original MobileNutritionReport markup to the authenticated cloud capture.
 export function mountMobileReport({root,value,onApply,onPrint,rangeSelection={}}){
- let capture=value,disposed=false,busy=false;const expanded=new Map(),stack=[],charts=[new ReportEnergyChart('consumed',uiLanguage()),new ReportEnergyChart('expenditure',uiLanguage())];
+ let capture=value,disposed=false,busy=false,dialogHistory=null;const expanded=new Map(),stack=[],charts=[new ReportEnergyChart('consumed',uiLanguage()),new ReportEnergyChart('expenditure',uiLanguage())];
  root.classList.add('nutrition-report-mobile');
  const options=()=>capture.report.options;
  function render(){
@@ -26,34 +27,43 @@ export function mountMobileReport({root,value,onApply,onPrint,rangeSelection={}}
   const {report,energyUnit:unit}=capture;
   const macros=[report.nutrients.find(row=>row.id==="protein"),{...report.carbohydrate.summary,name:carbohydrateDisplayLabel(report.carbohydrate.definition,uiLanguage())},report.nutrients.find(row=>row.id==="fat")].filter(Boolean);
   const macroDetails=`<div class="report-macro-details"><h3>${t('settings.macroLabel')}</h3><div class="mobile-report-macro-list">${macros.map(row=>`<div data-mobile-macro="${e(row.id)}"><span>${e(nutrientDisplayName(row,uiLanguage()))}</span><strong>${number(row.mean)}${row.mean===null?'':' '+e(row.unit)}</strong></div>`).join('')}</div></div>`;
-  root.innerHTML=`<div class="mobile-report-toolbar">${action(`<span>${e(t('reportNutrientDetail.average'))}: ${e(rangeText(options()))}</span>${symbol('chevron_right')}`,'dates')}<p role="status"></p></div><div class="mobile-report-overview">${report.energy.summary.filter(row=>['consumed','expenditure','remaining'].includes(row.id)).map(row=>row.id==='consumed'?energyChartMarkup(report.energy,unit,'consumed',macroDetails,uiLanguage()):row.id==='expenditure'?energyChartMarkup(report.energy,unit,'expenditure','',uiLanguage()):`<section class="dc-card report-energy-chart report-remaining" data-report-energy-kind="remaining"><div class="report-energy-heading"><h2>${t('energyReport.remaining')}</h2></div><div class="report-energy-ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46"/></svg><div class="report-energy-center"><strong>${number(displayValue(row.mean,'kcal',unit))}</strong>${row.mean===null?'':`<span>${e(unit)}</span>`}</div></div></section>`).join('')}</div>`+reportTargetSections(capture,expanded)+reportNutrientGroups(capture,expanded)+reportBalanceSection(capture,expanded)+reportAdditionalNutrients(capture,expanded);
-  root.insertAdjacentHTML('beforeend',action(e(t('mobileReport.more')),'options'));
+  root.innerHTML=`<div class="mobile-report-toolbar">${action(`<span>${e(t('reportNutrientDetail.average'))}: ${e(rangeText(options()))}</span>${symbol('chevron_right')}`,'dates')}<p role="status"></p></div><div class="mobile-report-body"><div class="mobile-report-overview">${report.energy.summary.filter(row=>['consumed','expenditure','remaining'].includes(row.id)).map(row=>row.id==='consumed'?energyChartMarkup(report.energy,unit,'consumed',macroDetails,uiLanguage()):row.id==='expenditure'?energyChartMarkup(report.energy,unit,'expenditure','',uiLanguage()):`<section class="dc-card report-energy-chart report-remaining" data-report-energy-kind="remaining"><div class="report-energy-heading"><h2>${t('energyReport.remaining')}</h2></div><div class="report-energy-ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46"/></svg><div class="report-energy-center"><strong>${number(displayValue(row.mean,'kcal',unit))}</strong>${row.mean===null?'':`<span>${e(unit)}</span>`}</div></div></section>`).join('')}</div>`+reportTargetSections(capture,expanded)+reportNutrientGroups(capture,expanded)+reportBalanceSection(capture,expanded)+reportAdditionalNutrients(capture,expanded)+action(e(t('mobileReport.more')),'options')+'</div>';
   root.querySelector('[data-report-action=options]').onclick=openOptions;
   root.querySelector('[data-report-action=dates]').onclick=openDates;
-  root.querySelectorAll('[data-report-nutrient]').forEach(button=>button.onclick=()=>openNutrient(button.dataset.reportNutrient));
+  root.querySelectorAll('[data-report-nutrient]').forEach(button=>button.onclick=()=>openNutrient(button));
   root.querySelectorAll('[data-report-score]').forEach(button=>button.onclick=()=>{const row=report.scores.summary.find(row=>row.id===button.dataset.reportScore);dialog(scoreDisplayName(row,uiLanguage()),'score',reportScoreDetail(row));});
   root.querySelectorAll('[data-report-balance]').forEach(button=>button.onclick=()=>{const id=button.dataset.reportBalance,row=[...report.balances.pairs,report.balances.pral,report.balances.calciumAbsorption].find(row=>row.id===id);const node=dialog(balanceDisplayName(row,uiLanguage()),'balance',reportBalanceDetail(capture,id));node.querySelectorAll('[data-balance-style]').forEach(element=>{element.style.cssText=element.dataset.balanceStyle;element.removeAttribute('data-balance-style');});});
   for(const chart of charts)void chart.render(root,report.energy);
  }
- function back(){const dialog=stack.pop();if(!dialog)return;dialog.reportRequest?.abort();dialog.reportDetail?.dispose();dialog.close();dialog.remove();}
+ function back(){
+  const dialog=stack.pop();if(!dialog)return;
+  dialog.reportRequest?.abort();dialog.reportDetail?.dispose();dialog.close();dialog.remove();
+  if(!stack.length){dialogHistory?.release();dialogHistory=null;}
+  if(!disposed)dialog.restoreFocus?.();
+ }
  function dispose(){disposed=true;while(stack.length)back();for(const chart of charts)chart.clear();root.classList.remove('nutrition-report-mobile');}
  function dialog(title,screen,html,choice=false){
   const node=document.createElement('dialog');node.className='dc-overlay mobile-report-dialog';node.dataset.mobileReport=screen;node.setAttribute('aria-label',title);
   node.innerHTML=`<header class="dc-dialog-header">${action(symbol(choice?'close':'arrow_back_ios_new'),'back',`aria-label="${e(t(choice?'foodLog.searchClose':'discover.back'))}"`)}<h2>${e(title)}</h2><span class="dc-header-end"></span></header><div class="dc-dialog-body">${html}<p class="dc-error" role="alert"></p></div>`;
   node.addEventListener('cancel',event=>{event.preventDefault();back();});node.addEventListener('click',event=>{if(event.target.closest('[data-report-action=back]'))return back();if(event.target===node){const rect=node.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)back();}});
-  document.body.append(node);stack.push(node);node.showModal();return node;
+  document.body.append(node);stack.push(node);node.showModal();
+  if(!dialogHistory)dialogHistory=pushBackHandler(()=>{back();if(stack.length)return 'keep';});
+  return node;
  }
- function openNutrient(nutrient){
+ function openNutrient(button){
   if(disposed||busy)return;const expected=capture,selected=structuredClone(options());
+  const nutrient=button.dataset.reportNutrient,section=button.closest('[data-report-section]').dataset.reportSection;
   const row=nutrient==='netCarbohydrate'?capture.report.carbohydrates.net.summary:capture.report.nutrients.find(row=>row.id===nutrient);if(!row)return;
   const node=dialog(mobileNutrientName(row,uiLanguage()),'nutrient','');node.classList.add('mobile-report-nutrient-dialog');
+  // Accepting current detail replaces the report rows behind the dialog.
+  node.restoreFocus=()=>root.querySelector('[data-report-section="'+CSS.escape(section)+'"] [data-report-nutrient="'+CSS.escape(nutrient)+'"]')?.focus({preventScroll:true});
   node.querySelector('[data-report-action=back]').setAttribute('aria-label',dc('closeNutrient'));
   node.reportDetail=new MobileReportNutrientDetail({dialog:node,nutrient,options:selected,unit:capture.energyUnit,language:uiLanguage(),
    request:(path,init)=>request(path,JSON.parse(init.body),init.signal),accept:bundle=>{
     if(disposed||busy||capture!==expected||!node.isConnected)return null;
     if(bundle?.version!==1||Object.keys(selected).some(key=>bundle.report?.options?.[key]!==selected[key]))throw Error(dc('reportChanged'));
-    const detail=validateReportNutrientDetail(bundle.detail,bundle.report,nutrient),opened=[...root.querySelectorAll('[data-mobile-category][open]')].map(el=>el.dataset.mobileCategory),scroll=root.scrollTop;
-    capture={...capture,report:bundle.report,energyUnit:bundle.energyUnit??capture.energyUnit};node.reportDetail.unit=capture.energyUnit;render();for(const category of opened){const group=[...root.querySelectorAll('[data-mobile-category]')].find(el=>el.dataset.mobileCategory===category);if(group)group.open=true;}root.scrollTop=scroll;
+    const detail=validateReportNutrientDetail(bundle.detail,bundle.report,nutrient),opened=[...root.querySelectorAll('[data-mobile-category][open]')].map(el=>el.dataset.mobileCategory),scroll=root.querySelector('.mobile-report-body').scrollTop;
+    capture={...capture,report:bundle.report,energyUnit:bundle.energyUnit??capture.energyUnit};node.reportDetail.unit=capture.energyUnit;render();for(const category of opened){const group=[...root.querySelectorAll('[data-mobile-category]')].find(el=>el.dataset.mobileCategory===category);if(group)group.open=true;}root.querySelector('.mobile-report-body').scrollTop=scroll;
     return {report:bundle.report,detail};
    },help:html=>dialog(t('mobileNutrientDetail.help'),'nutrient-help',html).classList.add('mobile-report-nutrient-help')});
  }

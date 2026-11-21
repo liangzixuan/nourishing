@@ -40,7 +40,7 @@ test('Discover headers route Newsfeed and settings per tab; source Report render
    if(path==='/api/snapshots')return res.end(JSON.stringify({items:[],revision:'fixture'}));
    if(path==='/'){
     res.setHeader('Content-Type','text/html');res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'");
-    return res.end('<link rel="stylesheet" href="/mobile-theme.css"><link rel="stylesheet" href="/diary.css"><link rel="stylesheet" href="/dashboard.css"><link rel="stylesheet" href="/app-shell.css"><link rel="stylesheet" href="/report-mobile.css"><link rel="stylesheet" href="/charts.css"><body class="discover-mobile dark discover-home"><header id="header" class="app-header topbar"></header><main></main><dialog id="sheet"><div></div></dialog><script type="module" src="/fixture.js"></script>');
+    return res.end('<link rel="stylesheet" href="/mobile-theme.css"><link rel="stylesheet" href="/diary.css"><link rel="stylesheet" href="/dashboard.css"><link rel="stylesheet" href="/app-shell.css"><link rel="stylesheet" href="/report-mobile.css"><link rel="stylesheet" href="/charts.css"><body class="discover-mobile dark discover-home"><div class="app-shell"><header id="header" class="app-header topbar"></header><main id="page"></main></div><dialog id="sheet"><div></div></dialog><script type="module" src="/fixture.js"></script>');
    }
    if(path==='/fixture.js'){res.setHeader('Content-Type','text/javascript');return res.end(`import {mountNutrition} from '/nutrition.js';const sheet=document.querySelector('#sheet'),content=sheet.querySelector('div');const close=()=>{sheet.close();content.replaceChildren()};sheet.addEventListener('click',event=>{if(event.target.closest('[data-close]'))close()});window.panel=mountNutrition({page:document.querySelector('main'),headerRoot:document.querySelector('#header'),mode:'discover',initialTab:'dashboard',date:()=>'${date}',header:title=>'<h2>'+title+'</h2><button type="button" data-close>Close</button>',show:html=>{content.innerHTML=html;if(!sheet.open)sheet.showModal()},close,content,onChange:async()=>{}});`);}
    if(!/^\/[a-zA-Z0-9/_.-]+\.(?:js|mjs|css|svg|woff2)$/.test(path)||path.includes('..'))return res.writeHead(404).end();
@@ -121,6 +121,15 @@ test('Discover headers route Newsfeed and settings per tab; source Report render
   await page.screenshot({path:'.local/report-nutrient-groups.png'});
   assert.equal(await page.locator('[data-mobile-category="Vitamins"]').getAttribute('open'),'');
   await page.locator('[data-report-section=macros]').scrollIntoViewIfNeeded();await page.screenshot({path:'.local/report-targets.png'});await page.locator('[data-report-section=balances]').scrollIntoViewIfNeeded();await page.screenshot({path:'.local/report-balances.png'});
+  const body=page.locator('.mobile-report-body'),dateButton=page.locator('.mobile-report-toolbar button');
+  const scrollTop=await body.evaluate(node=>node.scrollTop);assert.ok(scrollTop>500);
+  const headerBox=await page.locator('.app-header').boundingBox(),dateBox=await dateButton.boundingBox();
+  assert.ok(headerBox.y>=0&&dateBox.y>=headerBox.y+headerBox.height-1&&dateBox.y+dateBox.height<250);
+  await dateButton.focus();await page.keyboard.press('Enter');
+  const dateDialog=page.getByRole('dialog',{name:'Date Range',exact:true});await dateDialog.waitFor();
+  await page.evaluate(()=>history.back());await dateDialog.waitFor({state:'detached'});
+  assert.equal(await body.evaluate(node=>node.scrollTop),scrollTop);
+  assert.ok(await dateButton.evaluate(node=>node===document.activeElement));
   await page.locator('[data-report-section=macros] > summary').click();
   await page.screenshot({path:'.local/report-source-with-data.png',fullPage:true});
   await page.getByRole('button',{name:'Report Settings',exact:true}).click();await page.getByRole('dialog',{name:'Report Settings',exact:true}).waitFor();
@@ -140,7 +149,8 @@ test('Discover headers route Newsfeed and settings per tab; source Report render
   assert.deepEqual(await days.locator('[data-choice] strong').allTextContents(),['All','Non Empty','Completed']);
   assert.equal(await choice(days,'Non Empty').getAttribute('aria-pressed'),'true');
   const beforeCancel=requests.length;
-  await choice(days,'Close').click();assert.equal(requests.length,beforeCancel);
+  await page.evaluate(()=>history.back());await days.waitFor({state:'detached'});
+  assert.equal(await settings.isVisible(),true);assert.equal(requests.length,beforeCancel);
   await openDays();await choice(days,'All').click();await days.waitFor({state:'detached'});assert.equal(requests.at(-1).dayFilter,'all');
   await openDays();await captureFilter('days',days);
   assert.equal(await choice(days,'All').getAttribute('aria-pressed'),'true');

@@ -104,7 +104,12 @@ test('Diary estimates with each account’s cold options cache and reopens a pen
   assert.equal(optionsReads,0);
 
   await context.setOffline(true);await save();await row.waitFor();
-  await edit();await page.locator('[name=duration]').fill('15');await save();
+  await edit();await page.getByRole('button',{name:/Effort Level.*Light/}).click();
+  await page.getByRole('menuitemradio',{name:'Moderate',exact:true}).click();
+  await page.locator('[name=duration]').fill('15');
+  const estimated=Number(((3.8-1)*(3.5*82/200*15)).toFixed(2));
+  assert.equal(Number(await page.locator('[name=calories]').inputValue()),estimated);
+  await save();
   const pending=await page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy()).pending);
   assert.deepEqual(pending.map(row=>row.command.type),['exercise.catalog.add','record.correct']);
   assert.equal(pending[1].command.payload.id,pending[0].command.operationId);
@@ -114,6 +119,7 @@ test('Diary estimates with each account’s cold options cache and reopens a pen
   await page.route('**/api/workspace/command',route=>route.abort());
   await context.setOffline(false);await page.reload();await row.waitFor();await edit();
   assert.equal(await page.locator('[name=duration]').inputValue(),'15');
+  assert.equal(await page.locator('[data-mec-label]').innerText(),'Moderate');
   await page.unroute('**/api/workspace/command');
   await waitForOutboxIdle(page,()=>active().fixture.state().entries[0]?.duration===15);
   const [entry]=active().fixture.state().entries;
@@ -122,11 +128,23 @@ test('Diary estimates with each account’s cold options cache and reopens a pen
   assert.deepEqual(attempts[0],attempts[1]);
   assert.equal(attempts[2].payload.id,entry.id);
   assert.equal(entry.exerciseBasis.minutes,10);
+  assert.equal(entry.exerciseBasis.code,'17170');
+  assert.equal(entry.exerciseSelection.code,'17190');
+  assert.equal(entry.exerciseSelection.useEstimate,true);
+  assert.equal(Number(entry.caloriesBurned.toFixed(2)),estimated);
   assert.equal(entry.exerciseBasis.weightSource,'biometric');
   // This editor opened against the queued ID, and the server acknowledged it while open.
-  await page.locator('[name=duration]').fill('20');await save();
+  await page.locator('[name=calories]').fill('77');await page.locator('[name=duration]').fill('20');await save();
   await waitForOutboxIdle(page,()=>active().fixture.state().entries[0]?.duration===20);
   assert.equal(attempts.at(-1).payload.id,entry.id);
+  await edit();await page.locator('[name=duration]').fill('25');
+  assert.equal(await page.locator('[name=calories]').inputValue(),'77');
+  assert.equal(await page.locator('[name=useEstimate]').inputValue(),'false');
+  await page.locator('[data-mec-reset]').click();
+  assert.equal(await page.locator('[name=useEstimate]').inputValue(),'true');
+  assert.equal(Number(await page.locator('[name=calories]').inputValue()),Number(((3.8-1)*(3.5*82/200*25)).toFixed(2)));
+  assert.deepEqual(active().fixture.state().entries[0].exerciseBasis,entry.exerciseBasis);
+  assert.equal(active().fixture.state().entries[0].exerciseSelection.useEstimate,false);
   assert.equal(accounts.get('profile').fixture.state().entries.length,0);
  }finally{await browser?.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
 });

@@ -2,6 +2,7 @@ import {randomUUID} from 'node:crypto';
 import {act} from './domain/workspace.mjs';
 import {prepareNewBiometricLog} from './domain/biometric-log-fields.mjs';
 import {applyDiaryRecordUpdate} from './domain/diary-record-update.mjs';
+import {exerciseCatalog} from './domain/exercise-catalog.mjs';
 import {parseCustomBiometrics} from './domain/biometric-library.mjs';
 
 export const recordCommandFields=Object.freeze({
@@ -24,7 +25,8 @@ export function applyRecordCommand(state,{type,payload}){
   return {handled:true,result:{kind:'biometric',id:prepared.records[0].id}};
  }
  if(type==='record.correct'){
-  const result=applyDiaryRecordUpdate(state,{collection:payload.collection,id:payload.id,changes:payload.changes});
+  const activity=payload.collection==='entries'&&payload.changes?.code?exerciseCatalog.get(payload.changes.code):undefined;
+  const result=applyDiaryRecordUpdate(state,payload,activity);
   return {handled:true,result:{kind:payload.collection==='entries'?'exercise':payload.collection==='notes'?'note':'biometric',id:result.record.id}};
  }
  act(state,type,payload);return {handled:true};

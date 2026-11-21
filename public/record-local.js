@@ -33,8 +33,8 @@ export async function saveRecordCommand(revision,type,payload,{ticket,activity}=
   return queueCommand(revision,type,payload,{ticket,projection:{entries:[entry]}});
  }
  if(type==='record.correct'){
-  if(copy)prepareDiaryRecordUpdate(offlineEffectiveState(copy),{...payload,id:copy.recordIds?.[payload.id]??payload.id});
-  return queueCommand(revision,type,payload,{ticket});
+  if(copy)prepareDiaryRecordUpdate(offlineEffectiveState(copy),{...payload,id:copy.recordIds?.[payload.id]??payload.id},activity);
+  return queueCommand(revision,type,payload,{ticket,projection:payload.changes?.code&&activity?{exerciseActivity:activity}:{}});
  }
  if(copy){
   if(type==='biometric.log')prepared=await prepareOfflineBiometric(copy,{operationId:crypto.randomUUID(),...payload});
