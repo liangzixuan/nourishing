@@ -1,18 +1,20 @@
 import {recordEditorData,saveRecordCommand} from './record-local.js';
 import {queueBackgroundWrite} from './background-writes.js';
 import {privateImageAttributes} from './private-images.js';
-import {request,queueCommand} from './diary-api.js';
+import {readDeviceCache} from './device-cache.js';
+import {queueCommand} from './diary-api.js';
 import {escape as e} from './html.js';
 
 export const notePhotoUrl=record=>record?.localPhoto??(/^[a-f0-9]{64}$/.test(record?.imageId??'')?'/api/media?'+new URLSearchParams({namespace:'note_photos',id:record.imageId}):null);
 export const notePhotoThumbnail=record=>notePhotoUrl(record)?`<img class="note-photo-thumbnail" loading="lazy" ${privateImageAttributes(notePhotoUrl(record))} alt="Note photo" referrerpolicy="no-referrer">`:'';
 const fileData=file=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('Could not open this photo.'));reader.readAsDataURL(file);});
 
-/** One mounted note owns its draft, normalized photo and exact retry packet. */
+/** One mounted note owns its draft, selected image until Save. */
 export async function mountNoteEditor({record,date,initialGroup,show,close,header,content,onChange}){
  show(header(record?'Edit Note':'Add Note')+'<p class="empty">Loading…</p>');
- const loading=content.querySelector('.empty');let options,detail;
+ const loading=content.querySelector('.empty');let options,detail,ticket;
  try{
+  ticket=(await readDeviceCache('/api/diary')).ticket;
   [options,detail]=await recordEditorData(record?.date??date,'notes',record?.id);
   if(!loading.isConnected)return;if(detail)record=detail.record;
  }catch(error){if(loading.isConnected)loading.textContent=error.message;return;}
@@ -33,7 +35,7 @@ export async function mountNoteEditor({record,date,initialGroup,show,close,heade
   const remove=form.querySelector('[data-note-delete]');if(remove)remove.disabled=busy||!!pending;
  }
  function renderPhoto(){
-  const src=mode==='replace'?photo?.dataUrl:mode==='keep'?notePhotoUrl(record):null;
+  const src=mode==='replace'?photo:mode==='keep'?notePhotoUrl(record):null;
   preview.innerHTML=src?`<button type="button" class="note-photo-open" aria-label="Enlarge note photo"><img ${privateImageAttributes(src)} alt="Note photo"></button><div class="note-photo-actions"><button type="button" data-note-remove>Remove photo</button>${mode!=='keep'&&notePhotoUrl(record)?'<button type="button" data-note-undo>Keep original photo</button>':''}</div>`:mode!=='keep'&&notePhotoUrl(record)?'<button type="button" data-note-undo>Keep original photo</button>':'';
   preview.querySelector('.note-photo-open')?.addEventListener('click',event=>{const expanded=preview.classList.toggle('expanded');event.currentTarget.setAttribute('aria-label',expanded?'Reduce note photo':'Enlarge note photo');});
   preview.querySelector('[data-note-remove]')?.addEventListener('click',()=>{mode='remove';photo=null;renderPhoto();});
@@ -48,15 +50,22 @@ export async function mountNoteEditor({record,date,initialGroup,show,close,heade
   const file=input.files?.[0];input.value='';if(!file||busy||pending)return;
   if(file.size>8*1024*1024||!['image/jpeg','image/png','image/webp'].includes(file.type)){status.textContent='Choose a JPEG, PNG or WebP photo under 8 MB.';return;}
   const version=++serial;busy=true;controls();status.textContent='Opening photo…';
-  try{const dataUrl=await fileData(file);if(!alive()||serial!==version)return;const ready=await request('/api/note-photos/prepare',{dataUrl},abort.signal);if(!alive()||serial!==version)return;photo=ready.photo;mode='replace';status.textContent='';renderPhoto();}
+  try{const dataUrl=await fileData(file);if(!alive()||serial!==version)return;const image=new Image();image.src=dataUrl;await image.decode();if(!alive()||serial!==version)return;photo=dataUrl;mode='replace';status.textContent='';renderPhoto();}
   catch(error){if(alive()&&error.name!=='AbortError')status.textContent=error.message;}
   finally{if(alive()&&serial===version){busy=false;controls();}}
  });
  form.onsubmit=async event=>{
   event.preventDefault();if(busy||!editable)return;
-  pending??={requestId:crypto.randomUUID(),revision:detail?.revision??options.revision,id:record?.id??null,fields:{date:form.elements.date.value,time:form.elements.time.value,text:form.elements.text.value,group:form.elements.group.value||null},photo:mode==='replace'?{mode,...photo}:{mode}};
+  pending??={requestId:crypto.randomUUID(),revision:detail?.revision??options.revision,id:record?.id??null,fields:{date:form.elements.date.value,time:form.elements.time.value,text:form.elements.text.value,group:form.elements.group.value||null},photo:{mode}};
   busy=true;controls();status.textContent='';
-  try{if(mode==='keep'&&!record?.imageId)await saveRecordCommand(pending.revision,record?'record.correct':'note.add',record?{collection:'notes',id:record.id,changes:pending.fields}:pending.fields);else await queueBackgroundWrite('/api/note-photos/save',pending,{notes:[{...record,...pending.fields,id:record?.id??pending.requestId,...(mode==='replace'?{imageId:photo.id,localPhoto:photo.dataUrl}:mode==='remove'?{imageId:null}:{})}]});pending=null;if(alive())close();void Promise.resolve(onChange()).catch(()=>{});}
+  try{
+   if(mode==='keep'&&!notePhotoUrl(record)){
+    await saveRecordCommand(pending.revision,record?'record.correct':'note.add',record?{collection:'notes',id:record.id,changes:pending.fields}:pending.fields);
+   }else{
+    if(!ticket)throw Error('Device storage is unavailable. Reopen Nourishing and try again.');
+    await queueBackgroundWrite('/api/note-photos/save',pending,mode==='replace'?{noteSource:photo}:{},ticket);
+   }
+   pending=null;if(alive())close();void Promise.resolve(onChange()).catch(()=>{});}
   catch(error){if(alive()){status.textContent=error.message;if(error.status>=400&&error.status<500){pending=null;}}}
   finally{if(alive()){busy=false;pending=null;controls();}}
  };

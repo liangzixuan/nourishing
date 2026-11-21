@@ -45,7 +45,19 @@ export function applyWriteToState(state,row,result){
  if(type==='note.add')replace('notes',{...p,id,_pending:!result});
  if(type==='exercise.add')replace('entries',{date:p.date,time:p.time,group:p.group,name:p.name,duration:p.duration,caloriesBurned:p.calories,kind:'exercise',id,_pending:!result});
  if(type==='record.correct'){const old=state[p.collection]?.find(item=>item.id===p.id);if(old)replace(p.collection,{...prepareDiaryRecordUpdate(state,p).after,_pending:!result});}
- if(type==='note.photo.save')for(const note of row.projection?.notes??[])replace('notes',{...note,id:p.id??id,_pending:!result});
+ if(type==='note.photo.save'){
+  const noteId=p.id??id,existing=state.notes?.find(item=>item.id===noteId);
+  const note={...row.projection?.notes?.[0],...existing,...p.fields,id:noteId,_pending:!result};
+  const photo=row.transport.body.photo;
+  if(photo.mode!=='keep'){
+   delete note.imageId;delete note.localPhoto;
+   if(photo.mode==='replace'){
+    if(photo.id)note.imageId=photo.id;
+    if(!result)note.localPhoto=row.projection?.noteSource??photo.dataUrl;
+   }
+  }
+  replace('notes',note);
+ }
 
  if(type==='water.add')replace('biometrics',{id,date:p.date,time:p.time,...(Object.hasOwn(p,'group')?{group:p.group}:{}),type:'Water',unit:'mL',value:p.amount,_pending:!result});
  if(type==='day.complete'){state.settings.completedDays=(state.settings.completedDays??[]).filter(day=>day!==p.date);if(p.completed)state.settings.completedDays.push(p.date);}
