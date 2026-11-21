@@ -52,10 +52,21 @@ export class MobileNutrientTargets{
   const input=event.target.closest('[data-mnt-field]');if(!input||this.saving||this.loading||this.unknown)return;
   const id=input.closest('[data-mnt-row]').dataset.mntRow,key=input.dataset.mntField,row=this.view.groups.flatMap(g=>g.nutrients).find(row=>row.id===id);let value;
   if(['custom','visible'].includes(key))value=input.checked;else{if(!input.checkValidity()){input.reportValidity();return;}value=input.value===''?null:Number(input.value);if(value!==null&&(!Number.isFinite(value)||value<0)){input.setCustomValidity(this.m('invalid'));input.reportValidity();return;}if(row.unit==='kcal'&&value!==null)value=convertEnergy(value,this.view.energyUnit,'kcal');}
+  await this.commit(key==='custom'?'nutrientTarget.setCustom':'nutrientTarget.patch',key==='custom'?{date:this.date,id,custom:value}:{date:this.date,id,changes:{[key]:value}});
+ }
+ async commit(type,payload){
+  if(this.saving||this.disposed)return;
   this.saving=true;this.error='';this.render();
-  try{await this.save(key==='custom'?'nutrientTarget.setCustom':'nutrientTarget.patch',key==='custom'?{date:this.date,id,custom:value}:{date:this.date,id,changes:{[key]:value}});this.onNotice?.(this.m('saved'));if(this.disposed)return;this.saving=false;await this.load();}
+  try{await this.save(type,payload);this.onNotice?.(this.m('saved'));if(this.disposed)return;this.saving=false;await this.load();}
   catch(error){if(this.disposed)return;this.unknown=!(error.status>=400&&error.status<500);this.error=this.unknown?this.m('unknown'):error.message;}
   finally{this.saving=false;if(!this.disposed)this.render();}
+ }
+ confirmRestore(){
+  if(this.disposed||this.saving||!this.view)return;
+  const m=this.m;this.popup=new LibraryReviewDialog({title:m('restore'),closeLabel:m('close'),loading:'',onClose:()=>{this.popup=null;}});
+  this.popup.root.classList.add('mnt-help-dialog');
+  this.popup.show(`<p>${e(m('restoreScope'))}</p><div class="mnt-reset-actions">${this.button(e(m('cancel')),'data-action="close-dialog"')}${this.button(e(m('restoreConfirm')),'data-mnt-restore')}</div>`);
+  this.popup.root.querySelector('[data-mnt-restore]').onclick=()=>{this.popup.close();void this.commit('nutrientTarget.reset',{});};
  }
  help(id){
   this.popup?.close();const row=this.view.groups.flatMap(g=>g.nutrients).find(row=>row.id===id),m=this.m,reference=row.dailyTarget.reference,maximum=row.maximum.reference;

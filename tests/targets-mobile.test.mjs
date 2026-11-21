@@ -7,7 +7,8 @@ import {createServer} from 'node:http';
 import {readFileSync,readdirSync,mkdirSync} from 'node:fs';
 import {chromium} from 'playwright-core';
 import {initialState} from '../server/domain/workspace.mjs';
-import {nutrientTargetsView,targetView} from '../server/nutrition-views.mjs';
+import {nutrientTargetsView,targetView,reportView} from '../server/nutrition-views.mjs';
+import {dashboardView} from '../server/dashboard-view.mjs';
 import {targetPolicyView} from '../server/target-policy-view.mjs';
 import {profileSettingsView} from '../server/profile-settings.mjs';
 import {createDataRepository} from '../server/data-repository.mjs';
@@ -27,15 +28,15 @@ test('authenticated nutrient projection retains canonical modes, ownership and u
 });
 
 test('source Targets home and nutrient children work through production routes and transactional commands',async()=>{
- const date='2026-11-16',seed=initialState();seed.settings.energyUnit='kJ';seed.settings.nutrientTargetModes={version:1,nutrients:{sodium:{daily:'reference',maximum:'reference'}}};
+ const date='2026-11-16',seed=initialState();seed.settings.energyUnit='kJ';seed.settings.targets.water=3200;seed.settings.discover={reportWidget:'Highlighted Nutrients'};seed.settings.nutrientTargetModes={version:1,nutrients:{sodium:{daily:'reference',maximum:'reference'}}};
  const fixture=diaryStoreFixture(seed),store=createWorkspaceStore(fixture.db,'fixture'),state=()=>fixture.state(),context={owner:'fixture',asOf:date+'T18:00:00Z',timeZone:'UTC'},attempts=[],before=structuredClone(seed);
  let handler,base,loseReply=false,rejectSave=false,readGate=null;
  const assets=new Map();function visit(dir,prefix=''){for(const entry of readdirSync(dir,{withFileTypes:true})){if(entry.isDirectory())visit(dir+'/'+entry.name,prefix+'/'+entry.name);else assets.set(prefix+'/'+entry.name,{body:readFileSync(dir+'/'+entry.name),type:entry.name.endsWith('.css')?'text/css':/\.m?js$/.test(entry.name)?'text/javascript':entry.name.endsWith('.svg')?'image/svg+xml':'application/octet-stream'});}}visit('public');for(const asset of await barcodeAssets())assets.set('/'+asset.path,asset);
  assets.set('/',{type:'text/html',body:'<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/diary.css"><link rel="stylesheet" href="/mobile-theme.css"><link rel="stylesheet" href="/app-shell.css"><link rel="stylesheet" href="/more.css"><link rel="stylesheet" href="/diary-summary.css"><link rel="stylesheet" href="/target-policies.css"><link rel="stylesheet" href="/profile-settings.css"></head><body class="discover-mobile dark"><div class="app-shell"><header class="app-header topbar"></header><main id="page"></main></div><dialog id="sheet"><div id="sheet-content"></div></dialog><script type="module" src="/fixture.js"></script></body></html>'});
- assets.set('/fixture.js',{type:'text/javascript',body:`import {initializeDeviceCache} from '/device-cache.js';import {saveOfflineSnapshot} from '/offline-store.js';import {startBackgroundWrites} from '/background-writes.js';import {ensureDeviceSnapshot} from '/device-sync.js';import {mountMore} from '/more.js';const content=document.querySelector('#sheet-content'),sheet=document.querySelector('#sheet');window.csp=[];document.addEventListener('securitypolicyviolation',event=>window.csp.push(event.violatedDirective));const close=()=>{sheet.close();content.replaceChildren()};const ticket=await initializeDeviceCache('fixture');await saveOfflineSnapshot(await(await fetch('/api/offline')).json(),ticket);startBackgroundWrites();window.more=mountMore({page:document.querySelector('#page'),headerRoot:document.querySelector('.app-header'),date:()=>${JSON.stringify(date)},content,header:title=>'<header><h1>'+title+'</h1></header>',show:html=>{content.innerHTML=html;if(!sheet.open)sheet.showModal()},close,onChange:()=>ensureDeviceSnapshot({refresh:true})});sheet.addEventListener('cancel',event=>{event.preventDefault();close()});`});
+ assets.set('/fixture.js',{type:'text/javascript',body:`import {initializeDeviceCache} from '/device-cache.js';import {saveOfflineSnapshot} from '/offline-store.js';import {startBackgroundWrites} from '/background-writes.js';import {ensureDeviceSnapshot} from '/device-sync.js';import {mountMore} from '/more.js';const content=document.querySelector('#sheet-content'),sheet=document.querySelector('#sheet');window.csp=[];document.addEventListener('securitypolicyviolation',event=>window.csp.push(event.violatedDirective));const close=()=>{sheet.close();content.replaceChildren()};await initializeDeviceCache('fixture');await ensureDeviceSnapshot();startBackgroundWrites();window.more=mountMore({page:document.querySelector('#page'),headerRoot:document.querySelector('.app-header'),date:()=>${JSON.stringify(date)},content,header:title=>'<header><h1>'+title+'</h1></header>',show:html=>{content.innerHTML=html;if(!sheet.open)sheet.showModal()},close,onChange:()=>ensureDeviceSnapshot({refresh:true})});sheet.addEventListener('cancel',event=>{event.preventDefault();close()});`});
  const server=createServer(async(req,res)=>{const result=await handler(new Request(base+req.url,{method:req.method,headers:req.headers,...(req.method==='GET'?{}:{body:req,duplex:'half'})}));res.writeHead(result.status,Object.fromEntries(result.headers));res.end(Buffer.from(await result.arrayBuffer()));});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));base='http://127.0.0.1:'+server.address().port;
  handler=createWebHandler({config:{origin:base},assets,service:{
-  current:async()=>({id:'fixture'}),offlineSnapshot:()=>store.offlineSnapshot(),readDiary:async(_,day)=>createDataRepository(fixture.db,'fixture').diary(day,{now:new Date(context.asOf),timeZone:'UTC'}),targets:async(_,day)=>targetView(state(),day),nutrientTargets:async(_,day)=>{if(readGate)await readGate;return nutrientTargetsView(state(),day);},targetPolicies:async(_,day)=>targetPolicyView(state(),day,{today:date}),profileSettings:async(_,day)=>profileSettingsView(state(),day),
+  current:async()=>({id:'fixture'}),offlineSnapshot:()=>store.offlineSnapshot(),readDiary:async(_,day)=>createDataRepository(fixture.db,'fixture').diary(day,{now:new Date(context.asOf),timeZone:'UTC'}),targets:async(_,day)=>targetView(state(),day),dashboard:async(_,day)=>dashboardView(state(),{date:day},{now:new Date(context.asOf),timeZone:'UTC'}),nutritionReport:async(_,options)=>reportView(state(),options,{now:new Date(context.asOf),timeZone:'UTC'}),nutrientTargets:async(_,day)=>{if(readGate)await readGate;return nutrientTargetsView(state(),day);},targetPolicies:async(_,day)=>targetPolicyView(state(),day,{today:date}),profileSettings:async(_,day)=>profileSettingsView(state(),day),
   workspaceCommand:async(_,input)=>{attempts.push(input);if(rejectSave){rejectSave=false;throw {code:409,publicMessage:'Targets changed. Reload to continue.'};}const result=await store.command(input,async()=>null,context);if(loseReply){loseReply=false;throw {code:503,publicMessage:'Connection interrupted'};}return result;}
  }});
  let browser;
@@ -75,7 +76,59 @@ test('source Targets home and nutrient children work through production routes a
   await ash.locator('[data-mnt-field=dailyTarget]').press('Tab');
   await ready(()=>state().settings.targets.ash===2.5);
   assert.equal(await ash.locator('[data-mnt-field=dailyTarget]').inputValue(),'2.5');
-  await page.locator('[data-mt-back]').click();await page.locator('[data-mt-back]').click();await page.locator('[data-mt-home]').waitFor();
+  await page.locator('[data-mt-back]').click();
+  const showRestore=async()=>{
+   await page.locator('[data-mt-menu]').click();
+   assert.deepEqual(await page.getByRole('menu').getByRole('menuitem').allTextContents(),['Restore Default Settings']);
+   await page.getByRole('menuitem',{name:'Restore Default Settings'}).click();
+   await page.getByText(/default daily amounts, maximums/).waitFor();
+  };
+  const customized=structuredClone(state()),prior=attempts.length,receiptsBefore=fixture.table('command_receipts').size;
+  await showRestore();await page.getByRole('button',{name:'Cancel',exact:true}).click();
+  assert.deepEqual(state(),customized);assert.equal(attempts.length,prior);
+  const paths=['/api/diary?date='+date,'/api/nutrient-targets?date='+date,'/api/targets?date='+date,'/api/dashboard?date='+date,'/api/nutrition-report?'+new URLSearchParams({from:date,to:date,dayFilter:'all',includeToday:true,includeSupplements:true})];
+  const readTargets=()=>page.evaluate(async paths=>{
+   const {request}=await import('/diary-api.js');
+   const [diary,nutrients,targets,dashboard,report]=await Promise.all(paths.map(path=>request(path)));
+   return {water:diary.summary.hydration.target,highlights:nutrients.highlighted,waterRow:targets.nutrients.find(row=>row.id==='water').dailyTarget,dashboard:dashboard.summary.rows.map(row=>row.id),report:report.display.highlighted};
+  },paths);
+  assert.equal((await readTargets()).water,3200);
+  const cachedBefore=await page.evaluate(async paths=>{
+   const {readDeviceCache}=await import('/device-cache.js');
+   return Promise.all(paths.map(async path=>[path,(await readDeviceCache(path)).value]));
+  },paths);
+  await page.route('**/api/**',route=>route.abort('internetdisconnected'));
+  await showRestore();await page.getByRole('button',{name:'Restore',exact:true}).click();
+  await page.locator('[data-mnt-ready]').waitFor();
+  const expected=nutrientTargetsView(initialState(),date).highlighted;
+  const projected=await readTargets();assert.equal(projected.water,2500);assert.equal(projected.waterRow,2500);assert.deepEqual(projected.highlights,expected);assert.deepEqual(projected.report,expected);assert.deepEqual(projected.dashboard,expected);
+  assert.equal(state().settings.targets.water,3200);
+  await page.reload();await page.getByRole('button',{name:'Targets',exact:true}).click();
+  await page.getByRole('button',{name:'Nutrient Targets',exact:true}).click();
+  await page.locator('[data-mnt-ready]').waitFor();
+  assert.deepEqual(await page.locator('[data-mnt-highlight]').evaluateAll(rows=>rows.map(row=>row.dataset.mntHighlight)),expected);
+  assert.deepEqual(await readTargets(),projected);
+  const pending=()=>page.evaluate(async()=>{const {readWriteCopy}=await import('/offline-store.js');return (await readWriteCopy())?.pending.map(row=>({id:row.command.operationId,type:row.command.type}))??[];});
+  const retained=await pending();assert.deepEqual(retained.map(row=>row.type),['nutrientTarget.reset']);
+  await showRestore();
+  await page.evaluate(async()=>{await (await import('/device-cache.js')).initializeDeviceCache('other-fixture');});
+  await page.getByRole('button',{name:'Restore',exact:true}).click();await page.getByRole('alert').waitFor();
+  assert.deepEqual(await pending(),[]);
+  await page.evaluate(async()=>{await (await import('/device-cache.js')).initializeDeviceCache('fixture');});
+  assert.deepEqual(await pending(),retained);
+  await page.evaluate(async rows=>{
+   const {readDeviceCache,writeDeviceCache}=await import('/device-cache.js'),{ticket}=await readDeviceCache('/api/diary');
+   for(const [path,value] of rows)await writeDeviceCache(path,value,ticket);
+  },cachedBefore);
+  loseReply=true;await page.unroute('**/api/**');await page.reload();
+  await waitForOutboxIdle(page,()=>state().settings.targets.water===2500);
+  assert.deepEqual(attempts.slice(prior).map(row=>[row.type,row.requestId]),[['nutrientTarget.reset',retained[0].id],['nutrientTarget.reset',retained[0].id]]);
+  assert.equal(fixture.table('command_receipts').size,receiptsBefore+1);
+  await page.route('**/api/**',route=>route.abort('internetdisconnected'));
+  assert.deepEqual(await readTargets(),projected,'Previously cached views use the acknowledged target settings while offline');
+  await page.unroute('**/api/**');
+  await page.getByRole('button',{name:'Targets',exact:true}).click();await openNutrients();
+  await page.locator('[data-mt-back]').click();await page.locator('[data-mt-home]').waitFor();
   await page.getByRole('button',{name:'Macro & Energy Targets',exact:true}).click();await page.locator('[data-mte-ready]').waitFor();await page.locator('[data-mt-back]').click();assert.equal(state().settings.targets.protein,before.settings.targets.protein);
   {const before=attempts.length;await page.getByRole('button',{name:'Macro Scheduler',exact:true}).click();await page.locator('[data-mts-ready]').waitFor();await page.locator('[data-mt-back]').click();assert.equal(attempts.length,before);}
   await page.getByRole('button',{name:'Energy Expenditure',exact:true}).click();await page.locator('[data-mee-ready]').waitFor();await page.locator('[data-mt-back]').click();
@@ -85,7 +138,7 @@ test('source Targets home and nutrient children work through production routes a
   await page.locator('.mss-screen [data-back]').click();await page.getByRole('button',{name:'Help',exact:true}).click();await page.getByText(/Selecting one that is already shown/).waitFor();
   await page.locator('[name=showScores]').click();await page.waitForFunction(()=>!document.querySelector('.mss-screen fieldset')?.disabled);assert.equal(state().settings.showScores,false);await page.keyboard.press('Escape');
   await page.getByRole('button',{name:'More target settings',exact:true}).click();await page.getByRole('menuitem',{name:'Reference Targets',exact:true}).click();await page.getByRole('heading',{name:'Nutrient References',exact:true}).waitFor();await page.keyboard.press('Escape');
-  let release;readGate=new Promise(resolve=>release=resolve);await page.getByRole('button',{name:'Nutrient Targets',exact:true}).click();await ready();assert.equal(await page.getByText('Loading…',{exact:true}).isVisible(),false,'Cached targets open while the server read is blocked');await page.locator('[data-mt-back]').click();release();readGate=null;assert.equal(await page.locator('[data-mt-home]').count(),1);assert.equal(await page.locator('[data-mnt-ready]').count(),0);
+  let release;readGate=new Promise(resolve=>release=resolve);await page.getByRole('button',{name:'Nutrient Targets',exact:true}).click();await ready();assert.equal(await page.getByText('LoadingÃ¢â‚¬Â¦',{exact:true}).isVisible(),false,'Cached targets open while the server read is blocked');await page.locator('[data-mt-back]').click();release();readGate=null;assert.equal(await page.locator('[data-mt-home]').count(),1);assert.equal(await page.locator('[data-mnt-ready]').count(),0);
   await page.locator('[data-mt-back]').click();await page.getByRole('heading',{name:'More',exact:true}).waitFor();assert.deepEqual(errors,[]);assert.deepEqual(await page.evaluate(()=>window.csp),[]);assert.deepEqual(state().entries,before.entries);assert.deepEqual(state().settings.groups,before.settings.groups);assert.equal(state().settings.energyUnit,'kJ');
  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
 });

@@ -7,7 +7,7 @@ import {projectSnapshotList,snapshotMediaPath} from './snapshot-queue.js';
 import {request} from './diary-api.js';
 import {acceptOfflineReceipt,offlineEffectiveState} from './offline-model.js';
 import {applyWriteToState,projectSavedDefinition} from './write-projection.js';
-import {projectLocalDiary,createDisplayView,projectDiaryCalendar,libraryItems} from './local-diary-projection.js';
+import {projectLocalDiary,createDisplayView,projectDiaryCalendar,libraryItems,usesNutrientTargets,projectNutrientTargetResponse} from './local-diary-projection.js';
 import {offlineFailure} from './offline-errors.js';
 
 const listeners=new Set();
@@ -102,7 +102,11 @@ export async function flushBackgroundWrites(){
      if(!row)continue;
      // Retries first use the exact request. Receipts are checked server-side before
      // revision guards, so a lost acknowledgement cannot turn into a duplicate.
-     try{result=await request(row.transport.path,row.transport.body,AbortSignal.timeout(30000),{preserveCache:true});}
+     const delivery={preserveCache:true};
+     // 1.0.31 already retained this time before the first send. Transport metadata
+     // leaves pending request bodies and any receipt fingerprint unchanged.
+     if(row.transport.path==='/api/photos/save'||row.transport.path==='/api/barcode/save')delivery.reviewSavedAt=row.createdAt;
+     try{result=await request(row.transport.path,row.transport.body,AbortSignal.timeout(30000),delivery);}
      catch(error){
       if(error.status!==409)throw error;
       const snapshot=await verifiedSnapshot(owner,copy.ticket);
@@ -114,7 +118,7 @@ export async function flushBackgroundWrites(){
       revision=latest.revision;
       // Preserve identity and payload when rebasing an unsaved command.
       await changeBackgroundWrite(copy.ticket,id,current=>{current.transport.body.revision=latest.revision;});
-      result=await request(row.transport.path,{...row.transport.body,revision:latest.revision},AbortSignal.timeout(30000),{preserveCache:true});
+      result=await request(row.transport.path,{...row.transport.body,revision:latest.revision},AbortSignal.timeout(30000),delivery);
      }
      await acknowledgeBackgroundWrite(copy.ticket,id,result);
     }else{
@@ -147,13 +151,16 @@ export async function flushBackgroundWrites(){
  return running;
 }
 
-export async function overlayPendingResponse(path,value){
+export async function overlayPendingResponse(path,value,nutrientTargetRevision){
  const copy=await readWriteCopy().catch(()=>null);if(!copy||copy.locked)return value;
  if(path==='/api/snapshots')return projectSnapshotList(value,copy);
  let result=value;
+ if(copy.snapshot?.state&&usesNutrientTargets(path)&&(nutrientTargetRevision||copy.pending.some(row=>row.command.type.startsWith('nutrientTarget.')))){
+  result=projectNutrientTargetResponse(path,result,offlineEffectiveState(copy),nutrientTargetRevision??value.revision);
+ }
  if(/^\/api\/(?:fasting|dashboard)(?:\?|$)/.test(path)){
   const changes=copy.pending.filter(row=>!row.command.generation||row.command.generation===copy.snapshot?.identity.generation).map(row=>row.projection?.fastingChange).filter(Boolean);
-  if(changes.length)result=projectFastingResponse(path,result,copy.snapshot?.state?offlineEffectiveState(copy):null,changes,value.revision);
+  if(changes.length)result=projectFastingResponse(path,result,copy.snapshot?.state?offlineEffectiveState(copy):null,changes,result.revision);
  }
  for(const row of copy.pending){
   if(!row.transport)continue;

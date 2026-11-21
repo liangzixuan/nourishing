@@ -17,7 +17,8 @@ import {reconcileInactiveEnergyTarget} from './energy-target-state.mjs';
 import {reconcileNutrientTargetModes} from './nutrient-target-modes.mjs';
 import {nutrientReferenceOptions} from './nutrient-references.mjs';
 import {nutrientUpperLimitOptions} from './nutrient-upper-limits.mjs';
-import {nutrientTargetSettingsPatch,nutrientTargetCustomPatch} from './nutrient-target-edit.mjs';
+import {nutrientTargetSettingsPatch,nutrientTargetCustomPatch,resetNutrientTargetSettings} from './nutrient-target-edit.mjs';
+import {initialWorkspaceTargets} from './nutrient-catalog.mjs';
 import {parseMobileChartSettings} from './mobile-chart-settings.mjs';
 import {parsePauseLife} from './pause-life.mjs';
 import {parseAddMenu} from './add-menu.mjs';
@@ -118,7 +119,7 @@ export function initialState({demo=false}={}) {
   return {
     version: 1, sampleData: demo,
     profile: { name: 'My workspace', age: 30, height: 170, weight: 70, activity: 'moderate', goal: 'Maintain', units: 'metric' },
-    settings: { targets: { calories: 2000, protein: 100, carbs: 250, fat: 65, water: 2500 }, macroSchedule: {}, groups: ['Breakfast','Lunch','Dinner','Snacks'], customBiometrics: [], theme: 'dark', showEnergy: true, completedDays: [], scoreSelection: [], reminders: [] },
+    settings: { targets: {...initialWorkspaceTargets}, macroSchedule: {}, groups: ['Breakfast','Lunch','Dinner','Snacks'], customBiometrics: [], theme: 'dark', showEnergy: true, completedDays: [], scoreSelection: [], reminders: [] },
     foods, recipes: [], meals: [],
     entries: foods.slice(0,3).map((food,i) => ({id:randomUUID(),date,foodId:food.id,name:food.name,amount:i===0?1:0.5,group:'Breakfast',time:'08:00',kind:'food'})),
     biometrics: demo ? [{id:randomUUID(),date,type:'Weight',value:70,unit:'kg',time:'07:30'}] : [],
@@ -663,6 +664,7 @@ export function act(s,type,p={},context={}) {
     case 'group.order':setDiaryGroupOrder(s,p);break;
     case 'nutrientTarget.setCustom':act(s,'settings.save',nutrientTargetCustomPatch(s,p));break;
     case 'nutrientTarget.patch':act(s,'settings.save',nutrientTargetSettingsPatch(s,p));break;
+    case 'nutrientTarget.reset':resetNutrientTargetSettings(s.settings);break;
     case 'scoreDisplay.change':Object.assign(s.settings,scoreDisplayPatch(s.settings,p));break;
     case 'settings.save': {
       const next={...s.settings};if(Object.hasOwn(p,'mobileCharts'))next.mobileCharts=parseMobileChartSettings(p.mobileCharts,s);if(Object.hasOwn(p,'pauseLife')){const policy=parsePauseLife(p.pauseLife);if(policy===null)delete next.pauseLife;else next.pauseLife=policy;}if(Object.hasOwn(p,'diaryCalendar')){const policy=parseDiaryCalendar(p.diaryCalendar);if(policy===null)delete next.diaryCalendar;else next.diaryCalendar=policy;}if(Object.hasOwn(p,'addMenu'))next.addMenu=parseAddMenu(p.addMenu);if(Object.hasOwn(p,'appLanguage'))next.appLanguage=parseAppLanguage(p.appLanguage);if(Object.hasOwn(p,'discover'))next.discover=parseDiscoverSettings(p.discover);if(Object.hasOwn(p,'fontScale'))next.fontScale=parseFontScale(p.fontScale);if(Object.hasOwn(p,'energyUnit'))next.energyUnit=parseEnergyUnit(p.energyUnit);if(Object.hasOwn(p,'targets'))next.targets=validateTargets(p.targets);

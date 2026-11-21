@@ -18,8 +18,8 @@ export function readDiaryAdjustment(state,input,kind='meal'){
 function evaluate(state,input,scope,kind){
  fields(input,['date','id','revision','items',...basisFields(kind)]);const {entry,revision}=selection(state,input,kind);
  if(input.revision!==revision)fail('The diary entry or its sources changed. Reopen the adjustment and review it again.',409);
- const {items,basis,afterEntry,before,after}=adjustmentProjection(state,entry,input,kind),dependencies=collectResourceDependencies(state,[afterEntry]);
- return {id:entry.id,date:entry.date,revision,items,...(basis?{basis}:{}),scope,reviewToken:contentDigest({scope,revision,items,...(basis?{basis}:{}),dependencies}),before,after,warnings:[...diaryAdjustmentWarningCodes[kind]]};
+ const {items,basis,ingredientCalories,afterEntry,before,after}=adjustmentProjection(state,entry,input,kind),dependencies=collectResourceDependencies(state,[afterEntry]);
+ return {id:entry.id,date:entry.date,revision,items,...(basis?{basis}:{ingredientCalories}),scope,reviewToken:contentDigest({scope,revision,items,...(basis?{basis}:{}),dependencies}),before,after,warnings:[...diaryAdjustmentWarningCodes[kind]]};
 }
 export function previewDiaryAdjustment(state,input,reviewSaves,kind='meal'){return evaluate(state,input,reviewSaves.saveScope(),kind);}
 export function saveDiaryAdjustment(store,input,reviewSaves,kind='meal'){

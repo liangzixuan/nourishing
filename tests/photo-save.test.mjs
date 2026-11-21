@@ -83,3 +83,17 @@ test('a concurrent upload is reused only after checking its owner and content', 
   const result = await stagePhotoMedia({db: fake.db, storage: fake.storage, owner, generation: 'generation', transactionId: 'tx', photo});
   assert.equal(fake.creates(), 1);assert.ok(fake.rows.has(result.mediaId));
 });
+
+test('reviewed photo delivery checks the owner, image, window and receipt time',()=>{
+ const receiptTime=now+3_600_000,expires=now+1_800_000;
+ for(const savedAt of [now,expires-1]){
+  const s=fixture();applyPhotoLog(s,payload(),{...context,now:receiptTime,reviewSavedAt:savedAt});
+  assert.equal(s.entries.length,1);
+ }
+ for(const invalid of [
+  {reviewSavedAt:now-1},{reviewSavedAt:expires},{reviewSavedAt:null},{reviewSavedAt:NaN},
+  {now:now+1,reviewSavedAt:now+2},{owner:'other',reviewSavedAt:now},{photo:{id:'b'.repeat(64)},reviewSavedAt:now},
+ ]){
+  const s=fixture();assert.throws(()=>applyPhotoLog(s,payload(),{...context,now:receiptTime,...invalid}));assert.equal(s.entries.length,0);
+ }
+});

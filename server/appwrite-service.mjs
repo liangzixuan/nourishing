@@ -358,7 +358,7 @@ function buildMediaAndPhotoMethods(ctx) {
       }
       return result;
     },
-    savePhoto: async (secret, input) => {
+    savePhoto: async (secret, input, _signal, {reviewSavedAt} = {}) => {
       const allowed = ['requestId', 'revision', 'photo', 'reviewToken', 'date', 'time', 'group', 'rows', 'destination'];
       if (!hasAllowedKeys(input, allowed)) {
         throw Object.assign(Error('Invalid photo fields.'), {code: 400, publicMessage: 'Invalid photo fields.'});
@@ -380,6 +380,7 @@ function buildMediaAndPhotoMethods(ctx) {
           owner,
           reviewSecret: process.env.PHOTO_REVIEW_SECRET,
           photo,
+          reviewSavedAt,
           stageMedia: c => stagePhotoMedia({db, storage, owner, photo, ...c}),
         },
       );
@@ -415,11 +416,12 @@ function buildLibraryAndSearchMethods(ctx) {
       const {owner} = await data(secret);
       return readView(secret, state => previewBarcode(state, input, {owner, reviewSecret: process.env.PHOTO_REVIEW_SECRET}));
     },
-    barcodeSave: async (secret, input) => {
+    barcodeSave: async (secret, input, _signal, {reviewSavedAt} = {}) => {
       const {owner, repository} = await data(secret);
       if (input?.type !== 'barcode.log') throw Object.assign(Error('Choose a barcode action.'), {code: 400});
       return createWorkspaceStore(new TablesDB(elevated()), owner).command(input, catalogReader(repository), {
         owner,
+        reviewSavedAt,
         reviewSecret: process.env.PHOTO_REVIEW_SECRET,
       });
     },

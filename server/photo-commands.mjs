@@ -25,10 +25,10 @@ export function validatePhotoAction({type, payload}) {
 }
 
 /** Catalog sources and the normalized photo are supplied by the authenticated server. */
-export function applyPhotoLog(state, payload, {owner, reviewSecret, photo, now = Date.now()} = {}) {
+export function applyPhotoLog(state, payload, {owner, reviewSecret, photo, now = Date.now(), reviewSavedAt} = {}) {
   validatePhotoAction({type: 'photo.log', payload});
   if (!photo || photo.id !== payload.photoId) fail('The reviewed photo changed. Scan it again.');
-  const analysis = verifyPhotoReview(payload.reviewToken, {owner, photoId: photo.id, secret: reviewSecret, now});
+  const analysis = verifyPhotoReview(payload.reviewToken, {owner, photoId: photo.id, secret: reviewSecret, now, reviewSavedAt});
   const destination = parseReviewedDestination(payload.destination);
   date(payload.date);requiredRecordGroup(payload.group, state.settings.groups);time(payload.time);
   const candidate = structuredClone(state), entryIds = [], items = [], evidence = [];

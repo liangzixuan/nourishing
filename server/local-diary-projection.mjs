@@ -3,8 +3,9 @@ import {diarySummaryPresentation} from './diary-summary.mjs';
 import {diaryToolsPresentation} from './diary-presentation.mjs';
 import {mergeEntryUpdate} from './domain/entry-update-fields.mjs';
 import {setDiaryGroupOrder,sortAllDiaryEntriesByTime} from './domain/diary-order.mjs';
-import {nutrientTargetSettingsPatch,nutrientTargetCustomPatch} from './domain/nutrient-target-edit.mjs';
+import {nutrientTargetSettingsPatch,nutrientTargetCustomPatch,resetNutrientTargetSettings} from './domain/nutrient-target-edit.mjs';
 export {createNutrientTargetsView} from './domain/nutrient-target-view.mjs';
+export {usesNutrientTargets,projectNutrientTargetResponse} from './domain/nutrient-target-responses.mjs';
 export {copiedDiaryRecords} from './domain/diary-record-copy.mjs';
 export {libraryItems} from './domain/library-list.mjs';
 
@@ -12,6 +13,7 @@ export {libraryItems} from './domain/library-list.mjs';
  * Server validation remains authoritative; projection must also work after an
  * acknowledgement, when the server returns no changed-record payload. */
 export function projectDiaryBulkWrite(state,{type,payload:p}){
+ if(type==='nutrientTarget.reset'){resetNutrientTargetSettings(state.settings);return;}
  if(type==='nutrientTarget.patch'||type==='nutrientTarget.setCustom'){Object.assign(state.settings,(type==='nutrientTarget.patch'?nutrientTargetSettingsPatch:nutrientTargetCustomPatch)(state,p));return;}
  if(type==='diary.sort-all'){sortAllDiaryEntriesByTime(state);return;}
  if(type==='diary.order'){state.settings.diarySort=p.mode;return;}
@@ -67,3 +69,5 @@ export {storeChartDefinition} from './domain/chart-definition-store.mjs';
 export {applyFastingChange,applyFastingCommand,fastingView} from './fasting.mjs';
 
 export {prepareFoodMultiReview} from './domain/food-multi-review.mjs';
+
+export {checkLocalReviewSave} from './domain/signed-review-time.mjs';

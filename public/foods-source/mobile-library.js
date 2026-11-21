@@ -1,15 +1,26 @@
 import {escape as e} from './discover-ui.js';
 import {formatMessage} from './message-format.js';
 const message=language=>(key,values)=>formatMessage(language,'mobileLibrary.'+key,values);
-export function mobileLibraryHeader({tab,language,icon}){
- const kind=tab.slice(0,-1);
- return `<div class="ml-header"><button type="button" data-action="foods-home" aria-label="${e(formatMessage(language,'mobileFoods.back'))}">${icon('back')}</button><h1>${e(formatMessage(language,'mobileFoods.'+tab))}</h1><button type="button" data-action="new-${kind}" aria-label="${e(formatMessage(language,'mobileFoods.create.'+kind))}">${icon('plus')}</button></div>`;
+export function mobileLibraryHeader({tab,empty,language,icon}){
+ const label=key=>e(formatMessage(language,key)),kind=tab.slice(0,-1),recipes=tab==='recipes';
+ const utility=empty&&!recipes?`<button type="button" data-action="library-options" aria-label="${label('mobileLibrary.options')}">${icon('more')}</button>`:'';
+ const primary=recipes?`<button type="button" data-action="library-options" aria-haspopup="dialog" aria-label="${label('mobileLibrary.more')}">${icon('plus')}</button>`:`<button type="button" data-action="new-${kind}" aria-label="${label('mobileFoods.create.'+kind)}">${icon('plus')}</button>`;
+ return `<div class="ml-header${utility?' ml-header-wide':''}"><button type="button" data-action="foods-home" aria-label="${label('mobileFoods.back')}">${icon('back')}</button><h1>${label('mobileFoods.'+tab)}</h1><div class="ml-header-actions">${utility}${primary}</div></div>`;
 }
-export function mobileLibraryCollection({items,tab,query,sort,retired,language,icon}){
+export function mobileLibraryCollection({items,tab,query,sort,retired,showMealTip,language,icon}){
  const m=message(language),kind=tab.slice(0,-1),collator=new Intl.Collator(language,{sensitivity:'base',numeric:true});
- const ordered=sort==='alphabetical'?[...items].sort((a,b)=>collator.compare(a.name,b.name)):[...items].reverse();
- const count=m('count.'+tab+(items.length===1?'.one':'.other'),{count:items.length.toLocaleString(language)});
- return `<section class="ml-collection"><div class="ml-search">${icon('search')}<input id="library-search" type="search" aria-label="${e(formatMessage(language,'libraryView.search'))}" placeholder="${e(m('search'))}" value="${e(query)}"></div><div class="ml-tools"><span>${e(count)}${retired?' · '+e(formatMessage(language,'libraryLifecycle.retiredItems')):''}</span><button type="button" data-action="library-options">${e(m(sort))}</button></div><div class="ml-list">${ordered.map(item=>`<button type="button" class="ml-row" data-library-kind="${tab}" aria-haspopup="dialog" aria-keyshortcuts="Shift+F10" title="${e(m('more'))}" data-action="edit-${kind}" data-id="${e(item.id)}"><span>${e(item.name)}</span>${icon('chevron')}</button>`).join('')||`<p class="ml-empty">${e(formatMessage(language,'libraryView.empty.'+tab))}</p>`}</div></section>`;
+ const empty=!retired&&items.length===0;
+ const matches=items.filter(item=>item.name.toLocaleLowerCase(language).includes(query.toLocaleLowerCase(language)));
+ const ordered=sort==='alphabetical'?matches.sort((a,b)=>collator.compare(a.name,b.name)):matches.reverse();
+ const count=m('count.'+tab+(matches.length===1?'.one':'.other'),{count:matches.length.toLocaleString(language)});
+ const search=empty&&tab==='meals'?'':`<div class="ml-search">${icon('search')}<input id="library-search" type="search" aria-label="${e(formatMessage(language,'libraryView.search'))}" placeholder="${e(m('search'))}" value="${e(query)}"></div>`;
+ const symbol=tab==='foods'?'<span class="dc-nav-icon dc-nav-icon-apple"></span>':icon('food');
+ const emptyCard=`<article class="ml-empty-card"><span class="ml-empty-icon" aria-hidden="true">${symbol}</span><div><h2>${e(m('empty.'+tab))}</h2><p>${e(m('emptyHelp.'+tab))}</p></div></article>`;
+ const tools=`<div class="ml-tools"><span>${e(count)}${retired?' · '+e(formatMessage(language,'libraryLifecycle.retiredItems')):''}</span><button type="button" data-action="${tab==='recipes'?'collection-sort':'library-options'}">${e(m(sort))}</button></div>`;
+ const rows=ordered.map(item=>`<button type="button" class="ml-row" data-library-kind="${tab}" aria-haspopup="dialog" aria-keyshortcuts="Shift+F10" title="${e(m('more'))}" data-action="edit-${kind}" data-library-item="${e(item.id)}" data-id="${e(item.id)}"><span>${e(item.name)}</span>${icon('chevron')}</button>`).join('');
+ const results=empty?emptyCard:tools+'<div class="ml-list">'+(rows||'<p class="ml-empty">'+e(formatMessage(language,'libraryView.empty.'+tab))+'</p>')+'</div>';
+ const tip=showMealTip&&tab==='meals'&&!retired&&!query?`<aside class="ml-empty-card ml-meal-tip"><span class="ml-empty-icon"><img src="/expenditure-source/lightbulb-on-outline.svg" alt=""></span><div><h2>${e(m('mealTip'))}</h2><p>${e(m('mealTipText'))}</p></div><button type="button" data-action="dismiss-meal-tip" aria-label="${e(m('dismissTip'))}">×</button></aside>`:'';
+ return `<section class="ml-collection">${search}<div class="ml-results">${results}${tip}</div></section>`;
 }
 
 /** A native modal sheet owns focus and dismissal without replacing the editor. */

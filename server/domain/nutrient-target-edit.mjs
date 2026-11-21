@@ -2,12 +2,34 @@ import {parseNutrientTargetModes} from './nutrient-target-modes.mjs';
 import {date as calendarDate} from './calendar.mjs';
 import {nutrientDisplayOptions,parseNutrientDisplayPolicy,resolveHiddenNutrients} from './nutrient-display.mjs';
 import {resolveTargetSettings} from './nutrition.mjs';
+import {initialWorkspaceTargets} from './nutrient-catalog.mjs';
+import {defaultDiaryDisplayPolicy} from './diary-display.mjs';
 
 const ids=new Set(nutrientDisplayOptions.map(row=>row.id));
 const own=(value,key)=>Object.hasOwn(value??{},key);
 const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 const fail=(message,status=400)=>{throw Object.assign(Error(message),{status});};
 const amount=value=>value===null||typeof value==='number'&&Number.isFinite(value)&&value>=0;
+export const isMacroEnergyTarget=id=>['calories','protein','carbs','fat','netCarbohydrate'].includes(id);
+
+/** Restore base nutrient overrides. Reference populations, scheduled targets and
+ * macro settings have separate owners and continue to resolve in the usual order. */
+export function resetNutrientTargetSettings(settings){
+ const owned=id=>ids.has(id)&&!isMacroEnergyTarget(id);
+ const preserveOtherTargets=values=>Object.fromEntries(Object.entries(values).filter(([id])=>!owned(id)));
+ settings.targets={...preserveOtherTargets(settings.targets??{}),...Object.fromEntries(Object.entries(initialWorkspaceTargets).filter(([id])=>owned(id)))};
+ if(settings.nutrientTargetModes){
+  const nutrients=preserveOtherTargets(settings.nutrientTargetModes.nutrients);
+  if(Object.keys(nutrients).length)settings.nutrientTargetModes={version:1,nutrients};
+  else delete settings.nutrientTargetModes;
+ }
+ if(settings.nutrientDisplay){
+  const maximums=preserveOtherTargets(settings.nutrientDisplay.maximums);
+  if(Object.keys(maximums).length)settings.nutrientDisplay={version:1,maximums,hidden:resolveHiddenNutrients(null)};
+  else delete settings.nutrientDisplay;
+ }
+ if(settings.diaryDisplay)settings.diaryDisplay={...settings.diaryDisplay,highlighted:[...defaultDiaryDisplayPolicy.highlighted]};
+}
 
 /** The calculation owner decides whether an edit belongs to another target editor. */
 export function nutrientTargetEditors(state,date){
@@ -52,7 +74,7 @@ export function nutrientTargetSettingsPatch(state,input){
 export function nutrientTargetCustomPatch(state,input){
  if(!object(input)||Object.keys(input).length!==3||!['date','id','custom'].every(key=>own(input,key))||!ids.has(input.id)||typeof input.custom!=='boolean')fail('Choose date, nutrient ID and a boolean Custom choice.');
  const {date,id,custom}=input;calendarDate(date);
- if(['calories','protein','carbs','fat','netCarbohydrate'].includes(id))fail('Use Macro & Energy Targets for this nutrient.',409);
+ if(isMacroEnergyTarget(id))fail('Use Macro & Energy Targets for this nutrient.',409);
  const editor=nutrientTargetEditors(state,date).get(id);if(editor&&editor!=='references')fail('This nutrient is controlled by '+editor+'.',409);
  const modes=parseNutrientTargetModes(state.settings?.nutrientTargetModes),choice=custom?'custom':'reference';modes.nutrients[id]={daily:choice,maximum:choice};return {nutrientTargetModes:modes};
 }

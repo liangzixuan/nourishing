@@ -3,10 +3,10 @@ import {date as calendarDate} from './calendar.mjs';
 import {catalog,calculateSummary} from './nutrition.mjs';
 import {nutrientDisplayOptions,resolveHiddenNutrients} from './nutrient-display.mjs';
 import {projectNutrientReferences} from './nutrient-references.mjs';
-import {resolveNutrientMaximums} from './nutrient-upper-limits.mjs';
+import {resolveNutrientMaximums,effectiveNutrientUpperLimitPolicy,projectNutrientUpperLimits,nutrientUpperLimitOptions} from './nutrient-upper-limits.mjs';
 import {parseDiaryDisplayPolicy,defaultDiaryDisplayPolicy} from './diary-display.mjs';
 import {parseEnergyUnit} from './energy-units.mjs';
-import {nutrientTargetEditors} from './nutrient-target-edit.mjs';
+import {nutrientTargetEditors,isMacroEnergyTarget} from './nutrient-target-edit.mjs';
 
 const categories=new Map(catalog.map(row=>[row.id,row.category]));
 const defaults=new Map(catalog.map(row=>[row.id,row.target]));
@@ -38,9 +38,19 @@ export function createNutrientTargetsView(state,date){
  const rows=nutrientDisplayOptions.map(row=>{
   const stored=saved(settings.targets,row.id),editor=editors.get(row.id),reference=references.get(row.id)??null,maximum=maximums.get(row.id);
   const dailyMode=modes[row.id]?.daily??(reference?.selected?'reference':stored.value!==null||defaults.get(row.id)!=null?'custom':'reference'),maximumMode=modes[row.id]?.maximum??(Object.hasOwn(settings.nutrientDisplay?.maximums??{},row.id)?'custom':dailyMode);
-  const governed=['calories','protein','carbs','fat','netCarbohydrate'].includes(row.id)||editor&&editor!=='references';
+  const governed=isMacroEnergyTarget(row.id)||editor&&editor!=='references';
   return {...row,custom:dailyMode==='custom'||maximumMode==='custom',customEditable:!governed,mixed:dailyMode!==maximumMode,visible:!hidden.has(row.id),dailyTarget:{effective:row.id==='netCarbohydrate'?summary.carbohydrates.net.target:summary.targets[row.id]??null,saved:stored,mode:dailyMode,origin:editor??(stored.present?'saved':defaults.get(row.id)!=null?'sample':'unset'),editor,reference},maximum:{mode:maximumMode,effective:maximum?.maximum??null,saved:saved(settings.nutrientDisplay?.maximums,row.id),reference:referenceMaxima.get(row.id)??null}};
  });
  const groups=sections.map(({id,name,first})=>{const members=rows.filter(row=>category(row.id)===id),byId=new Map(members.map(row=>[row.id,row]));return {id,name,nutrients:[...first.filter(key=>byId.has(key)).map(key=>byId.get(key)),...members.filter(row=>!first.includes(row.id))]};});
  return {version:1,date,energyUnit:parseEnergyUnit(settings.energyUnit??'kcal'),groups,highlighted:[...display.highlighted],showHighlights:display.showHighlights};
+}
+
+export function createTargetView(state,date){
+ const editors=nutrientTargetEditors(state,date),summary=calculateSummary(state,date),modes=parseNutrientTargetModes(state.settings.nutrientTargetModes).nutrients;
+ return {date,theme:state.settings.theme??'dark',nutrients:nutrientDisplayOptions.map(row=>({...row,dailyTarget:(row.id==='netCarbohydrate'?summary.carbohydrates.net.target:summary.targets[row.id])??null,maximum:summary.nutrientDisplay.thresholds[row.id]?.maximum??null,visible:!summary.nutrientDisplay.hidden.includes(row.id),editor:editors.get(row.id)??null,maximumEditor:modes[row.id]?.maximum==='reference'?'references':null}))};
+}
+
+export function upperLimitSettings(state,date,summary){
+ const upperPolicy=effectiveNutrientUpperLimitPolicy(state.settings.nutrientUpperLimits,state.settings.nutrientTargetModes);
+ return {date,policy:upperPolicy,options:nutrientUpperLimitOptions,projection:projectNutrientUpperLimits(upperPolicy,state.settings.nutrientReferences,date),summary:{nutrientDisplay:summary.nutrientDisplay,attributions:summary.attributions}};
 }

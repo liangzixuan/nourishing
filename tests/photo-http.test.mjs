@@ -49,3 +49,20 @@ test('exercise queries reject non-decimal minute and offset syntax before servic
   assert.equal(calls.length, 0);
   assert.equal((await handle(get('/api/records/exercise-estimate?date=2026-11-14&code=test&minutes=30.5'))).status, 200);assert.equal(calls[0].minutes, 30.5);
 });
+
+test('signed-save routes parse canonical delivery timestamps without changing the command body',async()=>{
+ const calls=[];
+ const service={current:async()=>({id:'fixture'})};
+ for(const name of ['savePhoto','barcodeSave'])service[name]=async(_secret,body,_signal,delivery)=>{calls.push({body,delivery});return {ok:true};};
+ const handle=createWebHandler({config,service});
+ for(const path of ['/api/photos/save','/api/barcode/save']){
+  for(const value of ['invalid','2026-03-02',null,'2026-03-02T00:00:00.000Z']){
+   const req=request(path);
+   if(value!==null)req.headers.set('X-Nourishing-Review-Saved-At',value);
+   const valid=value===null||value.endsWith('Z');
+   assert.equal((await handle(req)).status,valid?200:400);
+   if(valid)assert.deepEqual(calls.at(-1),{body:{},delivery:{reviewSavedAt:value===null?undefined:Date.parse(value)}});
+  }
+ }
+ assert.equal(calls.length,4);
+});

@@ -1,7 +1,7 @@
 import {projectFastingResponse} from './fasting-source/device.js';
 import {remapWriteReferences,writeReceiptIdentities,remapDiaryReviewIdentities} from './write-identities.js';
 import {applyWriteToState,projectSavedDefinition} from './write-projection.js';
-import {projectLocalDiary} from './local-diary-projection.js';
+import {checkLocalReviewSave,projectLocalDiary,usesNutrientTargets} from './local-diary-projection.js';
 import {offlineFailure} from './offline-errors.js';
 import {acknowledgedSnapshotList} from './snapshot-queue.js';
 const DB='nourishing-private-offline',channel=typeof BroadcastChannel==='function'?new BroadcastChannel('nourishing-offline'):null;
@@ -38,7 +38,10 @@ export async function persistBackgroundWrite(expected,{path,body,projection={}})
   remapDiaryReviewIdentities(projection.diaryReview,next.recordIds??{});
   const prior=next.pending.find(row=>row.command.operationId===body.requestId);
   if(prior){if(JSON.stringify(prior.transport)!==JSON.stringify({path,body}))throw Error('This save has changed.');return prior;}
-  const row={command:{ownerId:active.ownerId,generation:next.snapshot?.identity.generation??null,operationId:body.requestId,type:body.type??(path==='/api/snapshots/save'?'snapshot.add':path==='/api/note-photos/save'?'note.photo.save':'photo.log'),payload:body.payload??body},transport:{path,body:structuredClone(body)},preview:{},projection:structuredClone(projection),status:'pending',error:null,createdAt:new Date().toISOString()};
+  const createdAt=new Date();
+  if(path==='/api/photos/save')checkLocalReviewSave('photo.log',body,active.ownerId,createdAt.getTime());
+  if(path==='/api/barcode/save')checkLocalReviewSave('barcode.log',body.payload,active.ownerId,createdAt.getTime());
+  const row={command:{ownerId:active.ownerId,generation:next.snapshot?.identity.generation??null,operationId:body.requestId,type:body.type??(path==='/api/snapshots/save'?'snapshot.add':path==='/api/note-photos/save'?'note.photo.save':'photo.log'),payload:body.payload??body},transport:{path,body:structuredClone(body)},preview:{},projection:structuredClone(projection),status:'pending',error:null,createdAt:createdAt.toISOString()};
   // A photo deleted before its first send has no server record to remove.
   // Once attempted, keep both writes so an uncertain receipt resolves first.
   const draft=body.type==='snapshot.delete'&&next.pending.find(item=>item.command.type==='snapshot.add'&&item.command.operationId===body.payload.id&&!item.attempted);
@@ -85,6 +88,9 @@ export async function acknowledgeBackgroundWrite(expected,id,result){
   if(copy.snapshot?.state||definition||result.fastingChange){
    const read=responses.getAll();read.onsuccess=()=>{
     for(const cached of read.result){
+      if(copy.snapshot?.state&&row.command.type.startsWith('nutrientTarget.')&&usesNutrientTargets(cached.path)){
+       responses.put({...cached,nutrientTargetRevision:result.revision,savedAt:0});
+      }
      if(result.fastingChange){
       const value=projectFastingResponse(cached.path,cached.value,copy.snapshot?.state,[result.fastingChange],result.revision);
       if(value!==cached.value)responses.put({...cached,value:{...value,revision:result.revision},savedAt:0});
@@ -117,7 +123,7 @@ export async function readPrivateResponse(path,expected){
   if(!sameSession(active,expected)){done({value:undefined,savedAt:null,ticket:null});return;}
   const captured=cacheTicket(active),read=responses.get(path);read.onsuccess=()=>{
    const row=read.result;if(row){const entry=lru.find(item=>item.path===path);if(entry)meta.put([...lru.filter(item=>item.path!==path),entry],'response-lru');}
-   done({value:row?.value,savedAt:row?.savedAt??null,ticket:captured});
+    done({value:row?.value,savedAt:row?.savedAt??null,ticket:captured,...(row?.nutrientTargetRevision?{nutrientTargetRevision:row.nutrientTargetRevision}:{})});
   };
  });
 }

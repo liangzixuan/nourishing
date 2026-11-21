@@ -4,7 +4,7 @@ import {parseCompositeItems,parseReferencedQuantity} from './resource-quantity.m
 import {recipeForEntry,recipeOverrideFrom,parseRecipeOverride} from './recipe-entry.mjs';
 import {assertDiaryDaysEditable} from './diary-day-status.mjs';
 import {date as parseDate} from './calendar.mjs';
-import {calculateSummary} from './nutrition.mjs';
+import {calculateSummary,entryFacts} from './nutrition.mjs';
 import {compactFoodSource} from './catalog-source.mjs';
 
 const fail=(message,status=400)=>{throw Object.assign(Error(message),{status});};
@@ -36,7 +36,7 @@ export function adjustmentDraft(state,entry,kind){
  const recipe=kind==='recipe'?recipeForEntry(resource,entry):null,items=recipe?recipe.ingredients:expandResourceQuantity(state,entry,{target:'children'}).map(row=>row.source);
  if(!items.length)fail('This entry has no ingredients to adjust.');
  const {version,ingredients,...basis}=recipe?recipeOverrideFrom(recipe):{};
- return {id:entry.id,date:entry.date,name:resource.name,items,foods:state.foods,recipes:state.recipes,...(recipe?{basis,recipeId:resource.id,quantity:Object.fromEntries(['amount','quantity','unit','portionId'].filter(key=>entry[key]!==undefined).map(key=>[key,entry[key]]))}:{})};
+ return {id:entry.id,date:entry.date,group:entry.group,energyUnit:state.settings.energyUnit??'kcal',name:resource.name,items,foods:state.foods,recipes:state.recipes,...(recipe?{basis,recipeId:resource.id,quantity:Object.fromEntries(['amount','quantity','unit','portionId'].filter(key=>entry[key]!==undefined).map(key=>[key,entry[key]]))}:{})};
 }
 /** One quantity parser owns both the local preview and the server adjustment. */
 export function adjustmentProjection(state,entry,input,kind){
@@ -51,5 +51,6 @@ export function adjustmentProjection(state,entry,input,kind){
  const afterEntry={...next,...parsed.source};
  const {version,ingredients,...basis}=override??{};
  const project=entries=>{const result=calculateSummary({...state,entries,biometrics:[],notes:[]},entry.date);return {values:result.totals,coverage:result.nutrientCoverage,attributions:result.attributions};};
- return {items,...(override?{basis}:{}),afterEntry,before:project([entry]),after:project([afterEntry])};
+ const ingredientCalories=kind==='meal'?items.map(item=>entryFacts(state,item).nutrients.calories):undefined;
+ return {items,...(override?{basis}:{ingredientCalories}),afterEntry,before:project([entry]),after:project([afterEntry])};
 }

@@ -25,7 +25,7 @@ export function previewEntryAdjustment(state,payload){
  validateEntryAdjustmentAction({type:'entry.ingredients.adjust',payload});
  const {kind,sourceRevision,...draft}=payload;
  const review=previewDiaryAdjustment(state,{...draft,revision:sourceRevision},{saveScope:()=> 'cloud-workspace-command'},kind);
- return {before:review.before,after:review.after,items:review.items,...(kind==='recipe'?{basis:review.basis}:{})};
+ return {before:review.before,after:review.after,items:review.items,...(kind==='recipe'?{basis:review.basis}:{ingredientCalories:review.ingredientCalories})};
 }
 export function prepareEntryAdjustmentCommand(state,action){
  validateEntryAdjustmentAction(action);const {kind,id}=action.payload,review=previewEntryAdjustment(state,action.payload);

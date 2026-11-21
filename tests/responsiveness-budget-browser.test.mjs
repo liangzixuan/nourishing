@@ -6,6 +6,9 @@ import {readFileSync, existsSync} from 'node:fs';
 import {resolve, extname} from 'node:path';
 import {gzipSync} from 'node:zlib';
 import {chromium} from 'playwright-core';
+import {signPhotoReview,verifyPhotoReview} from '../server/cloud-photo.mjs';
+import {normalizePhoto} from '../server/domain/photo-images.mjs';
+import {randomBytes} from 'node:crypto';
 import {barcodeAssets} from '../scripts/package-barcode-assets.mjs';
 import {createWebHandler} from '../server/http.mjs';
 import {initialState, act, previewDiaryItem} from '../server/domain/workspace.mjs';
@@ -25,7 +28,7 @@ import {offlineSnapshot as projectOfflineSnapshot} from '../server/offline.mjs';
 import {digest} from '../server/data-codec.mjs';
 
 const TINY_PNG =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAD0lEQVQImWPowAEYhpYEANsRZgE07zdlAAAAAElFTkSuQmCC';
 
 function todayLocal() {
   const d = new Date();
@@ -34,6 +37,7 @@ function todayLocal() {
 
 async function createFixture() {
   const state = initialState();
+  const reviewSecret = randomBytes(32).toString('hex');
   const today = todayLocal();
   state.settings.groups = ['Uncategorized', 'Breakfast', 'Lunch'];
   state.foods.push({
@@ -97,26 +101,31 @@ async function createFixture() {
       applyWorkspaceCommand(state, {type: input.type, payload: input.payload});
       return {revision: digest(state)};
     },
-    analyzePhoto: async () => ({
-      photo: {id: 'a'.repeat(64), dataUrl: TINY_PNG},
-      reviewToken: 'fixture-token',
-      suggestions: [
-        {
-          kind: 'observation',
-          description: 'Oats',
-          observationIndex: 0,
-          portionEstimate: {grams: 100},
-          selection: {id: 'oats', kind: 'food'},
-          candidates: [{ref: {id: 'oats', kind: 'food'}, name: 'Fixture Oats', grams: 100}],
-          preview: {
-            version: 1,
-            nutrition: previewDiaryItem(state, {date: today, time: '12:00', group: 'Lunch', foodId: 'oats', quantity: 100, unit: 'g'}).nutrition,
-            energy: {value: 200, unit: 'kcal'},
+    analyzePhoto: async (_, input) => {
+      const photo = await normalizePhoto(input.image);
+      const analysis = {observations: [{description:'Oats', preparation:'Cooked', uncertainty:''}], notes:''};
+      return {
+        photo: {id: photo.id, dataUrl: photo.dataUrl},
+        reviewToken: signPhotoReview({owner:'fixture', photoId:photo.id, analysis}, {secret:reviewSecret}),
+        suggestions: [
+          {
+            kind: 'observation',
+            description: 'Oats',
+            observationIndex: 0,
+            portionEstimate: {grams: 100},
+            selection: {id: 'oats', kind: 'food'},
+            candidates: [{ref: {id: 'oats', kind: 'food'}, name: 'Fixture Oats', grams: 100}],
+            preview: {
+              version: 1,
+              nutrition: previewDiaryItem(state, {date: today, time: '12:00', group: 'Lunch', foodId: 'oats', quantity: 100, unit: 'g'}).nutrition,
+              energy: {value: 200, unit: 'kcal'},
+            },
           },
-        },
-      ],
-    }),
-    savePhoto: async (_, input) => {
+        ],
+      };
+    },
+    savePhoto: async (_, input, _signal, {reviewSavedAt}) => {
+      verifyPhotoReview(input.reviewToken, {owner:'fixture', photoId:input.photo.id, secret:reviewSecret, reviewSavedAt});
       for (const row of input.rows ?? []) {
         act(state, 'entry.add', {
           date: input.date,

@@ -57,9 +57,9 @@ async function invalidateForWrite(ticket,path,body,{preserveCache=false}={}){
  if(stale.length)await invalidateDeviceCachePaths(key=>matchPrefix(key,stale),ticket,{staleOnly:true}).catch(()=>{});
 }
 
-async function network(path,body,signal){
+async function network(path,body,signal,{reviewSavedAt}={}){
  const captured=(await readDeviceCache('/api/diary').catch(()=>({}))).ticket;
- let response;try{response=await fetch(path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',signal,headers:body?{'Content-Type':'application/json'}:{},...(body?{body:JSON.stringify(body)}:{})});}catch(error){if(error.name==='AbortError')throw error;throw Error(coreText('request.unavailable'),{cause:error});}
+ let response;try{response=await fetch(path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',signal,headers:body?{'Content-Type':'application/json',...(reviewSavedAt===undefined?{}:{'X-Nourishing-Review-Saved-At':reviewSavedAt})}:{},...(body?{body:JSON.stringify(body)}:{})});}catch(error){if(error.name==='AbortError')throw error;throw Error(coreText('request.unavailable'),{cause:error});}
  if(response.status===401){
   const current=(await readDeviceCache('/api/diary').catch(()=>({}))).ticket;
   if(captured&&(!current||captured.ownerId!==current.ownerId||captured.epoch!==current.epoch))throw new DOMException('Account changed.','AbortError');
@@ -69,16 +69,16 @@ async function network(path,body,signal){
 }
 export async function request(path,body,signal,options){
  if(!body&&cacheableRead(path)){
-  const original=options?.onRefresh;
-  const value=await cachedRead(path,currentSignal=>network(path,body,currentSignal),signal,{...options,...(original?{onRefresh:async next=>original(await overlayPendingResponse(path,next))}:{})});
-  return options?.canonical?value:overlayPendingResponse(path,value);
+  const original=options?.onRefresh;let nutrientTargetRevision;
+  const value=await cachedRead(path,currentSignal=>network(path,body,currentSignal),signal,{...options,onCached:cached=>{nutrientTargetRevision=cached.nutrientTargetRevision;},...(original?{onRefresh:async next=>original(await overlayPendingResponse(path,next))}:{})});
+  return options?.canonical?value:overlayPendingResponse(path,value,nutrientTargetRevision);
  }
  // Read-only POST operations never invalidate saved screens or store their
  // transient review tokens. A lost mutation reply still invalidates affected views.
  const changes=body&&!/\/(?:analyze|prepare|preview|edit-preview|ingredient-preview|template-preview|parse|answer|search|lookup|resolve|suggestions|oracle|review|export|inspect|test|verification)$/.test(path);
  const ticket=changes?(await readDeviceCache('/api/diary').catch(()=>({}))).ticket:null;
  if(ticket)await invalidateForWrite(ticket,path,body,options);
- try{return await network(path,body,signal);}finally{
+ try{return await network(path,body,signal,options);}finally{
   if(ticket){await invalidateForWrite(ticket,path,body,options);window.dispatchEvent(new Event('nourishing-data-changed'));}
  }
 }

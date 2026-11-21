@@ -1,4 +1,6 @@
 /** Stable nutrient identities and editable sample target defaults. */
+export const initialWorkspaceTargets=Object.freeze({calories:2000,protein:100,carbs:250,fat:65,water:2500});
+
 const groups = [
   ['General', [
     ["energyLabelKj", "Energy (Frida labelling, kJ)", "kJ"],

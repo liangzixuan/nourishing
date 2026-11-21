@@ -1,3 +1,4 @@
+import {reviewCanBeSaved,signedReviewLifetimeMs} from './domain/signed-review-time.mjs';
 import {createHmac, timingSafeEqual} from 'node:crypto';
 import {normalizePhoto, prepareVisionImage} from './domain/photo-images.mjs';
 import {photoAnalysis} from './domain/photo-records.mjs';
@@ -7,7 +8,7 @@ import {preparationFacts, mergePreparationFacts} from './domain/ingredient-prepa
 import {matchIngredient} from './domain/recipe-matching.mjs';
 
 export const CLOUD_PHOTO_MODEL = 'gemini-3.5-flash-lite';
-const PROVIDER = 'Google Gemini', REVIEW_TTL_MS = 30 * 60 * 1000;
+const PROVIDER = 'Google Gemini';
 // Includes the contract's maximum text sizes even when JSON escapes each code unit.
 const MAX_REVIEW_BYTES = 256 * 1024;
 const failure = (message, code = 400) => Object.assign(Error(message), {code, publicMessage: message});
@@ -24,12 +25,12 @@ function analysisValue(value) {
 export function signPhotoReview({owner, photoId, analysis}, {secret, now = Date.now()} = {}) {
   identity(owner, photoId); signingSecret(secret);
   if (!Number.isFinite(now)) throw failure('Photo logging is not configured.', 503);
-  const payload = Buffer.from(JSON.stringify({v: 1, owner, photoId, expiresAt: now + REVIEW_TTL_MS, analysis: analysisValue(analysis)}));
+  const payload = Buffer.from(JSON.stringify({v: 1, owner, photoId, expiresAt: now + signedReviewLifetimeMs, analysis: analysisValue(analysis)}));
   if (payload.length > MAX_REVIEW_BYTES) throw failure('Photo recognition returned an invalid result. Try again.', 502);
   const encoded = payload.toString('base64url');
   return encoded + '.' + createHmac('sha256', secret).update(encoded).digest('base64url');
 }
-export function verifyPhotoReview(token, {owner, photoId, secret, now = Date.now()} = {}) {
+export function verifyPhotoReview(token, {owner, photoId, secret, now = Date.now(), reviewSavedAt} = {}) {
   identity(owner, photoId); signingSecret(secret);
   const invalid = () => { throw failure('This photo review expired or changed. Scan the photo again.', 409); };
   if (typeof token !== 'string' || token.length > Math.ceil(MAX_REVIEW_BYTES * 4 / 3) + 45) invalid();
@@ -39,7 +40,7 @@ export function verifyPhotoReview(token, {owner, photoId, secret, now = Date.now
   if (received.length !== expected.length || !timingSafeEqual(received, expected)) invalid();
   let parsed;
   try { parsed = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8')); } catch { invalid(); }
-  if (!parsed || parsed.v !== 1 || parsed.owner !== owner || parsed.photoId !== photoId || !Number.isFinite(parsed.expiresAt) || !Number.isFinite(now) || parsed.expiresAt <= now || parsed.expiresAt > now + REVIEW_TTL_MS || Object.keys(parsed).some(key => !['v', 'owner', 'photoId', 'expiresAt', 'analysis'].includes(key))) invalid();
+  if (!parsed || parsed.v !== 1 || parsed.owner !== owner || parsed.photoId !== photoId || !reviewCanBeSaved(parsed.expiresAt - signedReviewLifetimeMs, parsed.expiresAt, now, reviewSavedAt) || Object.keys(parsed).some(key => !['v', 'owner', 'photoId', 'expiresAt', 'analysis'].includes(key))) invalid();
   return analysisValue(parsed.analysis);
 }
 function decoderSchema(value) {

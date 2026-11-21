@@ -1,3 +1,4 @@
+import {reviewCanBeSaved,signedReviewLifetimeMs} from './domain/signed-review-time.mjs';
 import {parseEnergyUnit,convertEnergy} from './domain/energy-units.mjs';
 import {createHmac,timingSafeEqual} from 'node:crypto';
 import {getBarcodeProduct,searchOpenFoodFacts} from './domain/open-food-facts.mjs';
@@ -19,15 +20,15 @@ export function validateBarcodeLookup(input){
 }
 export function validateBrandedSearch(input){keys(input,['q','page']);if(typeof input.q!=='string'||input.q.trim().length<2||input.q.length>200||!Number.isSafeInteger(input.page??1)||(input.page??1)<1||(input.page??1)>100)fail('Enter a product name.');return {q:input.q.trim(),page:input.page??1};}
 export function signBarcodeReview(food,{owner,reviewSecret,now=Date.now()}){
- ownerRequired(owner);const encoded=Buffer.from(JSON.stringify({version:1,owner,issued:now,expires:now+30*60*1000,food})).toString('base64url');
+ ownerRequired(owner);const encoded=Buffer.from(JSON.stringify({version:1,owner,issued:now,expires:now+signedReviewLifetimeMs,food})).toString('base64url');
  const token=encoded+'.'+mac(encoded,reviewSecret).toString('base64url');if(Buffer.byteLength(token)>BARCODE_BODY_BYTES-4096)fail('This product has too much source data.',502);return token;
 }
-export function verifyBarcodeReview(token,{owner,reviewSecret,now=Date.now()}){
+export function verifyBarcodeReview(token,{owner,reviewSecret,now=Date.now(),reviewSavedAt}){
  ownerRequired(owner);if(typeof token!=='string'||token.length>BARCODE_BODY_BYTES||!/^[-\w]+\.[-\w]{43}$/.test(token))fail('Look up this product again.',409);
  const [encoded,signature]=token.split('.'),expected=mac(encoded,reviewSecret),received=Buffer.from(signature,'base64url');
  if(received.length!==expected.length||!timingSafeEqual(expected,received))fail('Look up this product again.',409);
  let review;try{review=JSON.parse(Buffer.from(encoded,'base64url').toString('utf8'));}catch{fail('Look up this product again.',409);}
- if(review.version!==1||review.owner!==owner||!Number.isFinite(review.issued)||review.issued>now||review.expires<=now||review.expires!==review.issued+1800000)fail('Look up this product again.',409);
+ if(review.version!==1||review.owner!==owner||!reviewCanBeSaved(review.issued,review.expires,now,reviewSavedAt))fail('Look up this product again.',409);
  return review.food;
 }
 function withFood(state,food){

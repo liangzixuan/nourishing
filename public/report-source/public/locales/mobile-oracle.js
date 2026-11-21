@@ -1,4 +1,6 @@
 const rows={
+ searchCategories:['Search categories','Rechercher des catégories','Kategorien suchen','Pesquisar categorias'],
+ searchFoods:['Search foods','Rechercher des aliments','Lebensmittel suchen','Pesquisar alimentos'],
  backResults:["Back to results","Retour aux résultats","Zurück zu Ergebnissen","Voltar aos resultados"],
  title:['Ask the Oracle','Demander à Oracle','Oracle fragen','Pergunte ao Oracle'],
  newSearch:['New Search','Nouvelle recherche','Neue Suche','Nova pesquisa'],

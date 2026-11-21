@@ -388,8 +388,25 @@ function registerImportAndPhotoRoutes(add) {
     handler: async ({api, secret, body, json}) => json(200, await api.importCsv(secret, body)),
   });
   for (const [path, method, maxBytes] of [
-    ['/api/photos/analyze', 'analyzePhoto', 12 * MB],
     ['/api/photos/save', 'savePhoto', 5 * MB],
+    ['/api/barcode/save', 'barcodeSave', BARCODE_BODY_BYTES],
+  ]) {
+    add('POST', path, {
+      auth: 'prebody',
+      noSearch: 'Invalid review save request.',
+      maxBytes,
+      handler: async ({api, secret, body, req, json}) => {
+        const stamp = req.headers.get('X-Nourishing-Review-Saved-At');
+        const reviewSavedAt = stamp === null ? undefined : Date.parse(stamp);
+        if (stamp !== null && (!Number.isFinite(reviewSavedAt) || new Date(reviewSavedAt).toISOString() !== stamp)) {
+          throw Object.assign(Error('Invalid review save time.'), {code: 400, publicMessage: 'Invalid review save time.'});
+        }
+        return json(200, await api[method](secret, body, req.signal, {reviewSavedAt}));
+      },
+    });
+  }
+  for (const [path, method, maxBytes] of [
+    ['/api/photos/analyze', 'analyzePhoto', 12 * MB],
     ['/api/snapshots/prepare', 'prepareSnapshot', 12 * MB],
     ['/api/snapshots/save', 'saveSnapshot', 5 * MB],
     ['/api/note-photos/prepare', 'prepareNotePhoto', 12 * MB],
@@ -422,7 +439,6 @@ function registerImportAndPhotoRoutes(add) {
   for (const [path, method] of [
     ['/api/barcode/lookup', 'barcodeLookup'],
     ['/api/barcode/preview', 'barcodePreview'],
-    ['/api/barcode/save', 'barcodeSave'],
     ['/api/branded/search', 'brandedSearch'],
   ]) {
     add('POST', path, {

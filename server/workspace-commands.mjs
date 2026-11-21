@@ -67,6 +67,7 @@ const COMMAND_FIELDS = {
   'chart.delete': ['id'],
   'chart.visibility': ['id', 'visible'],
   'nutrientTarget.patch': ['date', 'id', 'changes'],
+  'nutrientTarget.reset': [],
   'nutrientTarget.setCustom': ['date', 'id', 'custom'],
   'preferences.patch': ['theme'],
   'entry.add': ['foodId', 'recipeId', 'mealId', 'date', 'time', 'group', 'amount', 'quantity', 'unit', 'portionId'],

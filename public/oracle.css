@@ -9,3 +9,9 @@
 
 .oracle-sheet .oracle-body{padding-bottom:var(--dc-nav-space,70px)}
 .oracle-sheet [data-oracle-nav]{position:fixed;max-width:700px}
+
+.mo-home .mo-intro{margin:0 0 20px;line-height:1.4}
+.mo-row input[role=switch]{appearance:none;box-sizing:border-box;display:inline-flex;align-items:center;flex:0 0 40px;width:40px;height:24px;padding:2px;margin:0;border:1px solid var(--muted);border-radius:20px;background:var(--pale);color:var(--ink);cursor:pointer}
+.mo-row input[role=switch]::before{content:"";width:18px;height:18px;border-radius:50%;background:currentColor}
+.mo-row input[role=switch]:checked{justify-content:flex-end;background:var(--green);border-color:var(--green);color:#102224}
+@media(forced-colors:active){.mo-row input[role=switch]{appearance:auto}}

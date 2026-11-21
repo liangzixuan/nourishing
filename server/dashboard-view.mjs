@@ -10,8 +10,7 @@ import {projectDashboardSettings,parseDashboardSettings} from './domain/dashboar
 import {weightSeries} from './domain/body-chart-sources.mjs';
 import {createWeightGoalView} from './domain/weight-goal-view.mjs';
 import {weightKilogramsPerUnit} from './domain/weight-units.mjs';
-import {parseDiaryDisplayPolicy,defaultDiaryDisplayPolicy} from './domain/diary-display.mjs';
-import {resolveScoreDisplay} from './domain/nutrition-score-policy.mjs';
+import {summaryRows} from './domain/dashboard-summary.mjs';
 import {resetLoggingStreaks,createLoggingStreakView} from './domain/logging-streaks.mjs';
 import {fastingScheduleView} from './domain/fasting-schedules.mjs';
 import Big from 'big.js';
@@ -35,14 +34,6 @@ export function dashboardRange(choice,today,state,prefs){
  let days=choice==='today'?1:Number(choice);
  if(choice==='all'){const dates=['entries','biometrics','exercises','notes','water'].flatMap(key=>(state[key]??[]).map(row=>row.date)).filter(date=>/^\d{4}-\d{2}-\d{2}$/.test(date)&&date<=today).sort();days=Math.min(3660,Math.max(1,Math.round((Date.parse(today)-Date.parse(dates[0]??today))/86400000)+1));}
  return {from:new Date(Date.parse(today+'T12:00:00Z')-(days-1)*86400000).toISOString().slice(0,10),to:today};
-}
-function summaryRows(report,settings,widget){
- const nutrient=id=>id==='netCarbohydrate'?report.carbohydrates.net.summary:report.nutrients.find(row=>row.id===id);
- const macros=[nutrient('protein'),{...report.carbohydrate.summary,name:report.carbohydrate.label,definition:report.carbohydrate.definition},nutrient('fat')].filter(Boolean);
- if(widget==='Nutrition Scores')return {rows:resolveScoreDisplay(settings).selected.map(id=>report.scores.summary.find(row=>row.id===id)).filter(Boolean),scores:true,targets:true};
- if(widget==='Highlighted Nutrients')return {rows:(parseDiaryDisplayPolicy(settings.diaryDisplay)??defaultDiaryDisplayPolicy).highlighted.map(id=>{const row=nutrient(id);return row?{...row,id}:null;}).filter(row=>row&&row.visible!==false),targets:true};
- if(widget==='Macro Targets')return {rows:macros,targets:true};
- const metric=widget==='Expenditure'?'expenditure':widget==='Energy Budget'?'remaining':'consumed';return {rows:macros,energy:report.energy.summary.find(row=>row.id===metric)?.mean??null};
 }
 export function dashboardView(state,{date},context){
  calendarDate(date);const captured=clock(context),preferences=parseDiscoverSettings(state.settings.discover),range=dashboardRange(preferences.reportRange,date,state,preferences);

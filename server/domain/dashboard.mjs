@@ -12,7 +12,7 @@ import {createGlucoseTimelineView} from './glucose-timeline.mjs';
 import {captureFastingTiming} from './fasting-view.mjs';
 
 const invalid=message=>{throw Object.assign(new Error(message),{status:400});};
-const nutritionIds=['calories','protein','fat','fiber','water'];
+import {dashboardNutritionCard} from './dashboard-summary.mjs';
 export function parseDashboardRange(input){
   if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).length!==2||Object.keys(input).some(key=>!['from','to'].includes(key)))invalid('Choose dashboard from and to dates only.');
   const {from,to}=parseNutritionReportOptions({...input,dayFilter:'all',includeToday:true,includeSupplements:true});return {from,to};
@@ -36,7 +36,7 @@ export function createDashboardView(state,input,{now,timeZone}={}){
   if(settings.widgets.energy)cards.energy=energyCard(report,days,range);
   if(settings.widgets.weight)cards.weight={...weightCard(days,settings.weightMetric,range),progress:configuredWeightProgress(state,range.to),goal:createWeightGoalView(state,range.to,{now:new Date(report.calendar.asOf),timeZone:report.calendar.timeZone,context:'dashboard'})};
   if(settings.widgets.fasting)cards.fasting=captureFastingTiming(state,report.calendar.asOf);
-  if(settings.widgets.nutrition)cards.nutrition={attributions:report.attributions,options:report.options,counts:report.counts,nutrients:nutritionIds.map(id=>report.nutrients.find(row=>row.id===id)),carbohydrate:report.carbohydrate,limitations:report.limitations.map(note=>note.text)};
+  if(settings.widgets.nutrition)cards.nutrition=dashboardNutritionCard(report);
   if(settings.widgets.coach)cards.coach={range:{...range}};
   if(settings.widgets.streaks)cards.streaks=createLoggingStreakView(state,{now:new Date(report.calendar.asOf),timeZone:report.calendar.timeZone});
   if(settings.widgets.cycle)cards.cycle=createCycleView(state,range,{now:new Date(report.calendar.asOf),timeZone:report.calendar.timeZone});

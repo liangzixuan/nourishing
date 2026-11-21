@@ -10,7 +10,7 @@ function wait(promise,signal){
  if(!signal)return promise;if(signal.aborted)return Promise.reject(aborted());
  return new Promise((resolve,reject)=>{const cancel=()=>reject(aborted());signal.addEventListener('abort',cancel,{once:true});promise.then(resolve,reject).finally(()=>signal.removeEventListener('abort',cancel));});
 }
-export async function cachedRead(path,fetchValue,signal,{fresh=false,onRefresh}={}){
+export async function cachedRead(path,fetchValue,signal,{fresh=false,onRefresh,onCached}={}){
  const cached=await readDeviceCache(path).catch(()=>({}));if(signal?.aborted)throw aborted();
  if(!cached.ticket)return fetchValue(signal);
  const key=JSON.stringify([cached.ticket,path]);
@@ -29,7 +29,7 @@ export async function cachedRead(path,fetchValue,signal,{fresh=false,onRefresh}=
   if(Date.now()-cached.savedAt>=FRESH_MS)void refresh().then(value=>{
    if(!signal?.aborted&&JSON.stringify(value)!==JSON.stringify(cached.value))onRefresh?.(value);
   }).catch(()=>{});
-  return cached.value;
+  onCached?.(cached);return cached.value;
  }
  return refresh();
 }

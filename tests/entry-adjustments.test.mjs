@@ -28,7 +28,7 @@ test('recipe adjustment uses source quantities, batch basis and occurrence-only 
 });
 test('meal read expands the logged occurrence and save does not multiply it twice',()=>{
  const {state,view,payload}=setup('meal'),before=structuredClone(state);assert.equal(view.items.length,2);assert.equal(view.items[0].recipeId,state.recipes[0].id);assert.equal(view.items[0].amount,2);assert.equal(view.items[1].amount,2);
- payload.items[0]={foodId:state.foods[0].id,quantity:25,unit:'g'};const preview=previewEntryAdjustment(state,payload);assert.equal(preview.before.values.calories,320);assert.equal(preview.after.values.calories,45);apply(state,payload);
+ payload.items[0]={foodId:state.foods[0].id,quantity:25,unit:'g'};const preview=previewEntryAdjustment(state,payload);assert.equal(preview.before.values.calories,320);assert.equal(preview.after.values.calories,45);assert.deepEqual(preview.ingredientCalories,[25,20]);apply(state,payload);
  assert.equal(state.entries[0].amount,1);assert.equal(entryFacts(state,state.entries[0]).nutrients.calories,45);assert.deepEqual(state.meals,before.meals);assert.deepEqual(state.entries[1],before.entries[1]);
 });
 test('stale sources, completed days, invalid portions and cycles reject without mutation',()=>{

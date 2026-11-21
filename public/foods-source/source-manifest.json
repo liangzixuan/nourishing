@@ -17,7 +17,12 @@
   {
     "source": "../nourishing-local/public/mobile-library.js",
     "target": "public/foods-source/mobile-library.js",
-    "sha256": "69da857aae4a2e492501ef781d785993c32da7d07944e01a8008b7b54c591d30"
+    "sha256": "69da857aae4a2e492501ef781d785993c32da7d07944e01a8008b7b54c591d30",
+    "sourceSha256": "69da857aae4a2e492501ef781d785993c32da7d07944e01a8008b7b54c591d30",
+    "outputSha256": "d3ac80523450b044b1a72eeb13e038b4ca97e55e7c0ee7414ae355368750ab6f",
+    "transforms": [
+      "Adapt collection empty states, utility actions and meal guidance for the Nourishing PWA."
+    ]
   },
   {
     "source": "../nourishing-local/public/mobile-library.css",
@@ -37,7 +42,12 @@
   {
     "source": "../nourishing-local/public/locales/mobile-library.js",
     "target": "public/foods-source/locales/mobile-library.js",
-    "sha256": "99aba4f2f293d8c2d94d11c0398dffffd198dcb1b8fa23690e3d48ef503aa00c"
+    "sha256": "99aba4f2f293d8c2d94d11c0398dffffd198dcb1b8fa23690e3d48ef503aa00c",
+    "sourceSha256": "99aba4f2f293d8c2d94d11c0398dffffd198dcb1b8fa23690e3d48ef503aa00c",
+    "outputSha256": "9e415926ed6106fe258e088bc854fc8dd30abc32f592bec3e1d928cdea5f02f6",
+    "transforms": [
+      "Add localized empty collection and meal guidance text."
+    ]
   },
   {
     "source": "../nourishing-local/public/locales/library-view.js",

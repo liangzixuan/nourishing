@@ -1,4 +1,8 @@
 const rows={
+ restore:['Restore Default Settings','Rétablir les réglages par défaut','Standardeinstellungen wiederherstellen','Restaurar configurações padrão'],
+ restoreScope:['Restore the default daily amounts, maximums, Custom settings, visibility and highlighted nutrients? Your macro and energy targets stay the same.','Rétablir les quantités quotidiennes, les seuils maximaux, la personnalisation, la visibilité et les nutriments en vedette par défaut ? Vos objectifs de macronutriments et d’énergie sont conservés.','Tagesziele, Obergrenzen, benutzerdefinierte Einstellungen, Sichtbarkeit und hervorgehobene Nährstoffe zurücksetzen? Ihre Makro- und Energieziele bleiben erhalten.','Restaurar os valores diários, os limites máximos, os ajustes personalizados, a visibilidade e os nutrientes em destaque? Suas metas de macros e energia serão mantidas.'],
+ restoreConfirm:['Restore','Rétablir','Wiederherstellen','Restaurar'],cancel:['Cancel','Annuler','Abbrechen','Cancelar'],
+ reopen:['Reopen Nutrient Targets for this account.','Rouvrez les objectifs nutritionnels de ce compte.','Öffnen Sie die Nährstoffziele für dieses Konto erneut.','Abra novamente as metas de nutrientes desta conta.'],
  additional:['More nutrients','Autres nutriments','Weitere Nährstoffe','Mais nutrientes'],
  title:['Nutrient Targets','Objectifs nutritionnels','Nährstoffziele','Metas de nutrientes'],
  'group.general':['General','Général','Allgemein','Geral'],'group.vitamins':['Vitamins','Vitamines','Vitamine','Vitaminas'],'group.minerals':['Minerals','Minéraux','Mineralstoffe','Minerais'],'group.carbohydrates':['Carbohydrates','Glucides','Kohlenhydrate','Carboidratos'],'group.lipids':['Lipids','Lipides','Fette','Lipídios'],'group.protein':['Protein','Protéines','Protein','Proteínas'],

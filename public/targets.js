@@ -9,8 +9,8 @@ import {mountRecordEditor} from './records.js';
 import {MobileWeightGoal} from './weight-goal-source/mobile-weight-goal.js';
 import {MobileEnergyExpenditure} from './expenditure-source/mobile-energy-expenditure.js';
 import {escape as e} from './html.js';
-import {request,command,queueCommand} from './diary-api.js';
-import {localWorkspaceState} from './local-engine.js';
+import {request,queueCommand} from './diary-api.js';
+import {localWorkspaceView} from './local-engine.js';
 import {readDeviceCache} from './device-cache.js';
 import {createNutrientTargetsView,projectDiaryBulkWrite} from './local-diary-projection.js';
 import {MobileNutrientTargets} from './targets-source/mobile-nutrient-targets.js';
@@ -28,7 +28,7 @@ const m=key=>formatMessage(uiLanguage(),'mobileTargets.'+key);
 /** Source Targets navigation; account commands and calculations stay server owned. */
 export function mountTargets({page,headerRoot,date,show,close,header,content,onChange=async()=>{},onExit,initialScreen='home',initialNutrient=null}){
  const root=document.createElement('section');root.className='targets-page';page.replaceChildren(root);
- const events=new AbortController();let child=null,menu=null,disposed=false,screen='home',revision,operation=0;
+ const events=new AbortController();let child=null,menu=null,disposed=false,screen='home',operation=0;
  document.body.classList.add('targets-mobile');
  const alive=()=>!disposed&&root.isConnected;
  const day=()=>typeof date==='function'?date():date;
@@ -70,9 +70,10 @@ export function mountTargets({page,headerRoot,date,show,close,header,content,onC
   }
   if(id==='nutrients'||id==='display'){
    reset();screen='nutrients';heading(m('nutrients'));root.innerHTML='<div class="mt-section"><div id="mobile-nutrient-targets-root"></div></div>';window.scrollTo(0,0);
+   const owner=readDeviceCache('/api/diary').then(cached=>cached.ticket);let revision;
    child=new MobileNutrientTargets({root:root.querySelector('#mobile-nutrient-targets-root'),header:headerRoot,date:day(),language:uiLanguage(),onNavigate:open,initialNutrient,
-    request:async(path,options)=>{const state=await localWorkspaceState(),cached=await readDeviceCache('/api/diary');revision=revision??cached.value?.revision;if(state&&revision)return {revision,...createNutrientTargetsView(state,day())};const value=await request(path,undefined,options?.signal);revision=value.revision;return value;},
-    save:async(type,payload)=>{const state=await localWorkspaceState();if(state)projectDiaryBulkWrite(structuredClone(state),{type,payload});const value=await queueCommand(revision,type,payload);await onChange();return value;}});return;
+    request:async(path,options)=>{const local=await localWorkspaceView();if(local){revision=local.revision;return {revision,...createNutrientTargetsView(local.state,day())};}const value=await request(path,undefined,options?.signal);revision=value.revision;return value;},
+    save:async(type,payload)=>{const ticket=await owner;if(!ticket)throw Error(formatMessage(uiLanguage(),'mobileNutrientTargets.reopen'));const local=await localWorkspaceView();if(local)projectDiaryBulkWrite(structuredClone(local.state),{type,payload});return queueCommand(revision,type,payload,{ticket});}});return;
   }
   if(id==='scores'||id==='diary'){void summary(id==='scores'?'choose-scores':'configure-diary-display');return;}
   if(id==='references'||id==='body'){void openProfileSettings({...ui,initialScreen:id});return;}
@@ -83,6 +84,10 @@ export function mountTargets({page,headerRoot,date,show,close,header,content,onC
   if(event.target.closest('[data-mt-back]')){if(!back())onExit();}
   else if(event.target.closest('[data-mt-menu]')){
    const origin=headerRoot.querySelector('[data-mt-menu]');origin.setAttribute('aria-expanded','true');
+   if(screen==='nutrients'){
+    menu=new AnchoredMenu({origin,label:m('tools'),placement:'bottom',bounds:{bottom:document.querySelector('.app-nav')?.getBoundingClientRect().top??innerHeight},className:'mnt-defaults-menu',items:[{id:'restore',label:child.m('restore'),disabled:!child.view||child.loading||child.saving}],onChoose:()=>child.confirmRestore(),onClose:()=>{menu=null;origin.setAttribute('aria-expanded','false');}});
+    return;
+   }
    menu=new AnchoredMenu({origin,anchor:origin,label:m('tools'),className:'mt-tools-menu',items:tools.map(id=>({id,label:m(id)})),onChoose:open,onClose:()=>{menu=null;origin.setAttribute('aria-expanded','false');}});
   }
  },{signal:events.signal});
