@@ -11,7 +11,7 @@ The remaining audit continues from the release recorded below. Screen-level comp
 - Repository: `C:/Users/zixua/Documents/REA/nourishing-cloud`
 - GitHub: `https://github.com/liangzixuan/nourishing`, branch `master`.
 - Production: `https://nourishing.app`, Appwrite site and database, public account registration.
-- Verified production release **1.0.31** at `d1eb594090cf2a02d371af0dba477e9444d24ef9`. All 674 local tests passed. CI passed 671 tests with 3 Linux skips. The site and three functions reached ready. All 67 live hashes matched the tested build, along with 885 inventory paths and 232 startup paths. See [CI run 44876757438](https://github.com/liangzixuan/nourishing/actions/runs/44876757438) and `.local/release-1.0.31-live-proof.json`.
+- Verified production release **1.1.0** at `e44ff9a6d8e3e733549d9a4ab42021e4b73edc19`. All 679 local tests passed. CI passed 676 tests with 3 Linux skips. The site and three functions reached ready. All 87 checked live assets matched the release build, along with the 885-path offline inventory and 232 startup paths. See [CI run 44880148001](https://github.com/liangzixuan/nourishing/actions/runs/44880148001) and `.local/release-1.1.0-live-proof.json`.
 - This is a PWA for Android and iOS. Health Connect and deliberately removed native integrations are excluded. Do not restart native APK work or use Azure.
 - Product wording must say Nourishing, not Cronometer. Reference filenames and historical evidence can retain Cronometer.
 - Preserve unrelated untracked `android/` and `docs/superpowers/`. Never stage them automatically.
@@ -23,6 +23,8 @@ The remaining audit continues from the release recorded below. Screen-level comp
 - Do not fake a successful save when local persistence fails. Fix the producing boundary and its consumers instead of hiding the error.
 - Dark theme by default; System follows the device. Keep headers/navigation fixed and Discover swipes responsive.
 - Photo Log: selecting/capturing a photo starts recognition automatically with a scan animation; concise results; whole item opens editing; closing discards; default group Uncategorized unless explicitly selected. No Find Foods step or provider/allowance explanation.
+- A Photo Log or Barcode save made during its signed review window can sync after expiry. Use the time recorded by the signed-in device when it durably saved the change.
+- Restore Default Settings applies to Nutrient Targets. Keep separately owned macro, calorie and energy settings intact.
 - Screenshots take precedence over manuals. Inspect real CRUD, menus, folds, back/outside dismissal, and blank/populated states.
 - The user has given standing approval to push commits. This includes the repository’s normal CI and production deployment on master. Do not stop after each small step or repeatedly ask for confirmation. Ask only for genuinely missing information or user-only device actions. No mandatory external review/sign-off.
 - The user does not prioritize backup work. Do not divert the parity goal into backup setup.
@@ -31,7 +33,7 @@ The remaining audit continues from the release recorded below. Screen-level comp
 
 1. `docs/full-interface-audit-2026-11-20.md`: current findings, state coverage, release evidence. This supersedes earlier broad parity claims.
 2. `C:/Users/zixua/Downloads/Cronometer Reference - 2026-11-20`: 333 retained PNG/XML pairs. Reference numbers have gaps; do not infer count from the largest number.
-3. `.local/full-parity/current-state-evidence.json` maps 333 pairs to their comparison evidence, with 479 comparison captures linked across all 333 states. Update these links as work proceeds. `.local/full-parity/inventory.json` and `.local/full-parity/references-01.png` through `references-28.png`: overview/index. An overview is not a per-state pass.
+3. `.local/full-parity/current-state-evidence.json` maps 333 pairs to their comparison evidence, with 491 capture links and 30 separate behavior-evidence records. Update these links as work proceeds. `.local/full-parity/inventory.json` and `.local/full-parity/references-01.png` through `references-28.png`: overview/index. An overview is not a per-state pass.
 4. `.local/parity-audit/`: current-app comparison screenshots. `.local/full-parity-server.mjs`, `.local/parity-audit-server.mjs` and existing browser tests provide synthetic local fixtures.
 5. Older user references/manuals: `C:/Users/zixua/Downloads/Cronometer Android App UI` and `C:/Users/zixua/Downloads/Cronometer Android App User Manual`.
 
@@ -47,6 +49,7 @@ Keep personal screenshots, extracted text, credentials and local evidence out of
 - 1.0.28 repaired R14. A disconnected user can select a valid note image, preview it and save. The real editor regression follows the image through an account switch, offline restart, queued corrections and a lost response to one canonical attachment.
 - 1.0.29 added durable saves for reviewed Multi-Add and Barcode changes. 1.0.30 also lets a user start Multi-Add review while disconnected using items available in the account snapshot. Signed provider review limits are recorded below.
 - 1.0.30 repaired cold-cache Walking creation and reopening. The 1.0.31 saved editor uses the original weight, retains explicit calorie overrides and reconciles queued changes with the canonical exercise.
+- 1.1.0 honors signed Photo Log and Barcode reviews at the stored device Save time and adds an offline Nutrient Targets reset. Adjust Meal now shows nutrition for the logged ingredients and retains the original template.
 - A one-time fast scheduled offline can expire before the first upload. The server applies its existing time validation. The November 21 browser checks cover queued history changes, starts, stops and deletion.
 
 ## Remaining work
@@ -54,9 +57,9 @@ Keep personal screenshots, extracted text, credentials and local evidence out of
 Use the current follow-up and state-coverage tables in `docs/full-interface-audit-2026-11-20.md`. Keep individual screenshots and fixture output in `.local/`. The archive contains 333 reference states. A range in the ledger identifies a journey, not a visual pass for each state.
 
 1. R14 shipped in 1.0.28. Keep the original offline-editor reproducer and the tracked note attachment regression. They cover different behaviors.
-2. All 333 reference pairs have linked captures with build or fixture labels. Read the November 21 comparison table for layout findings and the separate behavior checks. Android Chrome on a fresh API 36 emulator covered the final seven system picker references (266–271 and 293). Refs 269 and 271 use related system routes. Native picker layout varies by provider. Physical-camera and installed-PWA results remain open.
-3. Remaining differences include the Walking calorie formula, Restore Default Settings in Nutrient Targets, Oracle ranking, some chart-specific choices and graphs, and parts of the meal occurrence editor. Reference 192 shows the reset label but ends before confirmation. Its effect on values, thresholds, visibility, highlight order and saved custom values still needs a product decision. Profile, Support and About need product decisions for public policies, a private contact channel, community and video destinations. More → Support has a local mobile manual and a link labeled as a public GitHub issue tracker from 1.0.30 onward.
-4. Photo Log and barcode require a valid signed review for first upload. If first upload happens after the 30-minute expiry, the server rejects it. Lost replies after an accepted upload can replay after expiry. Keep this separate from note attachments and progress photos. A durable offline authorization requires a product decision. Fresh provider lookup, recognition and uncached catalog rows still require connectivity.
+2. All 333 reference pairs have linked captures with build or fixture labels. Read the November 21 and 1.1.0 comparison tables for layout findings and the separate behavior checks. Android Chrome on a fresh API 36 emulator covered the final seven system picker references (266–271 and 293). Refs 269 and 271 use related system routes. Native picker layout varies by provider. Physical-camera and installed-PWA results remain open.
+3. Remaining differences include the Walking calorie formula, Oracle ranking, some chart-specific choices and graphs, and artwork, spacing and data coverage in Adjust Meal. Profile, Support and About need product decisions for public policies, a private contact channel, community and video destinations. More → Support has a local mobile manual and a link labeled as a public GitHub issue tracker from 1.0.30 onward.
+4. Photo Log and Barcode require a valid review when Save enters the account’s durable queue. The 1.1.0 sender includes the original device save time on late first delivery and retry. Existing 1.0.31 pending rows already have that time. A new Save at or after expiry needs a fresh review. Fresh provider lookup, recognition and uncached catalog rows still require connectivity.
 5. Several reference screens show additional options tied to account data, paid services or platform controls. Keep them explicitly marked. Validate new work through the actual editor, account-owned local state and canonical receipt. Keep private evidence in `.local/`.
 
 The recorded browser checks for the calendar, day menu, staged editors and snapshot restart are reusable starting points. Existing exercise references 81–84 belong to recipe cleanup. The Dashboard summary reference is 325, with an additional example at 102.
