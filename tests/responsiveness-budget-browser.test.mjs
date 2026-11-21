@@ -272,9 +272,10 @@ test('core Diary, Photo Log, and More interactions respond instantly under 1500m
         const display = await cache.readDeviceCache('/api/display');
         const library = await cache.readDeviceCache('/api/library');
         const dashboard = await cache.readDeviceCache('/api/dashboard?date=' + today);
+        const fasting = await cache.readDeviceCache('/api/fasting?limit=25');
         const search = await import('/local-search.js');
         const localAll = await search.localFoodSearch(new URLSearchParams({category: 'all', sort: 'best', offset: '0', limit: '25'}));
-        return Boolean(copy?.snapshot?.state && display.value && library.value && dashboard.value && localAll?.items?.length);
+        return Boolean(copy?.snapshot?.state && display.value && library.value && dashboard.value && fasting.value?.history && localAll?.items?.length);
       }, f.today);
       if (!warmed) await new Promise(r => setTimeout(r, 100));
     }

@@ -46,7 +46,7 @@ export function warmDeviceViews(date,{delay=500,force=false}={}){
   '/api/dashboard?'+new URLSearchParams({date}),
   '/api/profile-settings?'+new URLSearchParams({date}),
   '/api/targets?'+new URLSearchParams({date}),
-  '/api/fasting?'+new URLSearchParams({date}),
+  '/api/fasting?limit=25',
   '/api/reminders',
   '/api/repeats?'+new URLSearchParams({date}),
   '/api/charts?'+new URLSearchParams({to:date}),
