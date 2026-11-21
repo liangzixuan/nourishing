@@ -59,3 +59,26 @@ dialog.mci-dialog{width:100%;max-width:700px;height:100dvh;max-height:100dvh;mar
 .mce-header-actions [data-mce-help]:focus-visible{outline:2px solid var(--green)}
 .mce-reorder{align-self:flex-end;margin:6px 12px;min-height:36px;background:none;border:0;color:var(--green);font:inherit;cursor:pointer}
 .mce-stage .mce-import{width:66%;border-radius:999px;background:var(--mobile-button-bg);color:var(--mobile-button-ink);min-height:38px}
+
+.mrs>h3 { margin-bottom:8px; }
+.mrs [data-mrs-instructions] { margin:0;line-height:1.4; }
+.mrs-fixed [data-mce-help] {
+ display:grid;place-items:center;justify-self:center;width:100%;min-height:44px;padding:0;
+ background:none;border:0;color:var(--ink);cursor:pointer;
+}
+.mrs-fixed [data-mce-help] span {
+ display:grid;place-items:center;width:1.15em;height:1.15em;border:2px solid currentColor;
+ border-radius:50%;font:700 1rem/1 Karla,sans-serif;
+}
+.mrs-fixed:has([data-mce-help]) { padding-block:0; }
+.ml-sheet .recipe-action-icon { width:24px;height:24px;filter:var(--mobile-icon-filter); }
+.library-review-dialog.recipe-message {
+ width:min(280px,calc(100% - 32px));max-height:calc(100dvh - 32px);overflow:auto;
+ box-sizing:border-box;padding:16px;border:0;border-radius:10px;background:var(--paper);color:var(--ink);
+}
+.recipe-message::backdrop { background:#0009; }
+.recipe-message .dialog-head { display:flex;align-items:center;justify-content:space-between;gap:12px; }
+.recipe-message .dialog-head h2 { margin:0;font:700 1.05rem/1.3 Karla,sans-serif; }
+.recipe-message p { margin:12px 0 4px;font:400 calc(14rem / 18)/1.45 Lato,sans-serif; }
+.recipe-message button { min-width:44px;min-height:44px;border:0;background:none;color:var(--green);font:inherit; }
+.recipe-message [data-action=close-dialog] { display:block;margin-inline-start:auto;font-weight:700; }

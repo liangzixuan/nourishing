@@ -4,7 +4,7 @@ import {isExerciseEntry,exerciseEntryFacts} from './report-source/server/nutriti
 import {displayValue,displayUnit} from './dashboard-source/energy-display.js';
 import {parseEnergyUnit} from './dashboard-source/energy-units.mjs';
 import {formatMessage} from './report-source/public/message-format.js';
-import {nutrientDisplayName} from './report-source/public/nutrient-language.js';
+import {mobileNutrientName} from './mobile-nutrient-groups.js';
 import {coreText} from './core-cloud-messages.js';
 const message=(language,key,values)=>formatMessage(language,'diaryDisplay.'+key,values);
 const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
@@ -25,7 +25,7 @@ export function renderDiaryTableAmount(row,{label=false,energyUnit='kcal',langua
   const recorded=diaryRecordedAmount(row);
   const value=row.active?recorded===null?'—':`${amount(displayValue(recorded,row.unit,energyUnit),language)} ${displayUnit(row.unit,energyUnit)}`:message(language,'inactive');
   const detail=row.status==='partial'?message(language,'partial',row.coverage):!row.active?message(language,'enableNet'):'';
-  return `<span class="diary-table-amount" data-diary-column="${esc(row.id)}" data-value="${recorded??''}" data-status="${row.status}" data-unit="${esc(row.unit)}">${label?`<span>${esc(diaryAmountName(row,energyUnit,language,nutrientDisplayName(row,language)))}: </span>`:''}<span>${esc(value)}</span>${detail?`<small>${esc(detail)}</small>`:''}</span>`;
+  return `<span class="diary-table-amount" data-diary-column="${esc(row.id)}" data-value="${recorded??''}" data-status="${row.status}" data-unit="${esc(row.unit)}">${label?`<span>${esc(diaryAmountName(row,energyUnit,language,mobileNutrientName(row,language)))}: </span>`:''}<span>${esc(value)}</span>${detail?`<small>${esc(detail)}</small>`:''}</span>`;
 }
 /** Table cells consume canonical facts. The table policy never changes recorded intake. */
 export function diaryEntryAmount(entry,table,{energyUnit='kcal',language='en',exerciseFractionDigits=2}={}){

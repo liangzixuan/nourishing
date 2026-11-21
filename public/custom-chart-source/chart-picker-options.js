@@ -1,8 +1,7 @@
 import {mobileScoreOrder} from '../diary-summary-source/score-labels.js';
-import {sourceNutrients} from '../report-source/server/source-nutrient-registry.mjs';
-const standardNutrients=new Set(sourceNutrients.map(row=>row.id));
+import {isStandardMobileNutrient} from '../mobile-nutrient-groups.js';
 export function standardChartMetric(metric){
- if(metric.kind==='nutrient')return metric.id!=='carbs'&&standardNutrients.has(metric.id);
+ if(metric.kind==='nutrient')return metric.id!=='carbs'&&isStandardMobileNutrient(metric.id);
  if(metric.kind==='score')return mobileScoreOrder.slice(0,15).includes(metric.id);
  return metric.kind==='biometric'||metric.kind==='carbohydrate'&&Boolean(metric.mode);
 }

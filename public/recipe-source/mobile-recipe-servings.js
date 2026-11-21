@@ -7,9 +7,16 @@ export class MobileRecipeServings{
   Object.assign(this,{root,form,editor,facts,readItems,language});this.abort=new AbortController();this.m=key=>formatMessage(language,'mobileCompositeEditor.'+key);
   this.yield=form.elements.namedItem('servings');this.name=form.elements.namedItem('serving');this.basis=form.elements.namedItem('servingBasis');this.mode=this.basis.value||'batch';
   root.classList.add('mrs');root.querySelector('h3').textContent=this.m('servingSizes');
-  const toggle=document.createElement('label');toggle.className='mrs-toggle';toggle.innerHTML=`${e(this.m('advancedServings'))}<input type="checkbox" data-mrs-advanced role="switch" ${editor.rows.length?'checked':''}>`;root.querySelector('h3').after(toggle);this.toggle=toggle.querySelector('input');
+  this.instructions=document.createElement('p');this.instructions.dataset.mrsInstructions='';root.querySelector('h3').after(this.instructions);
+  const toggle=document.createElement('label');toggle.className='mrs-toggle';toggle.innerHTML=`${e(this.m('advancedServings'))}<input type="checkbox" data-mrs-advanced role="switch" ${editor.rows.length?'checked':''}>`;this.instructions.after(toggle);this.toggle=toggle.querySelector('input');
   this.table=document.createElement('section');this.table.className='mrs-table';this.table.innerHTML=`<div class="mrs-tabs" role="group" aria-label="${e(this.m('servingBasis'))}">${['batch','weight','volume'].map(mode=>`<button type="button" data-mrs-mode="${mode}">${e(this.m(mode+'Based'))}</button>`).join('')}</div><div class="mrs-columns"><span data-mrs-count>#</span><span>${e(this.m('servingName'))}</span><span data-mrs-caption></span><span></span></div><div class="mrs-builtins" data-mrs-builtins></div><div class="mrs-base"><span data-mrs-count>1</span><div data-mrs-name></div><div data-mrs-amount></div><span></span></div><p data-mrs-error role="alert" hidden></p>`;
   toggle.after(this.table);
+  const builtins=this.table.querySelector('[data-mrs-builtins]');
+  const fixedRow=`<div class="mrs-fixed"><span data-mrs-count>1</span><span data-mrs-label></span><span data-mrs-value></span><button type="button" data-mce-help="servings" aria-label="${e(this.m('servingHelp'))}"><span aria-hidden="true">?</span></button></div>`;
+  builtins.innerHTML=fixedRow.repeat(2);
+  [this.fullRecipe,this.unitRow]=builtins.children;
+  this.fullRecipe.querySelector('[data-mrs-label]').textContent=this.m('fullRecipe');
+  this.unitRow.querySelector('[data-mrs-value]').textContent='1';
   for(const [input,target]of [[this.name,'[data-mrs-name]'],[this.yield,'[data-mrs-amount]']]){const label=input.closest('label');this.table.querySelector(target).append(input);label.remove();}
   this.name.setAttribute('aria-label',this.m('servingName'));this.yield.setAttribute('aria-label',this.m('perRecipe'));
   this.amount=document.createElement('input');Object.assign(this.amount,{type:'number',min:'0.000001',max:'10000000',step:'any'});this.amount.dataset.mrsBaseValue='';this.table.querySelector('[data-mrs-amount]').append(this.amount);
@@ -37,7 +44,9 @@ export class MobileRecipeServings{
  }
  refreshBuiltins(){
   const total=this.mode==='batch'?1:this.total(),number=value=>value===null?'—':value.toLocaleString(this.language,{maximumFractionDigits:3});
-  this.table.querySelector('[data-mrs-builtins]').innerHTML=`<div class="mrs-fixed"><span data-mrs-count>1</span><span>${e(this.m('fullRecipe'))}</span><span>${number(total)}</span><span></span></div>${this.mode==='batch'?'':`<div class="mrs-fixed"><span data-mrs-count>1</span><span>${this.mode==='weight'?'g':'mL'}</span><span>1</span><span></span></div>`}`;
+  this.fullRecipe.querySelector('[data-mrs-value]').textContent=number(total);
+  this.unitRow.hidden=this.mode==='batch';
+  this.unitRow.querySelector('[data-mrs-label]').textContent=this.mode==='volume'?'mL':'g';
  }
  refreshRows(){
   for(const {element}of this.editor.rows){
@@ -49,6 +58,7 @@ export class MobileRecipeServings{
   }
  }
  refresh(){
+  this.instructions.textContent=this.m(this.mode+'Instructions');
   const advanced=this.toggle.checked;this.table.classList.toggle('mrs-advanced',advanced);this.editor.root.hidden=!advanced;this.table.querySelector('[data-mrs-builtins]').hidden=!advanced;
   for(const button of this.table.querySelectorAll('[data-mrs-mode]')){button.setAttribute('aria-pressed',String(button.dataset.mrsMode===this.mode));button.hidden=button.dataset.mrsMode==='volume'&&this.mode!=='volume'&&!this.form.elements.namedItem('batchVolumeMl').value;}
   const caption=this.m(this.mode==='batch'?'perRecipe':this.mode==='weight'?'gramsPerServing':'mlPerServing');this.table.querySelector('[data-mrs-caption]').textContent=caption;this.amount.setAttribute('aria-label',caption);

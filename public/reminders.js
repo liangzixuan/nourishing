@@ -33,7 +33,7 @@ export function mountReminders({root,notifications=false}){
   localSubscription=false;
   if(supported())try{const registration=await navigator.serviceWorker.getRegistration('/');const subscription=await registration?.pushManager?.getSubscription();if(alive())localSubscription=Boolean(subscription);}catch{/* Permission and connection controls remain available. */}
  }
- const schedules=createReminderSchedulePanel({getData:()=>data,refresh,notify});
+ const schedules=createReminderSchedulePanel({getData:()=>data,refresh,notify,notifications});
  function render(){
   if(!alive())return;
   const reload=`<button type="button" data-push-reload>${m("mobileNutrientDetail.reload")}</button>`;
@@ -43,7 +43,7 @@ export function mountReminders({root,notifications=false}){
   const status=permission==='unsupported'?m("accountCloud.useASupportedBrowserOrInstalledApp"):permission==='denied'?m("accountCloud.allowNotificationsInYourBrowserSettings"):localSubscription?m("accountCloud.browserSubscriptionActive"):permission==='granted'?m("accountCloud.readyToConnect"):m("accountCloud.notConnected");
   const resumeAllowed=!data.paused||data.devices?.some(row=>row.currentOrigin);
   const switchRow=notifications&&!schedules.editing?`<label class="mds-row"><strong>${coreText('more.allowNotifications')}</strong><input type="checkbox" role="switch" class="dc-switch" data-notifications-enabled data-reminder-action="pause" ${data.paused?'':'checked'} ${resumeAllowed?'':'disabled'}></label>`:'';
-  controls.innerHTML=`${switchRow}${schedules.editing||notifications&&resumeAllowed?'':`<section class="push-browser"><h2>${m("privacy.browserTitle")}</h2><p class="push-muted">${status}</p><div class="push-actions"><button type="button" class="primary" data-connect ${canConnect?'':'disabled'}>${m("reminders.connect")}</button><button type="button" data-disconnect ${localSubscription?'':'hidden'}>${m("reminders.disconnect")}</button></div></section>`}${!notifications||!data.paused||schedules.locked?schedules.html({showPause:!notifications}):''}${schedules.editing||notifications&&data.paused?'':`<details class="push-connections" ${devicesOpen?'open':''}><summary>${m("accountCloud.connectedDevices")} <span>${data.devices.length}</span></summary><ul class="push-devices">${data.devices.map(device=>`<li><span>${e(device.label||m("accountCloud.browser"))}</span><div class="push-actions"><button type="button" data-test="${e(device.id)}" ${device.currentOrigin?'':'disabled'}>${pendingTests.has(device.id)?m("accountCloud.checkResult"):m("accountCloud.test")}</button><button type="button" data-remove="${e(device.id)}">${m("reminders.remove")}</button></div></li>`).join('')||`<li class="push-muted">${m("accountCloud.noConnectedDevices")}</li>`}</ul>${!schedules.locked&&!failed?reload:''}</details>`}${schedules.locked||failed?`<div class="push-reload">${schedules.locked?`<p>${m("mobileNutrientTargets.unknown")}</p>`:''}${reload}</div>`:''}`;
+  controls.innerHTML=`${switchRow}${schedules.editing||notifications&&resumeAllowed?'':`<section class="push-browser"><h2>${m("privacy.browserTitle")}</h2><p class="push-muted">${status}</p><div class="push-actions"><button type="button" class="primary" data-connect ${canConnect?'':'disabled'}>${m("reminders.connect")}</button><button type="button" data-disconnect ${localSubscription?'':'hidden'}>${m("reminders.disconnect")}</button></div></section>`}${!notifications||!data.paused||schedules.locked?schedules.html({showPause:!notifications,shortcuts:notifications}):''}${schedules.editing||notifications&&data.paused?'':`<details class="push-connections" ${devicesOpen?'open':''}><summary>${m("accountCloud.connectedDevices")} <span>${data.devices.length}</span></summary><ul class="push-devices">${data.devices.map(device=>`<li><span>${e(device.label||m("accountCloud.browser"))}</span><div class="push-actions"><button type="button" data-test="${e(device.id)}" ${device.currentOrigin?'':'disabled'}>${pendingTests.has(device.id)?m("accountCloud.checkResult"):m("accountCloud.test")}</button><button type="button" data-remove="${e(device.id)}">${m("reminders.remove")}</button></div></li>`).join('')||`<li class="push-muted">${m("accountCloud.noConnectedDevices")}</li>`}</ul>${!schedules.locked&&!failed?reload:''}</details>`}${schedules.locked||failed?`<div class="push-reload">${schedules.locked?`<p>${m("mobileNutrientTargets.unknown")}</p>`:''}${reload}</div>`:''}`;
   if(busy||schedules.locked)controls.querySelectorAll('button,input,select').forEach(control=>{if(!control.hasAttribute('data-push-reload')||busy)control.disabled=true;});
  }
  async function run(action){
@@ -81,7 +81,7 @@ export function mountReminders({root,notifications=false}){
   });
  };
  controls.addEventListener('change',event=>{
-  if(event.target.hasAttribute('data-notifications-enabled')&&!busy&&!schedules.locked)void run(()=>schedules.action(event.target));
+  if((event.target.hasAttribute('data-notifications-enabled')||event.target.dataset.reminderAction==='shortcut')&&!busy&&!schedules.locked)void run(()=>schedules.action(event.target));
  });
  const capture=event=>{const form=event.target.form;if(form?.hasAttribute('data-reminder-form')){schedules.capture(form);if(event.target.name==='kind')schedules.changed(form);}};
  controls.oninput=capture;controls.onchange=capture;

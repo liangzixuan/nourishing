@@ -1,5 +1,11 @@
 import './reminder-notification.js';
 const rows=[
+ ['foodShortcut','Reminder to Log Food','Rappel de saisie des aliments','Erinnerung zum Eintragen von Lebensmitteln','Lembrete para registrar alimentos'],
+ ['foodShortcutHint','Remind me if I have not logged food by the selected time.','Me rappeler de saisir mes aliments si je ne l’ai pas fait à l’heure choisie.','Erinnere mich zur gewählten Zeit, wenn ich noch keine Lebensmittel eingetragen habe.','Lembrar se eu ainda não tiver registrado alimentos no horário escolhido.'],
+ ['groupHint','Choose a diary group to set its reminder time.','Choisissez un groupe du journal pour régler l’heure du rappel.','Wähle eine Tagebuchgruppe, um die Erinnerungszeit festzulegen.','Escolha um grupo do diário para definir o horário do lembrete.'],
+ ['weightShortcut','Log Weight Reminder','Rappel de pesée','Erinnerung zum Wiegen','Lembrete para registrar o peso'],
+ ['weightShortcutHint','Remind me seven days after my last entry for the selected weight metric.','Me rappeler sept jours après ma dernière saisie pour la mesure de poids choisie.','Erinnere mich sieben Tage nach dem letzten Eintrag für die gewählte Gewichtsmessung.','Lembrar sete dias após a última entrada para a medida de peso selecionada.'],
+ ['fastShortcut','Fasting Reminder','Rappel de jeûne','Fastenerinnerung','Lembrete de jejum'],
  ["native.name", "Phone name", "Nom du téléphone", "Smartphone-Name", "Nome do celular"],
  ["native.defaultName", "My phone", "Mon téléphone", "Mein Smartphone", "Meu celular"],
  ["native.connect", "Connect phone", "Connecter le téléphone", "Smartphone verbinden", "Conectar celular"],

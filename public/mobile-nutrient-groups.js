@@ -1,5 +1,9 @@
 import {nutrientDisplayName} from './report-source/public/nutrient-language.js';
 
+import {sourceNutrients} from './report-source/server/source-nutrient-registry.mjs';
+const sourceIds=new Set(sourceNutrients.map(row=>row.id));
+export const isStandardMobileNutrient=id=>sourceIds.has(id);
+
 // Order on the mobile Report and Nutrient Targets screens. Source identities,
 // units, targets and visibility remain on the original rows.
 export const mobileNutrientGroups = {
