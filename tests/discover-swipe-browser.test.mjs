@@ -57,7 +57,7 @@ test('Discover touch swipes navigate bounded tabs while preserving scrolling, co
   await swipe({dx:-25});await tab('dashboard');await swipe({multi:true});await tab('dashboard');await swipe({cancel:true});await tab('dashboard');
   await swipe({selector:'[data-discover=edit-report]'});await tab('charts');
   await page.locator('[data-tab=dashboard]').click();await tab('dashboard');
-  await page.getByRole('button',{name:'Newsfeed',exact:true}).click();await page.locator('#sheet').getByText('Fixture News',{exact:true}).waitFor();await swipe();await tab('dashboard');await page.getByRole('button',{name:'Close',exact:true}).click();
+  await page.getByRole('button',{name:'Newsfeed',exact:true}).click();await page.locator('#sheet').getByText('Fixture News',{exact:true}).waitFor();await swipe();await tab('dashboard');await page.getByRole('button',{name:'Back',exact:true}).click();
   assert.equal(await swipe(),true);await tab('charts');await page.locator('[data-manage]').waitFor();
   const plot=page.locator('canvas').first();await plot.waitFor();await swipe({selector:'canvas'});await tab('report');
   await page.locator('[data-tab=charts]').click();await tab('charts');await swipe({selector:'.mcl-plot'});await tab('report');
