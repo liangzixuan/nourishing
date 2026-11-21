@@ -60,17 +60,27 @@ export function createWebPushStore({db,ownerId:owner,origin,vapid,now=()=>Date.n
    if(existing)Object.assign(existing,device);else state.devices.push(device);
   });return {deviceId:id,...await status()};
  }
+ function registeredDeviceId(input,field){
+  const hasId=Object.hasOwn(input,field),hasEndpoint=Object.hasOwn(input,'endpoint');
+  if(hasId===hasEndpoint)pushFail('Choose a connected device.');
+  if(hasEndpoint){
+   if(typeof input.endpoint!=='string'||!input.endpoint||input.endpoint.length>4096)pushFail('Choose a connected device.');
+   return rowId(owner,origin,input.endpoint);
+  }
+  if(typeof input[field]!=='string'||!/^[a-f0-9]{36}$/.test(input[field]))pushFail('Choose a connected device.');
+  return input[field];
+ }
  async function unsubscribe(input){
-  pushFields(input,['id','endpoint']);if((typeof input.id==='string')===(typeof input.endpoint==='string'))pushFail('Choose a connected device.');
-  const id=input.id??rowId(owner,origin,input.endpoint);if(!/^[a-f0-9]{36}$/.test(id))pushFail('Choose a connected device.');
+  pushFields(input,['id','endpoint']);const id=registeredDeviceId(input,'id');
   const account=await load();if(account)await update(account,state=>{state.devices=state.devices.filter(device=>device.id!==id);});return status();
  }
  async function test(input){
-  pushFields(input,['deviceId','requestId']);if(typeof input.deviceId!=='string'||!/^[a-f0-9]{36}$/.test(input.deviceId)||!uuid(input.requestId))pushFail('Choose a connected device.');
-  const receiptArgs=args('push_deliveries',rowId(owner,input.requestId)),fingerprint=digest({type:'web-push.test',...input});
+  pushFields(input,['deviceId','endpoint','requestId']);const deviceId=registeredDeviceId(input,'deviceId');
+  if(!uuid(input.requestId))pushFail('Choose a connected device.');
+  const receiptArgs=args('push_deliveries',rowId(owner,input.requestId)),fingerprint=digest({type:'web-push.test',deviceId,requestId:input.requestId});
   const readReceipt=async()=>{const row=await optional(()=>db.getRow(receiptArgs));if(row&&(row.ownerId!==owner||row.fingerprint!==fingerprint))conflict();return row;};
   const previous=await readReceipt();if(previous)return publicReceipt(previous);
-  const config=parseVapid(vapid,origin),account=await load(),device=account?.state.devices.find(device=>device.id===input.deviceId&&device.origin===origin);
+  const config=parseVapid(vapid,origin),account=await load(),device=account?.state.devices.find(device=>device.id===deviceId&&device.origin===origin);
   if(!device)pushFail('Connect this browser first.',404);const at=stamp();
   if(device.lastTestAt&&Date.parse(at)-Date.parse(device.lastTestAt)<60000)pushFail('Wait one minute before another test.',429);
   await pruneReminderReceipts({db,owner,now:new Date(at)});

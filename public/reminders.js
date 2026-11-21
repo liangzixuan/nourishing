@@ -22,7 +22,7 @@ export async function disconnectCurrentPush(){
 export function mountReminders({root,notifications=false}){
  root.innerHTML=`<section class="push-panel"><p role="status">${m("mobileNutrientDetail.loading")}</p><div data-push-controls></div></section>`;
  const panel=root.querySelector('.push-panel'),message=panel.querySelector('[role=status]'),controls=panel.querySelector('[data-push-controls]');
- let data,busy=false,failed=false,disposed=false,readAbort,localSubscription=false,devicesOpen=false;
+ let data,busy=false,failed=false,disposed=false,readAbort,localEndpoint=null,devicesOpen=false;
  const alive=()=>!disposed&&panel.isConnected;
  const supported=()=>window.isSecureContext&&'Notification'in window&&'PushManager'in window&&'serviceWorker'in navigator;
  const notify=text=>{if(alive())message.textContent=text;};
@@ -30,8 +30,8 @@ export function mountReminders({root,notifications=false}){
   if(!alive())return;
   readAbort?.abort();const controller=new AbortController();readAbort=controller;
   const result=await request('/api/reminders',undefined,controller.signal);if(!alive())return;data=result;
-  localSubscription=false;
-  if(supported())try{const registration=await navigator.serviceWorker.getRegistration('/');const subscription=await registration?.pushManager?.getSubscription();if(alive())localSubscription=Boolean(subscription);}catch{/* Permission and connection controls remain available. */}
+  localEndpoint=null;
+  if(supported())try{const registration=await navigator.serviceWorker.getRegistration('/');const subscription=await registration?.pushManager?.getSubscription();if(alive())localEndpoint=subscription?.endpoint??null;}catch{/* Permission and connection controls remain available. */}
  }
  const schedules=createReminderSchedulePanel({getData:()=>data,refresh,notify,notifications});
  function render(){
@@ -40,10 +40,14 @@ export function mountReminders({root,notifications=false}){
   if(!data){controls.innerHTML=reload;return;}
   if(!data.configured){controls.innerHTML=`<p>${m("accountCloud.notificationsAreUnavailable")}</p>`+reload;return;}
   const permission=supported()?Notification.permission:'unsupported',canConnect=supported()&&permission!=='denied';
-  const status=permission==='unsupported'?m("accountCloud.useASupportedBrowserOrInstalledApp"):permission==='denied'?m("accountCloud.allowNotificationsInYourBrowserSettings"):localSubscription?m("accountCloud.browserSubscriptionActive"):permission==='granted'?m("accountCloud.readyToConnect"):m("accountCloud.notConnected");
+  const status=permission==='unsupported'?m("accountCloud.useASupportedBrowserOrInstalledApp"):permission==='denied'?m("accountCloud.allowNotificationsInYourBrowserSettings"):localEndpoint?m("accountCloud.browserSubscriptionActive"):permission==='granted'?m("accountCloud.readyToConnect"):m("accountCloud.notConnected");
   const resumeAllowed=!data.paused||data.devices?.some(row=>row.currentOrigin);
   const switchRow=notifications&&!schedules.editing?`<label class="mds-row"><strong>${coreText('more.allowNotifications')}</strong><input type="checkbox" role="switch" class="dc-switch" data-notifications-enabled data-reminder-action="pause" ${data.paused?'':'checked'} ${resumeAllowed?'':'disabled'}></label>`:'';
-  controls.innerHTML=`${switchRow}${schedules.editing||notifications&&resumeAllowed?'':`<section class="push-browser"><h2>${m("privacy.browserTitle")}</h2><p class="push-muted">${status}</p><div class="push-actions"><button type="button" class="primary" data-connect ${canConnect?'':'disabled'}>${m("reminders.connect")}</button><button type="button" data-disconnect ${localSubscription?'':'hidden'}>${m("reminders.disconnect")}</button></div></section>`}${!notifications||!data.paused||schedules.locked?schedules.html({showPause:!notifications,shortcuts:notifications}):''}${schedules.editing||notifications&&data.paused?'':`<details class="push-connections" ${devicesOpen?'open':''}><summary>${m("accountCloud.connectedDevices")} <span>${data.devices.length}</span></summary><ul class="push-devices">${data.devices.map(device=>`<li><span>${e(device.label||m("accountCloud.browser"))}</span><div class="push-actions"><button type="button" data-test="${e(device.id)}" ${device.currentOrigin?'':'disabled'}>${pendingTests.has(device.id)?m("accountCloud.checkResult"):m("accountCloud.test")}</button><button type="button" data-remove="${e(device.id)}">${m("reminders.remove")}</button></div></li>`).join('')||`<li class="push-muted">${m("accountCloud.noConnectedDevices")}</li>`}</ul>${!schedules.locked&&!failed?reload:''}</details>`}${schedules.locked||failed?`<div class="push-reload">${schedules.locked?`<p>${m("mobileNutrientTargets.unknown")}</p>`:''}${reload}</div>`:''}`;
+  const browserControls=`<section class="push-browser"><h2>${m("privacy.browserTitle")}</h2><p class="push-muted">${status}</p><div class="push-actions"><button type="button" class="primary" data-connect ${canConnect?'':'disabled'}>${m("reminders.connect")}</button>${localEndpoint?`<button type="button" data-test-local>${m(pendingTests.has(localEndpoint)?"accountCloud.checkResult":"reminders.test")}</button>`:""}<button type="button" data-disconnect ${localEndpoint?'':'hidden'}>${m("reminders.disconnect")}</button></div></section>`;
+  const inlineBrowser=!notifications||!localEndpoint;
+  const devices=`<details class="push-connections" ${devicesOpen?'open':''}><summary>${m("accountCloud.connectedDevices")} <span>${data.devices.length}</span></summary>${inlineBrowser?"":browserControls}<ul class="push-devices">${data.devices.map(device=>`<li><span>${e(device.label||m("accountCloud.browser"))}</span><div class="push-actions"><button type="button" data-test="${e(device.id)}" ${device.currentOrigin?'':'disabled'}>${pendingTests.has(device.id)?m("accountCloud.checkResult"):m("accountCloud.test")}</button><button type="button" data-remove="${e(device.id)}">${m("reminders.remove")}</button></div></li>`).join('')||`<li class="push-muted">${m("accountCloud.noConnectedDevices")}</li>`}</ul>${!schedules.locked&&!failed?reload:''}</details>`;
+  const scheduleControls=!notifications||!data.paused||schedules.locked?schedules.html({showPause:!notifications,shortcuts:notifications}):'';
+  controls.innerHTML=`${switchRow}${!schedules.editing&&inlineBrowser?browserControls:''}${scheduleControls}${!schedules.editing?devices:''}${schedules.locked||failed?`<div class="push-reload">${schedules.locked?`<p>${m("mobileNutrientTargets.unknown")}</p>`:''}${reload}</div>`:''}`;
   if(busy||schedules.locked)controls.querySelectorAll('button,input,select').forEach(control=>{if(!control.hasAttribute('data-push-reload')||busy)control.disabled=true;});
  }
  async function run(action){
@@ -72,9 +76,11 @@ export function mountReminders({root,notifications=false}){
    if(subscription){await request('/api/reminders/unsubscribe',{endpoint:subscription.endpoint});await subscription.unsubscribe();if(!alive())return;await refresh();}notify(m("accountCloud.disconnected"));
   });
   else if(button.dataset.remove)void run(async()=>{await request('/api/reminders/unsubscribe',{id:button.dataset.remove});pendingTests.delete(button.dataset.remove);if(!alive())return;await refresh();notify(m("accountCloud.deviceRemoved"));});
-  else if(button.dataset.test)void run(async()=>{
-   const id=button.dataset.test;if(!pendingTests.has(id))pendingTests.set(id,crypto.randomUUID());
-   try{const result=await request('/api/reminders/test',{deviceId:id,requestId:pendingTests.get(id)});pendingTests.delete(id);if(!alive())return;
+  else if(button.dataset.test||button.hasAttribute('data-test-local'))void run(async()=>{
+   const target=button.dataset.test?{deviceId:button.dataset.test}:{endpoint:localEndpoint};
+   const id=target.deviceId??target.endpoint;if(!id)return;
+   if(!pendingTests.has(id))pendingTests.set(id,crypto.randomUUID());
+   try{const result=await request('/api/reminders/test',{...target,requestId:pendingTests.get(id)});pendingTests.delete(id);if(!alive())return;
     notify({accepted:m("accountCloud.sentCheckYourNotifications"),expired:m("accountCloud.connectionExpiredConnectThisBrowserAgain"),rejected:m("accountCloud.thePushServiceRejectedTheNotification"),unknown:m("accountCloud.deliveryNotConfirmed")}[result.outcome]??m("accountCloud.deliveryNotConfirmed"));
     if(result.outcome==='expired')await refresh();
    }catch(error){if(error.status&&error.status<500)pendingTests.delete(id);throw error;}

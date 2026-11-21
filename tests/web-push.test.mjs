@@ -43,6 +43,12 @@ test('status and connect stay paused; only public device metadata and public VAP
  await f.store.subscribe({subscription:source,label:'My Pixel'});assert.equal((await f.store.status()).devices.length,1);
  const foreign=createWebPushStore({...f.options,ownerId:'another-owner'});assert.equal((await foreign.status()).devices.length,0);
  await assert.rejects(()=>foreign.test({deviceId:connected.deviceId,requestId:randomUUID()}),{code:404});
+ await assert.rejects(()=>foreign.test({endpoint:source.endpoint,requestId:randomUUID()}),{code:404});
+ await assert.rejects(()=>f.store.test({deviceId:connected.deviceId,endpoint:source.endpoint,requestId:randomUUID()}),{code:400});
+ const requestId=randomUUID();
+ assert.equal((await f.store.test({endpoint:source.endpoint,requestId})).outcome,'accepted');
+ assert.equal((await f.store.test({deviceId:connected.deviceId,requestId})).outcome,'accepted');
+ assert.equal(sends,1);
  await f.store.unsubscribe({endpoint:source.endpoint});assert.equal((await f.store.status()).devices.length,0);
 });
 

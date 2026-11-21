@@ -34,6 +34,10 @@ test('schedule editor saves preferences paused and requires explicit resume, wit
   await page.getByRole('button',{name:'Delete',exact:true}).click();await page.getByRole('button',{name:'Delete reminder',exact:true}).click();await page.getByText('Reminder deleted.',{exact:true}).waitFor();assert.equal(data.schedules.length,0);assert.deepEqual(errors,[]);
   await page.goto(`http://127.0.0.1:${server.address().port}/?notifications`);
   const allow=page.getByRole('switch',{name:'Allow Notifications',exact:true});
+  await allow.waitFor();
+  assert.equal(await page.locator('[data-connect]').isVisible(),true,'a different signed-in browser must not hide setup on this device');
+  await page.locator('.push-connections > summary').click();
+  assert.equal(await page.locator('[data-test=device]').isVisible(),true,'test delivery is available while schedules are paused');
   await allow.check();
   const toggle=name=>page.getByRole('switch',{name,exact:true});
   await toggle('Reminder to Log Food').waitFor();

@@ -36,6 +36,11 @@ test('notification controls require explicit permission/connect/test clicks and 
   await page.getByRole('button',{name:'Test',exact:true}).click();await page.getByRole('button',{name:'Check result',exact:true}).waitFor();
   await page.getByRole('button',{name:'Close',exact:true}).click();await page.getByRole('button',{name:'Open notifications',exact:true}).click();await page.locator('summary').filter({hasText:'Connected devices'}).click();await page.getByRole('button',{name:'Check result',exact:true}).click();await page.getByText('Sent. Check your notifications.',{exact:true}).waitFor();
   const tests=requests.filter(row=>row.path.endsWith('/test'));assert.equal(tests.length,2);assert.deepEqual(tests[0].input,tests[1].input);
+  await page.getByRole('button',{name:'Send test',exact:true}).click();
+  await page.getByText('Sent. Check your notifications.',{exact:true}).waitFor();
+  const localTest=requests.filter(row=>row.path.endsWith('/test')).at(-1).input;
+  assert.equal(localTest.endpoint,'https://fcm.googleapis.com/fcm/send/browser-fixture');
+  assert.ok(!Object.hasOwn(localTest,'deviceId'));
   await page.getByRole('button',{name:'Disconnect this browser',exact:true}).click();await page.getByText('Disconnected.',{exact:true}).waitFor();assert.equal((await page.evaluate(()=>window.pushEvidence)).unsubscribes,1);
   await page.getByRole('button',{name:'Connect this browser',exact:true}).click();await page.getByRole('button',{name:'Test',exact:true}).waitFor();rejectUnsubscribe=true;
   const serverUnavailable=await page.evaluate(async()=>{const {disconnectCurrentPush}=await import('/reminders.js');return disconnectCurrentPush();});assert.deepEqual(serverUnavailable,{disconnected:true,serverDisconnected:false,browserDisconnected:true});
