@@ -16,11 +16,11 @@ function fixture(){
  return state;
 }
 const project=state=>diaryToolsPresentation(state,{groups:state.settings.groups,entries:state.entries.map(row=>({...row,facts:entryFacts(state,row)})),notes:state.notes,biometrics:state.biometrics,summary:calculateSummary(state,date)});
-test('mobile groups show notes and biometrics before entries; only entries follow canonical time order',()=>{
+test('mobile groups preserve default type order and sort all record types chronologically when requested',()=>{
  const state=fixture(),before=structuredClone(state),added=project(state),lunch=view=>view.recordDisplay.groups.find(row=>row.name==='Lunch').records;
  assert.deepEqual(lunch(added).map(ref=>ref.collection),['notes','biometrics','entries','entries','entries','entries']);
  state.settings.diarySort='time';const timed=project(state);
- assert.deepEqual(lunch(timed).slice(2).map(ref=>ref.id),[state.entries[1].id,state.entries[2].id,state.entries[0].id,state.entries[3].id]);
+ assert.deepEqual(lunch(timed).map(ref=>ref.id),[state.biometrics[0].id,state.entries[1].id,state.entries[2].id,state.entries[0].id,state.notes[0].id,state.entries[3].id]);
  state.settings.diaryGroupOrder={version:1,groups:[{group:'Lunch',mode:'source'}]};assert.deepEqual(lunch(project(state)),lunch(added));
  assert.equal(timed.consumedEnergy,400);assert.deepEqual(state.entries,before.entries);assert.deepEqual(state.notes,before.notes);assert.deepEqual(state.biometrics,before.biometrics);
 });

@@ -1,5 +1,11 @@
 import {createUITranslator} from './app-language.js';
 const rows={
+ 'diary.groupTime':['Add Group Timestamp','Ajouter une heure au groupe','Uhrzeit für Gruppe hinzufügen','Adicionar horário ao grupo'],
+ 'diary.groupSort':['Sort Group Entries by Time','Trier le groupe par heure','Gruppeneinträge nach Uhrzeit sortieren','Ordenar grupo por horário'],
+ 'diary.groupPrevious':['Copy Yesterday’s Group','Copier le groupe de la veille','Gruppe vom Vortag kopieren','Copiar grupo de ontem'],
+ 'diary.groupRecipe':['Create Recipe from Group','Créer une recette à partir du groupe','Rezept aus Gruppe erstellen','Criar receita com o grupo'],
+ 'diary.groupMeal':['Create Meal from Group','Créer un repas à partir du groupe','Mahlzeit aus Gruppe erstellen','Criar refeição com o grupo'],
+ 'diary.groupQuickAdd':['Edit Group Quick Add Default','Modifier le raccourci du groupe','Standard-Schnelleintrag der Gruppe ändern','Editar atalho padrão do grupo'],
  'diary.completeDay':['Complete Day','Terminer la journée','Tag abschließen','Concluir dia'],
  'diary.dailyReport':['View Daily Report','Voir le rapport quotidien','Tagesbericht anzeigen','Ver relatório diário'],
  'diary.shareWidgets':['Share Diary Widgets','Partager les widgets du journal','Tagebuch-Widgets teilen','Compartilhar widgets do diário'],

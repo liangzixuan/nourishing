@@ -63,3 +63,27 @@ test('recipes and meals from a selection appear locally, then keep canonical ide
   assert.equal(next.payload.items[0].foodId,result.records.foods[0].id);
  }
 });
+
+
+test('group timestamps include notes, water and exercise and retain atomic validation',()=>{
+ const state=fixture();act(state,'water.add',{date,amount:250,group:'Lunch'});act(state,'exercise.add',{date,group:'Lunch',name:'Walk',duration:20,calories:60});
+ const records=['entries','notes','biometrics'].flatMap(collection=>state[collection].filter(row=>row.date===date).map(row=>({collection,id:row.id,group:row.group??null,time:row.time??''})));
+ const unchanged=structuredClone(state);
+ assert.throws(()=>applyDiaryToolsCommand(state,{type:'records.set-time',payload:{date,time:'13:45',records:records.map((r,i)=>i===records.length-1?{...r,time:'01:00'}:r)}}));assert.deepEqual(state,unchanged);
+ compare('records.set-time',{date,time:'13:45',records},state);
+ assert.ok(['entries','notes','biometrics'].every(c=>state[c].filter(r=>r.date===date).every(r=>r.time==='13:45')));
+ assert.equal(state.entries.find(r=>r.date!==date).time,'');
+ const current=records.map(r=>({...r,time:'13:45'}));act(state,'day.complete',{date,completed:true});
+ const completed=structuredClone(state);assert.throws(()=>applyDiaryToolsCommand(state,{type:'records.set-time',payload:{date,time:'',records:current}}));assert.deepEqual(state,completed);
+});
+
+test('group time ordering sorts mixed record types without changing the stored records',async()=>{
+ const {projectLocalDiary}=await import('../server/local-diary-projection.mjs');
+ const state=fixture();state.entries[0].time='12:00';state.notes[0].time='14:00';act(state,'water.add',{date,amount:250,group:'Lunch'});state.biometrics[0].time='10:00';
+ const before=structuredClone(state);
+ applyDiaryToolsCommand(state,{type:'group.order',payload:{group:'Lunch',mode:'time'}});
+ assert.deepEqual(projectLocalDiary(state,date).recordDisplay.groups.find(g=>g.name==='Lunch').records.map(r=>r.collection),['biometrics','entries','notes']);
+ for(const collection of ['entries','notes','biometrics'])assert.deepEqual(state[collection],before[collection]);
+ applyDiaryToolsCommand(state,{type:'group.order',payload:{group:'Lunch',mode:'source'}});
+ assert.deepEqual(projectLocalDiary(state,date).recordDisplay.groups.find(g=>g.name==='Lunch').records.map(r=>r.collection),['notes','biometrics','entries']);
+});

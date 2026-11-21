@@ -290,19 +290,17 @@ function resolveGroupedRecordSelection(s,input,extraFields=[]){
   for(let i=0;i<records.length;i++)if((records[i].row.group??null)!==refs[i].group)throw Object.assign(Error('A selected record changed groups. Reload the diary before changing it.'),{status:409});
   return records;
 }
-function setFoodRecordTimes(s,input){
-  objectKeys(input,['date','records','time'],'Food timestamps');
+function setRecordTimes(s,input){
+  objectKeys(input,['date','records','time'],'Diary timestamps');
   if(typeof input.time!=='string')fail('Supply a time, or an empty string to remove timestamps.');
   const targetTime=time(input.time);
   for(const ref of array(input.records,'Selected records')){
-    if(ref?.collection!=='entries')fail('Select only food, recipe or meal entries to change their timestamps.');
-    if(typeof ref.time!=='string')fail('Supply the current timestamp for each food entry.');
+    if(typeof ref?.time!=='string')fail('Supply the current timestamp for each diary entry.');
     time(ref.time);
   }
   const records=resolveGroupedRecordSelection(s,input,['time']);
   for(let i=0;i<records.length;i++){
-    const {collection,row}=records[i],ref=input.records[i];
-    if(collection!=='entries'||isExerciseEntry(row))fail('Select only food, recipe or meal entries to change their timestamps.');
+    const {row}=records[i],ref=input.records[i];
     if((row.time??'')!==ref.time)throw Object.assign(Error('A selected timestamp changed. Reload the diary before editing it.'),{status:409});
   }
   assertDiaryDaysEditable(s,records.map(({row})=>row.date));
@@ -684,7 +682,7 @@ export function act(s,type,p={},context={}) {
       const basis=parseCarbohydrateBasis({...p,nutrients:row.nutrients});delete row.carbohydrateBasis;Object.assign(row,basis);break;
     }
     case 'records.clear-amounts': clearDiaryAmounts(s,p);break;
-    case 'records.set-time': setFoodRecordTimes(s,p);break;
+    case 'records.set-time': setRecordTimes(s,p);break;
     case 'records.move-group': moveRecordGroups(s,p);break;
     case 'records.copy': applyRecordCopy(s,p);break;
     case 'selection.save':return saveSelectionDraft(s,p,context);
