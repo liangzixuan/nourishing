@@ -1,4 +1,21 @@
 import {escape as e} from '../html.js';
+// Standard chart menus stay inside the chart's fixed header and navigation.
+function positionChartMenu(dialog,anchor) {
+ const detail=anchor.closest('.chart-detail');
+ const header=detail.querySelector('.sheet-header'),nav=detail.querySelector('.dc-bottom');
+ const place=()=>{
+  const top=header.getBoundingClientRect().bottom,bottom=nav.getBoundingClientRect().top;
+  dialog.style.maxHeight=Math.max(0,bottom-top)+'px';
+  const height=dialog.getBoundingClientRect().height;
+  dialog.style.top=Math.max(top,Math.min(anchor.getBoundingClientRect().bottom-16,bottom-height))+'px';
+  const current=dialog.querySelector('[aria-current=true]');
+  if(current)dialog.scrollTop=current.offsetTop-(dialog.clientHeight-current.offsetHeight)/2;
+ };
+ place();
+ const observer=new ResizeObserver(place);
+ for(const element of [detail.closest('dialog'),header,nav])observer.observe(element);
+ return observer;
+}
 /** A chart child popup owns only its draft and dismissal, never persistence. */
 export class MobileChartPicker {
  constructor({label,choices,selected,search,anchor,onChoose,onClose,confirm,content,closeLabel,presentation='menu'}){
@@ -17,10 +34,11 @@ export class MobileChartPicker {
    this.dialog.addEventListener('touchcancel',()=>{backdropTouch=false;});
   }
   this.dialog.addEventListener('click',event=>{const button=event.target.closest('button');if(button?.hasAttribute('data-mcp-choice')){const value=button.dataset.mcpChoice;this.close();void onChoose(value)}else if(button?.hasAttribute('data-mcp-confirm')){this.close();void onChoose(true)}else if(button?.hasAttribute('data-mcp-cancel'))this.close();else if(event.target===this.dialog){const box=this.dialog.getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)this.close()}});
-  document.body.append(this.dialog);this.dialog.showModal();if(anchor&&!confirm){const rect=anchor.getBoundingClientRect(),height=this.dialog.getBoundingClientRect().height;this.dialog.style.top=Math.max(12,Math.min(rect.top,innerHeight-height-80))+'px';this.dialog.style.right='8px';this.dialog.style.left='auto';this.dialog.style.margin='0';}
+  document.body.append(this.dialog);this.dialog.showModal();
+  if(anchor&&presentation==='chart-control')this.positionObserver=positionChartMenu(this.dialog,anchor);
+  else if(anchor&&!confirm){const rect=anchor.getBoundingClientRect(),height=this.dialog.getBoundingClientRect().height;this.dialog.style.top=Math.max(12,Math.min(rect.top,innerHeight-height-80))+'px';this.dialog.style.right='8px';this.dialog.style.left='auto';this.dialog.style.margin='0';}
   const current=presentation==='chart-control'&&this.dialog.querySelector('[aria-current=true]');
   (current||this.dialog.querySelector('input,[aria-current=true],button'))?.focus({preventScroll:true});
-  if(current)this.dialog.scrollTop=current.offsetTop-(this.dialog.clientHeight-current.offsetHeight)/2;
  }
- close(){if(this.closed)return;this.closed=true;this.dialog.close();this.dialog.remove();if(this.focus?.isConnected)this.focus.focus({preventScroll:true});this.onClose?.()}
+ close(){if(this.closed)return;this.closed=true;this.positionObserver?.disconnect();this.dialog.close();this.dialog.remove();if(this.focus?.isConnected)this.focus.focus({preventScroll:true});this.onClose?.()}
 }

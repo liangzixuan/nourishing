@@ -79,11 +79,33 @@ test('source chart details share plots, immediate controls, child cancellation a
   for(const name of ['Systolic Blood Pressure','Diastolic Blood Pressure']){
    assert.deepEqual(JSON.parse(await menu.getByRole('button',{name,exact:true}).getAttribute('data-mcp-choice')),['biometric',name.toLowerCase()]);
   }
+  const assertMenuFits=()=>page.waitForFunction(()=>{
+   const rect=document.querySelector('.mcp-chart-control').getBoundingClientRect();
+   const detail=document.querySelector('.chart-detail');
+   return rect.top>=detail.querySelector('header').getBoundingClientRect().bottom-1 &&
+    rect.bottom<=detail.querySelector('nav').getBoundingClientRect().top+1 && Math.abs(rect.right-innerWidth)<=1;
+  },undefined,{timeout:3000});
+  await assertMenuFits();
+  const lines=await menu.getByRole('button',{name:'Systolic Blood Pressure',exact:true}).evaluate(el=>{
+   const text=document.createRange();text.selectNodeContents(el);return text.getClientRects().length;
+  });
+  assert.equal(lines,1);
+  await page.setViewportSize({width:780,height:412});
+  await page.waitForFunction(()=>innerHeight===412);await assertMenuFits();
+  await page.setViewportSize({width:412,height:915});
+  await page.waitForFunction(()=>innerWidth===412);await assertMenuFits();
   const wrist=menu.getByRole('button',{name:'Wrist Size',exact:true});
   assert.ok(await wrist.evaluate(node=>node.getBoundingClientRect().bottom<=node.closest('dialog').getBoundingClientRect().bottom+1));
   assert.equal(await menu.locator('[aria-current=true]').evaluate(node=>node.matches(':focus')&&node.getBoundingClientRect().bottom<=node.closest('dialog').getBoundingClientRect().bottom+1),true);
   await menu.getByRole('button',{name:'Weight',exact:true}).click();await menu.getByRole('button',{name:'Weight (lbs)',exact:true}).waitFor();
   await page.evaluate(()=>window.dispatchEvent(new Event('nourishing-back',{cancelable:true})));await menu.waitFor({state:'detached'});assert.equal(await metricButton.isVisible(),true);assert.equal(attempts.length,before);
+  const unitControl=page.locator('[data-chart-pick=primaryUnit]');
+  await unitControl.click();
+  const unitRow=await unitControl.boundingBox(),unitMenu=await menu.boundingBox();
+  assert.ok(Math.abs(unitMenu.y-(unitRow.y+unitRow.height-16))<1,'short menus open under the control');
+  const kg=await menu.getByRole('button',{name:'kg',exact:true}).boundingBox();
+  assert.equal(kg.width,unitMenu.width);assert.equal(kg.height,48);
+  await page.keyboard.press('Escape');await menu.waitFor({state:'detached'});
   await metricButton.click();const touch=await page.context().newCDPSession(page);
   for(const [type,y] of [['touchStart',515],['touchMove',470],['touchMove',380],['touchEnd',null]]){
    await touch.send('Input.dispatchTouchEvent',{type,touchPoints:y===null?[]:[{x:16,y}]});
