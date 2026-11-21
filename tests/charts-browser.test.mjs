@@ -43,7 +43,14 @@ test('source chart details share plots, immediate controls, child cancellation a
   const back=async()=>{await page.locator('[data-chart-back]').click();await page.waitForFunction(()=>!document.querySelector('#sheet').open);};
   await page.locator('[data-chart-open="custom:weight"]').click();await ready();
   await page.waitForFunction(()=>Object.values(window.Chart?.instances??{}).some(chart=>chart.canvas.closest('.chart-detail')));
-  assert.equal(await page.locator('.chart-detail .dc-bottom button').count(),5);assert.equal(await page.locator('.chart-detail .dc-bottom').evaluate(node=>getComputedStyle(node).display),'grid');assert.equal(await page.locator('.chart-detail .dc-bottom [aria-current=page]').getAttribute('aria-label'),'Discover');assert.equal(await page.locator('.chart-detail .mcl-card-title').count(),0);assert.equal(await page.getByRole('button',{name:'Save',exact:true}).count(),0);
+  // The detail can redraw on refresh. Read layout and selection from the same mounted navigation.
+  const navigation=await page.evaluate(()=>{
+   const nav=document.querySelector('.chart-detail .dc-bottom');
+   return {buttons:nav.querySelectorAll('button').length,display:getComputedStyle(nav).display,
+    selected:nav.querySelector('[aria-current=page]').getAttribute('aria-label')};
+  });
+  assert.deepEqual(navigation,{buttons:5,display:'grid',selected:'Discover'});
+  assert.equal(await page.locator('.chart-detail .mcl-card-title').count(),0);assert.equal(await page.getByRole('button',{name:'Save',exact:true}).count(),0);
   let before=attempts.length;await page.locator('[data-chart-pick=primary]').click();await page.getByRole('searchbox').fill('weight');await page.keyboard.press('Tab');await page.keyboard.press('Escape');await page.locator('.mcp-picker').waitFor({state:'detached'});assert.equal(attempts.length,before);
   await page.locator('[data-chart-pick=range]').click();await page.mouse.click(2,2);await page.locator('.mcp-picker').waitFor({state:'detached'});assert.equal(attempts.length,before);
   commandWait=new Promise(resolve=>releaseCommand=resolve);const started=Date.now();await page.getByRole('switch',{name:'Show on Dashboard',exact:true}).check();await page.locator('.chart-detail[data-chart-busy=false]').waitFor();assert.ok(Date.now()-started<1000,'chart preference is locally saved while the command is delayed');assert.equal(await page.getByRole('switch',{name:'Show on Dashboard',exact:true}).isChecked(),true);assert.equal(await page.locator('[data-chart-pick=range]').isDisabled(),false);releaseCommand();commandWait=null;await ready();assert.equal(state().settings.mobileCharts.custom.weight.showOnDashboard,true);assert.equal(state().charts[0].visible,true);
