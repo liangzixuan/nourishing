@@ -20,7 +20,9 @@ export async function prepareLocalDiaryReview(input,revision,{captured}={}){
   delete mapped.selection.revision;
  }
  const result=prepareDiaryReview(state,mapped);
- const localReview={input:mapped,guard:diaryReviewGuard(state,mapped)};
+ const reviewed={...mapped,selection:{...result.selection}};
+ delete reviewed.selection.revision;
+ const localReview={input:reviewed,guard:diaryReviewGuard(state,reviewed)};
  return {...result,revision,localReview};
 }
 // Resolve temporary identities only before the first send. An uncertain retry

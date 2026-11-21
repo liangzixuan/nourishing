@@ -385,7 +385,7 @@ test('captured pending entries survive identity acknowledgement but reject later
   const captured=await page.evaluate(async date=>{
    const {queueCommand}=await import('/diary-api.js'),{prepareLocalDiaryReview}=await import('/diary-preparation.js');
    const revision='a'.repeat(64),entry=await queueCommand(revision,'entry.add',{foodId:'rice',date,amount:2,group:'Lunch'});
-   return prepareLocalDiaryReview({operation:'capture',selection:{date,scope:'selected',records:[{collection:'entries',id:entry.requestId}]}},revision);
+   return prepareLocalDiaryReview({operation:'capture',selection:{date,scope:'day'}},revision);
   },date);
   await flush();
   const check=async()=>page.evaluate(async captured=>{
@@ -394,6 +394,8 @@ test('captured pending entries survive identity acknowledgement but reject later
    catch(error){return {status:error.status,error:error.message};}
   },captured);
   const review=await check();assert.equal(review.total,1);assert.notEqual(review.selection.records[0].id,captured.selection.records[0].id);
+  await page.evaluate(async date=>await(await import('/diary-api.js')).queueCommand('a'.repeat(64),'entry.add',{foodId:'rice',date,amount:1,group:'Dinner'}),date);
+  assert.equal((await check()).total,1);
   await page.evaluate(async review=>{
    await(await import('/diary-api.js')).queueCommand(review.revision,'entry.update',{id:review.selection.records[0].id,date:review.selection.date,foodId:'rice',amount:3,group:'Lunch'});
   },review);
