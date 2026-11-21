@@ -1,4 +1,5 @@
-import {randomUUID} from 'node:crypto';
+import {randomInt,randomUUID} from 'node:crypto';
+import {setTimeout as delay} from 'node:timers/promises';
 import {Query} from 'node-appwrite';
 const fail=(message='Account deletion is pending.',code=409)=>{throw Object.assign(Error(message),{code,publicMessage:message});};
 const optional=async work=>{try{return await work();}catch(error){if(error.code===404)return null;throw error;}};
@@ -17,21 +18,30 @@ export function createAccountLifecycle({db,database='nourishing',now=()=>Date.no
   }
  }
  async function mutate(owner,work,recover=async()=>null){
-  for(let attempt=0;attempt<4;attempt++){
-  ownerId(owner);const row=await optional(()=>db.getRow(args('account_lifecycle',owner)));if(!row||row.ownerId!==owner||!Number.isSafeInteger(row.version))fail();
-  const tx=await db.createTransaction({ttl:60});
-  try{
-   await db.updateRow({...args('account_lifecycle',owner),data:{version:row.version+1},transactionId:tx.$id});
-   const current=await db.getRow(args('account_lifecycle',owner));if(current.version!==row.version||current.$updatedAt!==row.$updatedAt)fail();
-   const result=await work(row,tx.$id);await db.updateTransaction({transactionId:tx.$id,commit:true});return result;
-  }catch(error){
-   // Appwrite ends a conflicting commit itself; a second rollback returns transaction_not_ready.
-   let rolledBack=error.code===409&&error.type==='transaction_conflict';
-   if(!rolledBack)try{await db.updateTransaction({transactionId:tx.$id,rollback:true});rolledBack=true;}catch{}
-   const recovered=await recover();if(recovered)return recovered;
-   if(error.code===409&&rolledBack&&attempt<3)continue;
-   throw error;
-  }
+  ownerId(owner);
+  const deadline=performance.now()+8000;
+  let backoff=80;
+  for(;;){
+   const row=await optional(()=>db.getRow(args('account_lifecycle',owner)));
+   if(!row||row.ownerId!==owner||!Number.isSafeInteger(row.version))fail();
+   const tx=await db.createTransaction({ttl:60});
+   try{
+    await db.updateRow({...args('account_lifecycle',owner),data:{version:row.version+1},transactionId:tx.$id});
+    const current=await db.getRow(args('account_lifecycle',owner));
+    if(current.version!==row.version||current.$updatedAt!==row.$updatedAt){
+     throw Object.assign(Error('Lifecycle revision changed.'),{code:409,type:'lifecycle_revision_conflict'});
+    }
+    const result=await work(row,tx.$id);await db.updateTransaction({transactionId:tx.$id,commit:true});return result;
+   }catch(error){
+    // Appwrite ends a conflicting commit itself; a second rollback returns transaction_not_ready.
+    let rolledBack=error.code===409&&error.type==='transaction_conflict';
+    if(!rolledBack)try{await db.updateTransaction({transactionId:tx.$id,rollback:true});rolledBack=true;}catch{}
+    const recovered=await recover();if(recovered)return recovered;
+    if(error.code!==409||!rolledBack||error.publicMessage)throw error;
+    // Diary preload and foreground reads register concurrently, including on different Site instances.
+    if(performance.now()>=deadline)fail('The account is busy. Please try again.',503);
+    await delay(randomInt(backoff/2,backoff+1));backoff=Math.min(640,backoff*2);
+   }
   }
  }
  async function enter(owner,label){

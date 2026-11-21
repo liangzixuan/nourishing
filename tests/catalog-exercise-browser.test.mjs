@@ -80,17 +80,22 @@ test('Diary estimates with each account’s cold options cache and reopens a pen
   // The shell may prefetch options in the background. Keep them absent for both accounts.
   await page.route('**/api/records/options?*',route=>route.abort());
   const snapshotReady=async()=>{await page.waitForFunction(async owner=>(await(await import('/offline-store.js')).readWriteCopy())?.snapshot?.identity.ownerId===owner,owner);};
-  const walk=async()=>{
-   await page.locator('#add-food').click();
+  const chooseWalking=async()=>{
    await page.getByRole('button',{name:'Add Exercise',exact:true}).click();
    for(const key of ['cardio','walking','generalWalking'])await page.locator('[data-meb-node='+key+']').click();
    await page.locator('[name=duration]').fill('10');
    await page.waitForFunction(()=>Number(document.querySelector('[name=calories]')?.value)>0);
   };
+  const walk=async()=>{await page.locator('#add-food').click();await chooseWalking();};
   const row=page.locator('[data-diary-record]').filter({hasText:'Walking'});
   const edit=()=>row.locator('[data-action=edit-entry]').first().click();
   const save=async()=>{await page.locator('#sheet .me-save').click();await page.locator('#sheet').waitFor({state:'hidden'});};
-  await page.goto(base+'/diary');await snapshotReady();await walk();
+  const firstDiary=Promise.withResolvers();
+  await page.route('**/api/diary?*',route=>firstDiary.resolve(route),{times:1});
+  await page.goto(base+'/diary');
+  const heldRead=await firstDiary.promise;
+  await page.locator('#add-food').click();await heldRead.continue();
+  await snapshotReady();await chooseWalking();
   assert.equal(await page.locator('[name=weightKg]').inputValue(),'66');
 
   // Switching the verified device session leaves the old form open until its next action.

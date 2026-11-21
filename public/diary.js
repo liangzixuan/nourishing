@@ -100,7 +100,7 @@ let waterPanel=null,waterMenu=null,waterAmount=null;
 let pickerCleanup;
 let account;
 let accountReady = false;
-let pendingNavigation = null;
+let pendingDiaryAction = null;
 let diaryReceivedAt = 0;
 let date = today();
 let diary = null;
@@ -237,10 +237,10 @@ function applyDiary(result) {
   applyTheme(result.theme);
   applyFontPreferences(result.presentation?.settings);
   if (view === 'diary') render();
-  if (pendingNavigation) {
-    const pending = pendingNavigation;
-    pendingNavigation = null;
-    navigate(...pending);
+  if (pendingDiaryAction) {
+    const pending = pendingDiaryAction;
+    pendingDiaryAction = null;
+    pending();
   }
 }
 
@@ -402,7 +402,10 @@ function runAddAction(kind, initialGroup) {
 }
 
 function openAddMenu(initialGroup) {
-  if (!diary) return;
+  if (!diary) {
+    pendingDiaryAction = () => openAddMenu(initialGroup);
+    return;
+  }
   close();
   addMenu?.dispose();
   addMenu = new AddMenu({
@@ -593,7 +596,7 @@ document.addEventListener('click', event => {
 
 function navigate(next, initialTab = 'dashboard', reportDate) {
   if (!diary) {
-    pendingNavigation = [next, initialTab, reportDate];
+    pendingDiaryAction = () => navigate(next, initialTab, reportDate);
     return;
   }
   leaveView();
@@ -1078,7 +1081,7 @@ window.addEventListener('pagehide', () => {
     tabBackHandle = null;
   }
   view = 'diary';
-  pendingNavigation = null;
+  pendingDiaryAction = null;
   clearPending();
   diary = null;
   close({popHistory: false});

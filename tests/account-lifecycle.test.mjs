@@ -29,6 +29,37 @@ test('parallel operations retry definite conflicts and lost enter replies recove
  f.lostCommit=true;const recovered=await life.enter('owner','lost-enter');assert.ok(f.table('account_operations').has(recovered.id));assert.equal(f.table('account_operations').size,5);await life.settle(recovered);
  for(const operation of operations)await life.settle(operation);assert.equal((await life.pending('owner')).active,0);
 });
+test('a foreground read can register while other requests repeatedly advance an active account',async()=>{
+ const f=accountFixture(),life=createAccountLifecycle({db:f.db});await life.initialize('owner');
+ const update=f.db.updateRow;let competingReads=0;
+ f.db.updateRow=async input=>{
+  const result=await update(input);
+  if(input.tableId==='account_lifecycle'&&input.transactionId&&competingReads<5){
+   competingReads++;
+   await update({...input,transactionId:undefined});
+  }
+  return result;
+ };
+ const op=await life.enter('owner','exerciseCatalog');
+ assert.equal(competingReads,5);assert.equal((await life.pending('owner')).active,1);
+ await life.settle(op);assert.equal((await life.pending('owner')).active,0);
+});
+test('persistent contention reports a busy active account after rollback',async t=>{
+ const f=accountFixture(),life=createAccountLifecycle({db:f.db});await life.initialize('owner');
+ const update=f.db.updateRow;let elapsed=0;
+ t.mock.method(performance,'now',()=>elapsed);
+ f.db.updateRow=async input=>{
+  const result=await update(input);
+  if(input.transactionId){
+   await update({...input,transactionId:undefined});
+   elapsed+=10000;
+  }
+  return result;
+ };
+ await assert.rejects(life.enter('owner','diary'),{code:503,publicMessage:'The account is busy. Please try again.'});
+ assert.equal(f.table('account_lifecycle').get('owner').state,'active');
+ assert.equal((await life.pending('owner')).active,0);
+});
 test('failed operation-row removal is recoverable only after its settled marker is durable',async()=>{
  const f=accountFixture(),life=createAccountLifecycle({db:f.db});await life.initialize('owner');const op=await life.enter('owner','finished');f.failDeleteRow=true;await life.settle(op);assert.equal(f.table('account_operations').get(op.id).state,'settled');assert.equal((await life.pending('owner')).active,0);assert.equal(f.table('account_operations').size,0);
 });
