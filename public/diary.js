@@ -44,7 +44,7 @@ import {mountFoodPicker} from './food-picker.js';
 import {openFastingAction} from './fasting.js';
 import {mountNutrition} from './nutrition.js';
 import {applyTheme} from './appearance.js';
-import {waterPolicy,waterRecordAmount,newestWaterEntry,openWaterAmount,openWaterMenu,mountWaterSettings} from './water.js';
+import {dismissWaterHint,waterPolicy,waterRecordAmount,newestWaterEntry,openWaterAmount,openWaterMenu,mountWaterSettings} from './water.js';
 import {waterText} from './water-messages.js';
 import {moreBackHeader} from './more-source/menu-view.js';
 
@@ -307,14 +307,15 @@ function renderDiaryRow(collection, row) {
   }
   const isNote = collection === 'notes';
   const waterAmount=isNote?null:waterRecordAmount(diary,row);
+  const waterTime=waterAmount&&time?new Date(`2000-01-01T${time}Z`).toLocaleTimeString(uiLanguage(),{hour:'numeric',minute:'2-digit',timeZone:'UTC'}).toLocaleLowerCase(uiLanguage()):'';
   const thumb = isNote ? notePhotoThumbnail(row) : '';
   return mobileDiaryRecord({
     ...swipeOptions,
     id: row.id,
     collection,
     name: isNote ? row.text : waterAmount?waterText('water'):row.type,
-    meta: e(waterAmount?[time,waterAmount].filter(Boolean).join(' · '):time),
-    amount: isNote ? '' : waterAmount?`0.0 ${e(diary.energyUnit??'kcal')}`:`${num(row.value, 20)} ${e(row.unit)}`,
+    meta: waterAmount?`${waterTime?`<span class="water-time" aria-hidden="true"></span>${e(waterTime)} - `:''}${e(waterAmount)}`:e(time),
+    amount: isNote ? '' : waterAmount?`<span class="water-row-energy">${(0).toLocaleString(uiLanguage(),{minimumFractionDigits:1})}<small>${e(diary.energyUnit??'kcal')}</small></span>`:`${num(row.value, 20)} ${e(row.unit)}`,
     icon: waterAmount?'<img class="water-row-icon" src="/record-source/biometric-icons/water.svg" alt="">':diarySymbol(isNote ? 'description' : 'monitor_heart'),
     selectBox: diaryTools.selectBox(collection, row),
     action: isNote ? 'edit-note' : 'edit-biometric',
@@ -371,7 +372,7 @@ function render() {
     labels: {add: t('diary.addFood'),toggle:coreText('diary.toggleGroup')},
   });
 
-  page.innerHTML = `${diaryCycleMarkup(diary.cycleDays)}${diarySummaryMarkup(displayedDiary, diaryTools.selection())}<div class="md-diary diary-layout">${groupMarkup}</div>`;
+  page.innerHTML = `${diaryCycleMarkup(diary.cycleDays)}${diarySummaryMarkup(displayedDiary, diaryTools.selection(), account?.id)}<div class="md-diary diary-layout">${groupMarkup}</div>`;
   disposeRowSwipe=bindDiaryRowSwipe(page);
   summaryPanel = mountDiarySummary({
     root: page,
@@ -688,10 +689,11 @@ const SUMMARY_ACTIONS = {
     const targetDate = date;
     const entryTime = new Date().toTimeString().slice(0, 5);
     const policy=waterPolicy(diary);
-    await queueCommand(diary.revision,'water.add',{date:targetDate,time:entryTime,group:policy.group??(diary.groups.includes(group)?group:defaultGroup(diary.groups)),amount:input.amount??policy.containerMl});
+    await queueCommand(diary.revision,'water.add',{date:targetDate,time:entryTime,group:policy.group??(diary.groups.includes(selectedDiaryGroup)?selectedDiaryGroup:defaultGroup(diary.groups)),amount:input.amount??policy.containerMl});
     if(input.refresh!==false)await load({reuseUnchanged:true});
   },
   'water-custom': openCustomWaterSheet,
+  'water-hint-close':({anchor})=>dismissWaterHint(anchor,account?.id),
   'water-menu':input=>{waterMenu?.close(false);waterMenu=openWaterMenu(input.anchor,action=>void summaryAction({action}),{completed:diary.completed});},
   'water-settings':()=>navigate('water'),
   'water-remove':async input=>{const row=newestWaterEntry(diary);if(!row||row.id!==input.id)return;await queueCommand(diary.revision,'biometric.delete',{id:row.id});await load({reuseUnchanged:true});},

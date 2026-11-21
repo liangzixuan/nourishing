@@ -52,6 +52,8 @@ export {prepareDiaryReview,diaryReviewGuard,assertDiaryReviewGuard} from './doma
 export {resolveWaterSettings,parseWaterSettings,waterToMilliliters,waterFromMilliliters,waterUnits} from './domain/water-settings.mjs';
 export {isLoggedWater,loggedWaterMilliliters} from './domain/water-measurement.mjs';
 
+export {prepareDiaryDisplayCommand} from './diary-display-settings.mjs';
+export {changeScoreDisplay} from './domain/score-display-controls.mjs';
 export {createDisplayView} from './domain/display-view.mjs';
 
 export {diarySelectionNutrition} from './domain/diary-selection-nutrition.mjs';

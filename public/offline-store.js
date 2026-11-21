@@ -1,7 +1,8 @@
 import {projectFastingResponse} from './fasting-source/device.js';
 import {remapWriteReferences,writeReceiptIdentities,remapDiaryReviewIdentities} from './write-identities.js';
 import {applyWriteToState,projectSavedDefinition} from './write-projection.js';
-import {checkLocalReviewSave,projectLocalDiary,usesNutrientTargets} from './local-diary-projection.js';
+import {offlineEffectiveState} from './offline-model.js';
+import {prepareDiaryDisplayCommand,checkLocalReviewSave,projectLocalDiary,usesNutrientTargets} from './local-diary-projection.js';
 import {offlineFailure} from './offline-errors.js';
 import {acknowledgedSnapshotList} from './snapshot-queue.js';
 const DB='nourishing-private-offline',channel=typeof BroadcastChannel==='function'?new BroadcastChannel('nourishing-offline'):null;
@@ -38,6 +39,10 @@ export async function persistBackgroundWrite(expected,{path,body,projection={}})
   remapDiaryReviewIdentities(projection.diaryReview,next.recordIds??{});
   const prior=next.pending.find(row=>row.command.operationId===body.requestId);
   if(prior){if(JSON.stringify(prior.transport)!==JSON.stringify({path,body}))throw Error('This save has changed.');return prior;}
+  if(body.type==='scoreDisplay.change'||body.type==='diaryDisplay.save'){
+   if(!next.snapshot?.state)throw offlineFailure('copyChanged');
+   projection.diarySettings=prepareDiaryDisplayCommand(offlineEffectiveState(next),body).payload;
+  }
   const createdAt=new Date();
   if(path==='/api/photos/save')checkLocalReviewSave('photo.log',body,active.ownerId,createdAt.getTime());
   if(path==='/api/barcode/save')checkLocalReviewSave('barcode.log',body.payload,active.ownerId,createdAt.getTime());

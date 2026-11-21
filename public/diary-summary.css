@@ -9,7 +9,33 @@
 .md-fasting-body button{min-height:40px;color:inherit;}
 .md-water+.md-group{margin-top:15px;}
 .md-record-menu .water-row-icon{width:22px;height:22px;filter:invert(62%) sepia(63%) saturate(1200%) hue-rotate(130deg)}
-.md-water summary{gap:10px;}.md-water summary .water-heading{flex:1;display:flex;flex-direction:column;gap:4px}.md-water summary strong{font-weight:700}.md-water summary small{margin:0;font-size:calc(14rem / 18);white-space:nowrap}.md-water summary .md-group-chevron{margin-left:0}.md-water .md-group-add{font-size:28px;width:30px;min-height:38px}.md-water .water-glasses{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;padding:18px 12px 24px}.md-water .water-glass{height:48px;position:relative;display:grid;place-items:center;min-width:0}.water-glass img{width:100%;height:48px;opacity:.4;filter:invert(55%) sepia(13%) saturate(700%) hue-rotate(130deg)}.water-glass.is-full img{opacity:1;filter:invert(62%) sepia(63%) saturate(1200%) hue-rotate(130deg)}.water-glass span{position:absolute;inset:0;display:grid;place-items:center;font-size:25px;font-weight:700;color:var(--ink)}.water-glass:disabled{opacity:.6}.water-glass-count{display:block;text-align:center;margin-bottom:12px}.md-water .water-total{display:grid;grid-template-columns:1fr auto auto;gap:8px;width:calc(100% - 24px);margin:0 12px 16px;padding:12px;border-radius:6px;background:var(--page,#101020);font-size:calc(12rem / 18);text-align:left;position:relative;overflow:hidden}.water-total progress{grid-column:1/-1;width:100%;height:5px;accent-color:var(--green)}.water-total strong{color:var(--green)}
+.md-water summary{min-height:56px;gap:16px;padding:6px 16px}
+.md-water summary .water-heading{flex:1;display:grid;gap:2px}
+.md-water summary strong{font-weight:700}
+.md-water summary small{margin:0;font-size:calc(12rem / 18);white-space:nowrap}
+.md-water summary .md-group-chevron{margin:0 2px}
+.md-water .md-group-add{font-size:25px;width:20px;min-height:40px}
+.md-water .water-glasses{display:grid;grid-template-columns:repeat(8,minmax(0,39px));gap:clamp(2px,1.7vw,8px);padding:0 16px}
+.md-water .water-glass{position:relative;display:grid;place-items:center;min-width:0;height:auto;aspect-ratio:39/52}
+.water-cup{display:block;width:100%;height:100%}
+.water-cup-outline,.water-cup-base{fill:none;stroke:var(--water-rim,#a6c9cc);stroke-width:2}
+.water-fill{position:absolute}
+.water-glass span{position:absolute;inset:0;display:grid;place-items:center;font-size:24px;line-height:1;color:var(--ink)}
+.water-glass:disabled{opacity:.6}
+.water-glass-count{display:block;text-align:center;margin-top:8px}
+.md-water .water-hint{display:flex;align-items:flex-start;gap:8px;margin:16px 16px 0;padding:8px 10px 8px 16px;border-radius:9px;background:#ccf0f3;color:#212535;font-size:calc(14rem / 18);line-height:1.35}
+.md-water .water-hint button{margin-left:auto;flex:none;width:22px;height:24px;font:24px/1 Arial,sans-serif}
+.md-water .water-total{display:grid;grid-template-columns:1fr auto;align-content:center;gap:3px 8px;width:calc(100% - 32px);min-height:65px;margin:16px 16px 0;padding:10px 16px;border-block:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--paper) 60%,var(--page,#101020));font-size:calc(14rem / 18);text-align:left}
+.water-total.water-no-data>span{color:var(--muted)}
+.water-total.water-no-data b{color:var(--ink)}
+.water-total progress{grid-column:1/-1;width:100%;height:10px;border:0;border-radius:8px;overflow:hidden;appearance:none;background:var(--line);color:var(--ink)}
+.water-total progress::-webkit-progress-bar{background:var(--line)}
+.water-total progress::-webkit-progress-value{background:var(--ink)}
+.water-total progress::-moz-progress-bar{background:var(--ink)}
+.md-water[open]{padding-bottom:8px}
+.water-time{display:inline-block;position:relative;vertical-align:baseline;width:.72em;height:.72em;border:1px solid currentColor;border-radius:50%;margin-right:.22em}
+.water-time::after{content:"";position:absolute;left:42%;top:15%;height:40%;width:30%;border-left:1px solid currentColor;border-bottom:1px solid currentColor}
+.water-row-energy small{display:block;font:inherit}
 .water-settings{padding:20px 0 28px}.water-settings h2{font:700 calc(15rem / 18)/1.4 Karla,Lato,sans-serif;text-transform:uppercase;color:var(--muted);margin:18px 16px 10px}.water-settings .mds-row{gap:12px;min-height:60px}.water-settings .water-group{padding-left:30px;width:100%;text-align:left}.water-group>span:first-of-type{text-align:right}.water-settings .water-units{display:flex;border-radius:30px;background:var(--pale);padding:3px}.water-units button{border:0;background:none;color:inherit;font:700 calc(16rem / 18)/1.3 Karla,sans-serif;border-radius:30px;min-width:48px;min-height:34px}.water-units [aria-pressed=true]{background:var(--ink);color:var(--paper)}.water-goal{padding:16px}.water-goal .mdtp-wheels{grid-template-columns:minmax(0,1fr);max-width:none;border:1px solid var(--line);border-radius:12px;background:var(--page,#101020);height:224px;--wheel-height:32px}.water-goal .mdtp-wheels [role=listbox]{padding-block:96px}.water-goal .mdtp-wheels [role=option]{font-size:calc(17rem / 18);font-weight:400}.water-goal h2{text-align:center;margin-top:20px}.water-container{display:flex;align-items:center;gap:12px;margin:8px 0}.water-container img{width:42px;height:54px;filter:invert(62%) sepia(63%) saturate(1200%) hue-rotate(130deg)}.water-container strong{flex:1;font:700 calc(16rem / 18)/1.3 Karla,sans-serif}.water-container input{width:80px;min-width:0;text-align:center;border:1px solid var(--muted);border-radius:12px;padding:12px 6px;background:none;color:var(--ink);font:inherit}.water-settings [role=status]:empty{display:none}.water-settings [role=status]{margin:12px;color:var(--danger)}.water-amount-row{display:flex;align-items:center;gap:14px}.water-amount-row strong{flex:1}.water-amount-row input{width:68px;min-width:0;color:var(--ink);background:none;font:inherit;text-align:center;padding:14px 6px;border:1px solid var(--muted);border-radius:12px}.water-amount header button{font-size:32px}.water-amount .dc-pill{display:block;margin:24px auto 0}.water-amount [role=status]:empty{display:none}
 @font-face{font-family:"Nourishing Diary Symbols";src:url("/diary-summary-source/diary-symbols.woff2") format("woff2");font-weight:400;font-style:normal;font-display:block;}
 .ds-dialog{color:var(--ink);font-family:Lato,Arial,sans-serif;}
@@ -61,3 +87,5 @@
 .mss-screen .ds-setting input[role=switch]{appearance:none;width:44px;height:25px;border-radius:24px;background:var(--muted);position:relative;cursor:pointer}.mss-screen .ds-setting input[role=switch]:checked{background:var(--orange,#ff784e)}.mss-screen .ds-setting input[role=switch]::before{content:"";position:absolute;inset:3px auto 3px 3px;width:19px;border-radius:50%;background:white}.mss-screen .ds-setting input[role=switch]:checked::before{left:22px}.mss-hint{padding:0 16px;font-size:.9rem}.mss-other{margin:12px 0}.mss-other summary{padding:12px;cursor:pointer}
 
 .mss-screen .sheet-header{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;text-align:center}.mss-screen .sheet-header h2{margin:0;font-size:1.2rem}.mss-screen [data-help]{font-weight:bold;font-size:1.15rem}.mss-screen h3{text-transform:uppercase}
+
+.mss-screen{padding-bottom:calc(76px + env(safe-area-inset-bottom));}.mss-screen .dc-bottom{position:fixed;bottom:0;left:0;right:0;z-index:2;}

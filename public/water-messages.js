@@ -15,6 +15,8 @@ const rows={
  container:['Container Size','Taille du récipient','Behältergröße','Tamanho do recipiente'],
  glass:['1 Water Glass =','1 verre d’eau =','1 Glas Wasser =','1 copo de água ='],
  glasses:['{{count}} glasses','{{count}} verres','{{count}} Gläser','{{count}} copos'],
+ hint:['Water added here will contribute to your total water nutrient target.','L’eau ajoutée ici compte dans votre objectif total en eau.','Hier hinzugefügtes Wasser zählt zu deinem Gesamtwasserziel.','A água adicionada aqui conta para sua meta total de água.'],
+ noData:['No Data','Aucune donnée','Keine Daten','Sem dados'],
  total:['Total Water','Eau totale','Gesamtwasser','Água total'],
  amount:['Amount','Quantité','Menge','Quantidade'],
  add:['Add','Ajouter','Hinzufügen','Adicionar'],

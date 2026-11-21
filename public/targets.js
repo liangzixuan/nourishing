@@ -12,7 +12,7 @@ import {escape as e} from './html.js';
 import {request,queueCommand} from './diary-api.js';
 import {localWorkspaceView} from './local-engine.js';
 import {readDeviceCache} from './device-cache.js';
-import {createNutrientTargetsView,projectDiaryBulkWrite} from './local-diary-projection.js';
+import {createNutrientTargetsView,projectDiaryBulkWrite,projectLocalDiary} from './local-diary-projection.js';
 import {MobileNutrientTargets} from './targets-source/mobile-nutrient-targets.js';
 import {AnchoredMenu} from './targets-source/anchored-menu.js';
 import {formatMessage} from './targets-source/message-format.js';
@@ -39,7 +39,13 @@ export function mountTargets({page,headerRoot,date,show,close,header,content,onC
  function home(){reset();screen='home';heading(m('title'));root.innerHTML=`<section class="mt-home mm-group" data-mt-home>${main.map(id=>`<button type="button" class="mm-row" data-mt-open="${id}"><span>${e(m(id))}</span>${moreIcon('chevron-right','mm-chevron')}</button>`).join('')}</section>`;window.scrollTo(0,0);}
  async function summary(action){
   show(header(action==='choose-scores'?t('discover.widget.Nutrition Scores'):t('mobileTargets.diary'))+`<p class="empty">${t('mobileNutrientDetail.loading')}</p>`);const marker=content.lastElementChild,current=++operation;
-  try{const diary=await request('/api/diary?date='+encodeURIComponent(day()),undefined,events.signal);if(!alive()||current!==operation||!marker.isConnected)return;openDiarySummaryAction({...ui,action,diary,date:day()});}
+  const selectedDate=day(),ownerTicket=readDeviceCache('/api/diary').then(cached=>cached.ticket);
+  try{
+   const local=await localWorkspaceView();
+   const diary=local?projectLocalDiary(local.state,selectedDate,{revision:local.revision}):await request('/api/diary?date='+encodeURIComponent(selectedDate),undefined,events.signal);
+   if(!alive()||current!==operation||!marker.isConnected)return;
+   openDiarySummaryAction({...ui,action,diary,date:selectedDate,navigation:'more',ownerTicket});
+  }
   catch(error){if(alive()&&marker.isConnected)marker.textContent=error.message;}
  }
  function open(id){

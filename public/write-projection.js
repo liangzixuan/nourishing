@@ -69,6 +69,7 @@ export function applyWriteToState(state,row,result){
 
  if(type==='water.add')replace('biometrics',{id,date:p.date,time:p.time,...(Object.hasOwn(p,'group')?{group:p.group}:{}),type:'Water',unit:'mL',value:p.amount,_pending:!result});
  if(type==='day.complete'){state.settings.completedDays=(state.settings.completedDays??[]).filter(day=>day!==p.date);if(p.completed)state.settings.completedDays.push(p.date);}
+ if(row.projection?.diarySettings)Object.assign(state.settings,row.projection.diarySettings);
  if(type==='display.save'||type==='preferences.patch')Object.assign(state.settings,p);
  if(type==='group.editSlot'&&state.settings.groups&&diaryGroupSlots(state.settings)[p.slot-1]===p.from)editDiaryGroupSlot(state,p);
  if(type==='group.rename'&&state.settings.groups?.includes(p.from))renameDiaryGroup(state,p);

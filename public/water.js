@@ -12,14 +12,43 @@ const number=(value,digits=2)=>value.toLocaleString(uiLanguage(),{maximumFractio
 const units=['mL','fl oz','cup'];
 const icon=filled=>`<img src="/record-source/biometric-icons/cup-${filled?'water':'outline'}.svg" alt="">`;
 export function newestWaterEntry(diary){return [...(diary.biometrics??[])].reverse().find(row=>isLoggedWater(row)&&loggedWaterMilliliters(row)!==null);}
-export function waterWidgetMarkup(diary,{expanded=false}={}){
+const hintKey = ownerId => 'nourishing.waterHintDismissed.' + ownerId;
+export function dismissWaterHint(button,ownerId){
+ button.closest('.water-hint')?.remove();
+ try{if(ownerId)localStorage.setItem(hintKey(ownerId),'1');}catch{/* The current view still dismisses the tip when storage is unavailable. */}
+}
+function glassMarkup(full,mark){
+ return `<svg class="water-cup" viewBox="0 0 39 52" aria-hidden="true"><path class="water-cup-outline" d="M3 1h33q2 0 1.8 2L34 48q-.2 3-3 3H8q-2.8 0-3-3L1.2 3Q1 1 3 1Z"/>${full?'<path fill="url(#water-level)" d="M2.6 6h33.8L33 45H6Z"/>':''}<path class="water-cup-base" d="M6 46h27"/></svg>${mark?`<span aria-hidden="true">${mark}</span>`:''}`;
+}
+export function waterWidgetMarkup(diary,{expanded=false,ownerId}={}){
  if(diary.presentation?.settings.showWater===false)return '';
  const policy=waterPolicy(diary),logged=diary.summary.hydration.logged,filled=Math.max(0,Math.ceil(Number((logged/policy.containerMl).toFixed(5)))),goal=Math.ceil(policy.goalMl/policy.containerMl);
  // A compact window keeps tiny custom containers from producing millions of nodes.
- const count=Math.min(32,Math.max(goal,filled+1)),offset=Math.max(0,filled-count+2),last=newestWaterEntry(diary);
- const glasses=Array.from({length:count},(_,i)=>{const index=offset+i,full=index<filled,action=index===filled?'water':index===filled-1&&last?'water-remove':null;return action?`<button type="button" class="water-glass ${full?'is-full':''}" data-action="${action}" ${full?`data-id="${e(last.id)}"`:`data-amount="${policy.containerMl}"`} aria-label="${e(m(full?'remove':'addGlass'))}" ${diary.completed?'disabled':''}>${icon(full)}<span aria-hidden="true">${full?'−':'+'}</span></button>`:`<span class="water-glass ${full?'is-full':''}" aria-hidden="true">${icon(full)}</span>`;}).join('');
- const total=diary.summary.totals.water,target=diary.summary.hydration.target,percent=target>0&&typeof total==='number'?Math.round(total/target*100):0;
- return `<details class="md-water" ${expanded?'open':''}><summary><button type="button" data-action="water-menu" class="md-group-add" aria-label="${e(m('addGlass'))}">+</button><span class="water-heading"><strong>${e(m('water'))}</strong><small>${number(waterFromMilliliters(logged,policy.unit))} / ${number(waterFromMilliliters(policy.goalMl,policy.unit))} ${e(policy.unit)}</small></span><span class="md-group-chevron" aria-hidden="true">⌄</span></summary><div class="water-glasses">${glasses}</div>${offset||Math.max(goal,filled+1)>count?`<small class="water-glass-count">${e(m('glasses',{count:number(logged/policy.containerMl)}))}</small>`:''}${policy.showTotal?`<button type="button" data-action="water-target" class="water-total"><span>${e(m('total'))}</span><span>${typeof total==='number'?number(waterFromMilliliters(total,policy.unit),1):'0'}${target>0?' / '+number(waterFromMilliliters(target,policy.unit),1):''} ${e(policy.unit)}</span><strong>${percent}%</strong><progress max="100" value="${Math.min(100,percent)}"></progress></button>`:''}</details>`;
+ const count=Math.min(32,Math.max(goal,filled+1)),offset=Math.max(0,filled+1-count),last=newestWaterEntry(diary);
+ const glasses=Array.from({length:count},(_,i)=>{
+  const index=offset+i,full=index<filled,remove=full&&index===filled-1&&last;
+  const content=glassMarkup(full,remove?'−':index===filled?'+':'');
+  if(full&&!remove)return `<span class="water-glass" aria-hidden="true">${content}</span>`;
+  return `<button type="button" class="water-glass" data-action="${remove?'water-remove':'water'}" ${remove?`data-id="${e(last.id)}"`:`data-amount="${policy.containerMl}"`} aria-label="${e(m(remove?'remove':'addGlass'))}" ${diary.completed?'disabled':''}>${content}</button>`;
+ }).join('');
+ const total=diary.summary.totals.water,target=diary.summary.hydration.target,hasData=typeof total==='number'&&diary.summary.nutrientCoverage.water.known>0,percent=target>0&&hasData?Math.round(total/target*100):0;
+ const volume=value=>waterFromMilliliters(value,policy.unit).toLocaleString(uiLanguage(),{minimumFractionDigits:1,maximumFractionDigits:1});
+ const amount=hasData?`${volume(total)}${target>0?' / '+volume(target):''} ${policy.unit}`:m('noData');
+ let showHint=true;
+ try{showHint=!ownerId||!localStorage.getItem(hintKey(ownerId));}catch{/* Storage is optional for this tip. */}
+ const heading=`<summary>
+  <button type="button" data-action="water-menu" class="md-group-add" aria-label="${e(m('addGlass'))}">+</button>
+  <span class="water-heading"><strong>${e(m('water'))}</strong><small>${number(waterFromMilliliters(logged,policy.unit))} / ${number(waterFromMilliliters(policy.goalMl,policy.unit))} ${e(policy.unit)}</small></span>
+  <span class="md-group-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 6 6 6-6 6"/></svg></span>
+ </summary>`;
+ const more=offset||Math.max(goal,filled+1)>count?`<small class="water-glass-count">${e(m('glasses',{count:number(logged/policy.containerMl)}))}</small>`:'';
+ const hint=showHint?`<div class="water-hint"><span>${e(m('hint'))}</span><button type="button" data-action="water-hint-close" aria-label="${e(m('close'))}">×</button></div>`:'';
+ const targetBar=policy.showTotal?`<button type="button" data-action="water-target" class="water-total${hasData?'':' water-no-data'}">
+  <span><b>${e(m('total'))}</b> - ${e(amount)}</span><span>${percent}%</span>
+  <progress aria-label="${e(m('total'))}" max="100" value="${Math.min(100,percent)}"></progress>
+ </button>`:'';
+ const fill=`<svg width="0" height="0" aria-hidden="true" class="water-fill"><defs><linearGradient id="water-level" x2="0" y2="1"><stop stop-color="#1ec4cb"/><stop offset="1" stop-color="#007781"/></linearGradient></defs></svg>`;
+ return `<details class="md-water" ${expanded?'open':''}>${heading}${fill}<div class="water-glasses">${glasses}</div>${more}${hint}${targetBar}</details>`;
 }
 export function openWaterMenu(anchor,onChoose,{completed=false}={}){
  return new AnchoredMenu({anchor,origin:anchor,label:m('settings'),className:'water-menu',items:[{id:'water',label:m('addGlass'),icon:'/record-source/biometric-icons/cup-water.svg',disabled:completed},{id:'water-custom',label:m('custom'),icon:'/shell-source/navigation/plus.svg',disabled:completed},{id:'water-settings',label:m('settings'),icon:'/record-source/biometric-icons/cog-outline.svg'}],onChoose});

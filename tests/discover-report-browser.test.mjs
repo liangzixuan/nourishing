@@ -99,7 +99,14 @@ test('Discover headers route Newsfeed and settings per tab; source Report render
   assert.equal(await page.locator('[data-report-balance]').count(),7);assert.equal(await page.locator('.report-balance-grid [data-report-balance]').count(),5);assert.equal(await page.locator('.report-balance-extras [data-report-balance]').count(),2);assert.equal(await page.locator('[data-report-balance=calcium-oxalate]').evaluate(node=>getComputedStyle(node).gridColumn),'1 / -1');
   assert.equal(await page.locator('[data-report-balance="zinc-copper"] [data-balance-value]').textContent(),'—');
   assert.equal(await page.locator('[data-report-balance="zinc-copper"] .report-gauge-needle').count(),0);
-  assert.equal(await page.locator('[data-report-balance="omega6-omega3"] [data-balance-value]').textContent(),'2');assert.equal(await page.locator('[data-report-balance="omega6-omega3"] .report-gauge-needle').count(),1);
+  assert.equal(await page.locator('[data-report-balance="omega6-omega3"] [data-balance-value]').textContent(),'2.000');assert.equal(await page.locator('[data-report-balance="omega6-omega3"] .report-gauge-needle').count(),1);
+  for(const selector of ['[data-report-section=macros] [data-mobile-nutrient]','.report-highlight-column [data-mobile-nutrient]','[data-mobile-category=Vitamins] [data-mobile-nutrient]']){
+   const [first,second]=await page.locator(selector).evaluateAll(nodes=>nodes.slice(0,2).map(node=>node.getBoundingClientRect().top));
+   assert.ok(Math.abs(second-first-47)<1,selector+' row pitch was '+(second-first));
+  }
+  const gauges=page.locator('.report-balance-grid');
+  assert.ok((await gauges.boundingBox()).height<410,'Five balance gauges fit in one report viewport');
+  assert.ok(await page.getByRole('button',{name:'Zinc : Copper: No data',exact:true}).isVisible());
   assert.deepEqual(await page.locator('[data-mobile-category]').evaluateAll(nodes=>nodes.slice(0,3).map(node=>node.dataset.mobileCategory)),['General','Vitamins','Minerals']);
   const categoryRows=await page.locator('[data-mobile-category]').evaluateAll(groups=>groups.map(group=>Array.from(group.querySelectorAll('[data-report-nutrient]'),button=>button.dataset.reportNutrient)));
   assert.deepEqual(categoryRows,[

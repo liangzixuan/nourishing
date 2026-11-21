@@ -29,7 +29,7 @@ function reportDepth(id){
 export function reportNutrientRow(row,unit,{compact=false,grouped=false}={}){
  const name=grouped&&row.id==='calories'?label('energy'):mobileNutrientName(row,uiLanguage());
  const amount=row.mean===null?label('noData'):reportNumber(displayValue(row.mean,row.unit,unit))+' '+displayUnit(row.unit,unit);
- return `<div data-mobile-nutrient="${e(row.id)}" ${grouped?`data-depth="${reportDepth(row.id)}"`:''}><button type="button" class="dc-button" data-report-nutrient="${e(row.id)}"><span>${e(name)}${compact?'':` <small>· ${e(amount)}</small>`}</span><strong>${percent(row.percentOfMeanTarget)}</strong></button>${bar(row.percentOfMeanTarget,name)}</div>`;
+ return `<div class="report-target-row" data-mobile-nutrient="${e(row.id)}" ${grouped?`data-depth="${reportDepth(row.id)}"`:''}><button type="button" class="dc-button" data-report-nutrient="${e(row.id)}"><span>${e(name)}${compact?'':` <small>· ${e(amount)}</small>`}</span><strong>${percent(row.percentOfMeanTarget)}</strong></button>${bar(row.percentOfMeanTarget,name)}</div>`;
 }
 export function reportTargetSections(capture,expanded){
  const {report,energyUnit:unit}=capture,rows=new Map(report.nutrients.map(row=>[row.id,row]));rows.set('netCarbohydrate',report.carbohydrates.net.summary);
@@ -39,7 +39,7 @@ export function reportTargetSections(capture,expanded){
  const scores=(capture.display?.scores??defaultNutritionScoreIds).map(id=>report.scores.summary.find(row=>row.id===id)).filter(Boolean);
  return reportSection('macros',label('macros'),`<div class="report-target-list">${macroIds.map(id=>reportNutrientRow(rows.get(id),unit)).join('')}</div>`,expanded)+
   reportSection('highlights',label('highlights'),`<div class="report-target-grid">${highlights.length?highlightColumns.map(column=>`<div class="report-highlight-column">${column.map(row=>reportNutrientRow(row,unit,{compact:true})).join('')}</div>`).join(''):`<p>${e(t('diaryDisplay.empty'))}</p>`}</div>`,expanded)+
-  reportSection('scores',label('scores'),`<div class="report-target-grid">${scores.map(row=>{const name=scoreDisplayName(row,uiLanguage());return `<div><button type="button" class="dc-button" data-report-score="${e(row.id)}"><span>${e(name)}</span><strong>${percent(row.mean)}</strong></button>${bar(row.mean,name)}</div>`;}).join('')}</div>`,expanded);
+  reportSection('scores',label('scores'),`<div class="report-target-grid">${scores.map(row=>{const name=scoreDisplayName(row,uiLanguage());return `<div class="report-target-row"><button type="button" class="dc-button" data-report-score="${e(row.id)}"><span>${e(name)}</span><strong>${percent(row.mean)}</strong></button>${bar(row.mean,name)}</div>`;}).join('')}</div>`,expanded);
 }
 const defaultIds=new Set(Object.values(mobileNutrientGroups).flat());
 function visibleReportRows(report){
@@ -64,16 +64,45 @@ export function reportAdditionalNutrients(capture,expanded){
 }
 // Gauge scales are display bounds; reference bands and values come from the captured balance.
 const scales={'omega6-omega3':25,'zinc-copper':20,'potassium-sodium':12,'calcium-magnesium':6,'calcium-oxalate':2};
-const pairOrder=Object.keys(scales);
-const point=fraction=>{const angle=(150+240*fraction)*Math.PI/180;return [60+44*Math.cos(angle),58+44*Math.sin(angle)];};
-const arc=(start,end)=>{const a=point(start),b=point(end);return `M ${a.join(' ')} A 44 44 0 ${end-start>.75?1:0} 1 ${b.join(' ')}`;};
+const gaugeAngle=fraction=>150+240*fraction;
+function gaugePoint(fraction){
+ const radians=gaugeAngle(fraction)*Math.PI/180;
+ return [54+47*Math.cos(radians),54+47*Math.sin(radians)];
+}
+function gaugeArc(start,end){
+ return `M ${gaugePoint(start).join(' ')} A 47 47 0 ${end-start>.75?1:0} 1 ${gaugePoint(end).join(' ')}`;
+}
+function balanceButton(row){
+ const name=balanceDisplayName(row,uiLanguage()),max=scales[row.id];
+ const known=Number.isFinite(row.value);
+ const value=known&&max?row.value.toLocaleString(uiLanguage(),{minimumFractionDigits:3,maximumFractionDigits:3}):reportNumber(row.value,3);
+ const reading=max?value:`${value} ${e(row.unit)}`;
+ let face=`<strong data-balance-value>${reading}</strong>`;
+ if(max){
+  const low=Math.min(1,row.reference.low/max),high=Math.min(1,(row.reference.high??max)/max);
+  const [x1,y1]=gaugePoint(low),[x2,y2]=gaugePoint(high),band='report-band-'+row.id;
+  const needle=known?`<g class="report-gauge-needle" transform="rotate(${gaugeAngle(Math.max(0,Math.min(1,row.value/max)))} 54 54)">
+   <line x1="54" y1="54" x2="89" y2="54"/><path d="M 97 54 L 85 50 L 85 58 Z"/><circle cx="54" cy="54" r="4"/>
+  </g>`:'';
+  face=`<svg class="report-balance-gauge" viewBox="0 0 108 82" aria-hidden="true">
+   <defs><linearGradient id="${band}" gradientUnits="userSpaceOnUse" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">
+    <stop class="report-band-edge"/><stop offset=".5" class="report-band-middle"/><stop offset="1" class="report-band-edge"/>
+   </linearGradient></defs>
+   <path class="report-gauge-track" d="${gaugeArc(0,1)}"/>
+   <path class="report-gauge-band" stroke="url(#${band})" d="${gaugeArc(low,high)}"/>${needle}
+  </svg><span class="report-gauge-readings"><span aria-hidden="true">0</span>${face}<span aria-hidden="true">${max}</span></span>`;
+ }
+ const accessibleValue=known?(max?value:value+' '+row.unit):label('noData');
+ return `<button type="button" class="dc-button report-balance" data-report-balance="${e(row.id)}" aria-label="${e(name+': '+accessibleValue)}">${face}<span class="report-balance-name">${e(name)}</span></button>`;
+}
 export function reportBalanceSection(capture,expanded){
- const value=capture.report.balances,hidden=new Set(value.policy?.hidden??[]),rows=[...pairOrder.map(id=>value.pairs.find(row=>row.id===id)),value.pral,value.calciumAbsorption].filter(row=>row&&!hidden.has(row.id));
- const rendered=rows.map(row=>{const max=scales[row.id],name=balanceDisplayName(row,uiLanguage()),known=Number.isFinite(row.value),needle=known&&max?point(Math.min(1,Math.max(0,row.value/max))):null;
-  const gauge=max?`<svg class="report-balance-gauge" viewBox="0 0 120 100" aria-hidden="true"><path class="report-gauge-track" d="${arc(0,1)}"/><path class="report-gauge-band" d="${arc(Math.min(1,row.reference.low/max),Math.min(1,(row.reference.high??max)/max))}"/>${needle?`<path class="report-gauge-needle" d="M 60 58 L ${needle.join(' ')}"/><circle cx="60" cy="58" r="4" class="report-gauge-center"/>`:''}<text x="4" y="89">0</text><text x="116" y="89" text-anchor="end">${max}</text></svg>`:'';
-  return `<button type="button" class="dc-button report-balance" data-report-balance="${e(row.id)}" aria-label="${e(name+': '+reportNumber(row.value,3))}">${gauge}<strong data-balance-value>${reportNumber(row.value,3)}${max?'':` ${e(row.unit)}`}</strong><span class="report-balance-name">${e(name)}</span></button>`;
- });
- return reportSection('balances',label('balances'),`<div class="report-balance-grid">${rendered.filter((_,index)=>scales[rows[index].id]).join('')}</div><div class="report-balance-extras">${rendered.filter((_,index)=>!scales[rows[index].id]).join('')}</div>`,expanded);
+ const value=capture.report.balances,hidden=new Set(value.policy?.hidden??[]);
+ const visible=row=>row&&!hidden.has(row.id);
+ const ratios=Object.keys(scales).map(id=>value.pairs.find(row=>row.id===id)).filter(visible);
+ const extras=[value.pral,value.calciumAbsorption].filter(visible);
+ const grid=ratios.length?`<div class="report-balance-grid">${ratios.map(balanceButton).join('')}</div>`:'';
+ const other=extras.length?`<div class="report-balance-extras">${extras.map(balanceButton).join('')}</div>`:'';
+ return reportSection('balances',label('balances'),grid+other,expanded);
 }
 export function reportBalanceDetail(capture,id){
  const value=capture.report.balances;

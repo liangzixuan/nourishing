@@ -1,4 +1,5 @@
 const rows={
+ estimatedMacros:['Estimated Macro Targets','Objectifs macro estimés','Geschätzte Makronährstoffziele','Metas estimadas de macronutrientes'],
  undo:['Undo','Annuler','Rückgängig','Desfazer'],
  itemDeleted:['Meal item deleted.','Aliment supprimé du repas.','Zutat aus Mahlzeit entfernt.','Item removido da refeição.'],
  addToMeal:['Add to Meal','Ajouter au repas','Zur Mahlzeit hinzuf\u00fcgen','Adicionar \u00e0 refei\u00e7\u00e3o'],
