@@ -9,6 +9,44 @@ import {prepareCycleImport} from '../server/domain/cycle-records.mjs';
 await buildLocalCharts();
 const {projectLocalChart}=await import('../public/local-chart-projection.js');
 const clock={now:new Date('2026-11-15T18:00:00Z'),timeZone:'America/Chicago'},to='2026-11-15';
+test('Single Metric stage hours match Sleep Stages for measured spans, known zeros, gaps and source conflicts',async()=>{
+ const state=initialState(),card='metric',today=to;
+ function session(id,day,app,stages){
+  const instant=hour=>day+'T'+String(hour).padStart(2,'0')+':00:00Z';
+  return {id,date:day,time:'08:00',type:'Sleep',unit:'h',value:3,source:{
+   kind:'health-connect',version:1,id,app,recordId:id,zone:'UTC',exportedAt:clock.now.toISOString(),
+   start:instant(5),end:instant(8),sleepStages:stages.map(([stage,start,end])=>({stage,start:instant(start),end:instant(end)}))}};
+ }
+ const complete=[['deep',5,6],['light',6,8]];
+ state.biometrics=[
+  session('full','2026-11-10','watch',complete),session('partial','2026-11-11','watch',[['rem',5,6]]),
+  session('watch','2026-11-12','watch',complete),session('ring','2026-11-12','ring',complete),
+  {id:'manual',date:'2026-11-13',type:'sleep',unit:'h',value:3},
+  session('with-score','2026-11-14','watch',complete),{id:'score',date:'2026-11-14',type:'sleep score',unit:'score',value:80},
+  {id:'historic',date:today,type:'Sleep Deep',unit:'h',value:9}
+ ];
+ const view=chartSurfaceView(state,{to,card},clock),before=structuredClone(state);
+ const expected={deep:[null,1,null,null,null,1,null],light:[null,2,null,null,null,2,null],rem:[null,0,1,null,null,0,null]};
+ assert.deepEqual(view.cards[0].stageOptions?.map(row=>row.metric.stage),['deep','light','rem']);
+ for(const [stage,values] of Object.entries(expected)){
+  const primary={kind:'sleep-stage',stage},action={type:'chart.display',payload:{id:card,patch:{primary,primaryUnit:'h'}}};
+  const offline=await projectLocalChart(state,action,view,card),saved=structuredClone(state);applyChartPreference(saved,action);
+  const server=chartSurfaceView(saved,{to,card},clock);
+  assert.deepEqual(offline.cards,server.cards);assert.deepEqual(saved.settings.mobileCharts.charts.metric.primary,primary);
+  assert.deepEqual(server.cards[0].series[0].points.map(p=>p.value),values);
+  assert.deepEqual(chartSurfaceView(saved,{to,card:'sleep'},clock).cards[0].series.find(s=>s.id===stage).points.map(p=>p.value),values);
+  assert.ok(server.options.every(row=>row.metric.kind!=='sleep-stage'));
+ }
+ const historic={kind:'biometric',type:'Sleep Deep',unit:'h'};
+ const existing=await projectLocalChart(state,{type:'chart.display',payload:{id:card,patch:{primary:historic}}},view,card);
+ assert.deepEqual(existing.cards[0].series[0].points.map(p=>p.value),[null,null,null,null,null,null,9]);
+ const stage={kind:'sleep-stage',stage:'deep'};
+ for(const [id,patch] of [[card,{primary:{...stage,stage:'unknown'}}],[card,{primary:{...stage,unit:'h'}}],[card,{secondary:stage}],['nutrient',{primary:stage}],[card,{primary:stage,primaryUnit:'kg'}]]){
+  assert.throws(()=>applyChartPreference(state,{type:'chart.display',payload:{id,patch}}),{status:400});
+ }
+ assert.throws(()=>applyChartPreference(state,{type:'chart.save',payload:{version:2,id:'c',name:'Stage',primary:stage,days:7,visible:true}}),{status:400});
+ assert.deepEqual(state,before);
+});
 test('server and offline metric choices use defaults for a null stored chart setting',async()=>{
  const state=initialState(),id='metric';
  state.settings.mobileCharts={version:1,charts:{metric:null}};

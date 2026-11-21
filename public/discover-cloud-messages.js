@@ -4,6 +4,11 @@ import {mobileChartEditorMessages} from './custom-chart-source/messages.js';
 import {createUITranslator} from './app-language.js';
 // Cloud-owned UI messages. User names, source descriptions and saved values are not translated.
 const rows=[
+ ["sleepStage.deep","Sleep Deep","Sommeil profond","Tiefschlaf","Sono profundo"],
+ ["pressure.systolic","Systolic Blood Pressure","Pression artérielle systolique","Systolischer Blutdruck","Pressão arterial sistólica"],
+ ["pressure.diastolic","Diastolic Blood Pressure","Pression artérielle diastolique","Diastolischer Blutdruck","Pressão arterial diastólica"],
+ ["sleepStage.light","Sleep Light","Sommeil léger","Leichtschlaf","Sono leve"],
+ ["sleepStage.rem","Sleep REM","Sommeil paradoxal","REM-Schlaf","Sono REM"],
  ["elapsedFast","{{clock}} elapsed time","{{clock}} écoulées","{{clock}} verstrichen","{{clock}} decorridos"],
  ["remainingFast","{{clock}} remaining","{{clock}} restantes","{{clock}} verbleibend","{{clock}} restantes"],
  ["stopFast","Stop Fast","Arrêter le jeûne","Fasten beenden","Parar o jejum"],

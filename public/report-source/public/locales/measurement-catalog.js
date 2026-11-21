@@ -212,10 +212,10 @@ const rows=[
  ],
  [
   "metric.v02-max",
-  "V02 Max",
-  "V02 Max",
-  "V02 Max",
-  "V02 Máx."
+  "VO2 Max",
+  "VO2 Max",
+  "VO2 Max",
+  "VO2 Máx."
  ],
  [
   "metric.25-hydroxy-vitamin-d",

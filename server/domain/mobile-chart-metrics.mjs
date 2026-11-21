@@ -2,9 +2,16 @@ import {lipidUnits} from './lipid-units.mjs';
 import {chartDisplayUnits} from './chart-display-units.mjs';
 import {glucoseConcentrationUnits} from './glucose-ketones.mjs';
 import {bodyChartSource} from './body-chart-sources.mjs';
+export const sleepStageOptions=Object.entries({deep:'Sleep Deep',light:'Sleep Light',rem:'Sleep REM'})
+ .map(([stage,name])=>({metric:{kind:'sleep-stage',stage},name,unit:'h'}));
+export function parseSleepStageMetric(input){
+ const option=sleepStageOptions.find(row=>row.metric.stage===input.stage);
+ if(!option||Object.keys(input).some(key=>!['kind','stage'].includes(key)))throw Object.assign(Error('Choose a recorded sleep stage.'),{status:400});
+ return {...option.metric};
+}
 /** Source selection is shared by setting validation and chart capture. */
-export function mobileChartBiometric(state,type,defaultUnit=null){
- const units=[...new Set((state.biometrics??[]).filter(row=>row.type===type&&typeof row.unit==='string').map(row=>row.unit))];
+export function mobileChartBiometric(state,type,defaultUnit=null,to='9999-12-31'){
+ const units=[...new Set((state.biometrics??[]).filter(row=>row.type===type&&row.date<=to&&Number.isFinite(row.value)&&typeof row.unit==='string'&&row.unit.trim()&&row.unit.length<=30).map(row=>row.unit))];
  return {kind:'biometric',type,unit:defaultUnit??(units.length===1?units[0]:null)};
 }
 export function mobileChartMetric(state,id,axis,settings,to='9999-12-31'){
@@ -23,5 +30,7 @@ export function mobileChartUnitChoices(state,id,axis,settings){
  if(id==='calcium'&&axis==='primary')return ['mg'];
  if(id==='lipids'&&axis==='primary')return lipidUnits;
  if(id==='gki'&&axis==='secondary')return glucoseConcentrationUnits;
- const metric=mobileChartMetric(state,id,axis,settings);return metric?chartDisplayUnits(metric):[];
+ const metric=mobileChartMetric(state,id,axis,settings);
+ if(metric?.kind==='sleep-stage')return ['h'];
+ return metric?chartDisplayUnits(metric):[];
 }

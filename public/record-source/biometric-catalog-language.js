@@ -1,4 +1,4 @@
-import {measurementCatalogMessages} from './locales/measurement-catalog.js';
+import {measurementCatalogMessages} from '../report-source/public/locales/measurement-catalog.js';
 import {formatMessage} from './message-format.js';
 // Catalog IDs and category values belong to the library; labels are presentation only.
 const label=(language,key,fallback)=>Object.hasOwn(measurementCatalogMessages.en,key)?formatMessage(language,key):fallback;

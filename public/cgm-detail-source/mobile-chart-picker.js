@@ -20,7 +20,7 @@ export class MobileChartPicker {
   document.body.append(this.dialog);this.dialog.showModal();if(anchor&&!confirm){const rect=anchor.getBoundingClientRect(),height=this.dialog.getBoundingClientRect().height;this.dialog.style.top=Math.max(12,Math.min(rect.top,innerHeight-height-80))+'px';this.dialog.style.right='8px';this.dialog.style.left='auto';this.dialog.style.margin='0';}
   const current=presentation==='chart-control'&&this.dialog.querySelector('[aria-current=true]');
   (current||this.dialog.querySelector('input,[aria-current=true],button'))?.focus({preventScroll:true});
-  if(current)current.scrollIntoView({block:'nearest'});
+  if(current)this.dialog.scrollTop=current.offsetTop-(this.dialog.clientHeight-current.offsetHeight)/2;
  }
  close(){if(this.closed)return;this.closed=true;this.dialog.close();this.dialog.remove();if(this.focus?.isConnected)this.focus.focus({preventScroll:true});this.onClose?.()}
 }

@@ -7,6 +7,7 @@ const rows={
  save:['Save','Enregistrer','Speichern','Salvar'],add:['Add to Diary','Ajouter au journal','Zum Tagebuch hinzufügen','Adicionar ao diário'],
  enterAmount:['Enter a valid amount and date.','Saisissez une quantité et une date valides.','Gültige Menge und Datum eingeben.','Insira quantidade e data válidas.'],unavailable:['Nutrition preview unavailable.','Aperçu nutritionnel indisponible.','Nährwertvorschau nicht verfügbar.','Prévia nutricional indisponível.'],retry:['Retry','Réessayer','Erneut versuchen','Tentar novamente'],
  energy:['Energy Summary','Résumé énergétique','Energieübersicht','Resumo de energia'],macros:['Macronutrient Targets','Objectifs de macronutriments','Makronährstoffziele','Metas de macronutrientes'],
+ highlights:['Highlighted Targets','Objectifs en évidence','Hervorgehobene Ziele','Metas em destaque'],
  count:['{{count}} Listed Nutrients','{{count}} nutriments indiqués','{{count}} erfasste Nährstoffe','{{count}} nutrientes listados'],per:['Nutrition per {{amount}} {{serving}}','Nutrition pour {{amount}} {{serving}}','Nährwerte pro {{amount}} {{serving}}','Nutrientes por {{amount}} {{serving}}'],
  missing:['— Not measured · * Partial data','— Non mesuré · * Données partielles','— Nicht gemessen · * Teilweise Daten','— Não medido · * Dados parciais']
 };

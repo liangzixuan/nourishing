@@ -108,11 +108,21 @@ export function mountChartDetail(view,id,ui){
    const unit=key.endsWith("Unit"),axis=unit?key.slice(0,-4):key,series=card.series.find(row=>row.id===axis);if(!series?.metric)return;
    if(unit){choices=series.displayUnits.map(value=>({value,label:value}));selected=series.unit;}
    else if(card.id==='metric'){
-    const options=chartPickerOptions(view.options,series.metric,'source');
-    choices=chartPickerOptions(options,series.metric,'metric').map(row=>({value:row.metric.type,label:chartSeriesLabel(row)})).sort((a,b)=>a.label.localeCompare(b.label,uiLanguage()));
-    selected=series.metric.type;
-    choose=type=>{
-     const sources=options.filter(row=>row.metric.type===type);
+    const stageOptions=card.stageOptions??[],stageNames=new Set(stageOptions.map(chartSeriesLabel));
+    const groups=new Map(),keyFor=metric=>JSON.stringify([metric.kind,metric.kind==='sleep-stage'?metric.stage:metric.type]);
+    for(const row of [...view.options.filter(row=>row.metric.kind==='biometric'),...stageOptions]){
+     const key=keyFor(row.metric);
+     if(!groups.has(key))groups.set(key,[]);
+     groups.get(key).push(row);
+    }
+    choices=Array.from(groups,([value,sources])=>{
+     const first=sources[0],name=chartSeriesLabel(first);
+     const label=first.metric.kind==='biometric'&&stageNames.has(name)?name+' ('+sources.map(row=>row.metric.unit??m('chooseUnit')).join(', ')+')':name;
+     return {value,label};
+    }).sort((a,b)=>a.label.localeCompare(b.label,uiLanguage()));
+    selected=keyFor(series.metric);
+    choose=value=>{
+     const sources=groups.get(value);
      if(sources.length===1)return preference(key,JSON.stringify(sources[0].metric));
      // A display conversion does not change the recorded series being plotted.
      const units=sources.map(row=>({value:JSON.stringify(row.metric),label:chartSeriesLabel(row)+' ('+(row.metric.unit??m('chooseUnit'))+')'}));

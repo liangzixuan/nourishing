@@ -13,6 +13,11 @@ import {biometricCatalog} from './offline-source/server/biometric-library.mjs';
 const colors=['#ff6633','#328f95','#c17ccd','#ffb600','#9ca2b1','#6479d9','#57d599','#c1e5e9'];
 export const chartSeriesColor=(series,index,card)=>card?.id==='cgm'&&cgmColors[series.id]?cgmColors[series.id]:({protein:'#57d599',carbohydrate:'#35cada',fat:'#c17ccd',alcohol:'#ffb600',unattributed:'#9ca2b1','total cholesterol':'#ff6633','hdl cholesterol':'#328f95','ldl cholesterol':'#ffb600',triglycerides:'#cf37e6',gki:'#ff6633',glucose:'#328f95',insulin:'#8563a5',ketones:'#bf40bc',rem:'#64cddc',light:'#00b8c7',deep:'#008b91'}[series.id]??colors[index%colors.length]);
 export function chartMetricLabel(row){
+ if(row.metric?.kind==='sleep-stage')return dc('sleepStage.'+row.metric.stage);
+ if(row.metric?.kind==='biometric'&&row.metric.unit==='mmHg'){
+  if(row.metric.type==='systolic blood pressure')return dc('pressure.systolic');
+  if(row.metric.type==='diastolic blood pressure')return dc('pressure.diastolic');
+ }
  if(row.metric?.kind==='score')return scoreName({id:row.metric.id,name:metricDisplayName(row,{language:uiLanguage()})});
  const biometric=row.metric?.kind==='biometric'?biometricCatalog.find(item=>item.type===row.metric.type):null;
  return biometric?biometricCatalogLabel({selection:{kind:'catalog',id:biometric.id},label:row.name??biometric.label},uiLanguage()):metricDisplayName(row,{language:uiLanguage()});

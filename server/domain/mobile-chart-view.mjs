@@ -5,7 +5,7 @@ import {captureCgmWindow} from './cgm-hour-window.mjs';
 import {captureLipidPanel} from './lipid-chart.mjs';
 import {captureCalciumChart} from './calcium-chart.mjs';
 import {groupedNutrientSeries} from './nutrient-chart.mjs';
-import {mobileChartMetric} from './mobile-chart-metrics.mjs';
+import {mobileChartBiometric,mobileChartMetric,sleepStageOptions} from './mobile-chart-metrics.mjs';
 import {displayChartSeries} from './chart-display-units.mjs';
 import {date,captureCalendar} from './calendar.mjs';
 import {mobileChartTemplates,parseMobileChartSettings,mobileChartDisplayDefaults} from './mobile-chart-settings.mjs';
@@ -30,35 +30,43 @@ function rangeFor(state,prefs,to){
  }
  return {from:shift(end,1-Number(prefs.range)),to:end};
 }
-function metricSeries(days,metric,id,axis='left'){
- const capture=projectMetricSeries(days,metric);
- return {id,name:capture.info.name,unit:capture.info.unit,axis,metric:capture.metric,points:days.map((day,i)=>({date:day.date,value:capture.values[i]})),capture};
+function metricSeries(state,days,metric,id,axis='left',to){
+ const source=metric.kind==='biometric'&&metric.unit===null?mobileChartBiometric(state,metric.type,null,to):metric;
+ const capture=projectMetricSeries(days,source);
+ return {id,name:capture.info.name,unit:capture.info.unit,axis,metric,points:days.map((day,i)=>({date:day.date,value:capture.values[i]})),capture};
 }
 function valueSeries(days,id,name,unit,read,axis='left'){
  return {id,name,unit,axis,points:days.map(day=>({date:day.date,value:read(day)}))};
 }
-function sleepSeries(state,range,days){
- const capture=createSleepView(state,range),byDate=new Map(capture.days.map(day=>[day.date,day]));
- const series=SLEEP_STAGES.map(stage=>valueSeries(days,stage,stage,'h',day=>{
-  const summary=byDate.get(day.date);if(!summary||summary.reasons.length||summary.sources.length!==1||summary.sessionHours===null)return null;
-  const sessions=capture.sessions.filter(row=>row.date===day.date&&row.sourceKey===summary.sources[0].sourceKey&&row.eligible);
-  const values=sessions.map(row=>row.stages?.durations[stage]);
+function sleepSeries(state,range,days,selection){
+ const capture=createSleepView(state,range);
+ // The sleep projection resolves conflicts between contributing sessions. A
+ // separate source with only a sleep score does not invalidate those hours.
+ const byDate=new Map(capture.days.filter(day=>day.sessionHours!==null).map(day=>[day.date,[]]));
+ for(const row of capture.sessions)if(row.eligible)byDate.get(row.date)?.push(row);
+ const stages=selection?[selection.stage]:SLEEP_STAGES;
+ const series=stages.map(stage=>valueSeries(days,stage,stage,'h',day=>{
+  const values=(byDate.get(day.date)??[]).map(row=>row.stages?.durations[stage]);
   return values.length&&values.every(known)?values.reduce((a,b)=>a+b,0):null;
  }));
+ if(selection){
+  const option=sleepStageOptions.find(row=>row.metric.stage===selection.stage);
+  return {series:[{...series[0],...option,id:'primary',displayUnits:['h']}],capture};
+ }
  return {series,capture,plot:'stacked-bars'};
 }
 function builtIn(state,descriptor,days,clock){
  const {id,settings:p,range}=descriptor,weight=mobileChartMetric(state,id,'primary',p,range.to);
  if(id==='energy')return {plot:'stacked-bars',series:consumedComponents.map(([key,name])=>valueSeries(days,key,name,'kcal',day=>known(day.energy.consumed)?day.consumedEnergy.values[key]:null)),capture:{method:'food-level-atwater-allocation-v1',days:days.map(day=>({date:day.date,...day.consumedEnergy}))}};
- if(id==='metric')return {series:[metricSeries(days,weight,'primary')]};
+ if(id==='metric')return {stageOptions:sleepStageOptions,...(weight.kind==='sleep-stage'?sleepSeries(state,range,days,weight):{series:[metricSeries(state,days,weight,'primary','left',range.to)]})};
  if(id==='nutrient'){
   const metric=mobileChartMetric(state,id,'primary',p,range.to);
-  if(p.grouping==='day')return {series:[metricSeries(days,metric,'primary')]};
+  if(p.grouping==='day')return {series:[metricSeries(state,days,metric,'primary')]};
   const series=groupedNutrientSeries(state,range,days,metric,p.grouping);
   return {series:[series],timing:{grouping:p.grouping,untimedCount:series.capture.untimed.length}};
  }
- if(id==='score')return {series:[metricSeries(days,mobileChartMetric(state,id,'primary',p,range.to),'primary')]};
- if(id==='weight-fat'||id==='weight-waist')return {series:[metricSeries(days,weight,'primary'),metricSeries(days,mobileChartMetric(state,id,'secondary',p,range.to),'secondary','right')]};
+ if(id==='score')return {series:[metricSeries(state,days,mobileChartMetric(state,id,'primary',p,range.to),'primary')]};
+ if(id==='weight-fat'||id==='weight-waist')return {series:[metricSeries(state,days,weight,'primary','left',range.to),metricSeries(state,days,mobileChartMetric(state,id,'secondary',p,range.to),'secondary','right',range.to)]};
  if(id==='lipids')return captureLipidPanel(days,p.primaryUnit);
  if(id==='sleep')return sleepSeries(state,range,days);
  if(id==='calcium')return captureCalciumChart(days);
@@ -101,14 +109,14 @@ export function createMobileChartView(state,input,clock={}){
  const cards=selected.map(descriptor=>{
   const filter=descriptor.id==='cgm'?'all':descriptor.settings.dayFilter;
   const days=[...cache.values()].filter(day=>day.date>=descriptor.range.from&&day.date<=descriptor.range.to&&(descriptor.settings.includeToday!==false||day.date!==calendar.today)&&(filter==='all'||(filter==='complete'?day.complete:day.logged||day.complete))).sort((a,b)=>a.date.localeCompare(b.date));
-  const data=descriptor.kind==='custom'?{series:[metricSeries(days,descriptor.definition.primary,'primary'),...(descriptor.definition.secondary?[metricSeries(days,descriptor.definition.secondary,'secondary','right')]:[])]}:builtIn(state,descriptor,days,clock);
+  const data=descriptor.kind==='custom'?{series:[metricSeries(state,days,descriptor.definition.primary,'primary','left',descriptor.range.to),...(descriptor.definition.secondary?[metricSeries(state,days,descriptor.definition.secondary,'secondary','right',descriptor.range.to)]:[])]}:builtIn(state,descriptor,days,clock);
   const targetMetric=data.series[0]?.metric;let target=descriptor.settings.targetLine&&targetMetric?.kind==='nutrient'?valueSeries(days,'target','Daily Target',data.series[0].unit,day=>known(day.targets[targetMetric.id])?day.targets[targetMetric.id]:null):null;
   if(target)target=displayChartSeries({...target,metric:targetMetric},descriptor.settings.primaryUnit);
   if(target&&descriptor.id==='calcium'){
    const upper=valueSeries(days,'target-upper','Target maximum','mg',day=>known(day.nutrientDisplay.thresholds.calcium?.maximum)?day.nutrientDisplay.thresholds.calcium.maximum:null);
    target.upper=upper.points.some(point=>known(point.value))?upper:null;
   }
-  data.series=data.series.map(series=>displayChartSeries(series,descriptor.settings[series.id+'Unit']));
+  data.series=data.series.map(series=>series.metric?.kind==='sleep-stage'?series:displayChartSeries(series,descriptor.settings[series.id+'Unit']));
   const fasting=descriptor.id==='cgm'?(descriptor.settings.showFasting?{rows:data.capture.fasts}:null):descriptor.settings.showFasting&&!['energy','sleep'].includes(descriptor.id)?captureFastingChartRows(state,descriptor.range,clock):null;
   const cycleOverlayEnabled=cycleEnabled(descriptor),cycle=cycleOverlayEnabled?{cycleOverlay:mobileCycleOverlay(cycleCapture,descriptor.range,days.map(day=>day.date),data.capture?.window)}:{};
   return {...descriptor,dates:days.map(day=>day.date),plot:'lines',...data,target,fasting,cycleOverlayEnabled,...cycle};

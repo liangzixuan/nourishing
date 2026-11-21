@@ -4,7 +4,7 @@ import {cgmHours} from './cgm-hour-window.mjs';
 import {date} from './calendar.mjs';
 import {parseMetric} from './chart-metrics.mjs';
 import {chartDisplayUnits} from './chart-display-units.mjs';
-import {mobileChartUnitChoices} from './mobile-chart-metrics.mjs';
+import {mobileChartUnitChoices,parseSleepStageMetric} from './mobile-chart-metrics.mjs';
 
 export const mobileChartTemplates=Object.freeze([
  ['energy','Energy Consumed (kcal)',true],['metric','Single Metric',true],['nutrient','Single Nutrient',true],
@@ -45,6 +45,9 @@ export function parseMobileChartSettings(input,state={}){
   if(template.id==='cgm'){value.targetRange=parseCgmTargetRange(raw.targetRange);value.showTargetHint=Object.hasOwn(raw,'showTargetHint')?raw.showTargetHint:true;if(typeof value.showTargetHint!=='boolean')fail('Choose a valid target hint switch.');value.hours=Object.hasOwn(raw,'hours')?raw.hours:24;if(!cgmHours.includes(value.hours))fail('Choose 3, 24, 48 or 72 hours.');value.compare=raw.compare===undefined||raw.compare===null?null:parseGlucoseComparisonMetric(raw.compare);value.showInsulin=Object.hasOwn(raw,'showInsulin')?raw.showInsulin:true;if(typeof value.showInsulin!=='boolean')fail('Choose a valid insulin display switch.');value.showCompare=Object.hasOwn(raw,'showCompare')?raw.showCompare:true;if(typeof value.showCompare!=='boolean')fail('Choose a valid comparison display switch.');}
   if(typeof value.visible!=='boolean')fail('Choose valid chart visibility.');
   for(const axis of ['primary','secondary'])if(Object.hasOwn(raw,axis)){
+   if(template.id==='metric'&&axis==='primary'&&raw.primary?.kind==='sleep-stage'){
+    value.primary=parseSleepStageMetric(raw.primary);continue;
+   }
    const allowed=template.id==='metric'||['weight-fat','weight-waist'].includes(template.id)?'biometric':template.id==='nutrient'?'nutrient':template.id==='score'?'score':null;
    if(!allowed||axis==='secondary'&&!['weight-fat','weight-waist'].includes(template.id))fail('This chart does not support that axis.');
    value[axis]=parseMetric(raw[axis]);if(value[axis].kind!==allowed)fail('Choose a metric of the correct chart type.');

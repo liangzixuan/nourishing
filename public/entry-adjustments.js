@@ -18,7 +18,7 @@ export function openEntryAdjustment({kind,date,id,show,close,header,content,onSa
  const owner=readDeviceCache('/api/diary').then(value=>value.ticket);
  let notice;
  const current=()=>!disposed&&content.isConnected;
- const num=value=>Number.isFinite(value)?new Intl.NumberFormat(uiLanguage(),{maximumFractionDigits:1}).format(value):'—';
+ const num=(value,minimumFractionDigits=0)=>Number.isFinite(value)?value.toLocaleString(uiLanguage(),{minimumFractionDigits,maximumFractionDigits:1}):'—';
  const payload=()=>({kind,date,id,sourceRevision:view.sourceRevision,items:draft.items,...(kind==='recipe'?{basis:draft.basis}:{})});
  const status=(form,message)=>{const element=form.querySelector('[role=status]');if(element?.isConnected)element.textContent=message;};
  const sheet=content.closest('dialog'),events=new AbortController();
@@ -93,7 +93,7 @@ export function openEntryAdjustment({kind,date,id,show,close,header,content,onSa
      if(!current()||!form.isConnected||token!==serial)return;
      const n=result.after.values;
      if(meal){
-      const unit=view.energyUnit??'kcal',energy=value=>num(convertEnergy(value??null,'kcal',unit))+' '+unit;
+      const unit=view.energyUnit??'kcal',energy=value=>num(convertEnergy(value??null,'kcal',unit),1)+' '+unit;
       form.querySelector('[data-total-energy]').textContent=energy(n.calories);
       form.querySelectorAll('[data-item-energy]').forEach((node,index)=>node.textContent=energy(result.ingredientCalories?.[index]));
      }else summary.innerHTML=`<strong>${num(n.calories)} kcal</strong><p>${num(n.protein)} g ${e(t('mobileNutrientTargets.group.protein'))} · ${num(n.carbs)} g ${e(t('energyChart.component.carbohydrate'))} · ${num(n.fat)} g ${e(t('mobileDiary.fat'))}</p>`;

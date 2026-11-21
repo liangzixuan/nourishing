@@ -4,7 +4,7 @@ import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
-import {readFileSync,readdirSync,mkdirSync} from 'node:fs';
+import {readFileSync,readdirSync,mkdirSync,writeFileSync} from 'node:fs';
 import {chromium} from 'playwright-core';
 import {initialState,act} from '../server/domain/workspace.mjs';
 import {dashboardView} from '../server/dashboard-view.mjs';
@@ -17,6 +17,7 @@ test('source chart details share plots, immediate controls, child cancellation a
  const to='2026-11-15',clock={now:new Date(to+'T18:00:00Z'),timeZone:'UTC'},seed=initialState();
  seed.charts=[{version:2,id:'weight',name:'Archived weight',primary:{kind:'biometric',type:'weight',unit:'kg'},secondary:null,days:7,visible:true,cycleOverlay:true}];
  seed.biometrics=[{id:'w1',date:to,time:'10:00',type:'weight',value:70,unit:'kg'}];
+ seed.biometrics.push({id:'legacy-stage',date:to,type:'Sleep Deep',unit:'h',value:9});
  const fixture=diaryStoreFixture(seed),store=createWorkspaceStore(fixture.db,'fixture'),state=()=>fixture.state(),context={owner:'fixture',asOf:clock.now.toISOString(),timeZone:'UTC'},attempts=[];
  let commandWait=null,releaseCommand,lost=false,reject=false,failLoad=true,handler,base,delayedDashboard,releaseDashboard;
  const assets=new Map();function visit(dir,prefix=''){for(const entry of readdirSync(dir,{withFileTypes:true})){if(entry.isDirectory())visit(dir+'/'+entry.name,prefix+'/'+entry.name);else assets.set(prefix+'/'+entry.name,{body:readFileSync(dir+'/'+entry.name),type:entry.name.endsWith('.css')?'text/css':/\.m?js$/.test(entry.name)?'text/javascript':entry.name.endsWith('.woff2')?'font/woff2':entry.name.endsWith('.svg')?'image/svg+xml':'application/octet-stream'});}}visit('public');
@@ -75,6 +76,11 @@ test('source chart details share plots, immediate controls, child cancellation a
   const menu=page.locator('.mcp-chart-control'),metricButton=page.locator('[data-chart-pick=primary]');
   before=attempts.length;await metricButton.click();
   assert.equal(await menu.getByRole('button',{name:'Weight',exact:true}).count(),1);
+  for(const name of ['Systolic Blood Pressure','Diastolic Blood Pressure']){
+   assert.deepEqual(JSON.parse(await menu.getByRole('button',{name,exact:true}).getAttribute('data-mcp-choice')),['biometric',name.toLowerCase()]);
+  }
+  const wrist=menu.getByRole('button',{name:'Wrist Size',exact:true});
+  assert.ok(await wrist.evaluate(node=>node.getBoundingClientRect().bottom<=node.closest('dialog').getBoundingClientRect().bottom+1));
   assert.equal(await menu.locator('[aria-current=true]').evaluate(node=>node.matches(':focus')&&node.getBoundingClientRect().bottom<=node.closest('dialog').getBoundingClientRect().bottom+1),true);
   await menu.getByRole('button',{name:'Weight',exact:true}).click();await menu.getByRole('button',{name:'Weight (lbs)',exact:true}).waitFor();
   await page.evaluate(()=>window.dispatchEvent(new Event('nourishing-back',{cancelable:true})));await menu.waitFor({state:'detached'});assert.equal(await metricButton.isVisible(),true);assert.equal(attempts.length,before);
@@ -89,7 +95,23 @@ test('source chart details share plots, immediate controls, child cancellation a
   await page.getByRole('switch',{name:'Zoom to Fit',exact:true}).uncheck();await ready();assert.deepEqual(await xBounds(),fullBounds);
   await pick('primaryUnit','lbs');assert.equal(state().settings.mobileCharts.charts.metric.primaryUnit,'lbs');assert.equal(state().settings.mobileCharts.charts.metric.primary,undefined);
   await metricButton.click();await menu.getByRole('button',{name:'Weight',exact:true}).click();await menu.getByRole('button',{name:'Weight (lbs)',exact:true}).click();await ready();
-  assert.deepEqual(state().settings.mobileCharts.charts.metric.primary,{kind:'biometric',type:'weight',unit:'lbs'});await back();
+  assert.deepEqual(state().settings.mobileCharts.charts.metric.primary,{kind:'biometric',type:'weight',unit:'lbs'});
+  for(const [stage,name] of [['deep','Sleep Deep'],['light','Sleep Light'],['rem','Sleep REM']]){
+   await metricButton.click();
+   assert.equal(await menu.getByRole('button',{name,exact:true}).count(),1);
+   await menu.getByRole('button',{name,exact:true}).click();await ready();
+   assert.deepEqual(state().settings.mobileCharts.charts.metric.primary,{kind:'sleep-stage',stage});
+   assert.equal(state().settings.mobileCharts.charts.metric.primaryUnit,undefined);
+   await page.waitForFunction(name=>document.querySelector('.chart-detail h2')?.textContent===name,name);
+  }
+  await metricButton.click();
+  const stageRows=menu.getByRole('button',{name:/^Sleep (Deep|Light|REM)$/});
+  const labels=await stageRows.allTextContents();assert.equal(labels.length,3);
+  mkdirSync('.local/stages-113',{recursive:true});
+  await page.screenshot({path:'.local/stages-113/314-picker.png'});
+  writeFileSync('.local/stages-113/314-picker.json',JSON.stringify({reference:314,fixture:'synthetic',viewport:page.viewportSize(),labels,selected:state().settings.mobileCharts.charts.metric.primary},null,2));
+  await menu.getByRole('button',{name:'Sleep Deep (h)',exact:true}).click();await ready();
+  assert.deepEqual(state().settings.mobileCharts.charts.metric.primary,{kind:'biometric',type:'Sleep Deep',unit:'h'});await back();
   await page.locator('[data-chart-open=nutrient]').click();await ready();assert.equal(await page.locator('[data-chart-setting=targetLine]').count(),1);await pick('grouping','Hour');assert.equal(state().settings.mobileCharts.charts.nutrient.grouping,'hour');await page.locator('[data-chart-pick=primary]').click();await page.getByRole('searchbox').fill('Protein');await page.locator('.mcp-picker').getByRole('button',{name:'Protein',exact:true}).click();await ready();assert.equal(state().settings.mobileCharts.charts.nutrient.primary.id,'protein');await page.waitForFunction(()=>Object.values(window.Chart.instances).some(chart=>chart.canvas.closest('.chart-detail')));assert.equal(await page.evaluate(()=>Object.values(window.Chart.instances).filter(chart=>chart.canvas.closest('.chart-detail')).every(chart=>chart.data.datasets[0].data.every(point=>point.y===null))),true);await back();
   await page.evaluate(()=>window.openDashboard());await page.locator('[data-chart-open="custom:weight"]').click();await ready();await page.waitForFunction(()=>Object.values(window.Chart.instances).some(chart=>chart.canvas.closest('.chart-detail')));assert.equal(await page.locator('.chart-detail canvas').count(),1);
   await pick('dayFilter','Completed');assert.equal(state().settings.mobileCharts.custom.weight.dayFilter,'complete');

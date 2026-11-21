@@ -5,12 +5,23 @@ import {convertEnergy} from './energy-units.mjs';
 
 const Decimal=Big();
 const lengthCentimetresPerUnit=Object.freeze({cm:'1',in:'2.54'});
+const circumferences=new Set(['bicep size','bust size','calf size','chest size','forearm size','hip size','neck size','thigh size','upper arm size','waist size','wrist size']);
+// The captured waist chart offers cm and in. Nourishing uses the same two
+// length units for the other named circumferences in the biometric catalog.
+export function catalogChartUnits(type){
+ if(circumferences.has(type))return Object.keys(lengthCentimetresPerUnit);
+ // Cronometer's WHOOP guide lists skin temperature in °C. Its Oura guide
+ // identifies VO2 Max as Cardio Capacity, documented by Oura in mL/kg/min.
+ if(type==='skin temperature')return ['°C'];
+ if(type==='v02 max')return ['mL/kg/min'];
+ return [];
+}
 const fail=()=>{throw Object.assign(Error('Choose a display unit supported by this chart metric.'),{status:400});};
 function factors(metric){
  if(metric.kind!=='biometric')return null;
  if(['weight','Weight'].includes(metric.type))return weightKilogramsPerUnit;
  // Waist options are captured in phone-discover-20261108/chart-waist-unit-options.png.
- if(['waist size','height','Height'].includes(metric.type))return lengthCentimetresPerUnit;
+ if(circumferences.has(metric.type)||['height','Height'].includes(metric.type))return lengthCentimetresPerUnit;
  return null;
 }
 /** Display choices never change the source metric's exact type or unit. */

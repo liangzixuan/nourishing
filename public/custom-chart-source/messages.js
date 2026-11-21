@@ -21,6 +21,7 @@ totalCarbs:['Carbs (Total)','Glucides (totaux)','Kohlenhydrate (gesamt)','Carboi
 netCarbs:['Carbs (Net)','Glucides (nets)','Kohlenhydrate (netto)','Carboidratos (líquidos)'],
 back:['Back','Retour','Zurück','Voltar'],
 noMatches:['No matches','Aucun résultat','Keine Treffer','Nenhum resultado'],
+recordedUnit:['From recorded measurements','Selon les mesures enregistrées','Aus erfassten Messwerten','Das medições registradas'],
 chooseUnit:['Choose a unit','Choisir une unité','Einheit wählen','Escolher unidade']
 };
 export const mobileChartEditorMessages=Object.fromEntries(['en','fr','de','pt-BR'].map((language,i)=>[language,Object.fromEntries(Object.entries(rows).map(([key,values])=>[key,values[i]]))]));

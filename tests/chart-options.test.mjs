@@ -29,3 +29,32 @@ test('chart choices retain selected historical identities and user-defined metri
  for(const metric of [state.charts[0].primary,state.charts[0].secondary])assert.deepEqual(options.find(row=>JSON.stringify(row.metric)===JSON.stringify(metric)).metric,metric);
  assert.ok(options.some(row=>row.metric.type==='weight'));assert.ok(options.some(row=>row.metric.type==='Weight'));
 });
+
+test('new chart sources have established units, and convert only the selected circumference source',()=>{
+ const state=initialState(),to='2026-11-16',read=()=>chartSurfaceView(state,{to,card:'metric'},clock);
+ const options=read().options.filter(row=>row.metric.kind==='biometric');
+ for(const [type,units] of [['wrist size',['cm','in']],['thigh size',['cm','in']],['upper arm size',['cm','in']],['waist size',['cm','in']],['v02 max',['mL/kg/min']],['skin temperature',['°C']],['readiness',[null]]]){
+  assert.deepEqual(options.filter(row=>row.metric.type===type).map(row=>row.metric.unit),units,type);
+ }
+ const primary={kind:'biometric',type:'wrist size',unit:'cm'};
+ applyChartPreference(state,{type:'chart.display',payload:{id:'metric',patch:{primary,primaryUnit:'in'}}});
+ assert.ok(read().cards[0].series[0].points.every(point=>point.value===null));
+ state.biometrics=[{id:'cm',date:to,type:primary.type,unit:'cm',value:25.4},{id:'other',date:to,type:primary.type,unit:'in',value:20}];
+ const series=read().cards[0].series[0];
+ assert.deepEqual(series.metric,primary);assert.equal(series.unit,'in');
+ assert.deepEqual(series.points.map(point=>point.value),[null,null,null,null,null,null,10]);
+ assert.throws(()=>applyChartPreference(state,{type:'chart.display',payload:{id:'metric',patch:{primaryUnit:'kg'}}}),/supported/);
+});
+test('saved standard and custom charts with an unknown unit plot only a single unambiguous recorded source',()=>{
+ const state=initialState(),to='2026-11-16',primary={kind:'biometric',type:'readiness',unit:null};
+ applyChartPreference(state,{type:'chart.display',payload:{id:'metric',patch:{primary}}});
+ act(state,'chart.save',{version:2,id:'r',name:'Readiness',primary,secondary:null,days:7,visible:true});
+ const check=(unit,last)=>{for(const card of ['metric','custom:r']){
+  const series=chartSurfaceView(state,{to,card},clock).cards[0].series[0];
+  assert.equal(series.unit,unit);assert.deepEqual(series.points.map(p=>p.value),[null,null,null,null,null,null,last]);
+  assert.deepEqual(series.metric,primary);assert.deepEqual(series.displayUnits,[]);
+ }};
+ check(null,null);
+ state.biometrics.push({id:'a',date:to,type:'readiness',unit:'points',value:0});check('points',0);
+ state.biometrics.push({id:'b',date:to,type:'readiness',unit:'%',value:70});check(null,null);
+});
