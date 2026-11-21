@@ -54,6 +54,7 @@ import {validatePlainRecipeSource} from './recipe-plain-text.mjs';
 import {validateJsonLdSource} from './recipe-jsonld.mjs';
 import {canonicalizeBodyComposition} from './body-composition-migration.mjs';
 import {catalogExerciseRecord} from './catalog-exercise.mjs';
+import {exerciseCatalog} from './exercise-catalog.mjs';
 import {parseCustomBiometrics} from './biometric-library.mjs';
 import {parseHealthSync,mergeHealthSync,healthImportBlock} from './health-reconciliation-state.mjs';
 import {parseCycleRecords,mergeCycleRecords} from './cycle-records.mjs';
@@ -641,7 +642,7 @@ export function act(s,type,p={},context={}) {
     case 'biometric.delete':removeDiaryRecords(s,'biometrics',[p.id]);break;
     case 'water.add':addDiaryRecord(s,'biometrics',parseBiometricRecord({...p,type:'Water',value:number(p.amount,'Water',waterLimits.minimumMl,waterLimits.maximumMl),unit:'mL'},s.settings.groups));break;
     case 'exercise.add':addDiaryRecord(s,'entries',exerciseRecord(s,p));break;
-    case 'exercise.catalog.add':addDiaryRecord(s,'entries',catalogExerciseRecord(s,p));break;
+    case 'exercise.catalog.add':addDiaryRecord(s,'entries',catalogExerciseRecord(s,p,exerciseCatalog.get(p.code)));break;
     case 'exercise.update': {if(Object.hasOwn(p,'exerciseBasis'))fail('The initial exercise calculation cannot be changed.');const old=lookup(s,'entries',p.id);if(old.kind!=='exercise')fail('This is not an exercise entry.');const next={id:old.id,...exerciseRecord(s,{...old,calories:old.caloriesBurned,...p})};assertDiaryDaysEditable(s,[old.date,next.date]);s.entries[s.entries.indexOf(old)]=next;break;}
     case 'note.add':{const record=parseNoteRecord(p,s.settings.groups);addDiaryRecord(s,'notes',record);break;}
     case 'note.delete':removeDiaryRecords(s,'notes',[p.id]);break;

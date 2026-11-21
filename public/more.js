@@ -1,3 +1,4 @@
+import {licenseNotices} from './more-source/license-notices.js';
 import {appVersion} from './app-version.js';
 import {mountAccount} from './account-screen.js';
 import {pushBackHandler} from './back-history.js';
@@ -225,19 +226,36 @@ export function mountMore({
       return section(
         id,
         t('mobileMore.support'),
-        group(row('backup', coreText('more.backup')) + row('reminders', t('nav.reminders'))),
+        group(row('manual', t('mobileMore.manual')) + link(coreText('more.reportBug'), 'https://github.com/liangzixuan/nourishing/issues', true)) +
+          group(row('backup', coreText('more.backup')) + row('reminders', t('nav.reminders'))),
       );
     }
-    if (id === 'licenses') {
-      const notices = [
-        ['Chart.js','/dashboard-source/chart-LICENSE.md'],
-        ['i18next','/dashboard-source/vendor/i18next/26.7.1/LICENSE'],
-        ['Material Symbols','/discover-assets/MaterialSymbols-LICENSE.txt'],
-        ['Pictogrammers','/more-source/icons/LICENSE'],
-        ['Temporal','/fasting-source/vendor/temporal.LICENSE'],
-        ['JSBI','/fasting-source/vendor/jsbi.LICENSE'],
+    if (id === 'manual') {
+      const topics = [
+        [t('discover.nav.diary'), coreText('manual.diary')],
+        [t('mobileMore.foods'), coreText('manual.foods')],
+        [t('mobileMore.reports'), coreText('manual.reports')],
+        [t('mobileMore.display'), coreText('manual.display')],
       ];
-      return section(id,coreText('more.licenses'),group(notices.map(([name,path])=>link(name,path,true)).join('')));
+      return section(id, t('mobileMore.manual'), group(topics.map(([title, body]) =>
+        `<details class="mm-manual-topic"><summary>${e(title)}</summary><p>${e(body)}</p></details>`,
+      ).join('')));
+    }
+    if (id === 'licenses') {
+      return section(id,coreText('more.licenses'),group(licenseNotices.map(([name])=>row('license/'+name,name)).join('')));
+    }
+    if (id.startsWith('license/')) {
+      const notice = licenseNotices.find(([name]) => 'license/'+name === id);
+      if (!notice) return;
+      const [name,path] = notice;
+      section(id, name, '<pre class="mm-license" role="status"></pre>');
+      const text = root.querySelector('.mm-license');
+      text.textContent = coreText('loading');
+      fetch(path).then(response => {
+        if (!response.ok) throw Error(coreText('request.unavailable'));
+        return response.text();
+      }).then(value => { text.textContent = value; }).catch(() => { text.textContent = coreText('request.unavailable'); });
+      return;
     }
     if (id === 'about') {
       return section(

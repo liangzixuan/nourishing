@@ -1,5 +1,10 @@
 import {createUITranslator} from './app-language.js';
 const rows={
+ 'more.reportBug':['Report a bug on GitHub (public)','Signaler un bug sur GitHub (public)','Fehler auf GitHub melden (öffentlich)','Relatar um erro no GitHub (público)'],
+ 'manual.diary':['Choose a date and group in Diary, then tap + to log an item. Tap a saved row to edit it. Swipe left to reveal Delete, then confirm to remove the entry.','Dans le journal, choisissez une date et un groupe, puis touchez + pour ajouter une entrée. Touchez une entrée pour la modifier. Balayez-la vers la gauche et confirmez sa suppression.','Wähle im Tagebuch ein Datum und eine Gruppe. Tippe auf +, um einen Eintrag hinzuzufügen. Tippe auf eine Zeile, um sie zu bearbeiten. Wische nach links und bestätige das Löschen.','No Diário, escolha a data e o grupo. Toque em + para adicionar um registro. Toque na linha para editar. Deslize para a esquerda e confirme para excluir.'],
+ 'manual.foods':['Open Foods to find or create a food, recipe or meal. To log a saved item, open food search from Diary, choose the item, adjust the serving and tap Add to Diary.','Ouvrez Aliments pour chercher ou créer un aliment, une recette ou un repas. Pour le consigner, cherchez-le dans le journal, choisissez la portion et ajoutez-le au journal.','Öffne Lebensmittel, um Lebensmittel, Rezepte oder Mahlzeiten zu suchen oder anzulegen. Wähle den Eintrag in der Lebensmittelsuche des Tagebuchs, passe die Portion an und füge ihn hinzu.','Abra Alimentos para buscar ou criar um alimento, receita ou refeição. Para registrar um item salvo, encontre-o pela busca do Diário, ajuste a porção e adicione-o ao Diário.'],
+ 'manual.reports':['Open Discover and choose Report. Use its settings to choose the date range and which days to include. Tap a nutrient to see its details.','Dans Découvrir, ouvrez Rapport. Dans ses réglages, choisissez la période et les jours à inclure. Touchez un nutriment pour voir ses détails.','Öffne unter Entdecken den Bericht. Wähle in den Einstellungen den Zeitraum und die einzubeziehenden Tage. Tippe auf einen Nährstoff, um Details zu sehen.','Em Descobrir, abra o relatório. Nas configurações, escolha o período e os dias a incluir. Toque em um nutriente para ver os detalhes.'],
+ 'manual.display':['Open More and choose Display to change the theme, language or Diary groups.','Dans Plus, ouvrez Affichage pour changer le thème, la langue ou les groupes du journal.','Öffne unter Mehr die Anzeige, um das Design, die Sprache oder die Tagebuchgruppen zu ändern.','Em Mais, abra Exibição para alterar o tema, o idioma ou os grupos do Diário.'],
  'more.accountData':['Account Data','Données du compte','Kontodaten','Dados da conta'],
  'more.notifications':['Notifications','Notifications','Benachrichtigungen','Notificações'],
  'more.allowNotifications':['Allow Notifications','Autoriser les notifications','Benachrichtigungen erlauben','Permitir notificações'],
@@ -16,6 +21,9 @@ const rows={
  'diary.groupQuickAdd':['Edit Group Quick Add Default','Modifier le raccourci du groupe','Standard-Schnelleintrag der Gruppe ändern','Editar atalho padrão do grupo'],
  'diary.completeDay':['Complete Day','Terminer la journée','Tag abschließen','Concluir dia'],
  'diary.dailyReport':['View Daily Report','Voir le rapport quotidien','Tagesbericht anzeigen','Ver relatório diário'],
+ 'diary.energyDisplay':['Display Preference','Préférence d’affichage','Anzeigeeinstellung','Preferência de exibição'],
+ 'diary.energyDeficit':['Deficit','Déficit','Defizit','Déficit'],
+ 'diary.energySurplus':['Surplus','Excédent','Überschuss','Superávit'],
  'diary.shareWidgets':['Share Diary Widgets','Partager les widgets du journal','Tagebuch-Widgets teilen','Compartilhar widgets do diário'],
  'diary.sortAll':['Sort All Entries by Time','Trier toutes les entrées par heure','Alle Einträge nach Uhrzeit sortieren','Ordenar todos os itens por horário'],
  'diary.multiSelectAction':['Multi-Select','Sélection multiple','Mehrfachauswahl','Seleção múltipla'],
@@ -59,6 +67,7 @@ const rows={
  'add.exercise':['Add Exercise','Ajouter un exercice','Training hinzufügen','Adicionar exercício'],
  'add.edit':['EDIT MENU','MODIFIER LE MENU','MENÜ BEARBEITEN','EDITAR MENU'],
  'add.done':['DONE','TERMINÉ','FERTIG','CONCLUÍDO'],
+ 'add.dismissHint':['Dismiss instructions','Masquer les instructions','Hinweis ausblenden','Ocultar instruções'],
  'add.hint':['Hold to reorder · Tap an icon for color','Maintenez pour déplacer · Touchez une icône pour sa couleur','Zum Verschieben gedrückt halten · Für Farbe auf das Symbol tippen','Segure para reordenar · Toque no ícone para mudar a cor'],
  'add.swap':['SWAP TOP & BOTTOM SECTIONS','INVERSER LES SECTIONS','OBERE UND UNTERE BEREICHE TAUSCHEN','INVERTER SEÇÕES'],
  'add.colorFor':['Color for {{name}}','Couleur : {{name}}','Farbe für {{name}}','Cor de {{name}}'],

@@ -1,6 +1,6 @@
 import {formatMessage} from './message-format.js';
 import {escape as e} from '../html.js';
-import {chartLibrary,chartColor} from '../dashboard-source/chart-library.js';
+import {DiaryEnergyRings} from './energy-rings.js';
 import {displayValue,displayUnit} from '../dashboard-source/energy-display.js';
 
 // View-only state survives diary mutations and tab changes; no health data is stored here.
@@ -29,9 +29,9 @@ export function mobileDiaryRecord({id,collection,name,meta,amount,icon,selectBox
 }
 
 export function mobileDiarySummary({summary,facts,settings,unit,language,labels,icons,macroMode,scores,nutrientName,scoreName}){
- const pages=[],energy=summary.energy??{},selected=facts?.scope==='selection',consumed=selected?facts.totals?.calories:energy.consumed;
- const ring=(id,label,value)=>button(`<span class="md-ring"><canvas data-md-ring="${id}" role="img" aria-label="${e(label)}"></canvas><span><strong>${number(displayValue(value??0,'kcal',unit),language,0)}</strong><small>${e(unit)}</small></span></span><strong>${e(label)}</strong>`,'mobile-diary-energy',`class="md-energy-item" data-kind="${id}"`);
- if(settings.showEnergy!==false)pages.push({id:'energy',title:labels.energy,body:`<div class="md-summary-heading">${button(e(labels.energy)+icons.chevron,'mobile-diary-energy')} ${button(e(labels.target),'edit-day-targets')}</div><div class="md-energy-rings">${ring('consumed',labels.consumed,consumed)}${ring('expenditure',labels.expenditure,energy.expenditure)}${ring('remaining',labels.remaining,selected&&Number.isFinite(consumed)?energy.target-consumed:energy.remaining)}</div>`});
+ const pages=[],energy=summary.energy??{},selected=facts?.scope==='selection';
+ const ring=(id,label,value)=>button(`<span class="md-ring"><canvas data-md-ring="${id}" role="img" aria-label="${e(label)}"></canvas><span><strong>${number(displayValue(value,'kcal',unit),language,0)}</strong><small>${e(unit)}</small></span></span><strong>${e(label)}</strong>`,'mobile-diary-energy',`class="md-energy-item" data-kind="${id}"`);
+ if(settings.showEnergy!==false)pages.push({id:'energy',title:labels.energy,body:`<div class="md-summary-heading">${button(e(labels.energy)+icons.chevron,'mobile-diary-energy')} ${button(e(labels.target),'edit-day-targets')}</div><div class="md-energy-rings">${ring('consumed',labels.consumed,energy.consumed)}${ring('expenditure',labels.expenditure,energy.expenditure)}${ring('remaining',labels.remaining,energy.remaining)}</div>`});
  const targetRow=(row,kind)=>{
   const value=macroMode==='remaining'&&kind==='macros'?row.remaining:row.value,amount=displayValue(value,row.unit,unit),target=displayValue(row.target,row.unit,unit),empty=row.coverage?.total===0;
   const shown=Number.isFinite(amount)?amount:empty&&row.active?kind==='macros'&&macroMode==='remaining'?target:0:null,pct=Number.isFinite(shown)&&target>0?shown/target*100:null;
@@ -51,7 +51,7 @@ export function mobileDiarySummary({summary,facts,settings,unit,language,labels,
 
 export class MobileDiary {
  constructor({root,header,summary,context,onSummary,onDatePicker,onGroupSelect}){
-  Object.assign(this,{root,header,context,onSummary,onDatePicker});this.charts=[];this.generation=0;this.abort=new AbortController();const options={signal:this.abort.signal};
+  Object.assign(this,{root,header,context,onSummary,onDatePicker});this.rings=new DiaryEnergyRings(root);this.abort=new AbortController();const options={signal:this.abort.signal};
   root.addEventListener('click',event=>{
    const dot=event.target.closest('[data-md-dot]'),step=event.target.closest('[data-md-step]');
    if(dot||step)this.showPage(dot?Number(dot.dataset.mdDot):mobileDiarySession.page+Number(step.dataset.mdStep));
@@ -73,21 +73,9 @@ export class MobileDiary {
   document.addEventListener('pointerdown',event=>{const menu=header.querySelector('details[open]');if(menu&&!menu.contains(event.target))menu.open=false;},options);
   header.addEventListener('click',event=>{if(event.target.closest('[data-md-calendar]')){header.querySelectorAll('details[open]').forEach(el=>el.open=false);onDatePicker();}if(event.target.closest('[data-action]'))header.querySelectorAll('details[open]').forEach(el=>el.open=false);},options);
   window.addEventListener('nourishing-back',event=>{const menu=header.querySelector('details[open]');if(menu){menu.open=false;event.preventDefault();event.stopImmediatePropagation();}},{...options,capture:true});
-  void this.draw(summary);
+  void this.rings.draw(summary);
  }
- showPage(index){const pages=[...this.root.querySelectorAll('[data-md-page]')];if(!pages.length)return;index=(index+pages.length)%pages.length;mobileDiarySession.page=index;pages.forEach((page,i)=>page.hidden=i!==index);this.root.querySelectorAll('[data-md-dot]').forEach((dot,i)=>dot.setAttribute('aria-pressed',String(i===index)));this.charts.forEach(chart=>chart.resize());}
- update(html,summary){const old=this.root.querySelector('[data-md-summary]');if(old)old.outerHTML=html;void this.draw(summary);}
- async draw(summary){
-  const generation=++this.generation;this.charts.forEach(c=>c.destroy());this.charts=[];
-  let Chart;try{Chart=await chartLibrary();}catch(error){if(generation===this.generation){const status=this.root.querySelector('.md-chart-error');if(status)status.textContent=error.message;}return;}
-  if(generation!==this.generation||!this.root.isConnected)return;
-  const energy=summary.energy??{},consumed=summary.consumedEnergy?.values,expenditure=summary.expenditureBreakdown?.components;
-  const slices={consumed:consumed?['fat','protein','carbohydrate','alcohol','unattributed'].map(id=>consumed[id]):[],expenditure:expenditure?.map(row=>row.mean)??[],remaining:[Math.max(0,energy.consumed??0),Math.max(0,energy.remaining??0)]};
-  const colors={consumed:['#be78ce','#61ce91','#41c8d4','#e5b965','#73798c'],expenditure:['#f7d4f0','#db80ca','#eaa66d','#65baad','#e0ce70'],remaining:['#ff8050','#414456']};
-  for(const canvas of this.root.querySelectorAll('[data-md-ring]')){
-   const kind=canvas.dataset.mdRing,rows=slices[kind],known=rows.length&&rows.every(v=>Number.isFinite(v)&&v>=0)&&rows.some(v=>v>0);
-   this.charts.push(new Chart(canvas,{type:'doughnut',data:{datasets:[{data:known?rows:[1],backgroundColor:context=>!known||kind==='remaining'&&context.dataIndex===1?chartColor('pale')():colors[kind][context.dataIndex],borderWidth:kind==='consumed'?1:0,borderColor:chartColor('paper')}]},options:{responsive:true,maintainAspectRatio:false,cutout:'84%',animation:false,events:[],plugins:{legend:{display:false},tooltip:{enabled:false}}}}));
-  }
- }
- dispose(){this.generation++;this.abort.abort();this.charts.forEach(chart=>chart.destroy());this.charts=[];}
+ showPage(index){const pages=[...this.root.querySelectorAll('[data-md-page]')];if(!pages.length)return;index=(index+pages.length)%pages.length;mobileDiarySession.page=index;pages.forEach((page,i)=>page.hidden=i!==index);this.root.querySelectorAll('[data-md-dot]').forEach((dot,i)=>dot.setAttribute('aria-pressed',String(i===index)));this.rings.resize();}
+ update(html,summary){const old=this.root.querySelector('[data-md-summary]');if(old)old.outerHTML=html;void this.rings.draw(summary);}
+ dispose(){this.abort.abort();this.rings.clear();}
 }

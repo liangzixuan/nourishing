@@ -1,3 +1,4 @@
+import {licenseNotices} from '../../public/more-source/license-notices.js';
 import {existsSync,readFileSync} from 'node:fs';
 import {extname,resolve,sep} from 'node:path';
 import {barcodeAssets} from '../../scripts/package-barcode-assets.mjs';
@@ -14,7 +15,7 @@ export async function pwaFixtureAssets(){
   if(vendor.has(path))return vendor.get(path);
   if(path==='/login')return {type:'text/html',body:'<!doctype html><title>Sign in</title>'};
   const file=resolve(publicRoot,'.'+(path==='/diary'?'/diary.html':path));
-  const type=types[extname(file)];
+  const type=types[extname(file)]??(licenseNotices.some(([,notice])=>notice===path)?'text/plain':null);
   if(type&&file.startsWith(publicRoot+sep)&&existsSync(file))return {type,body:readFileSync(file)};
  }};
 }

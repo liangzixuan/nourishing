@@ -37,6 +37,7 @@ test('normal diary restarts offline with pending edits and isolates unlocked acc
    return Promise.all(urls.map(async url=>{const response=await fetch(url);const bytes=new Uint8Array(await response.arrayBuffer());return [response.status,...bytes.subarray(0,8)];}));
   });
   assert.deepEqual(cachedIcons,Array(4).fill([200,137,80,78,71,13,10,26,10]));
+  assert.match(await page.evaluate(async()=>await(await fetch('/dashboard-source/vendor/i18next/26.7.1/LICENSE')).text()),/Permission is hereby granted/);
 
   await page.locator('[data-action="edit-entry"]').filter({hasText:'Offline Rice'}).click();await page.getByRole('spinbutton',{name:'Amount',exact:true}).fill('200');await page.locator('.mf-form [type=submit]').click();await page.locator('#sheet').waitFor({state:'hidden'});assert.equal(alice.state().entries.find(row=>row.foodId===food.id).quantity,100);
   const queued=await page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy()).pending);assert.equal(queued.length,1);assert.equal(queued[0].transport.body.payload.quantity,200);

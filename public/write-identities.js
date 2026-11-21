@@ -34,7 +34,7 @@ export function writeReceiptIdentities(row,result){
   return Object.fromEntries(entries.map((id,index)=>[operation+'-'+index,id]));
  }
  if(['photo.log','meal.log','entry.expand'].includes(type)||type==='entry.add'&&row.command.payload.mealId&&result?.records?.entries?.some(item=>item.expandedFrom?.parent?.mealId))return Object.fromEntries(entries.map((id,index)=>[`${operation}-${index}`,id]));
- if(['entry.add','water.add','snapshot.add','repeat.save','note.add','note.photo.save','exercise.add'].includes(type)){
+ if(['entry.add','water.add','snapshot.add','repeat.save','note.add','note.photo.save','exercise.add','exercise.catalog.add'].includes(type)){
   const id=entries[0]??result?.records?.biometrics?.[0]?.id??result?.records?.notes?.[0]?.id??result?.item?.id??result?.id;
   if(id&&!(type==='note.photo.save'&&row.command.payload.id))return {[operation]:id};
  }

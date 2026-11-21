@@ -20,6 +20,7 @@ html,body{overscroll-behavior:none}
 /* These are colored promotional cards in both themes. */
 .dc-coach,.dc-connect-banner,.dc-connect-promo{color:#f5f6ff}
 .dc-connect-promo .dc-link{color:#77e2e5}
+.discover-mobile select option{background-color:var(--paper);color:var(--ink)}
 
 /* /mobile-diary.css */
 .discover-mobile.diary-mobile #page{padding:0 0 24px;}
@@ -1243,10 +1244,10 @@ html[data-nourishing-native] [data-nourishing-health-connect]{display:inline-fle
 
 .diary-meal-menu button img{width:20px;height:20px}.diary-meal-menu button:has(img){gap:30px}
 
-#sheet:has(.diary-day-menu){bottom:0;max-height:calc(100dvh - env(safe-area-inset-top));max-width:560px}
+#sheet:has(.diary-menu-navigation){bottom:0;max-height:calc(100dvh - env(safe-area-inset-top));max-width:560px}
 #sheet .diary-menu-navigation{position:sticky;bottom:0;width:100%;margin:0}
-.diary-day-menu{padding:0 16px}
-.diary-day-menu button{min-height:56px;padding:10px 0;font:700 calc(15rem / 18)/1.4 Karla,Lato,sans-serif}
+.diary-menu-sheet:has(+ .diary-menu-navigation){padding:0 16px}
+.diary-menu-sheet:has(+ .diary-menu-navigation) button{min-height:56px;padding:10px 0;font:700 calc(15rem / 18)/1.4 Karla,Lato,sans-serif}
 
 #sheet:has(.diary-delete-confirm){inset:0;margin:auto;width:min(86vw,400px);height:fit-content;min-height:0;max-height:90dvh;border:0;border-radius:10px;background:var(--paper)}
 .diary-delete-confirm{padding:16px}.diary-delete-confirm h2{font-size:1.1rem;margin:0}.diary-delete-confirm p{font-size:.9rem;margin:14px 0}.diary-delete-confirm [role=status]:empty{display:none}
@@ -1510,6 +1511,10 @@ body.discover-mobile .library-review-dialog.mee-dialog{background:var(--bg);colo
 
 .device-storage{padding:16px;overflow-wrap:anywhere}.device-storage button{min-height:44px;margin:6px 8px 6px 0;padding:10px 16px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font:inherit}.device-storage ul{list-style:none;padding:0}.device-storage li{padding:12px 0;border-bottom:1px solid var(--line)}
 
+.mm-manual-topic{padding:12px 16px;border-bottom:1px solid var(--line)}.mm-manual-topic summary{cursor:pointer;font-weight:700}.mm-manual-topic p{margin:12px 0 4px;line-height:1.5}
+
+.mm-license{padding:16px;white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}
+
 /* /diary-summary.css */
 /* These surfaces use mobile-diary.css from the source app. Keep host button resets scoped. */
 .md-selection-status{padding:16px}.md-selection-status p{margin:0}.md-selection-status button{min-height:44px;color:var(--accent)}
@@ -1536,9 +1541,32 @@ body.discover-mobile .library-review-dialog.mee-dialog{background:var(--bg);colo
 .ds-dialog .ds-list button:disabled{opacity:.45;cursor:default;}
 .ds-dialog .ds-primary{display:block;margin:28px auto;padding:12px 24px;border-radius:30px;background:var(--mobile-button-bg,var(--ink));color:var(--mobile-button-ink,var(--paper));font:700 1rem/1.25 Karla,Lato,sans-serif;text-transform:uppercase;letter-spacing:.07em;max-width:100%;}
 .ds-dialog .msd-card{background:var(--paper);border-radius:12px;padding:20px;line-height:1.4;}
-.ds-energy{margin:0;background:var(--paper);border-radius:12px;padding:0 16px;}
-.ds-energy>div{display:flex;justify-content:space-between;gap:12px;padding:18px 0;border-bottom:1px solid var(--line);}
-.ds-energy dd{margin:0;font-weight:700;}
+#sheet:has(.ds-energy){inset:0;width:100%;max-width:700px;height:100dvh;max-height:100dvh;margin:0 auto;padding:0;border:0;border-radius:0;background:var(--bg);overflow:auto;overscroll-behavior:contain;}
+#sheet:has(.ds-energy)>#sheet-content{padding:0;}
+.ds-energy>.sheet-header{position:sticky;top:0;z-index:2;display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;text-align:center;min-height:64px;padding:4px 8px;border-radius:0 0 14px 14px;background:var(--paper);}
+.ds-energy>.sheet-header h2{margin:0;font:700 1.12rem/1.3 Karla,Lato,sans-serif;}
+.ds-energy>.sheet-header button{font-size:1.6rem;}
+.ds-energy [data-ds-targets] img{width:22px;height:22px;vertical-align:middle;filter:var(--mobile-icon-filter);}
+.ds-energy [data-ds-report]{display:block;margin:auto;color:var(--teal,#27b6b4);font:700 .8rem/1.2 Karla,sans-serif;letter-spacing:.08em;text-transform:uppercase;}
+.ds-energy-card,.ds-energy .ds-energy-mode{margin:0 0 14px;padding:16px;border-radius:10px;background:var(--paper);}
+.ds-energy-card>header{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:112px;margin:0 8px 10px 0;}
+.ds-energy-card h3{margin:0;text-align:left;font:700 .95rem/1.3 Lato,sans-serif;}
+.ds-energy-ring{display:flex;flex:none;position:relative;align-items:center;justify-content:center;flex-direction:column;width:5.8rem;height:5.8rem;text-align:center;line-height:1.25;}
+.ds-energy-ring canvas{position:absolute;inset:0;}
+.ds-energy-ring strong,.ds-energy-ring small{position:relative;max-width:82%;overflow-wrap:anywhere;}
+.ds-energy-ring small{font-size:.8rem;}
+.ds-energy-card dl{margin:0;}
+.ds-energy-card dl>div{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;padding:7px 0;border-top:1px solid var(--line);font-size:.8rem;}
+.ds-energy-card dl>div:first-child{border:0;}
+.ds-energy-card dt{font-weight:700;overflow-wrap:anywhere;}
+.ds-energy-card dd{margin:0;}
+.ds-energy-card dd:last-child{margin-left:auto;}
+.ds-energy-row dt svg{width:.68rem;height:.68rem;margin-right:8px;}
+.ds-energy-mode legend{float:left;width:100%;font-weight:700;}
+.ds-energy-mode p{clear:both;padding-top:6px;font-size:.85rem;}
+.ds-energy-mode button{padding:8px 16px;border:1px solid var(--line);border-radius:24px;}
+.ds-energy-mode [aria-pressed=true]{background:var(--ink);color:var(--paper);}
+.ds-energy .md-chart-error:empty{display:none;}
 .ds-dialog [role=alert]{color:var(--danger,#ffa995);overflow-wrap:anywhere;}
 
 .water-goal [role=option][data-distance="1"]{transform:scaleY(.85)}.water-goal [role=option][data-distance="2"]{transform:scaleY(.6)}.water-goal [role=option][data-distance="3"]{transform:scaleY(.25)}
@@ -1583,7 +1611,7 @@ body.discover-mobile .library-review-dialog.mee-dialog{background:var(--bg);colo
 @media(max-width:360px){.am-tiles{gap:14px;padding-inline:18px}.am-tile .am-icon{height:58px}.am-rows{margin-inline:14px}.am-tile .am-label{font-size:calc(14rem / 18)}.am-row .am-order{gap:0}.am-row:has(.am-order) .am-action{padding-right:110px}}
 
 /* Keyboard reordering stays available without crowding touch controls. */
-.am-order{position:absolute;inset:auto 0 -8px;opacity:0;pointer-events:none;background:#3e4152;border-radius:8px;z-index:1}.am-item:has(.am-order button:focus-visible) .am-order{opacity:1;pointer-events:auto}.am-row .am-order{inset:4px 42px auto auto}.am-row:has(.am-order) .am-action{padding-right:46px}.am-sheet:has(.am-hint) .am-icon{touch-action:none}
+.am-order{position:absolute;inset:auto 0 -8px;opacity:0;pointer-events:none;background:#3e4152;border-radius:8px;z-index:1}.am-item:has(.am-order button:focus-visible) .am-order{opacity:1;pointer-events:auto}.am-row .am-order{inset:4px 42px auto auto}.am-row:has(.am-order) .am-action{padding-right:46px}.am-sheet:has([data-am=done]) .am-icon{touch-action:none}
 
 
 /* Static palette selectors preserve the strict style CSP. */
@@ -1625,3 +1653,5 @@ body.discover-mobile .library-review-dialog.mee-dialog{background:var(--bg);colo
 .am-palette [data-am-color="#e8e9ed"]{background:#e8e9ed}
 .am-sheet [data-am-color="#3e4152"]{--am-color:#3e4152}
 .am-palette [data-am-color="#3e4152"]{background:#3e4152}
+
+.am-hint{display:flex;align-items:center;justify-content:space-between;gap:12px}.am-hint button{flex:none;background:none;border:0;color:inherit;font-size:20px;padding:4px 8px;cursor:pointer}

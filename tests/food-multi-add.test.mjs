@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {initialState,act,captureCatalogFood} from '../server/domain/workspace.mjs';
 import {digest} from '../server/data-codec.mjs';
+import {offlineSnapshot} from '../server/offline.mjs';
+import {prepareFoodMultiReview} from '../server/domain/food-multi-review.mjs';
+import {collectResourceDependencies} from '../server/domain/resource-dependencies.mjs';
+import {contentDigest} from '../server/domain/content-digest.mjs';
 import {previewFoodMultiAdd,applyFoodMultiAdd,validateFoodMultiInput} from '../server/food-multi-add.mjs';
 import {readActionFoods,captureActionFoods,applyWorkspaceCommand} from '../server/workspace-commands.mjs';
 import {createWorkspaceStore} from '../server/workspace-store.mjs';
@@ -59,4 +63,41 @@ test('multi-add preview HTTP requires session and origin and returns no-store ca
  const req=(input=f.input,headers={})=>new Request(origin+'/api/food-search/preview',{method:'POST',headers:{origin,'content-type':'application/json',cookie:'__Host-nourishing_session=session',...headers},body:JSON.stringify(input)});
  assert.equal((await handler(req(f.input,{cookie:''}))).status,401);assert.equal((await handler(req(f.input,{origin:'https://other.example'}))).status,403);assert.equal((await handler(req({...f.input,owner:'other'}))).status,400);
  const response=await handler(req());assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'no-store');assert.equal((await response.json()).reviewToken,previewFoodMultiAdd(f.state,f.input,f.context).reviewToken);
+});
+
+test('first device review of saved foods, recipes and meals matches committed quantities, expansion and recipe yield',()=>{
+ for(const destination of [{kind:'diary'},{kind:'recipe',name:'Offline recipe',servings:3}]){
+  const f=fixture();
+  f.state.settings.alwaysExpandMeals=true;
+  f.state.foods[0].notes='Personal annotation';
+  const snapshot=offlineSnapshot(f.state,{ownerId:owner,generation:'current'});
+  assert.equal(snapshot.state.foods[0].notes,undefined);
+  const input={rows:f.input.rows.slice(1),destination};
+  const local=prepareFoodMultiReview(snapshot.state,input,{owner,revision:snapshot.revision});
+  const online=previewFoodMultiAdd(f.state,input,f.context);
+  const {projection:localProjection,...deviceReview}=local,{projection,...serverReview}=online;
+  assert.deepEqual(deviceReview,serverReview);
+  const records=applyFoodMultiAdd(f.state,{...input,reviewToken:local.reviewToken,confirmed:true},f.context).records;
+  const facts=projection=>Object.fromEntries(Object.entries(projection).map(([kind,rows])=>[kind,rows.map(({id,expandedFrom,...row})=>{
+   if(!expandedFrom)return row;
+   const {id:parentId,...lineage}=expandedFrom;
+   return {...row,expandedFrom:lineage};
+  })]));
+  assert.deepEqual(facts(localProjection),facts(records));
+ }
+});
+
+test('offline review binds approved provenance, excludes private notes and keeps issued full-source reviews valid',()=>{
+ const f=fixture(),input={destination:{kind:'diary'},rows:[f.input.rows[1]]},resource=f.state.foods[0];
+ resource.notes='Private note';
+ const before=previewFoodMultiAdd(f.state,input,f.context);
+ const legacy=contentDigest({owner,destination:input.destination,rows:before.rows,dependencies:collectResourceDependencies(f.state,before.entries),alwaysExpandMeals:false});
+ assert.notEqual(before.reviewToken,legacy);
+ applyFoodMultiAdd(structuredClone(f.state),{...input,confirmed:true,reviewToken:legacy},f.context);
+ resource.notes='New annotation';
+ assert.equal(previewFoodMultiAdd(f.state,input,f.context).reviewToken,before.reviewToken);
+ resource.source='Changed source';
+ assert.throws(()=>applyFoodMultiAdd(f.state,{...input,confirmed:true,reviewToken:before.reviewToken},f.context),{status:409});
+ assert.throws(()=>applyFoodMultiAdd(f.state,{...input,confirmed:true,reviewToken:legacy},f.context),{status:409});
+ assert.deepEqual(f.state.entries,[]);
 });

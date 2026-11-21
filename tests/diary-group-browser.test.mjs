@@ -73,7 +73,18 @@ test('Diary group actions update mixed records locally and reconcile canonical c
   }
   assert.equal(fixture.state().biometrics[0].value,250);assert.equal(fixture.state().entries.find(r=>r.name==='Walk').duration,20);
   if(!await breakfast.evaluate(node=>node.open))await breakfast.locator('[data-md-fold-group]').click();
-  pendingNote=page.locator('[data-diary-record]').filter({hasText:'Pending final edit'});await swipe(pendingNote,-110);await pendingNote.locator('.md-swipe-delete').click();await page.locator('[data-confirm]').click();
+  pendingNote=page.locator('[data-diary-record]').filter({hasText:'Pending final edit'});
+  await pendingNote.scrollIntoViewIfNeeded();
+  const bounds=await pendingNote.locator('.entry-name').boundingBox(),held={x:bounds.x+bounds.width/2,y:bounds.y+bounds.height/2};
+  await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[held]});
+  await new Promise(resolve=>setTimeout(resolve,850));
+  await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await page.waitForTimeout(125);
+  assert.equal(await page.locator('#sheet').isVisible(),false,'Holding a note row keeps the Diary open');
+  await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[held]});
+  await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await page.locator('#sheet textarea').waitFor();await dismiss();
+  await swipe(pendingNote,-110);await pendingNote.locator('.md-swipe-delete').click();await page.locator('[data-confirm]').click();
   await localUntil(s=>!s.notes.some(row=>row.text==='Pending final edit'));hold=null;release();await waitForOutboxIdle(page,()=>!fixture.state().notes.some(row=>row.text==='Pending final edit'));
   assert.equal(fixture.state().biometrics[0].value,350);assert.equal(fixture.state().entries.find(r=>r.name==='Walk').duration,30);
   assert.ok(sent.some(row=>row.type==='note.add'&&row.payload.group==='Breakfast'));assert.ok(sent.some(row=>row.type==='records.delete'));

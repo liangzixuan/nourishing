@@ -16,10 +16,10 @@
 
 .diary-meal-menu button img{width:20px;height:20px}.diary-meal-menu button:has(img){gap:30px}
 
-#sheet:has(.diary-day-menu){bottom:0;max-height:calc(100dvh - env(safe-area-inset-top));max-width:560px}
+#sheet:has(.diary-menu-navigation){bottom:0;max-height:calc(100dvh - env(safe-area-inset-top));max-width:560px}
 #sheet .diary-menu-navigation{position:sticky;bottom:0;width:100%;margin:0}
-.diary-day-menu{padding:0 16px}
-.diary-day-menu button{min-height:56px;padding:10px 0;font:700 calc(15rem / 18)/1.4 Karla,Lato,sans-serif}
+.diary-menu-sheet:has(+ .diary-menu-navigation){padding:0 16px}
+.diary-menu-sheet:has(+ .diary-menu-navigation) button{min-height:56px;padding:10px 0;font:700 calc(15rem / 18)/1.4 Karla,Lato,sans-serif}
 
 #sheet:has(.diary-delete-confirm){inset:0;margin:auto;width:min(86vw,400px);height:fit-content;min-height:0;max-height:90dvh;border:0;border-radius:10px;background:var(--paper)}
 .diary-delete-confirm{padding:16px}.diary-delete-confirm h2{font-size:1.1rem;margin:0}.diary-delete-confirm p{font-size:.9rem;margin:14px 0}.diary-delete-confirm [role=status]:empty{display:none}

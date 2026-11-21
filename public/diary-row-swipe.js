@@ -11,13 +11,14 @@ export function bindDiaryRowSwipe(root){
  function close(){if(opened){paint(opened,0);opened.classList.remove('is-swiping');opened=null;}}
  function cancel(){gesture=null;close();}
  document.addEventListener('pointerdown',event=>{
+  suppressed=null;
   if(!event.isPrimary||event.button!==0){cancel();return;}
   const row=event.target.closest('[data-md-swipable]');
   if(!row||!root.contains(row)){cancel();return;}
   if(event.target.closest('[data-md-swipe-action]'))return;
   const offset=row===opened?Number.parseFloat(row.style.getPropertyValue('--md-swipe-offset'))||0:0;
   close();paint(row,offset);opened=row;
-  gesture={row,id:event.pointerId,x:event.clientX,y:event.clientY,offset,width:row.getBoundingClientRect().width*.2,horizontal:false};
+  gesture={row,touchStart:event.pointerType==='touch'?event.timeStamp:null,id:event.pointerId,x:event.clientX,y:event.clientY,offset,width:row.getBoundingClientRect().width*.2,horizontal:false};
  },options);
  document.addEventListener('pointermove',event=>{
   if(!gesture||event.pointerId!==gesture.id)return;
@@ -34,7 +35,10 @@ export function bindDiaryRowSwipe(root){
  document.addEventListener('pointerup',event=>{
   if(!gesture||event.pointerId!==gesture.id)return;
   const done=gesture;gesture=null;
-  if(!done.horizontal)return;
+  if(!done.horizontal){
+   if(done.touchStart!==null&&event.timeStamp-done.touchStart>=500)suppressed={row:done.row,until:performance.now()+500};
+   return;
+  }
   done.row.classList.remove('is-swiping');
   const offset=Number.parseFloat(done.row.style.getPropertyValue('--md-swipe-offset'))||0;
   if(Math.abs(offset)>=done.width*.4)paint(done.row,Math.sign(offset)*done.width);else close();

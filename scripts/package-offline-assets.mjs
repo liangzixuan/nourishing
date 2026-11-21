@@ -1,3 +1,4 @@
+import {licenseNotices} from '../public/more-source/license-notices.js';
 import {readFile,writeFile,readdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
@@ -39,6 +40,7 @@ export async function buildOfflineAssets(){
  const generated=await buildPwaIcons();
  for(const {path,body} of generated)contents.set('/'+path,body);
  for(const path of [diary('link[rel="apple-touch-icon"]').attr('href'),...manifestIcons.map(icon=>icon.src)])await visit(path);
+ for(const [,path] of licenseNotices)await visit(path);
  const startup=new Set(contents.keys());
  // Styles and their fonts/icons are small shared presentation assets. Cache the
  // full inventory so nested CSS imports cannot stall the updated shell.

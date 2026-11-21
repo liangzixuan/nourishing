@@ -7,6 +7,7 @@ import {command,request} from './diary-api.js';
 import {formatMessage} from './diary-summary-source/message-format.js';
 import {scoreName,mobileScoreOrder} from './diary-summary-source/score-labels.js';
 import {displayValue} from './dashboard-source/energy-display.js';
+import {DiaryEnergyRings,energyComponentColors} from './diary-summary-source/energy-rings.js';
 
 const number=value=>Number.isFinite(value)?value.toLocaleString(uiLanguage(),{maximumFractionDigits:1}):'—';
 const switchRow=(label,name,checked)=>`<label class="ds-setting"><span>${e(label)}</span><input type="checkbox" role="switch" name="${name}" ${checked?'checked':''}></label>`;
@@ -19,9 +20,41 @@ export function openDiarySummaryAction({action,id,diary,date=diary.date,show,clo
  if(action==='open-fasting'){onFasting?.();return true;}
  const present=(title,body)=>{show(header(title)+`<section class="ds-dialog">${body}</section>`);return content.querySelector('.ds-dialog');};
  if(action==='mobile-diary-energy'){
-  const energy=diary.summary.energy,unit=diary.energyUnit??'kcal',rows=[[t('mobileDiary.consumed'),energy.consumed],[t('mobileDiary.expenditure'),energy.expenditure],[t('mobileDiary.target'),energy.target],[t('mobileDiary.remaining'),energy.remaining]];
-  const root=present(coreText('diary.energy'),`<dl class="ds-energy">${rows.map(([label,value])=>`<div><dt>${label}</dt><dd>${number(displayValue(value,'kcal',unit))} ${e(unit)}</dd></div>`).join('')}</dl>${button(coreText('diary.editTargets'),'data-ds-targets class="ds-primary"')}`);
-  root.querySelector('[data-ds-targets]').onclick=()=>{close();onTargets?.(date);};return true;
+  const {energy,consumedEnergy,expenditureBreakdown}=diary.summary,unit=diary.energyUnit??'kcal';
+  const known=Number.isFinite,unknown=t('energyReport.unknown'),amount=value=>known(value)?number(displayValue(value,'kcal',unit))+' '+unit:unknown;
+  const intake=t('mobileDiary.consumed'),spent=t('mobileDiary.expenditure'),target=t('mobileDiary.target'),balance=t('energyReport.balance');
+  const component=(id,value,percent,missing)=>{
+   const color=energyComponentColors[id],swatch=`<svg viewBox="0 0 12 12" aria-hidden="true"><rect width="12" height="12" rx="${['resting','baseline','exercise','tracker','thermicEffect'].includes(id)?0:6}" fill="${e(color)}"/></svg>`;
+   return `<div class="ds-energy-row" data-component="${e(id)}"><dt>${swatch}${e(t('energyChart.component.'+id))}</dt><dd>${e(missing??amount(value))}</dd><dd>${known(percent)?number(percent)+'%':''}</dd></div>`;
+  };
+  const empty=consumedEnergy?.methods&&Object.values(consumedEnergy.methods).every(count=>count===0);
+  const consumedRows=['protein','carbohydrate','fat','alcohol','unattributed'].map(id=>{
+   const value=known(energy.consumed)?consumedEnergy?.values[id]:null;
+   if((id==='alcohol'||id==='unattributed')&&!value)return '';
+   return component(id,value,known(value)&&consumedEnergy.total>0?100*value/consumedEnergy.total:null,empty?dc('summaryWhenLogged'):null);
+  }).join('');
+  const expenseRows=(expenditureBreakdown?.components??[]).filter(row=>['resting','baseline','exercise'].includes(row.id)||row.mean>0).map(row=>component(row.id,row.mean,row.percent)).join('');
+  const card=(kind,title,value,rows)=>`<article class="ds-energy-card" data-card="${kind}"><header><h3>${e(title)}</h3><div class="ds-energy-ring"><canvas data-md-ring="${kind}" aria-hidden="true"></canvas><strong>${known(value)?number(displayValue(value,'kcal',unit)):'—'}</strong><small>${known(value)?e(unit):e(unknown)}</small></div></header><dl>${rows}</dl></article>`;
+  const budgetRow=(label,value)=>`<div class="ds-budget-row"><dt>${e(label)}</dt><dd>${e(amount(value))}</dd></div>`;
+  const budget=mode=>{
+   const isBalance=mode==='balance',value=energy[mode],title=isBalance&&known(value)&&value!==0?coreText(value>0?'diary.energyDeficit':'diary.energySurplus'):isBalance?balance:t('mobileDiary.remaining');
+   const shown=isBalance&&known(value)?Math.abs(value):value;
+   return card(mode,title,shown,budgetRow(isBalance?spent:target,isBalance?energy.expenditure:energy.target)+budgetRow(intake,known(energy.consumed)?-energy.consumed:null)+budgetRow(title,shown));
+  };
+  let mode=energy.display==='balance'?'balance':'remaining';
+  show(`<section class="ds-dialog ds-energy"><header class="sheet-header"><button type="button" data-close aria-label="${e(t('mobileDisplay.back'))}">‹</button><h2 id="sheet-title">${e(coreText('diary.energy'))}</h2><button type="button" data-ds-targets aria-label="${e(coreText('diary.editTargets'))}"><img alt="" src="/record-source/biometric-icons/cog-outline.svg"></button></header>
+   ${button(e(coreText('diary.dailyReport')),'data-ds-report')}${card('consumed',intake,energy.consumed,consumedRows)}${card('expenditure',spent,energy.expenditure,expenseRows)}<div data-budget>${budget(mode)}</div>
+   <fieldset class="ds-energy-mode"><legend>${e(coreText('diary.energyDisplay'))}</legend><p>${e(t('energySummary.arithmetic'))}</p>${[['remaining',target],['balance',balance]].map(([id,label])=>button(e(label),`data-mode="${id}" aria-pressed="${mode===id}"`)).join('')}</fieldset><p class="md-chart-error" role="status"></p></section>`);
+  const root=content.querySelector('.ds-energy'),rings=new DiaryEnergyRings(root);
+  const draw=()=>void rings.draw(diary.summary);
+  root.querySelector('[data-ds-targets]').onclick=()=>onTargets?onTargets(date):close();
+  root.querySelector('[data-ds-report]').onclick=()=>{close();onReport?.(date);};
+  root.querySelector('.ds-energy-mode').onclick=event=>{
+   const choice=event.target.closest('[data-mode]');if(!choice||choice.dataset.mode===mode)return;
+   mode=choice.dataset.mode;root.querySelector('[data-budget]').innerHTML=budget(mode);
+   root.querySelectorAll('[data-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.mode===mode)));draw();
+  };
+  draw();return ()=>rings.clear();
  }
  if(action==='score-details'){
   const score=diary.summary.scores.find(row=>row.id===id);if(!score)return false;

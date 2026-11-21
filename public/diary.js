@@ -706,7 +706,7 @@ async function summaryAction(input) {
     input.action === 'mobile-diary-energy'
       ? {...diary, summary: summaryPanel?.context()?.chartSummary ?? diary.summary}
       : diary;
-  openDiarySummaryAction({
+  const cleanup = openDiarySummaryAction({
     ...input,
     diary: summaryDiary,
     date,
@@ -718,6 +718,7 @@ async function summaryAction(input) {
     onTargets: sourceTargets,
     onReport: day => navigate('discover', 'report', day),
   });
+  if (typeof cleanup === 'function') pickerCleanup = cleanup;
 }
 
 async function search(restore = null, {applied, selected} = {}) {
@@ -725,6 +726,11 @@ async function search(restore = null, {applied, selected} = {}) {
   if (!diary.groups.includes(group)) group = defaultGroup(diary.groups);
   show(`${header(t('diary.addFood'))}<div class="diary-picker"></div>`);
   const ownerTicket=readDeviceCache('/api/diary').then(result=>result.ticket);
+  const currentTicket=async()=>{
+    const [opened,{ticket:active}]=await Promise.all([ownerTicket,readDeviceCache('/api/diary')]);
+    if(!opened||opened.ownerId!==account.id||active?.ownerId!==opened.ownerId||active.epoch!==opened.epoch)throw Error(coreText('request.unavailable'));
+    return opened;
+  };
   const picker = mountFoodPicker(content.querySelector('.diary-picker'), {
     onPick: (kind, id) => {
       const snapshot = picker.snapshot();
@@ -737,8 +743,7 @@ async function search(restore = null, {applied, selected} = {}) {
       defaults: restore?.defaults ?? {date, group, time: new Date().toTimeString().slice(0, 5)},
       restore,
       onQueue: async (review, requestId) => {
-        const ticket=await ownerTicket;
-        if(!ticket||ticket.ownerId!==account.id)throw Error(coreText('request.unavailable'));
+        const ticket=await currentTicket();
         const {input,result}=review;
         if(!result.projection)throw Error(coreText('request.unavailable'));
         await queueCommand(result.revision,'food.multi.add',{...input,reviewToken:result.reviewToken,confirmed:true},{
@@ -750,7 +755,10 @@ async function search(restore = null, {applied, selected} = {}) {
         const snapshot = picker.snapshot();
         const serial = searchId;
         const kind = SELECTION_KIND_MAP[row.selection.kind];
-        const item = await request('/api/library/item?' + new URLSearchParams({kind, id: row.selection.id}));
+        await currentTicket();
+        const local = row.selection.kind === 'catalog' ? null : await localLibraryItem({kind, id:row.selection.id});
+        const item = local ?? await request('/api/library/item?' + new URLSearchParams({kind, id: row.selection.id}));
+        await currentTicket();
         if (serial !== searchId || !sheet.open) return;
         const openDetail = viewState => {
           pickerCleanup = mountFoodEntry({

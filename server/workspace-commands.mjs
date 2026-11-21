@@ -242,7 +242,7 @@ function dispatchCommand(state, input, context) {
 export function applyWorkspaceCommand(state, input, context = {}) {
   validateAction(input);
   try {
-    const tracked=/^(entry\.|note\.|biometric\.|water\.add|record\.correct$|meal\.log|photo\.log|records\.copy$|selection\.(meal|recipe)$)/.test(input.type);
+    const tracked=/^(entry\.|note\.|biometric\.|water\.add|exercise\.catalog\.add$|record\.correct$|meal\.log|photo\.log|records\.copy$|selection\.(meal|recipe)$)/.test(input.type);
     const collections=input.type.startsWith('selection.')?['foods','recipes','meals']:['entries','biometrics','notes'];
     const before=tracked?Object.fromEntries(collections.map(collection=>[collection,new Set(state[collection].map(row=>row.id))])):null;
     const saved=dispatchCommand(state, input, context);

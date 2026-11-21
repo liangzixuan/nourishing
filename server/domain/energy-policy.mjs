@@ -92,6 +92,9 @@ export function parseEnergyPolicy(value){
 const nullable=value=>finite(value)?value:null;
 const sumKnown=values=>values.every(known)?nullable(values.reduce((sum,value)=>sum+value,0)):null;
 const difference=(a,b)=>a===null||b===null?null:nullable(a-b);
+export function energyBudget(consumed,target,expenditure){
+  return {consumed,remaining:difference(target,consumed),balance:difference(expenditure,consumed)};
+}
 
 /** Single energy arithmetic owner. Inputs are unrounded recorded day facts. */
 export function calculateEnergy({policy:input,date,consumed,configuredTarget,scheduledTarget={present:false,value:null},exerciseEntries=[],biometrics=[],foodTotals={},foodCoverage={},recordedWeightKg=undefined,recordedHeightCm=undefined}){
@@ -102,7 +105,7 @@ export function calculateEnergy({policy:input,date,consumed,configuredTarget,sch
   const exercise=sumKnown(exerciseEntries.map(row=>row?.calories));
   if(exercise===null)reasons.push('exercise-unknown');
   const selectedTarget=scheduledTarget.present?(known(scheduledTarget.value)?scheduledTarget.value:null):configuredTarget;
-  if(!policy)return {version:1,baselineExpenditure:null,targetAdjustment:null,targetSource:scheduledTarget.present?'weekday':'fixed',consumed,exercise,target:selectedTarget,remaining:difference(selectedTarget,consumed),expenditure:null,balance:null,configuredTarget,targetBaseline:selectedTarget,aboveBaseline:null,components:{resting:null,baseline:null,adjustedBaseline:null,activity:null,thermicEffect:null},activityMode:'unconfigured',device:null,display:'remaining',configured:false,reasons:[...reasons,'expenditure-unconfigured']};
+  if(!policy)return {version:1,baselineExpenditure:null,targetAdjustment:null,targetSource:scheduledTarget.present?'weekday':'fixed',exercise,target:selectedTarget,expenditure:null,...energyBudget(consumed,selectedTarget,null),configuredTarget,targetBaseline:selectedTarget,aboveBaseline:null,components:{resting:null,baseline:null,adjustedBaseline:null,activity:null,thermicEffect:null},activityMode:'unconfigured',device:null,display:'remaining',configured:false,reasons:[...reasons,'expenditure-unconfigured']};
 
   const age=projectRestingAge(policy.resting,date),mifflin=age!==null;
   let weightKg=policy.resting.weightKg,heightCm=policy.resting.heightCm;
@@ -153,5 +156,5 @@ export function calculateEnergy({policy:input,date,consumed,configuredTarget,sch
   let targetBaseline=scheduledTarget.present?selectedTarget:policy.target.mode==='fixed'?configuredTarget:resting===null||baseline===null||!finite(adjustmentKcal)?null:nullable(resting+baseline+adjustmentKcal);
   if(targetBaseline!==null&&targetBaseline<0){targetBaseline=null;reasons.push('target-negative');}
   const target=targetBaseline===null||policy.target.includeAboveBaseline&&aboveBaseline===null?null:nullable(targetBaseline+(policy.target.includeAboveBaseline?aboveBaseline:0));
-  return {version:1,baselineExpenditure,targetAdjustment,targetSource,consumed,exercise,target,remaining:difference(target,consumed),expenditure,balance:difference(expenditure,consumed),configuredTarget,targetBaseline,aboveBaseline,components:{resting,baseline,adjustedBaseline,activity,thermicEffect},activityMode:policy.activity.mode,device,display:policy.display,configured:true,reasons};
+  return {version:1,baselineExpenditure,targetAdjustment,targetSource,exercise,target,expenditure,...energyBudget(consumed,target,expenditure),configuredTarget,targetBaseline,aboveBaseline,components:{resting,baseline,adjustedBaseline,activity,thermicEffect},activityMode:policy.activity.mode,device,display:policy.display,configured:true,reasons};
 }

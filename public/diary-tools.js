@@ -109,6 +109,10 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
    else if(action==='paste')copy(clipboard);
    else await actions[action](all());
   },'diary-day-menu');
+  menuNavigation();
+ }
+
+ function menuNavigation(){
   content.insertAdjacentHTML('beforeend',`<nav class="dc-bottom diary-menu-navigation" aria-label="${e(t('discover.nav.main'))}">${bottomNavigation('diary',uiLanguage())}</nav>`);
   content.querySelector('.diary-menu-navigation').onclick=event=>{
    const route=event.target.closest('[data-discover]')?.dataset.discover;
@@ -126,7 +130,8 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
    {id:'nutrition',label:coreText('diary.selectedNutrition'),disabled:!foods.length},
    {id:'delete',label:t('mobileRepeat.delete'),disabled:!count}
   ];
-  menuSheet(coreText('diary.selectedActions'),items,action=>actions[action](source));
+  menuSheet(coreText('diary.selectedActions'),items.map(item=>({...item,icon:groupIcons[item.id]})),action=>actions[action](source));
+  menuNavigation();
  }
 
  function groupMenu(group){

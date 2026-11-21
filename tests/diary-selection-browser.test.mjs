@@ -58,6 +58,15 @@ test('Diary selection stays local through offline edits and rapid selection chan
   await page.getByRole('button',{name:'Selected entry actions',exact:true}).click();
   assert.deepEqual(await page.locator('.diary-menu-sheet button').allTextContents(),['Add Timestamp to Selected','Create Recipe from Selection','Create Meal from Selection','Copy','Show Nutrition Summary','Delete']);
   assert.equal(await page.getByRole('button',{name:'Create Recipe from Selection',exact:true}).isDisabled(),true);
+  const sheetLayout=await page.locator('.diary-menu-sheet').evaluate(sheet=>({
+   icons:[...sheet.querySelectorAll('button img')].map(icon=>[icon.alt,icon.getBoundingClientRect().x]),
+   labels:[...sheet.querySelectorAll('button span')].map(label=>label.getBoundingClientRect().x),
+   last:sheet.querySelector('button:last-of-type').getBoundingClientRect().bottom,
+   nav:sheet.nextElementSibling?.getBoundingClientRect().top
+  }));
+  assert.equal(sheetLayout.icons.length,6);assert.ok(sheetLayout.icons.every(([alt,x])=>alt===''&&x===sheetLayout.icons[0][1]));
+  assert.equal(new Set(sheetLayout.labels).size,1);assert.ok(sheetLayout.last<=sheetLayout.nav+1);
+  assert.equal(await page.locator('.diary-menu-navigation [aria-current=page]').getAttribute('data-discover'),'shell-diary');
   await page.keyboard.press('Escape');
   for(const name of ['Note','Walk'])await page.getByRole('checkbox',{name:'Select '+name,exact:true}).uncheck();
   await page.getByRole('button',{name:'Selected entry actions',exact:true}).click();
@@ -79,7 +88,20 @@ test('Diary selection stays local through offline edits and rapid selection chan
   await page.locator('[data-diary-record]').filter({hasText:'Rice'}).locator('.entry-name').click();
   await page.locator('.md-scope').waitFor();await ring(298);await page.getByRole('checkbox',{name:'Select Chicken',exact:true}).uncheck();await ring(133);assert.equal(await page.locator('.md-scope').innerText(),'Selected foods');
   await page.locator('[data-md-page-id=pauseLife] .md-target-protein').click();await page.locator('.nutrient-detail[aria-busy=false]').waitFor();assert.match(await page.locator('.nutrient-detail').innerText(),/Rice/);assert.doesNotMatch(await page.locator('.nutrient-detail').innerText(),/Chicken/);await page.keyboard.press('Escape');
-  await page.getByRole('button',{name:'Macronutrient Targets',exact:true}).click();assert.match(await page.locator('[data-md-page-id=macros] .md-target-protein').innerText(),/3 \/ /);await page.getByRole('button',{name:'Energy Summary',exact:true}).click();await page.evaluate(()=>window.scrollTo(0,0));await page.locator('[data-md-page-id=energy] [data-action=mobile-diary-energy]').first().click();await page.locator('.ds-energy').waitFor();assert.match(await page.locator('.ds-energy').innerText(),/Consumed\s+133 kcal/);await page.keyboard.press('Escape');await page.getByRole('button',{name:'The Pause Life Settings',exact:true}).click();
+  await page.getByRole('button',{name:'Macronutrient Targets',exact:true}).click();assert.match(await page.locator('[data-md-page-id=macros] .md-target-protein').innerText(),/3 \/ /);
+  await page.getByRole('button',{name:'Energy Summary',exact:true}).click();await page.evaluate(()=>window.scrollTo(0,0));
+  await page.locator('[data-md-page-id=energy] [data-action=mobile-diary-energy]').first().click();
+  const detail=page.locator('.ds-energy');
+  assert.equal(await detail.locator('[data-card=consumed] .ds-energy-ring strong').innerText(),'133');
+  assert.match(await detail.locator('[data-component=unattributed]').innerText(),/133 kcal/);
+  assert.equal(await detail.locator('[data-component=resting] dd').first().textContent(),'Unknown');
+  await detail.getByRole('button',{name:'Balance',exact:true}).click();
+  assert.equal(await detail.locator('[data-card=balance] .ds-energy-ring small').textContent(),'Unknown');
+  await page.waitForFunction(()=>[...document.querySelectorAll('.ds-energy canvas')].every(c=>window.Chart.getChart(c)));
+  const rings=await detail.locator('canvas').evaluateAll(nodes=>nodes.map(c=>window.Chart.getChart(c).id));
+  await page.keyboard.press('Escape');
+  assert.ok(await page.evaluate(ids=>ids.every(id=>!window.Chart.instances[id]),rings));
+  await page.getByRole('button',{name:'The Pause Life Settings',exact:true}).click();
   await page.context().setOffline(true);
   await page.getByRole('checkbox',{name:'Select Chicken',exact:true}).check();await ring(298);
   await page.getByRole('checkbox',{name:'Select Chicken',exact:true}).uncheck();await page.getByRole('checkbox',{name:'Select Rice',exact:true}).uncheck();await ring(298);assert.equal(await page.locator('.md-scope').count(),0);

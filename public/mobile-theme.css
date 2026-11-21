@@ -17,3 +17,4 @@ html,body{overscroll-behavior:none}
 /* These are colored promotional cards in both themes. */
 .dc-coach,.dc-connect-banner,.dc-connect-promo{color:#f5f6ff}
 .dc-connect-promo .dc-link{color:#77e2e5}
+.discover-mobile select option{background-color:var(--paper);color:var(--ink)}

@@ -29,7 +29,7 @@
 @media(max-width:360px){.am-tiles{gap:14px;padding-inline:18px}.am-tile .am-icon{height:58px}.am-rows{margin-inline:14px}.am-tile .am-label{font-size:calc(14rem / 18)}.am-row .am-order{gap:0}.am-row:has(.am-order) .am-action{padding-right:110px}}
 
 /* Keyboard reordering stays available without crowding touch controls. */
-.am-order{position:absolute;inset:auto 0 -8px;opacity:0;pointer-events:none;background:#3e4152;border-radius:8px;z-index:1}.am-item:has(.am-order button:focus-visible) .am-order{opacity:1;pointer-events:auto}.am-row .am-order{inset:4px 42px auto auto}.am-row:has(.am-order) .am-action{padding-right:46px}.am-sheet:has(.am-hint) .am-icon{touch-action:none}
+.am-order{position:absolute;inset:auto 0 -8px;opacity:0;pointer-events:none;background:#3e4152;border-radius:8px;z-index:1}.am-item:has(.am-order button:focus-visible) .am-order{opacity:1;pointer-events:auto}.am-row .am-order{inset:4px 42px auto auto}.am-row:has(.am-order) .am-action{padding-right:46px}.am-sheet:has([data-am=done]) .am-icon{touch-action:none}
 
 
 /* Static palette selectors preserve the strict style CSP. */
@@ -71,3 +71,5 @@
 .am-palette [data-am-color="#e8e9ed"]{background:#e8e9ed}
 .am-sheet [data-am-color="#3e4152"]{--am-color:#3e4152}
 .am-palette [data-am-color="#3e4152"]{background:#3e4152}
+
+.am-hint{display:flex;align-items:center;justify-content:space-between;gap:12px}.am-hint button{flex:none;background:none;border:0;color:inherit;font-size:20px;padding:4px 8px;cursor:pointer}

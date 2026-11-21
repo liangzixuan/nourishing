@@ -12,7 +12,6 @@ import {digest} from '../server/data-codec.mjs';
 import {offlineSnapshot} from '../server/offline.mjs';
 import {createWorkspaceStore} from '../server/workspace-store.mjs';
 import {diaryStoreFixture} from './fixtures/diary-store.mjs';
-import {previewFoodMultiAdd} from '../server/food-multi-add.mjs';
 import {diaryToolsReview} from '../server/diary-tools.mjs';
 
 test('selection-created recipes stay visible in cached library reads before and after lost-ack recovery',async()=>{
@@ -681,19 +680,25 @@ test('fasting history, starts and stops persist from the visible offline control
  },{losePath:'/api/workspace/command',loseType:'fast.record',commandTime:'2026-11-20T12:01:00Z'});
 });
 
-test('reviewed Multi-Add survives restart and applies dependent changes to canonical records after a lost reply',async()=>{
+test('device-reviewed Multi-Add survives restart and applies dependent changes to canonical records after a lost reply',async()=>{
  const state=initialState(),date='2026-11-20',owner='owner-a';
  const foodId=act(state,'food.save',{name:'Rice',serving:'100 g',grams:100,nutrients:{calories:100}}).id;
  const rows=[1,2].map(amount=>({id:crypto.randomUUID(),selection:{kind:'foods',id:foodId},entry:{date,time:'',group:'Lunch',amount}}));
  const reviews=['diary','recipe'].map(kind=>{
   const destination=kind==='diary'?{kind}:{kind,name:'Two portions',servings:2},input={rows,destination};
-  return {input,result:previewFoodMultiAdd(state,input,{owner}),id:crypto.randomUUID()};
+  return {input,id:crypto.randomUUID()};
  });
  await realQueueFixture(state,async({page,fixture,flush,initialize,sent})=>{
   await page.evaluate(async reviews=>{
    const {queueCommand}=await import('/diary-api.js');
-   for(const {input,result,id} of reviews)await queueCommand(result.revision,'food.multi.add',{...input,reviewToken:result.reviewToken,confirmed:true},{projection:result.projection,requestId:id});
-   await queueCommand(reviews[0].result.revision,'entry.delete',{id:reviews[0].id+'-0'});
+   const {multiReviewer}=await import('/food-picker.js'),review=multiReviewer('owner-a');
+   let revision;
+   for(const {input,id} of reviews){
+    const result=await review(input);
+    revision=result.revision;
+    await queueCommand(revision,'food.multi.add',{...input,reviewToken:result.reviewToken,confirmed:true},{projection:result.projection,requestId:id});
+   }
+   await queueCommand(revision,'entry.delete',{id:reviews[0].id+'-0'});
   },reviews);
   await page.reload();await initialize();
   const local=await page.evaluate(async()=>(await import('/local-engine.js')).localWorkspaceState());
@@ -706,4 +711,33 @@ test('reviewed Multi-Add survives restart and applies dependent changes to canon
   assert.deepEqual(copy.pending,[]);assert.deepEqual(copy.snapshot.state.recipes,fixture.state().recipes);
   assert.deepEqual(copy.snapshot.state.entries,fixture.state().entries);
  },{losePath:'/api/workspace/command',loseType:'food.multi.add'});
+});
+
+test('device multi-add requires canonical source identities and holds its opening account',async()=>{
+ const state=initialState(),foodId=act(state,'food.save',{name:'Rice',grams:100,nutrients:{calories:100}}).id;
+ await realQueueFixture(state,async({page,flush,date,fixture})=>{
+  const result=await page.evaluate(async({date,foodId})=>{
+   const {multiReviewer}=await import('/food-picker.js'),review=multiReviewer('owner-a');
+   const {saveLocalLibrary}=await import('/library-local.js'),{queueCommand}=await import('/diary-api.js');
+   const cache=await import('/device-cache.js');
+   const selection=(id,kind='foods')=>({destination:{kind:'diary'},rows:[{id:crypto.randomUUID(),selection:{kind,id},entry:{date,time:'',group:'Lunch',amount:1}}]});
+   const rejection=async input=>{try{await review(input);return null;}catch(error){return error.message;}};
+   const temporary=await saveLocalLibrary('food',{name:'New oats',grams:100,nutrients:{calories:120}});
+   const newFood=await rejection(selection(temporary.item.id)),catalog=await rejection(selection(foodId,'catalog'));
+   await saveLocalLibrary('food',{id:foodId,name:'Edited rice',nutrientEdits:[{kind:'manual',values:{calories:130}}]});
+   const input=selection(foodId),result=await review(input);
+   await queueCommand(result.revision,'food.multi.add',{...input,reviewToken:result.reviewToken,confirmed:true},{projection:result.projection});
+   await cache.initializeDeviceCache('owner-b');
+   const owner=await rejection(input);
+   await cache.initializeDeviceCache('owner-a');
+   const epoch=await rejection(input);
+   return {newFood,catalog,owner,epoch,calories:result.totals.calories};
+  },{date,foodId});
+  assert.match(result.newFood,/once its new library item has been saved/i);assert.match(result.catalog,/connect to look up/i);
+  assert.match(result.owner,/current account/i);assert.equal(result.epoch,result.owner);
+  assert.equal(result.calories,130);
+  await flush();
+  assert.equal(fixture.state().entries.length,1);assert.equal(fixture.state().entries[0].foodId,foodId);
+  assert.equal(fixture.state().foods.find(row=>row.id===foodId).nutrients.calories,130);
+ });
 });

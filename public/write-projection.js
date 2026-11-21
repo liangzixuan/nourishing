@@ -51,6 +51,7 @@ export function applyWriteToState(state,row,result){
  if(type==='biometric.delete')remove('biometrics',p.id);
  if(type==='note.add')replace('notes',{...p,id,_pending:!result});
  if(type==='exercise.add')replace('entries',{date:p.date,time:p.time,group:p.group,name:p.name,duration:p.duration,caloriesBurned:p.calories,kind:'exercise',id,_pending:!result});
+ if(type==='exercise.catalog.add'&&!result&&row.projection?.entries?.[0])replace('entries',{...row.projection.entries[0],id,_pending:true});
  if(type==='record.correct'){const old=state[p.collection]?.find(item=>item.id===p.id);if(old)replace(p.collection,{...prepareDiaryRecordUpdate(state,p).after,_pending:!result});}
  if(type==='note.photo.save'){
   const noteId=p.id??id,existing=state.notes?.find(item=>item.id===noteId);

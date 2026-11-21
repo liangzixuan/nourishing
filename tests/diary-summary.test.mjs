@@ -7,10 +7,21 @@ import {chromium} from 'playwright-core';
 import {initialState,act} from '../server/domain/workspace.mjs';
 import {calculateSummary} from '../server/domain/nutrition.mjs';
 import {diarySummaryPresentation} from '../server/diary-summary.mjs';
+import {diarySelectionNutrition} from '../server/domain/diary-selection-nutrition.mjs';
 import {applyWorkspaceCommand} from '../server/workspace-commands.mjs';
 
 const date='2026-11-15',clock={now:new Date(date+'T18:00:00Z'),timeZone:'UTC'};
 const view=state=>{const summary=calculateSummary(state,date);return {date,summary,energyUnit:state.settings.energyUnit??'kcal',presentation:diarySummaryPresentation(state,summary,clock)};};
+test('selected energy uses the same full-day target and expenditure for its remaining amount and balance',()=>{
+ const state=initialState();
+ act(state,'entry.add',{date,amount:1,name:'Breakfast',nutrients:{calories:200}});
+ const selected=state.entries.at(-1).id;
+ act(state,'entry.add',{date,amount:1,name:'Lunch',nutrients:{calories:500}});
+ state.settings.energyPolicy={version:1,resting:{mode:'custom',kcal:1600},baseline:{mode:'custom',kcal:250},activity:{mode:'manual'},thermicEffect:false,target:{mode:'fixed',includeAboveBaseline:false},display:'balance'};
+ const read=()=>diarySelectionNutrition(state,{date,scope:'selected',records:[{collection:'entries',id:selected}]}).chartSummary.energy;
+ const energy=read();assert.equal(energy.consumed,200);assert.equal(energy.remaining,1800);assert.equal(energy.balance,1650);
+ delete state.settings.energyPolicy;assert.equal(read().balance,null);
+});
 test('summary settings persist through canonical validators and reject stale or invalid choices',()=>{
  const state=initialState(),base=view(state).presentation.scoreDisplay;
  applyWorkspaceCommand(state,{type:'scoreDisplay.change',payload:{base,change:{kind:'replace',index:0,scoreId:'protein'}}});
@@ -51,7 +62,7 @@ test('source diary carousel, rings, water, actions and disposal work on a phone 
  });await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));let browser;
  try{
   browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915},isMobile:true,hasTouch:true}),errors=[];page.on('pageerror',error=>errors.push(error.message));await page.addInitScript(()=>{window.cspViolations=[];document.addEventListener('securitypolicyviolation',event=>window.cspViolations.push({directive:event.violatedDirective,uri:event.blockedURI}));});await page.goto(`http://127.0.0.1:${server.address().port}`);await page.locator('[data-md-summary]').waitFor();await page.waitForFunction(()=>Object.keys(window.Chart?.instances??{}).length===3);
-  assert.deepEqual(await page.locator('.md-energy-item strong').allTextContents(),['0','Consumed','0','Expenditure','2,000','Remaining']);
+  assert.deepEqual(await page.locator('.md-energy-item strong').allTextContents(),['0','Consumed','—','Expenditure','2,000','Remaining']);
   await page.getByRole('button',{name:'Remaining',exact:false}).first().click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).kind,'remaining');
   await page.getByRole('button',{name:'Target',exact:true}).click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).action,'edit-day-targets');
   await page.locator('[data-md-dot="1"]').click();assert.equal(await page.locator('[data-md-page-id=macros]').isVisible(),true);const consumed=await page.locator('[data-md-page-id=macros] .md-target').first().textContent();

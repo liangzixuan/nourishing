@@ -312,7 +312,7 @@ class RecordEditorController {
     }
     this.controls();
     try {
-      await saveRecordCommand(this.envelope.revision,this.envelope.type,this.envelope.payload);
+      await saveRecordCommand(this.envelope.revision,this.envelope.type,this.envelope.payload,{ticket:this.ticket,activity:this.panel?.activity});
       if (!this.alive()) return;
       this.busy = false;
       this.exit();
@@ -509,7 +509,7 @@ class RecordEditorController {
 
   async load() {
     try {
-      [this.options,this.detail]=await recordEditorData(this.record?.date??this.date,COLLECTIONS[this.kind],this.record?.id,this.abort.signal);
+      [this.options,this.detail,this.ticket]=await recordEditorData(this.record?.date??this.date,COLLECTIONS[this.kind],this.record?.id,this.abort.signal);
       if (!this.alive()) return;
       if (this.detail) this.record = this.detail.record;
       if (this.kind === 'exercise') {
