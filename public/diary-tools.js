@@ -45,8 +45,8 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
 
  function select(source){selecting=true;selected=new Set(refs(source).map(({collection,row})=>key(collection,row.id)));close();render();}
  const actions={copy:capture,paste:copy,clear,move,time,meal:source=>reusable(source,'meal'),recipe:source=>reusable(source,'recipe'),nutrition:source=>onNutrition(source),delete:remove};
- function menuSheet(label,items,choose){
-  show(`<section class="diary-menu-sheet" aria-label="${e(label)}"><h2 id="sheet-title" class="diary-menu-title">${e(label)}</h2>${items.map(item=>button((item.icon?`<img src="${e(item.icon)}" alt=""><span>${e(item.label)}</span>`:e(item.label)),item.id,item.disabled)).join('')}<p role="status" class="sheet-message"></p></section>`);
+ function menuSheet(label,items,choose,style=''){
+  show(`<section class="diary-menu-sheet ${style}" aria-label="${e(label)}"><h2 id="sheet-title" class="diary-menu-title">${e(label)}</h2>${items.map(item=>button((item.icon?`<img src="${e(item.icon)}" alt=""><span>${e(item.label)}</span>`:e(item.label)),item.id,item.disabled)).join('')}<p role="status" class="sheet-message"></p></section>`);
   const root=content.querySelector('.diary-menu-sheet');
   root.querySelectorAll('[data-diary-tool]').forEach(node=>node.onclick=async()=>{node.disabled=true;try{await choose(node.dataset.diaryTool);}catch(error){if(root.isConnected)root.querySelector('[role=status]').textContent=error.message;}finally{node.disabled=false;}});
  }
@@ -133,19 +133,40 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
   });
  }
  async function expand(entry){
-  const review=await busy(mealText('expand'),()=>request('/api/diary/tools/review',{operation:'expand',date:entry.date,id:entry.id}));if(!review)return;
-  try{await save('entry.expand',{date:review.date,id:review.id,fingerprint:review.fingerprint,confirmed:true},review.revision,{entries:review.items});}
+  const review=await busy(mealText('expand'),()=>prepare({operation:'expand',date:entry.date,id:entry.id}));if(!review)return;
+  try{await save('entry.expand',{date:review.date,id:review.id,fingerprint:review.fingerprint,confirmed:true},review.revision,{entries:review.items,diaryReview:review.localReview});}
   catch(error){const status=content.querySelector('[role=status]');if(status)status.textContent=error.message;}
  }
  async function mealSettings(){
-  const view=await busy(mealText('settings'),()=>request('/api/display'));if(!view)return;
+  const view=await busy(mealText('settings'),async()=>{
+   const state=await localWorkspaceState();
+   return state?{...createDisplayView(state),revision:diary().revision}:request('/api/display');
+  });if(!view)return;
   const form=actionForm(mealText('settings'),`<label class="field-row"><span>${e(t('mobileDisplay.alwaysExpandMeals'))}</span><input type="checkbox" role="switch" name="alwaysExpandMeals" ${view.settings.alwaysExpandMeals?'checked':''}></label>`,()=>save('display.save',{alwaysExpandMeals:form.elements.alwaysExpandMeals.checked},view.revision));
  }
  function recordMenu(collection,id,onEdit){
   const source={date:date(),scope:'selected',records:[{collection,id}]},entry=collection==='entries'?diary().entries.find(row=>row.id===id):null,isMeal=!!entry?.mealId;
-  const mealActions=[['repeat','repeat'],['original','original'],['copyEdit','copy-edit'],['adjust','adjust'],['expand','expand'],['settings','settings']];
-  screen(isMeal?entry.facts?.name??entry.name??coreText('tools.entry'):coreText('tools.entry'),`<div class="diary-tools-menu">${isMeal?mealActions.map(([label,action])=>button(e(mealText(label)),action)).join(''):button(t('mobileNutrientTargets.edit'),'edit')+button(t('cyclePanel.select'),'select')}${button(coreText('tools.copy'),'copy')}${isMeal?button(e(mealText('nutrition')),'nutrition'):button(coreText('tools.moveGroup'),'move')}${button(t('mobileRepeat.delete'),'delete')}</div>`);
-  content.querySelectorAll('[data-diary-tool]').forEach(b=>b.onclick=()=>{const action=b.dataset.diaryTool;if(action==='edit')onEdit();else if(action==='select')select(source);else if(isMeal&&action==='expand')void expand(entry);else if(isMeal&&action==='settings')void mealSettings();else if(isMeal&&['repeat','original','copy-edit','adjust','nutrition'].includes(action))onMealAction?.(action,entry);else actions[action](source);});
+  if(isMeal){
+   const items=[
+    {id:'repeat',label:mealText('repeat'),icon:'/diary-action-icons/repeat.svg'},
+    {id:'original',label:mealText('original'),icon:groupIcons.quickAdd},
+    {id:'copy-edit',label:mealText('copyEdit'),icon:groupIcons.copy},
+    {id:'adjust',label:mealText('adjust'),icon:'/diary-action-icons/adjust.svg',disabled:diary().completed},
+    {id:'expand',label:mealText('expand'),icon:'/diary-action-icons/expand.svg',disabled:diary().completed},
+    {id:'settings',label:mealText('settings'),icon:'/record-source/biometric-icons/cog-outline.svg'},
+    {id:'copy',label:coreText('tools.copy'),icon:groupIcons.copy},
+    {id:'nutrition',label:mealText('nutrition'),icon:groupIcons.nutrition},
+    {id:'delete',label:t('mobileRepeat.delete'),icon:groupIcons.delete,disabled:diary().completed}
+   ];
+   return menuSheet(entry.facts?.name??entry.name??coreText('tools.entry'),items,action=>{
+    if(action==='expand')return expand(entry);
+    if(action==='settings')return mealSettings();
+    if(action==='copy'||action==='delete')return actions[action](source);
+    return onMealAction?.(action,entry);
+   },'diary-meal-menu');
+  }
+  screen(coreText('tools.entry'),`<div class="diary-tools-menu">${button(t('mobileNutrientTargets.edit'),'edit')}${button(t('cyclePanel.select'),'select')}${button(coreText('tools.copy'),'copy')}${button(coreText('tools.moveGroup'),'move')}${button(t('mobileRepeat.delete'),'delete')}</div>`);
+  content.querySelectorAll('[data-diary-tool]').forEach(b=>b.onclick=()=>{const action=b.dataset.diaryTool;if(action==='edit')onEdit();else if(action==='select')select(source);else actions[action](source);});
  }
  return {
   menu,groupMenu,recordMenu,reset,selection:()=>selecting?selection():null,

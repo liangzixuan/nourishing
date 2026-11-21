@@ -61,6 +61,11 @@ Version 1.0.14 local verification: all 638 tests passed, and the production Astr
 
 ## State coverage ledger
 
+| Finding | Reference | Current evidence | Remaining checks |
+| --- | --- | --- | --- |
+| R10, saved meal expansion | 231, 235, 236 | The Chrome fixture reproduced a connection error after tapping Explode Meal with a cached account and an unavailable review endpoint. The shared expansion preview now reads the effective device state. In the fixture, an adjusted portion replaced its parent at the same position before upload. A second regression creates the meal and parent offline, reloads before upload, loses the expansion reply and verifies the canonical child and its lineage after retry. | Installed-phone restart, swipe and production account verification remain open. |
+| D19, saved meal row options | 231 | The previous screenshot showed a full-screen list of gray buttons. The updated screenshot shows the nine actions in reference order in a bottom sheet above navigation, with leading icons. The browser checks outside dismissal, Escape, edit original, edit copy, Repeat, Settings, adjustment, nutrition and expansion. Synthetic screenshots are in `.local/meal-actions/`. | Exact typography and icon artwork, copy and delete from this menu, and device gestures remain open. |
+
 Ranges identify reference states, not a blanket pass. The local extracted inventory retains individual reference IDs and labels.
 
 | Journey / references | Current comparison | Remaining checks |

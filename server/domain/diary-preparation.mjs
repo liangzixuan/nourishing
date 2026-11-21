@@ -1,7 +1,14 @@
 import {prepareRecordSelection,prepareRecordCopy,referencedRecordFacts,captureRecordSelection,previewRecordCopy,previewClearAmounts,prepareSelectionDraft} from './diary-selection.mjs';
 import {normalizeCompositeDraft} from './composite-draft.mjs';
 import {fail,objectKeys} from './workspace-validation.mjs';
+import {assertDiaryDaysEditable} from './diary-day-status.mjs';
+import {previewEntryExpansion} from './diary-entry-expansion.mjs';
 export function prepareDiaryReview(state,input){
+ if(input?.operation==='expand'){
+  const {operation,...source}=input;
+  assertDiaryDaysEditable(state,[source.date]);
+  return previewEntryExpansion(state,source);
+ }
  objectKeys(input,['operation','selection','destination'],'Diary review');
  if(input.operation!=='copy'&&input.destination!==undefined)fail('Choose a copy destination.');
  switch(input.operation){
@@ -21,7 +28,8 @@ export function prepareDiaryReview(state,input){
 // add defaults to a pending row; every supplied fact and every row identity must
 // still agree. Array lengths prevent changed selections/targets from slipping in.
 export function diaryReviewGuard(state,input){
- const prepared=input.operation==='copy'?prepareRecordCopy(state,{selection:input.selection,destination:input.destination}):prepareRecordSelection(state,input.selection);
+ const selection=input.operation==='expand'?{date:input.date,scope:'selected',records:[{collection:'entries',id:input.id}]}:input.selection;
+ const prepared=input.operation==='copy'?prepareRecordCopy(state,{selection:input.selection,destination:input.destination}):prepareRecordSelection(state,selection);
  const records=prepared.records.map(({collection,row})=>{const {_pending,...value}=row;return {collection,row:value};});
  const guard={records,resources:referencedRecordFacts(state,records.filter(row=>row.collection==='entries').map(item=>item.row))};
  if(input.operation==='copy')guard.targets=prepared.targets.map(({collection,row})=>{const {_pending,...value}=row;return {collection,row:value};});

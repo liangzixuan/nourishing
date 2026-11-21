@@ -23,7 +23,7 @@ import {parsePauseLife} from './pause-life.mjs';
 import {parseAddMenu} from './add-menu.mjs';
 import {contentDigest} from './content-digest.mjs';
 import {parseDiscoverSettings} from './discover-settings.mjs';
-import {DIARY_EXPANSION_VERSION} from './diary-expansion-contract.mjs';
+import {previewEntryExpansion} from './diary-entry-expansion.mjs';
 import {capabilities} from './capabilities.mjs';
 export {capabilities} from './capabilities.mjs';
 import {parseAppLanguage} from './app-language.mjs';
@@ -308,11 +308,14 @@ function moveRecordGroups(s,input){
   assertDiaryDaysEditable(s,records.map(({row})=>row.date));
   for(const {row}of records)row.group=input.group;
 }
+function expandedDiaryChild(s,source){
+  const child=entry(s,source);
+  if(source.repeatId!==undefined)child.repeatId=exactId(source.repeatId,'Repeat ID');
+  return child;
+}
 function expandedDiaryItems(s,original){
   const normalized=entry(s,original);
-  return expandedDiarySources(s,{...original,...normalized}).map(source=>{
-    const child=entry(s,source);if(source.repeatId!==undefined)child.repeatId=exactId(source.repeatId,'Repeat ID');return child;
-  });
+  return expandedDiarySources(s,{...original,...normalized}).map(source=>expandedDiaryChild(s,source));
 }
 function loggedDiaryRows(s,original){
   return s.settings.alwaysExpandMeals===true&&original.mealId?expandedDiaryItems(s,original).map(row=>({...row,id:randomUUID()})):[original];
@@ -323,31 +326,19 @@ function appendLoggedDiaryRows(s,rows){
   if(s.entries.length+prepared.length>maxRecordCollectionRows)fail('Logging would exceed the 100000-entry workspace format.');
   s.entries.push(...prepared);
 }
-export function previewEntryExpansion(s,input){
-  objectKeys(input,['date','id'],'Diary expansion');const day=date(input.date),id=exactId(input.id);
-  const original=s.entries.find(row=>row.id===id&&row.date===day);
-  if(!original)throw Object.assign(Error('This diary entry is no longer available. Reload the diary before reviewing expansion.'),{status:409});
-  if(isExerciseEntry(original)||!['recipeId','mealId'].includes(resourceReference(original)))fail('Choose a logged recipe or saved meal to expand.');
-  const fingerprint=createHash('sha256').update(JSON.stringify({original,resources:referencedRecordFacts(s,[original])})).digest('hex');
-  const items=expandedDiaryItems(s,original);
-  if(!items.length)fail('This entry has no food ingredients to expand.');
-  if(s.entries.length-1+items.length>maxRecordCollectionRows)fail('Expansion would exceed the 100000-entry workspace format.');
-  const project=entries=>{const summary=calculateSummary({...s,entries,biometrics:[],notes:[]},day);return {attributions:summary.attributions,values:summary.totals,coverage:summary.nutrientCoverage};};
-  const warningCodes=['replacement','retained'];
-  if(original.photo)warningCodes.push('photo');
-  if(original.repeatId!==undefined)warningCodes.push('repeat');
-  if(original.copiedFrom)warningCodes.push('copy');
-  return {version:DIARY_EXPANSION_VERSION,date:day,id,fingerprint,items,count:items.length,warningCodes,before:project([original]),after:project(items)};
-}
 export function applyEntryExpansion(s,p){
   objectKeys(p,['date','id','fingerprint','confirmed','alwaysExpandMeals'],'Diary expansion confirmation');
   if(p.confirmed!==true||typeof p.fingerprint!=='string'||!/^[a-f0-9]{64}$/.test(p.fingerprint))fail('Preview and confirm this entry before expanding it.');
   if(p.alwaysExpandMeals!==undefined&&typeof p.alwaysExpandMeals!=='boolean')fail('Always expand meals must be true or false.');
   const review=previewEntryExpansion(s,{date:p.date,id:p.id});
   if(p.alwaysExpandMeals&&!s.entries.find(row=>row.id===p.id)?.mealId)fail('The always-expand choice applies to meals.');
-  if(review.fingerprint!==p.fingerprint)throw Object.assign(Error('The source entry or its ingredients changed. Review expansion again.'),{status:409});
+  if(review.fingerprint!==p.fingerprint){
+    // Previously queued expansions used the serialized source as their fingerprint.
+    const original=s.entries.find(row=>row.id===review.id),legacy=createHash('sha256').update(JSON.stringify({original,resources:referencedRecordFacts(s,[original])})).digest('hex');
+    if(legacy!==p.fingerprint)throw Object.assign(Error('The source entry or its ingredients changed. Review expansion again.'),{status:409});
+  }
   assertDiaryDaysEditable(s,[review.date]);
-  const children=review.items.map(item=>({...item,id:randomUUID()})),index=s.entries.findIndex(row=>row.id===p.id);
+  const children=review.items.map(item=>({...expandedDiaryChild(s,item),id:randomUUID()})),index=s.entries.findIndex(row=>row.id===p.id);
   s.entries.splice(index,1,...children);if(p.alwaysExpandMeals)s.settings.alwaysExpandMeals=true;return {parentId:p.id,childIds:children.map(row=>row.id)};
 }
 function reviewedSelectionDraft(s,p){

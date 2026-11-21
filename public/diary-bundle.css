@@ -1102,6 +1102,12 @@ html[data-nourishing-native] [data-nourishing-health-connect]{display:inline-fle
 
 .diary-menu-sheet button:has(img){display:flex;align-items:center;gap:28px}.diary-menu-sheet button img{width:24px;height:24px;flex:none;filter:var(--mobile-icon-filter)}
 
+#sheet:has(.diary-meal-menu){bottom:var(--dc-nav-space,70px);max-height:calc(100dvh - var(--dc-nav-space,70px) - env(safe-area-inset-top));max-width:560px}
+.diary-meal-menu{padding:0 12px}
+.diary-meal-menu button{padding:10px 4px;min-height:52px;font:600 calc(14rem / 18)/1.4 Lato,Arial,sans-serif}
+
+.diary-meal-menu button img{width:20px;height:20px}.diary-meal-menu button:has(img){gap:30px}
+
 /* /nutrient-detail.css */
 .nutrient-detail{padding:0 18px 24px;overflow-wrap:anywhere}.nutrient-detail-heading h2{margin:16px 0 4px;font-size:1.4rem}.nutrient-detail-heading p,.nutrient-detail-note,.nutrient-detail-credit{color:var(--muted);font-size:.9rem}.nutrient-detail-summary{background:var(--paper);border-radius:16px;padding:20px;margin:20px 0;display:grid;gap:8px}.nutrient-detail-summary>strong{font-size:2rem}.nutrient-detail-summary>small{color:var(--muted)}.nutrient-detail-summary>div{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--border);padding-top:14px}.nutrient-detail h3{font-size:1rem;margin:24px 0 12px}.nutrient-detail-sources{border:1px solid var(--border);border-radius:16px;overflow:hidden}.nutrient-detail-source{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 12px;width:100%;background:var(--paper);color:inherit;border:0;border-radius:0;text-align:left}.nutrient-detail-source+.nutrient-detail-source{border-top:1px solid var(--border)}.nutrient-detail-source>span{display:grid;gap:6px;min-width:0}.nutrient-detail-source>span:last-child{text-align:right;flex-shrink:0;max-width:45%}.nutrient-detail-source strong{font-size:1rem}.nutrient-detail-source small{font-size:.8rem;color:var(--muted)}.nutrient-detail-credit{margin-top:20px}.nutrient-detail-credit p{font-size:.85rem}.report-nutrient[type=button]{display:block;width:100%;text-align:left;background:none;color:inherit;border:0;border-radius:0;border-bottom:1px solid var(--border);cursor:pointer}.report-macros button{background:none;color:inherit;border:0;text-align:left;padding:0}.report-macros button strong{display:block}
 

@@ -1,6 +1,6 @@
 import {prepareDiaryReview} from './domain/diary-preparation.mjs';
 export {diaryEnergy,diaryToolsPresentation} from './diary-presentation.mjs';
-import {act,prepareRecordSelection,prepareSelectionDraft,removeDiaryRecords,previewEntryExpansion} from './domain/workspace.mjs';
+import {act,prepareRecordSelection,prepareSelectionDraft,removeDiaryRecords} from './domain/workspace.mjs';
 import {digest} from './data-codec.mjs';
 import {sortAllDiaryEntriesByTime} from './domain/diary-order.mjs';
 import {diarySelectionNutrition} from './domain/diary-selection-nutrition.mjs';
@@ -24,7 +24,6 @@ export function diaryToolsReview(state,input){
  exact(input,input?.operation==='expand'?['operation','date','id']:input?.operation==='nutrition'?['operation','selection','revision']:['operation','selection','destination']);let review;
  if(input.operation!=='copy'&&input.destination!==undefined)fail('Choose a copy destination.');
  switch(input.operation){
-  case 'expand':review=previewEntryExpansion(state,{date:input.date,id:input.id});break;
   case 'nutrition':review=diarySelectionNutrition(state,input.selection);break;
   default:review=prepareDiaryReview(state,input);break;
  }

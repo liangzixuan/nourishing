@@ -62,8 +62,11 @@ export function applyWriteToState(state,row,result){
  if(type==='repeat.delete')remove('repeats',p.id);
  if(type==='repeat.setEnabled'){const item=state.repeats?.find(row=>row.id===p.id);if(item)item.enabled=p.enabled;}
  if(type==='entry.expand'){
-  remove('entries',p.id);
-  for(const [index,item] of (row.projection.entries??[]).entries())replace('entries',{...item,id:result?.records?.entries?.[index]?.id??`${id}-${index}`,_pending:!result});
+  const position=state.entries.findIndex(entry=>entry.id===p.id);
+  if(position!==-1){
+   const children=result?.records?.entries??row.projection.entries.map((item,index)=>({...item,id:`${row.command.operationId}-${index}`,_pending:true}));
+   state.entries.splice(position,1,...children);
+  }
  }
  if(type==='repeat.save')replace('repeats',{...p,id:p.id??id});
  if(type==='photo.log'||type==='meal.log'){

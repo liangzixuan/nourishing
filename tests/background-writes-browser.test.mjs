@@ -475,3 +475,36 @@ test('offline library create, dependent edits and diary additions reconcile once
   assert.equal(fixture.state().entries[0].mealId,fixture.state().meals[0].id);
  },{losePath:'/api/library/command',loseType:'food.save'});
 });
+
+test('offline meal expansion follows a pending meal and parent across restart and a lost expansion reply',async()=>{
+ const state=initialState();
+ state.foods=[{id:'rice',name:'Rice',grams:100,nutrients:{calories:100}}];
+ await realQueueFixture(state,async({page,fixture,initialize,flush,sent,date})=>{
+  const pending=await page.evaluate(async date=>{
+   const {saveLocalLibrary}=await import('/library-local.js');
+   const {queueCommand}=await import('/diary-api.js');
+   const {prepareLocalDiaryReview}=await import('/diary-preparation.js');
+   const meal=await saveLocalLibrary('meal',{name:'Offline meal',items:[{foodId:'rice',amount:2}]});
+   const parent=await queueCommand(undefined,'entry.add',{mealId:meal.item.id,date,amount:3,group:'Lunch'});
+   const review=await prepareLocalDiaryReview({operation:'expand',id:parent.requestId,date},'a'.repeat(64));
+   const child=await queueCommand(undefined,'entry.expand',{date,id:review.id,fingerprint:review.fingerprint,confirmed:true},{projection:{entries:review.items,diaryReview:review.localReview}});
+   return {parent:parent.requestId,child:child.requestId+'-0'};
+  },date);
+  await page.reload();await initialize();
+  const entries=await page.evaluate(async()=>(await (await import('/local-engine.js')).localWorkspaceState()).entries);
+  assert.equal(entries.length,1);assert.equal(entries[0].id,pending.child);
+  assert.equal(entries[0].expandedFrom.id,pending.parent);assert.equal(entries[0].amount,6);
+  assert.equal(fixture.state().entries.length,0);
+  await flush();
+  const saved=structuredClone(fixture.state().entries);
+  assert.equal(saved.length,1);assert.equal(saved[0].amount,6);
+  assert.equal(saved[0].expandedFrom.parent.mealId,fixture.state().meals[0].id);
+  assert.notEqual(saved[0].expandedFrom.id,pending.parent);
+  await page.reload();await initialize();await flush();
+  const attempts=sent.filter(row=>row.body.type==='entry.expand');
+  assert.equal(attempts.length,2);assert.deepEqual(attempts[0].body,attempts[1].body);
+  assert.deepEqual(fixture.state().entries,saved);
+  const copy=await page.evaluate(async()=>(await import('/offline-store.js')).readWriteCopy());
+  assert.deepEqual(copy.pending,[]);assert.equal(copy.recordIds[pending.child],saved[0].id);
+ },{losePath:'/api/workspace/command',loseType:'entry.expand'});
+});

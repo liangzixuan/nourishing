@@ -18,7 +18,7 @@ import {clearAmountWarningCodes} from './diary-clear-contract.mjs';
 const hash=value=>bytesToHex(sha256(utf8ToBytes(contentDigestInput(value))));
 export function referencedRecordFacts(s,records){
   const graph=collectResourceDependencies(s,records);if(graph.missing.length)fail('A referenced food, recipe or meal is missing.');
-  return ['foods','recipes','meals'].flatMap(collection=>graph[collection].map(record=>({collection,id:record.id,record:withoutFoodNotes(withoutLibraryStatus(record))})));
+  return ['foods','recipes','meals'].flatMap(collection=>graph[collection].map(({_pending,...record})=>({collection,id:record.id,record:withoutFoodNotes(withoutLibraryStatus(record))})));
 }
 
 export const copyCollections=['entries','biometrics','notes'];

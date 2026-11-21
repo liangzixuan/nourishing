@@ -20,8 +20,8 @@ export async function prepareLocalDiaryReview(input,revision,{captured}={}){
   delete mapped.selection.revision;
  }
  const result=prepareDiaryReview(state,mapped);
- const reviewed={...mapped,selection:{...result.selection}};
- delete reviewed.selection.revision;
+ const reviewed={...mapped};
+ if(result.selection){reviewed.selection={...result.selection};delete reviewed.selection.revision;}
  const localReview={input:reviewed,guard:diaryReviewGuard(state,reviewed)};
  return {...result,revision,localReview};
 }
@@ -29,7 +29,7 @@ export async function prepareLocalDiaryReview(input,revision,{captured}={}){
 // must retain the exact prepared payload for receipt lookup and deduplication.
 export function prepareQueuedDiaryReview(state,row){
  const review=row.projection?.diaryReview;if(!review||review.prepared)return;
- const input=structuredClone(review.input);delete input.selection.revision;
+ const input=structuredClone(review.input);if(input.selection)delete input.selection.revision;
  assertDiaryReviewGuard(review.guard,diaryReviewGuard(state,input));
  const result=prepareDiaryReview(state,input);
  for(const key of ['selection','fingerprint'])if(result[key]!==undefined){row.command.payload[key]=structuredClone(result[key]);row.transport.body.payload[key]=structuredClone(result[key]);}
