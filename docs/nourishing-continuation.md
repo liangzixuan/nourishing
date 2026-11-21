@@ -11,7 +11,7 @@ The user asked to finish the current release and continue the remaining goal in 
 - Repository: `C:/Users/zixua/Documents/REA/nourishing-cloud`
 - GitHub: `https://github.com/liangzixuan/nourishing`, branch `master`.
 - Production: `https://nourishing.app`, Appwrite site and database, public account registration.
-- Current release verification: pending for 1.0.23; replace this line after deployment.
+- Verified production release: **1.0.23**, commit `a8fe061674a84ca669274f786453304ebb6a89fb`. CI run `44863597322` succeeded: 654 passes, zero failures, three expected Linux skips. The site and all three functions reached ready. All ten checked live assets match the tested release, including the generated Diary bundle/local projection, and required offline assets are present. Subsequent documentation-only commits record this evidence and do not redeploy.
 - This is a PWA for Android and iOS. Health Connect and deliberately removed native integrations are excluded. Do not restart native APK work or use Azure.
 - Product wording must say Nourishing, not Cronometer. Reference filenames and historical evidence can retain Cronometer.
 - Preserve unrelated untracked `android/` and `docs/superpowers/`. Never stage them automatically.
@@ -82,6 +82,13 @@ Use the audit's finding IDs and coverage ledger. Do not mark these complete from
 - CI workflow `.github/workflows/` tests/builds then deploys the Appwrite site and three functions. Verify the exact pushed SHA, final CI conclusion and ready deployments.
 - Compare live version and asset hashes with the tested release, including generated Diary bundle and required offline manifest entries. Keep evidence in `.local/` and update the audit with what actually ran.
 - Release 1.0.22: commit `6f6b1a89274ba7e8ee6cd910f440d2ac3fb93ba1`, CI run `44862310091`, success; 653 CI passes, three Linux skips; ten live asset hashes match. `.local/release-1.0.22-live-proof.json`.
-- Release 1.0.23 evidence: `.local/release-1.0.23-tests.log`, `.local/release-1.0.23-build.log`, `.local/release-1.0.23-ci-final.log`, `.local/release-1.0.23-live-proof.json` once finalized.
+- Release 1.0.23 evidence: `.local/release-1.0.23-tests.log`, `.local/release-1.0.23-build.log`, `.local/release-1.0.23-ci-final.log`, `.local/release-1.0.23-live-proof.json` (verified).
 
 Do not repeatedly run a passing full suite without a new change or unresolved failure. Keep progress updates brief and evidence-based. Continue through a coherent verified release without asking the user to say next step.
+
+
+## Handoff boundary
+
+The 1.0.23 work is complete and pushed. No further UI change was started after the user requested this handoff. The repository retains only the unrelated untracked folders noted above. The wider parity goal is unfinished. Read the audit before choosing the next gap; do not rerun this completed release merely to reconstruct chat history.
+
+Local validation detail: the full run had 656 passes and one outdated test expecting a pending note to be disabled. That test was updated to expect an editable note and canonical queued edit types, then its offline/restart/account-isolation scenario passed. CI ran the final complete suite successfully. No new installed-phone testing was performed in this release.
