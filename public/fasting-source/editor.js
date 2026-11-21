@@ -10,7 +10,7 @@ import {Temporal} from './vendor/temporal.js';
 import {escape as e,row,symbol} from './ui.js';
 import {fastingMutation} from './mutation.js';
 
-export function openFastingEditor({mode='schedule',record,context,refresh,onChange,onClose,initialField}){
+export function openFastingEditor({mode='schedule',record,context,refresh,onSaved,onClose,initialField}){
  let data=context(),disposed=false,picker,recurrence,deletion,deleteMutation,mutation,form,initial,shiftedEnd,durationChanged=false;
  const title=record?dc('editFastingRecord'):mode==='past'?dc('pastFast'):t('discover.fasting.schedule');
  const dialog=document.createElement('dialog');dialog.className='dc-overlay dc-fast-editor fasting-editor';dialog.setAttribute('aria-label',title);
@@ -19,8 +19,12 @@ export function openFastingEditor({mode='schedule',record,context,refresh,onChan
  const schedule=mode==='schedule',language=uiLanguage();
  function close(){if(mutation?.busy||deleteMutation?.busy)return;dispose();onClose?.();}
  function dispose(){if(disposed)return;disposed=true;picker?.close();recurrence?.dispose();deleteMutation?.dispose();deletion?.close();mutation?.dispose();dialog.close();dialog.remove();}
- async function reload(){await refresh();if(disposed)return;data=context();if(record){record=(schedule?data.schedules:data.history.rows).find(row=>row.id===record.id);if(!record){close();return;}}render();}
- async function saved(){dispose();if(onClose?.(true))return;try{await refresh();await onChange();}catch{} }
+ async function reload(){
+  await refresh();if(disposed)return;
+  data=context();if(record){record=(schedule?data.schedules:data.history.rows).find(row=>row.id===record.id);if(!record){dispose();onClose?.();return;}}
+  deleteMutation?.dispose();deleteMutation=null;deletion?.close();deletion=null;render();
+ }
+ async function saved(){dispose();await onSaved();}
  function historyForm(){
   const completed=record?.end!=null,hours=completed?record.durationSeconds/3600:record?.goalHours??16,start=record?.startLocal??data.pastStartLocal,end=record?.endLocal??(mode==='past'?data.localNow:'');
   const input=(name,type,value,extra='')=>`<input name="${name}" type="${type}" value="${e(value)}" ${extra}>`;
@@ -52,7 +56,7 @@ export function openFastingEditor({mode='schedule',record,context,refresh,onChan
  }
  function openTime(field){if(picker)return;picker=new MobileDateTimePicker({value:form.elements[field].value||data.localNow,title:field==='start'?t('discover.schedule.start'):t('discover.schedule.end'),timeZone:form.dataset.timeZone,language,onChoose:value=>{form.elements[field].value=value;sync(form.elements[field]);},onClose:()=>picker=null});}
  function closeDelete(){if(deleteMutation?.busy)return;deleteMutation?.dispose();deleteMutation=null;deletion?.close();deletion=null;}
- function confirmDelete(){deletion=new MobileFastingDeleteDialog({language,onCancel:closeDelete,onConfirm:()=>deleteMutation.run(schedule?'fasting.schedule.delete':'fast.delete',{id:record.id,...(schedule?{revision:record.revision}:{})})});deleteMutation=fastingMutation({revision:()=>data.revision,context:()=>data,host:deletion.element,onSaved:saved,onReload:async()=>{deleteMutation?.dispose();deleteMutation=null;deletion?.close();deletion=null;await reload();}});}
+ function confirmDelete(){deletion=new MobileFastingDeleteDialog({language,onCancel:closeDelete,onConfirm:()=>deleteMutation.run(schedule?'fasting.schedule.delete':'fast.delete',{id:record.id,...(schedule?{revision:record.revision}:{})})});deleteMutation=fastingMutation({revision:()=>data.revision,context:()=>data,host:deletion.element,onSaved:saved,onReload:reload});}
  function back(){if(recurrence?.back())return true;if(picker){picker.close();return true;}if(deletion){closeDelete();return true;}close();return true;}
  dialog.addEventListener('cancel',event=>{event.preventDefault();back();});dialog.addEventListener('click',event=>{if(event.target.closest('[data-close-fast]'))back();if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)back();}});
  render();if(initialField)openTime(initialField);return {back,dispose};
