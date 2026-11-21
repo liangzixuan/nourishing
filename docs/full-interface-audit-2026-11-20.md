@@ -229,7 +229,7 @@ Chrome reproduced an offline failure when expanding a saved meal. The corrected 
 The follow-up table records the Report, Targets, Dashboard, custom-food editor, Diary Groups, Repeat Items, Suggest Food, Oracle and Macro Scheduler comparisons. The local run passed 657 tests and exposed three translated assertions for the previous custom-food review header. Reference 255 shows both New Food and Nutrient Review. The corrected French, German and Portuguese tests passed and the production build succeeded. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/44868147427) passed at `f0ca5a3`, with 657 tests passed, zero failed and three Linux skips. The site and all three functions reached ready. All 14 checked live assets matched the tested build and appeared in the offline manifest. The local proof is `.local/release-1.0.25-live-proof.json`.
 
 
-### R14 — offline attachment selection in Notes (open)
+### R14 — offline attachment selection in Notes (baseline, resolved in 1.0.28)
 
 In 1.0.26, Chrome selected a valid PNG for a new note while disconnected. The request to prepare the image failed. The editor displayed no preview and enabled Save. Pressing Save closed the editor, queued `note.add` and stored the text without an image. Reopening the note confirmed the loss. The local reproducer is `.local/audit-note-before-preparation.test.mjs` and its output is `.local/1.0.26-note-offline-baseline.log`. This test reproduces the defect. The earlier note test goes offline **after** image preparation. The successful snapshot repair in R12 covers the separate progress-photo flow.
 
@@ -245,3 +245,9 @@ A build from a fresh copy of the same commit reproduced the omission. Astro gene
 A fresh build with no generated icons produced the same offline inventory as the working checkout. Chrome opened the cached Diary with networking disabled, read the web app manifest, and received four valid PNG files from its cache. Both startup fixtures now serve manifest and PNG resources with their correct types. The final local suite passed all 664 tests and the production build passed.
 
 [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/44870830798) passed at `6f7d57a`, with 661 tests passed, zero failed and three Linux skips. The site, reminders, scheduler and account cleanup reached ready. The live site served 1.0.27. All 30 checked assets matched the tested build. Text hashes used normalized line endings; the four PNG hashes used the original binary bytes. The full production manifest matched the build’s 876 paths and all 226 startup-cache paths. Local proof is retained in `.local/release-1.0.27-live-proof.json`. Installed-device testing and R14 remain open.
+
+### Offline note attachment selection (1.0.28, released)
+
+The real editor now previews the selected photo while disconnected. Cancel discards the draft. Save writes the note and its original image together to the signed-in account’s device queue. On reconnect, the server validates the submitted image before producing the private JPEG. Browser checks covered an offline restart, account switch, two queued edits, an unchanged retry after a lost response and one acknowledged attachment. The canonical validation check rejected mismatched image content without changing stored state.
+
+All 664 local tests and the build passed. CI passed 661 tests with three Linux skips. The site and three functions reached ready at `13f9125`. All 31 checked live assets matched the build, including the note editor. Both the full inventory (876 paths) and startup list (226 paths) matched. The private proof is `.local/release-1.0.28-live-proof.json`. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/44872251933)
