@@ -176,6 +176,7 @@ sheet.addEventListener('click', event => {
 });
 
 sheet.addEventListener('cancel', event => {
+  if (event.target !== sheet) return;
   event.preventDefault();
   if (!pickerCleanup?.back?.()) close();
 });

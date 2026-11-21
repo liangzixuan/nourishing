@@ -59,7 +59,10 @@ export function mountSnapshots({root,date,onChange=async()=>{},onReady}){
  function back(){if(calendar)return calendar.back();camera?.dispose();camera=null;if(!dialog)return false;dialog.close();dialog.remove();dialog=null;if(focus?.isConnected)focus.focus({preventScroll:true});return true;}
  function popup(label,markup,kind=''){
   back();focus=document.activeElement;const owner=document.createElement('dialog');owner.className='ms-dialog '+kind;owner.setAttribute('aria-label',label);owner.innerHTML=markup;dialog=owner;
-  owner.addEventListener('cancel',event=>{event.preventDefault();back();});
+  owner.addEventListener('cancel',event=>{
+   if(event.target!==owner)return;
+   event.preventDefault();back();
+  });
   owner.addEventListener('click',event=>{if(event.target===owner){const r=owner.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)back();}if(event.target.closest('[data-snapshot-back]'))back();
    const navigation=event.target.closest('[data-discover]');if(navigation){const destination=document.querySelector('.app-nav [data-discover="'+navigation.dataset.discover+'"]');back();destination?.click();}
   });document.body.append(owner);owner.showModal();return owner;

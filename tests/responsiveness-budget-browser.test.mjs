@@ -339,6 +339,10 @@ test('core Diary, Photo Log, and More interactions respond instantly under 1500m
     f.setApiDelay(0); // Photo analyze is intentionally server-bound (Gemini); test Add to Diary under 1500ms delay.
     await page.locator('#add-food').click();
     await page.getByRole('button', {name: /photo/i}).first().click();
+    for (const input of ['[data-photo-camera]', '[data-photo-gallery]']) {
+      await page.locator(input).dispatchEvent('cancel', {bubbles: true, cancelable: false});
+      assert.ok(await page.locator('[data-camera]').isVisible(), 'cancelling the file picker keeps Photo Log open');
+    }
     await page.locator('[data-photo-gallery]').setInputFiles({
       name: 'meal.png',
       mimeType: 'image/png',
