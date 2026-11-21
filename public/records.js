@@ -45,7 +45,7 @@ function resolveDefaultGroup(options, record, value, initialGroup) {
   return options.groups[0];
 }
 
-function buildExerciseSubmitAction({activity, record, form, unit, correction}) {
+function buildExerciseSubmitAction({activity, generalWalking, record, form, unit, correction}) {
   const f = form.elements;
   const common = {
     date: f.date.value,
@@ -61,7 +61,7 @@ function buildExerciseSubmitAction({activity, record, form, unit, correction}) {
     if(record)return {type:'record.correct',payload:correction(calculation)};
     return {
       type: 'exercise.catalog.add',
-      payload: {...calculation,weightKg:Number(f.weightKg.value)},
+      payload: {...calculation,weightKg:Number(f.weightKg.value),generalWalking},
     };
   }
   const changes = {...common, name: f.name.value, calories: convertEnergy(Number(f.calories.value), unit, 'kcal')};
@@ -371,15 +371,14 @@ class RecordEditorController {
   async savedExerciseEditor(){
     const saved=savedExerciseSettings(this.record);
     if(!saved)return this.exerciseEditor();
-    const walking=Object.hasOwn(walkingEfforts,saved.activity.code);
     let choices=[saved.activity];
-    if(walking){
+    if(saved.efforts){
       try{
         const catalog=await request('/api/records/exercise-catalog',null,this.abort.signal);
-        choices=Object.keys(walkingEfforts).map(code=>code===saved.activity.code?saved.activity:catalog.items.find(row=>row.code===code)).filter(Boolean);
+        choices=Object.keys(saved.efforts).map(code=>code===saved.activity.code?saved.activity:catalog.items.find(row=>row.code===code)).filter(Boolean);
       }catch{/* The retained activity still supports duration and calorie edits offline. */}
     }
-    if(this.alive())this.exerciseEditor({activity:saved.activity,choices,titleKey:walking?'generalWalking':null,saved});
+    if(this.alive())this.exerciseEditor({activity:saved.activity,choices,titleKey:saved.efforts?'generalWalking':null,saved});
   }
 
   exerciseEditor({activity, choices, titleKey, from, draft, saved} = {}) {
@@ -405,7 +404,7 @@ class RecordEditorController {
       message,
       edit: Boolean(this.record),
     });
-    const title = this.record
+    const title = titleKey==='generalWalking' ? message('exerciseBrowser.generalWalking') : this.record
       ? dc('editExercise')
       : activity
         ? message('exerciseBrowser.' + (titleKey ?? 'root'))
@@ -420,6 +419,7 @@ class RecordEditorController {
           activity,
           choices,
           titleKey,
+          efforts: saved?.efforts??walkingEfforts,
           api: async () => saved?.weight??this.options.exerciseWeight,
           manual: saved?!saved.useEstimate:false,
           onCustom: next => this.exerciseEditor({from, draft: next}),
@@ -435,6 +435,7 @@ class RecordEditorController {
         if (this.busy || this.envelope) return;
         const next = buildExerciseSubmitAction({
           activity,
+          generalWalking: titleKey==='generalWalking',
           record: this.record,
           form,
           unit,

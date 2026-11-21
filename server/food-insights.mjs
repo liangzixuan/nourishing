@@ -83,7 +83,7 @@ export function createInsightCatalog(foods,{metadata={},sourceFactDigests={},nut
 export function foodInsightOptions(state){return {revision:digest(state),groups:state.settings.groups,energyUnit:state.settings.energyUnit??'kcal',nutrients:nutrients.map(({id,name,unit,category})=>({id,name,unit,category})),suggestions:{...mealSuggestionOptions(state),templates:MEAL_LIBRARY.map(({ref,name})=>({ref,name}))}};}
 export function foodOracle(state,foodCatalog,input){
  exact(input,['nutrient','basis','query','offset','limit','categoryMode','categoryIds','includeUncategorized']);
- return rankNutrient({...input,foods:state.foods,foodCatalog});
+ return rankNutrient({...input,foods:state.foods,foodCatalog,favorites:state.settings.favorites,entries:state.entries});
 }
 export function foodSuggestions(state,foodCatalog,input){return suggestMeals({state,foodCatalog,input});}
 export function previewFoodSuggestion(state,foodCatalog,input){return previewSuggestedMeal({state,foodCatalog,input});}

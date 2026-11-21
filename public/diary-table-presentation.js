@@ -10,7 +10,7 @@ const message=(language,key,values)=>formatMessage(language,'diaryDisplay.'+key,
 const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 const number=value=>typeof value==='number'&&Number.isFinite(value);
 const nullable=value=>value===null||number(value);
-const amount=(value,language='en')=>new Intl.NumberFormat(language,Math.abs(value)>0&&Math.abs(value)<0.005?{notation:'scientific',maximumSignificantDigits:3}:{maximumFractionDigits:2}).format(value);
+const amount=(value,language='en',maximumFractionDigits=2)=>new Intl.NumberFormat(language,Math.abs(value)>0&&Math.abs(value)<0.5*10**-maximumFractionDigits?{notation:'scientific',maximumSignificantDigits:3}:{maximumFractionDigits}).format(value);
 export function diaryRecordedAmount(row){return row.active&&row.value===null&&row.coverage.total===0&&row.coverage.complete?0:row.value;}
 function diaryAmountName(row,energyUnit,language,name){return row.id==='calories'&&energyUnit==='kcal'?coreText('calories',{},language):name;}
 
@@ -28,12 +28,12 @@ export function renderDiaryTableAmount(row,{label=false,energyUnit='kcal',langua
   return `<span class="diary-table-amount" data-diary-column="${esc(row.id)}" data-value="${recorded??''}" data-status="${row.status}" data-unit="${esc(row.unit)}">${label?`<span>${esc(diaryAmountName(row,energyUnit,language,nutrientDisplayName(row,language)))}: </span>`:''}<span>${esc(value)}</span>${detail?`<small>${esc(detail)}</small>`:''}</span>`;
 }
 /** Table cells consume canonical facts. The table policy never changes recorded intake. */
-export function diaryEntryAmount(entry,table,{energyUnit='kcal',language='en'}={}){
+export function diaryEntryAmount(entry,table,{energyUnit='kcal',language='en',exerciseFractionDigits=2}={}){
  const id=table?.policy.summaryNutrient??'calories';
  if(id==='none')return '';
  if(isExerciseEntry(entry)){
   if(id!=='calories')return `<span class="diary-table-na">${esc(coreText('notApplicable',{},language))}</span>`;
-  const {calories}=exerciseEntryFacts(entry),value=calories===null?'—':amount(displayValue(-calories,'kcal',energyUnit),language)+' '+energyUnit;
+  const {calories}=exerciseEntryFacts(entry),value=calories===null?'—':amount(displayValue(-calories,'kcal',energyUnit),language,exerciseFractionDigits)+' '+energyUnit;
   return `<span data-diary-column="calories">${esc(value)}<small class="diary-exercise-summary">${esc(coreText('burned',{},language))}</small></span>`;
  }
  const facts=entry.facts;

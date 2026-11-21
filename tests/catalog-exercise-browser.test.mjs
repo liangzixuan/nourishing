@@ -29,9 +29,10 @@ test('Diary estimates with each account’s cold options cache and reopens a pen
   const seed=initialState();
   seed.settings.groups.unshift('Uncategorized');
   seed.profile.weight=66;
+  if(owner==='profile')seed.settings.energyUnit='kJ';
   if(owner==='measurement'){
    seed.settings.bodyComposition={version:2,weightMetric:{kind:'biometric',type:'Weight',unit:'kg'},bodyFatMetric:null,heightMetric:null,useForResting:false,useHeightForResting:false,useForKeto:false};
-   seed.biometrics.push({id:'measured-weight',date:day,type:'Weight',unit:'kg',value:82});
+   seed.biometrics.push({id:'measured-weight',date:day,type:'Weight',unit:'kg',value:165*0.45359237});
   }
   const fixture=diaryStoreFixture(seed,owner);
   accounts.set(owner,{fixture,store:createWorkspaceStore(fixture.db,owner),repository:createDataRepository(fixture.db,owner)});
@@ -99,15 +100,19 @@ test('Diary estimates with each account’s cold options cache and reopens a pen
   await page.getByRole('alert').filter({hasText:'account changed'}).waitFor();
   assert.equal(attempts.length,0);
   await page.reload();await snapshotReady();await walk();
-  assert.equal(await page.locator('[name=weightKg]').inputValue(),'82');
-  assert.match(await page.locator('[data-mec-weight]').innerText(),/82/);
+  assert.equal(Number(await page.locator('[name=weightKg]').inputValue()),165*0.45359237);
+  assert.match(await page.locator('[data-mec-weight]').innerText(),/74.84/);
+  assert.equal(await page.locator('[name=calories]').inputValue(),'26.19');
   assert.equal(optionsReads,0);
 
   await context.setOffline(true);await save();await row.waitFor();
+  assert.equal(await row.locator('.food-name').innerText(),'General Walking');
+  assert.match(await row.innerText(),/10\.0 min - Light/);
+  assert.match(await row.innerText(),/-26\.2\s*kcal/);
   await edit();await page.getByRole('button',{name:/Effort Level.*Light/}).click();
   await page.getByRole('menuitemradio',{name:'Moderate',exact:true}).click();
   await page.locator('[name=duration]').fill('15');
-  const estimated=Number(((3.8-1)*(3.5*82/200*15)).toFixed(2));
+  const estimated=74.66;
   assert.equal(Number(await page.locator('[name=calories]').inputValue()),estimated);
   await save();
   const pending=await page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy()).pending);
@@ -117,9 +122,13 @@ test('Diary estimates with each account’s cold options cache and reopens a pen
 
   // Load the full document again while the write transport is still unavailable.
   await page.route('**/api/workspace/command',route=>route.abort());
-  await context.setOffline(false);await page.reload();await row.waitFor();await edit();
+  await context.setOffline(false);await page.reload();await row.waitFor();
+  assert.match(await row.innerText(),/15\.0 min - Moderate/);
+  assert.match(await row.innerText(),/-74\.7\s*kcal/);
+  await edit();
   assert.equal(await page.locator('[name=duration]').inputValue(),'15');
   assert.equal(await page.locator('[data-mec-label]').innerText(),'Moderate');
+  assert.equal(await page.locator('[name=calories]').inputValue(),'74.66');
   await page.unroute('**/api/workspace/command');
   await waitForOutboxIdle(page,()=>active().fixture.state().entries[0]?.duration===15);
   const [entry]=active().fixture.state().entries;
@@ -129,7 +138,8 @@ test('Diary estimates with each account’s cold options cache and reopens a pen
   assert.equal(attempts[2].payload.id,entry.id);
   assert.equal(entry.exerciseBasis.minutes,10);
   assert.equal(entry.exerciseBasis.code,'17170');
-  assert.equal(entry.exerciseSelection.code,'17190');
+  assert.equal(entry.exerciseSelection.code,'17200');
+  assert.equal(entry.exerciseSelection.generalWalking,true);
   assert.equal(entry.exerciseSelection.useEstimate,true);
   assert.equal(Number(entry.caloriesBurned.toFixed(2)),estimated);
   assert.equal(entry.exerciseBasis.weightSource,'biometric');
@@ -142,9 +152,15 @@ test('Diary estimates with each account’s cold options cache and reopens a pen
   assert.equal(await page.locator('[name=useEstimate]').inputValue(),'false');
   await page.locator('[data-mec-reset]').click();
   assert.equal(await page.locator('[name=useEstimate]').inputValue(),'true');
-  assert.equal(Number(await page.locator('[name=calories]').inputValue()),Number(((3.8-1)*(3.5*82/200*25)).toFixed(2)));
+  assert.equal(await page.locator('[name=calories]').inputValue(),'124.43');
   assert.deepEqual(active().fixture.state().entries[0].exerciseBasis,entry.exerciseBasis);
   assert.equal(active().fixture.state().entries[0].exerciseSelection.useEstimate,false);
   assert.equal(accounts.get('profile').fixture.state().entries.length,0);
+  owner='profile';await page.reload();await snapshotReady();await walk();await save();
+  await waitForOutboxIdle(page,()=>active().fixture.state().entries.length===1);
+  await page.reload();await row.waitFor();
+  assert.match(await row.innerText(),/10\.0 min - Light/);
+  assert.match(await row.innerText(),/-96\.7\s*kJ/);
+  await edit();assert.equal(await page.locator('[name=calories]').inputValue(),'96.65');
  }finally{await browser?.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
 });

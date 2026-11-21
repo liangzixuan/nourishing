@@ -24,6 +24,40 @@ test('Oracle query, category filter and paging retain ranking and source attribu
  assert.equal(foodOracle(state,adapter,{nutrient:'protein',query:'frij'}).items[0].name,'Bean');assert.equal(foodOracle(state,adapter,{nutrient:'protein',categoryMode:'include',categoryIds:['grain']}).items[0].name,'Rice');
  const first=foodOracle(state,adapter,{nutrient:'protein',limit:1});assert.equal(first.nextOffset,1);assert.equal(foodOracle(state,adapter,{nutrient:'protein',offset:1,limit:1}).items[0].name,'Rice');assert.equal(first.items[0].source.name,'Test catalog');
 });
+test('Oracle balances mass and energy density across the full result set before paging',()=>{
+ const state=initialState();state.foods=[];state.entries=[];
+ const rows=Array.from({length:105},(_,i)=>food('f'+i,'Potassium food '+i,{potassium:1,calories:100}));
+ const late=food('late','Potassium food Z',{potassium:200,calories:25},{grams:50});
+ rows.push(late,food('dense','Potassium food by mass',{potassium:500,calories:1000}),
+   food('light','Potassium food by calorie',{potassium:50,calories:1}),
+   food('zero','Potassium food measured zero',{potassium:0,calories:1}),
+   food('no-energy','Potassium food zero energy',{potassium:9000,calories:0}),
+   food('missing','Potassium food unreported energy',{potassium:9000}),
+   food('volume','Potassium food by volume',{potassium:9000,calories:100},{grams:null,milliliters:100}),
+   food('unknown','Potassium food unreported potassium',{calories:100}));
+ const catalog=createInsightCatalog(rows),input={basis:'oracle',nutrient:'potassium',query:'Potassium food'};
+ const ranked=foodOracle(state,catalog,{...input,limit:3});
+ // Products of the two independent densities: 400*8, 50*50 and 500*0.5.
+ assert.deepEqual(ranked.items.map(item=>item.ref.id),['late','light','dense']);
+ assert.equal(ranked.coverage.examined,113);assert.equal(ranked.total,109);assert.equal(ranked.nextOffset,3);
+ assert.deepEqual(ranked.items[0].sourceQuantity,{quantity:100,unit:'g'});assert.equal(ranked.items[0].value,400);
+ assert.equal(foodOracle(state,catalog,{...input,offset:108,limit:1}).items[0].ref.id,'zero');
+ assert.equal(foodOracle(state,catalog,{...input,categoryMode:'include',categoryIds:[]}).total,0);
+});
+test('Oracle density ties use only the current account’s favorites and diary entries, including matching snapshots',()=>{
+ const original=mealCatalog()[0],saved={...structuredClone(original),id:'saved',readOnly:true};
+ const peer=food('peer','A private peer',{protein:10,calories:100});
+ const another=food('another','B private peer',{protein:10,calories:100});
+ const adapter=createInsightCatalog([original],{sourceFactDigests:{[original.id]:contentDigest(foodSourceFacts(saved))}});
+ const account=initialState();account.foods=[saved,peer,another];account.entries=[{foodId:'saved'},{foodId:'saved'},{foodId:'another'}];
+ account.settings.favorites=[{kind:'food',id:'peer'},{kind:'recipe',id:'another'}];
+ const before=structuredClone(account),order=state=>foodOracle(state,adapter,{nutrient:'protein',basis:'oracle'}).items.map(row=>row.ref.id);
+ assert.deepEqual(order(account),['peer',original.id,'another']);assert.deepEqual(account,before);
+ const other={...account,entries:[],settings:{...account.settings,favorites:[]}};
+ assert.deepEqual(order(other),['peer','another',original.id]);
+ account.foods[0].nutrients.protein=5;
+ assert.deepEqual(order(account),['peer','another',original.id,'saved']);
+});
 test('Oracle uses the source carbohydrate resolver and leaves missing fiber unknown',()=>{
  const state=initialState();state.foods=[];const adapter=createInsightCatalog([food('a','Available plus fiber',{availableCarbs:12,fiber:3}),food('b','Fiber unknown',{availableCarbs:20})]);
  const ranked=foodOracle(state,adapter,{nutrient:'carbs'});assert.equal(ranked.total,1);assert.equal(ranked.items[0].value,15);assert.equal(adapter.get('a').nutrients.carbs,undefined);
@@ -74,7 +108,7 @@ test('packed nutrient adapter retains arrays and matches normal ranking, filteri
  const nutrientIds=[...new Set(foods.flatMap(food=>Object.keys(food.nutrients)))];
  const compact=foods.map(food=>({...food,nutrients:Object.entries(food.nutrients).flatMap(([id,value])=>[nutrientIds.indexOf(id),value])})),before=structuredClone(compact);
  const normal=createInsightCatalog(foods),packed=createInsightCatalog(compact,{nutrientIds}),state=initialState();
- for(const nutrient of ['protein','carbs','fiber'])for(const basis of ['100g','100kcal','portion'])assert.deepEqual(foodOracle(state,packed,{nutrient,basis}),foodOracle(state,normal,{nutrient,basis}));
+ for(const nutrient of ['protein','carbs','fiber'])for(const basis of ['oracle','100g','100kcal','portion'])assert.deepEqual(foodOracle(state,packed,{nutrient,basis}),foodOracle(state,normal,{nutrient,basis}));
  assert.deepEqual(foodOracle(state,packed,{nutrient:'carbs',query:'available'}),foodOracle(state,normal,{nutrient:'carbs',query:'available'}));
  assert.deepEqual(foodSuggestions(state,packed,{date:day}),foodSuggestions(state,normal,{date:day}));
  const rows=MEAL_LIBRARY[0].ingredients.map(({ref,quantity,unit})=>({ref,quantity,unit}));assert.deepEqual(previewFoodSuggestion(state,packed,{date:day,rows}),previewFoodSuggestion(state,normal,{date:day,rows}));

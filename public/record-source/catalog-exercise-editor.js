@@ -3,12 +3,11 @@ import {AnchoredMenu} from './anchored-menu.js';
 import {escape as e,symbol} from './discover-ui.js';
 import {estimateExercise} from './exercise-estimate.mjs';
 import {convertEnergy} from '../dashboard-source/energy-units.mjs';
-import {walkingEfforts} from '../local-diary-projection.js';
 
 /** The server owns saving and rechecks the weight; this view owns the unsaved estimate. */
 export class CatalogExerciseEditor{
- constructor({dialog,message,api,activity,choices,titleKey,onCustom,manual=false}){
-  Object.assign(this,{dialog,message,api,activity,choices,titleKey,onCustom,manual});this.disposed=false;this.weight=null;this.abort=new AbortController();
+ constructor({dialog,message,api,activity,choices,titleKey,efforts,onCustom,manual=false}){
+  Object.assign(this,{dialog,message,api,activity,choices,titleKey,efforts,onCustom,manual});this.disposed=false;this.weight=null;this.abort=new AbortController();
   const form=this.form=dialog.querySelector('.me-form'),m=key=>message('exerciseBrowser.'+key);this.m=m;
   form.dataset.form='exercise-catalog';form.elements.name.closest('label').replaceWith(Object.assign(document.createElement('input'),{type:'hidden',name:'name',value:activity.description}));
   form.insertAdjacentHTML('afterbegin','<input type="hidden" name="code"><input type="hidden" name="weightKg"><input type="hidden" name="useEstimate" value="true">');
@@ -20,7 +19,7 @@ export class CatalogExerciseEditor{
   form.addEventListener('click',event=>{if(event.target.closest('[data-mec-effort]'))this.openEffort();if(event.target.closest('[data-mec-reset]')){this.manual=false;this.refresh()}if(event.target.closest('[data-mec-custom]'))onCustom({name:this.activity.description,duration:Number(form.elements.duration.value),date:form.elements.date.value,time:form.elements.time.value,group:form.elements.group.value,...(this.manual&&form.elements.calories.value!==''?{caloriesBurned:convertEnergy(Number(form.elements.calories.value),form.dataset.energyUnit,'kcal')}:{})})},{signal:this.abort.signal});
   this.refresh();this.loadWeight();
  }
- label(row){return this.titleKey==='generalWalking'?this.m(walkingEfforts[row.code]):row.description}
+ label(row){return this.titleKey==='generalWalking'?this.m(this.efforts[row.code]):row.description}
  async loadWeight(){try{const weight=await this.api('/api/exercise-weight?date='+encodeURIComponent(this.form.elements.date.value),{signal:this.abort.signal});if(this.disposed)return;this.weight=weight;this.loaded=true}catch{if(this.disposed)return;this.failed=true;this.loaded=true}this.refresh()}
  refresh(){
   const f=this.form,a=this.activity,m=this.m;f.elements.code.value=a.code;f.elements.name.value=a.description;f.elements.useEstimate.value=String(!this.manual);

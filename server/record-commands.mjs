@@ -8,7 +8,7 @@ import {parseCustomBiometrics} from './domain/biometric-library.mjs';
 export const recordCommandFields=Object.freeze({
  'water.add':['date','time','group','amount'],
  'exercise.add':['date','time','group','name','duration','calories'],
- 'exercise.catalog.add':['date','time','group','code','duration','weightKg','useEstimate','calories'],
+ 'exercise.catalog.add':['date','time','group','code','duration','weightKg','useEstimate','calories','generalWalking'],
  'biometric.log':['selection','unit','values','date','time','group'],
  'biometric.delete':['id'],
  'record.correct':['collection','id','changes']

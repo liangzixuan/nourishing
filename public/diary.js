@@ -3,6 +3,7 @@ import './client-errors.js';
 import './pwa.js';
 import {startBackgroundWrites,onBackgroundWriteStatus} from './background-writes.js';
 import {localLibraryItem, localDiaryView} from './local-engine.js';
+import {walkingEfforts} from './local-diary-projection.js';
 import {pushBackHandler} from './back-history.js';
 import {startDeviceSync, warmDeviceViews, warmAdjacentDays} from './device-sync.js';
 import {startPrivateImages} from './private-images.js';
@@ -269,9 +270,12 @@ function leaveView() {
   headerRoot.replaceChildren();
 }
 
-function formatEntryMeta(row, time) {
+function formatEntryMeta(row, time, walkingEffort) {
   let detail;
-  if (row.kind === 'exercise') {
+  if (walkingEffort) {
+    const duration=row.duration.toLocaleString(uiLanguage(),{minimumFractionDigits:1,maximumFractionDigits:2});
+    detail=`${duration} min - ${t('exerciseBrowser.'+walkingEffort)}`;
+  } else if (row.kind === 'exercise') {
     detail = `${num(row.duration)} min`;
   } else if (row.quantity !== undefined) {
     const unitLabel = row.unit === 'portion' ? row.facts?.portionLabel ?? coreText('diary.portions') : row.unit;
@@ -287,13 +291,16 @@ function renderDiaryRow(collection, row) {
   const time = diary.presentation?.settings?.showTimestamp === false ? '' : row.time;
   if (collection === 'entries') {
     const iconName = row.kind === 'exercise' ? 'fitness_center' : row.recipeId || row.mealId ? 'restaurant' : 'nutrition';
+    // Older catalog records do not identify whether the user chose a preset or a specific pace.
+    const selection=row.exerciseSelection;
+    const walkingEffort=row.kind==='exercise'&&selection?.generalWalking&&row.name===selection.description&&walkingEfforts[selection.code];
     return mobileDiaryRecord({
       ...swipeOptions,
       id: row.id,
       collection,
-      name: row.facts?.name ?? row.name,
-      meta: formatEntryMeta(row, time),
-      amount: diaryEntryAmount(row, diary.summary.diaryTable, {energyUnit: diary.energyUnit, language: uiLanguage()}),
+      name: walkingEffort?t('exerciseBrowser.generalWalking'):row.facts?.name ?? row.name,
+      meta: formatEntryMeta(row, time, walkingEffort),
+      amount: diaryEntryAmount(row, diary.summary.diaryTable, {energyUnit: diary.energyUnit, language: uiLanguage(),exerciseFractionDigits:walkingEffort?1:2}),
       icon: diarySymbol(iconName),
       selectBox: diaryTools.selectBox(collection, row),
       action: 'edit-entry',

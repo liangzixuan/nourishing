@@ -48,6 +48,6 @@ export function openOracle({date,show,close,content,onAdded}){
   if(destination){exit();destination.click();}
  },{signal});
  heading.querySelector('[data-oracle-close]').onclick=exit;
- async function start(){try{await context();if(!alive())return;panel=new MobileOracle({root,header:heading,request:sourceRequest,nutrients:options.nutrients,targets:diary.summary.targets,options:{nutrient:'protein',basis:'100g',query:''},language:uiLanguage(),icon:symbol,onOptions:()=>{},onSelect:selectFood,onBack:exit});}catch(error){if(!alive())return;root.innerHTML=`<p role="alert">${e(error.message)}</p><button type="button" data-oracle-retry>${e(t("mobileSuggest.retry"))}</button>`;root.querySelector('[data-oracle-retry]').onclick=start;}}
+ async function start(){try{await context();if(!alive())return;panel=new MobileOracle({root,header:heading,request:sourceRequest,nutrients:options.nutrients,targets:diary.summary.targets,options:{nutrient:'potassium',basis:'oracle',query:''},language:uiLanguage(),icon:symbol,onOptions:()=>{},onSelect:selectFood,onBack:exit});}catch(error){if(!alive())return;root.innerHTML=`<p role="alert">${e(error.message)}</p><button type="button" data-oracle-retry>${e(t("mobileSuggest.retry"))}</button>`;root.querySelector('[data-oracle-retry]').onclick=start;}}
  void start();return dispose;
 }

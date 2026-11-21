@@ -1,4 +1,4 @@
-import {compactFoodSource,sourceAttributions,mergeSourceAttributions} from './catalog-source.mjs';
+import {catalogIdentity,compactFoodSource,sourceAttributions,mergeSourceAttributions} from './catalog-source.mjs';
 import {isActiveLibraryItem} from './library-status.mjs';
 import {customFoodCategory} from './food-taxonomy.mjs';
 import {diaryDayComplete} from './diary-day-status.mjs';
@@ -40,7 +40,7 @@ function recordsFor(foodCatalog, foods, selected, {query = '', portionMode = 'no
   const identical = foodCatalog?.identicalSnapshotIds(nonSampleFoods) ?? new Set();
   const records = (foodCatalog?.projectInsights(selected, {query, portions: portionMode}) ?? []).map(food => ({...food, kind: 'catalog'}));
   for (const food of nonSampleFoods) if (!identical.has(food.id) && matchesCatalogQuery([food.name,...(food.translations??[]).map(row=>row.name)].join(' '), parsedQuery)) records.push(libraryProjection(food, selected, portionMode));
-  return {records, source: {
+  return {records, identical, source: {
     catalog: foodCatalog?.status() ?? {available: false, foodCount: 0, datasets: [], installedAt: null},
     libraryFoods: records.filter(food => food.kind === 'library').length,
     identicalSnapshotsDeduplicated: identical.size, sampleFoodsExcluded: foods.filter(food=>food?.sample===true).length,retiredLibraryFoodsExcluded:foods.filter(food=>food?.sample!==true&&!isActiveLibraryItem(food)).length,
@@ -98,11 +98,35 @@ function tieOrder(a, b) {
     || textOrder(a.portionId ?? '', b.portionId ?? '') || (a.ref.kind === b.ref.kind ? 0 : a.ref.kind === 'catalog' ? -1 : 1);
 }
 
-export function rankNutrient({foodCatalog = null, foods = [], nutrient, basis = '100g', query = '', offset = 0, limit = 25, categoryMode='all',categoryIds=[],includeUncategorized=false}) {
+function oraclePreferences(foods, identical, favorites, entries) {
+  const byId = new Map();
+  const preferences = new Map();
+  for (const food of foods) {
+    const key = identical.has(food.id) ? 'catalog:' + catalogIdentity(food.source).id : 'library:' + food.id;
+    byId.set(food.id, key);
+  }
+  function preference(id) {
+    const key = byId.get(id);
+    if (!key) return;
+    if (!preferences.has(key)) preferences.set(key, {favorite: false, frequency: 0});
+    return preferences.get(key);
+  }
+  for (const ref of favorites) {
+    const row = ref.kind === 'food' && preference(ref.id);
+    if (row) row.favorite = true;
+  }
+  for (const entry of entries) {
+    const row = preference(entry.foodId);
+    if (row) row.frequency++;
+  }
+  return preferences;
+}
+
+export function rankNutrient({foodCatalog = null, foods = [], favorites = [], entries = [], nutrient, basis = '100g', query = '', offset = 0, limit = 25, categoryMode='all',categoryIds=[],includeUncategorized=false}) {
   if (!nutrients.has(nutrient)) invalid('Choose an existing nutrient ID.');
-  if (!['100g','100kcal','portion'].includes(basis)) invalid('Choose 100g, 100kcal or portion as the comparison basis.');
+  if (!['oracle','100g','100kcal','portion'].includes(basis)) invalid('Choose a supported nutrient ranking.');
   paging(offset, limit);
-  const {records, source} = recordsFor(foodCatalog, foods, [nutrient], {query, portionMode: basis === 'portion' ? 'all' : 'none'});
+  const {records, identical, source} = recordsFor(foodCatalog, foods, [nutrient], {query, portionMode: basis === 'portion' ? 'all' : 'none'});
   const customCategories=new Map();for(const food of foods.filter(food=>food.sample!==true&&isActiveLibraryItem(food))){const category=customFoodCategory(food);if(category){const row=customCategories.get(category.id)??{...category,name:category.name,foodCount:0};row.foodCount++;customCategories.set(category.id,row);}}
   const categories=[...(foodCatalog?.categories?.()??[]),...customCategories.values()],knownCategories=new Set(categories.map(row=>row.id));
   if(!['all','include','exclude'].includes(categoryMode)||!Array.isArray(categoryIds)||categoryIds.some(id=>typeof id!=='string'||!knownCategories.has(id))||new Set(categoryIds).size!==categoryIds.length||typeof includeUncategorized!=='boolean')invalid('Choose known food categories and an explicit filter mode.');
@@ -111,14 +135,28 @@ export function rankNutrient({foodCatalog = null, foods = [], nutrient, basis = 
   const categoryFilter={mode:categoryMode,ids:[...categoryIds],includeUncategorized,matchedQuery:records.length,uncategorized:unclassified,excluded:records.length-filtered.length};
   const coverage = {examined: filtered.length, measured: 0, eligible: 0};
   const items = [];
+  const preferences = basis === 'oracle' ? oraclePreferences(foods, identical, favorites, entries) : null;
   for (const food of filtered) {
     if (known(food.nutrients[nutrient])) coverage.measured += 1;
+    if (basis === 'oracle') {
+      const item = rankedItem(food, nutrient, '100g');
+      if (item?.density.per100g == null || item.density.perKcal === null) continue;
+      const preference = preferences.get(food.kind + ':' + food.id);
+      // Geometric mean gives the two density measurements equal proportional influence.
+      // Keep this score separate from the measured value and its food-entry quantity.
+      items.push({...item, basis, score: Math.sqrt(item.density.per100g) * Math.sqrt(item.density.perKcal),
+        favorite: preference?.favorite ?? false, frequency: preference?.frequency ?? 0});
+      coverage.eligible++;
+      continue;
+    }
     const candidates = basis === 'portion'
       ? validPortions(food).map(portion => rankedItem(food, nutrient, basis, portion)).filter(Boolean)
       : [rankedItem(food, nutrient, basis)].filter(Boolean);
     if (candidates.length) { coverage.eligible += 1; items.push(...candidates); }
   }
-  items.sort((a, b) => b.value - a.value || tieOrder(a, b));
+  items.sort(basis === 'oracle'
+    ? (a, b) => b.score - a.score || b.favorite - a.favorite || b.frequency - a.frequency || tieOrder(a, b)
+    : (a, b) => b.value - a.value || tieOrder(a, b));
   const total = items.length;
   return {items: items.slice(offset, offset + limit), total, offset,
     nextOffset: offset + limit < total ? offset + limit : null,

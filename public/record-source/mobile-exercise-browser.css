@@ -2,3 +2,31 @@
 .mec-effort{border-bottom:0;min-height:54px;}.mec-effort span{min-width:0;overflow-wrap:anywhere;text-align:right;}.mec-description{margin:0;padding:0 16px 14px;border-bottom:1px solid var(--line);font-size:.9rem;line-height:1.4;overflow-wrap:anywhere;}.mec-footnote{padding:14px 16px;margin:0;border-top:1px solid var(--line);font-size:.9rem;line-height:1.4;}.mec-footnote a,.mec-reset,.mec-custom{color:var(--green);background:transparent;border:0;font:inherit;min-height:44px;padding:8px 16px;}.mec-effort-menu{background:var(--paper);color:var(--ink);font:inherit;max-width:min(440px,calc(100vw - 16px));border:0;}.mec-effort-menu button{white-space:normal;min-height:48px;overflow-wrap:anywhere;}.mec-effort-menu button[aria-checked=true]{font-weight:700;}.mec-effort-menu button:focus-visible{background:var(--pale);outline:2px solid var(--green);}.me-form [data-mec-status]:empty{display:none;}.me-form [data-mec-status]{margin:14px 16px;color:var(--mobile-danger);font-size:.9rem;}
 
 .mec-source{display:inline-block;margin:0 16px 12px;color:var(--green);font-size:.85rem;min-height:24px;}
+
+
+/* The exercise hierarchy uses three square tiles per row on a phone. */
+.exercise-browser .mcb-grid {
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:clamp(8px,3.2vw,14px);
+  padding:clamp(8px,3.2vw,14px);
+}
+.exercise-browser .mcb-grid button {
+  display:grid;
+  grid-template-rows:46px minmax(2.4em,auto);
+  justify-items:center;
+  align-content:center;
+  aspect-ratio:1;
+  min-height:0;
+  gap:6px;
+  padding:8px 4px;
+  font:600 .72rem/1.2 Lato,sans-serif;
+}
+.record-surface .exercise-browser .mcb-grid img {
+  width:44px;
+  height:44px;
+}
+.record-surface:has(.exercise-browser) .dialog-head h2 {font-size:1.1rem}
+.exercise-browser .mcb-footer button {width:68%;font-size:.8rem}
+@media (min-width:600px) {
+  .exercise-browser .mcb-grid {grid-template-columns:repeat(auto-fit,minmax(108px,1fr))}
+}

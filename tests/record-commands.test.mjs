@@ -26,6 +26,7 @@ test('walking corrections use recorded weight and validated catalogue efforts, r
  const first=state.entries[0],original=structuredClone(first.exerciseBasis);
  delete first.exerciseSelection;
  assert.equal(savedExerciseSettings(first).useEstimate,true);
+ assert.equal(savedExerciseSettings(first).efforts['17200'],'hard');
  state.profile.weight=120;
  const changes={...fields,code:'17190',duration:15,useEstimate:true};
  const correct=changes=>apply(state,'record.correct',{collection:'entries',id:first.id,changes});
@@ -34,12 +35,35 @@ test('walking corrections use recorded weight and validated catalogue efforts, r
  const estimated=(3.8-1)*(3.5*80/200*15);
  assert.equal(state.entries[0].caloriesBurned,estimated);
  assert.equal(state.entries[0].exerciseSelection.code,'17190');
+ assert.equal(savedExerciseSettings(state.entries[0]).efforts['17190'],'moderate');
  assert.deepEqual(state.entries[0].exerciseBasis,original);
  correct({...changes,calories:estimated,useEstimate:false});
  assert.equal(savedExerciseSettings(state.entries[0]).useEstimate,false,'A manual value equal to the estimate remains manual');
  act(state,'day.complete',{date,completed:true});assert.throws(()=>correct(changes),{status:409});
  act(state,'day.complete',{date,completed:false});state.entries[0].source={kind:'health-connect'};
  assert.throws(()=>correct(changes),{status:409});
+});
+test('General Walking uses the selected flat-walking source and keeps directly chosen catalog activities distinct',()=>{
+ const state=initialState(),weightKg=state.profile.weight=165*0.45359237;
+ const add={...fields,code:'17170',duration:15,weightKg,useEstimate:true,generalWalking:true};
+ apply(state,'exercise.catalog.add',add);
+ const record=state.entries[0],basis=structuredClone(record.exerciseBasis);
+ assert.equal(record.caloriesBurned.toFixed(2),'39.29');
+ const correct=(code,duration)=>apply(state,'record.correct',{collection:'entries',id:record.id,changes:{...fields,code,duration,useEstimate:true}});
+ state.profile.weight=95;
+ correct('17170',10);
+ assert.equal(state.entries[0].caloriesBurned.toFixed(2),'26.19');
+ correct('17200',15);
+ assert.equal(state.entries[0].caloriesBurned.toFixed(2),'74.66');
+ assert.equal(state.entries[0].exerciseSelection.met,4.8);
+ assert.equal(savedExerciseSettings(state.entries[0]).efforts['17200'],'moderate');
+ assert.deepEqual(state.entries[0].exerciseBasis,basis);
+ assert.throws(()=>correct('17190',15),{status:400});
+ state.profile.weight=weightKg;
+ assert.throws(()=>apply(state,'exercise.catalog.add',{...add,code:'17190'}),{status:400});
+ apply(state,'exercise.catalog.add',{...add,code:'17200',generalWalking:false});
+ assert.equal(savedExerciseSettings(state.entries[1]).efforts,null);
+ assert.throws(()=>apply(state,'record.correct',{collection:'entries',id:state.entries[1].id,changes:{...fields,code:'17230',duration:15,useEstimate:true}}),{status:400});
 });
 test('biometric catalog, paired pressure, and custom identity use original log owner',()=>{
  const state=initialState();
