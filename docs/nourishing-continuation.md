@@ -11,7 +11,7 @@ The remaining audit continues from the release recorded below. Screen-level comp
 - Repository: `C:/Users/zixua/Documents/REA/nourishing-cloud`
 - GitHub: `https://github.com/liangzixuan/nourishing`, branch `master`.
 - Production: `https://nourishing.app`, Appwrite site and database, public account registration.
-- Verified production release **1.0.29** at `c03778fc8b28dbf248a48d47c32274a4e64545cc`. All 668 local tests passed. CI passed 665 tests with three Linux skips. All four deployments reached ready. All 48 live hashes matched the tested build along with 877 inventory paths and 226 startup paths. See [CI run 44874634874](https://github.com/liangzixuan/nourishing/actions/runs/44874634874) and `.local/release-1.0.29-live-proof.json`.
+- Verified production release **1.0.31** at `d1eb594090cf2a02d371af0dba477e9444d24ef9`. All 674 local tests passed. CI passed 671 tests with 3 Linux skips. The site and three functions reached ready. All 67 live hashes matched the tested build, along with 885 inventory paths and 232 startup paths. See [CI run 44876757438](https://github.com/liangzixuan/nourishing/actions/runs/44876757438) and `.local/release-1.0.31-live-proof.json`.
 - This is a PWA for Android and iOS. Health Connect and deliberately removed native integrations are excluded. Do not restart native APK work or use Azure.
 - Product wording must say Nourishing, not Cronometer. Reference filenames and historical evidence can retain Cronometer.
 - Preserve unrelated untracked `android/` and `docs/superpowers/`. Never stage them automatically.
@@ -31,7 +31,7 @@ The remaining audit continues from the release recorded below. Screen-level comp
 
 1. `docs/full-interface-audit-2026-11-20.md`: current findings, state coverage, release evidence. This supersedes earlier broad parity claims.
 2. `C:/Users/zixua/Downloads/Cronometer Reference - 2026-11-20`: 333 retained PNG/XML pairs. Reference numbers have gaps; do not infer count from the largest number.
-3. `.local/full-parity/current-state-evidence.json` maps 333 pairs to their comparison evidence, with current-app captures linked for 326 states. Update these links as work proceeds. `.local/full-parity/inventory.json` and `.local/full-parity/references-01.png` through `references-28.png`: overview/index. An overview is not a per-state pass.
+3. `.local/full-parity/current-state-evidence.json` maps 333 pairs to their comparison evidence, with 479 comparison captures linked across all 333 states. Update these links as work proceeds. `.local/full-parity/inventory.json` and `.local/full-parity/references-01.png` through `references-28.png`: overview/index. An overview is not a per-state pass.
 4. `.local/parity-audit/`: current-app comparison screenshots. `.local/full-parity-server.mjs`, `.local/parity-audit-server.mjs` and existing browser tests provide synthetic local fixtures.
 5. Older user references/manuals: `C:/Users/zixua/Downloads/Cronometer Android App UI` and `C:/Users/zixua/Downloads/Cronometer Android App User Manual`.
 
@@ -44,6 +44,9 @@ Keep personal screenshots, extracted text, credentials and local evidence out of
 - 1.0.26 covers fasting schedule creation, custom chart creation, snapshot photo capture and library deletion after an offline restart (R11–R13). Staged recipe and meal creation from Diary selection and groups also uses the local queue. See the audit for the source, exact tests, platform and limitations of each result.
 - Original snapshot image bytes can include embedded metadata while the image is pending in the owner’s private device queue. Server preparation validates the source and strips metadata from the stored JPEG. Other accounts must never render or replay the queue.
 - 1.0.27 moves PWA icon generation ahead of offline packaging and includes the app manifest and four PNGs in the startup cache. The disconnected Chrome regression reads the manifest and all four images.
+- 1.0.28 repaired R14. A disconnected user can select a valid note image, preview it and save. The real editor regression follows the image through an account switch, offline restart, queued corrections and a lost response to one canonical attachment.
+- 1.0.29 added durable saves for reviewed Multi-Add and Barcode changes. 1.0.30 also lets a user start Multi-Add review while disconnected using items available in the account snapshot. Signed provider review limits are recorded below.
+- 1.0.30 repaired cold-cache Walking creation and reopening. The 1.0.31 saved editor uses the original weight, retains explicit calorie overrides and reconciles queued changes with the canonical exercise.
 - A one-time fast scheduled offline can expire before the first upload. The server applies its existing time validation. The November 21 browser checks cover queued history changes, starts, stops and deletion.
 
 ## Remaining work
@@ -51,8 +54,8 @@ Keep personal screenshots, extracted text, credentials and local evidence out of
 Use the current follow-up and state-coverage tables in `docs/full-interface-audit-2026-11-20.md`. Keep individual screenshots and fixture output in `.local/`. The archive contains 333 reference states. A range in the ledger identifies a journey, not a visual pass for each state.
 
 1. R14 shipped in 1.0.28. Keep the original offline-editor reproducer and the tracked note attachment regression. They cover different behaviors.
-2. The private index links 326 of 333 states. Each linked image has a build or fixture label. For the November 21 results, read the latest comparison table and release entries. The seven remaining references are Android camera, gallery and file-picker screens (266–271 and 293). ADB listed zero attached Android transports on November 21. Keep installed-PWA behavior separate from desktop Chrome.
-3. Open interface differences include the saved exercise effort selector, seven-day Report header on scroll, Restore Default Settings in Nutrient Targets, Oracle ranking behavior, some chart-specific choices and graphs, and portions of the meal occurrence editor. Profile, Support and About need product decisions for public policies, a private contact channel, community and video destinations. More → Support has a local mobile manual and a link labeled as a public GitHub issue tracker in the 1.0.30 candidate.
+2. All 333 reference pairs have linked captures with build or fixture labels. Read the November 21 comparison table for layout findings and the separate behavior checks. Android Chrome on a fresh API 36 emulator covered the final seven system picker references (266–271 and 293). Refs 269 and 271 use related system routes. Native picker layout varies by provider. Physical-camera and installed-PWA results remain open.
+3. Remaining differences include the Walking calorie formula, Restore Default Settings in Nutrient Targets, Oracle ranking, some chart-specific choices and graphs, and parts of the meal occurrence editor. Reference 192 shows the reset label but ends before confirmation. Its effect on values, thresholds, visibility, highlight order and saved custom values still needs a product decision. Profile, Support and About need product decisions for public policies, a private contact channel, community and video destinations. More → Support has a local mobile manual and a link labeled as a public GitHub issue tracker from 1.0.30 onward.
 4. Photo Log and barcode require a valid signed review for first upload. If first upload happens after the 30-minute expiry, the server rejects it. Lost replies after an accepted upload can replay after expiry. Keep this separate from note attachments and progress photos. A durable offline authorization requires a product decision. Fresh provider lookup, recognition and uncached catalog rows still require connectivity.
 5. Several reference screens show additional options tied to account data, paid services or platform controls. Keep them explicitly marked. Validate new work through the actual editor, account-owned local state and canonical receipt. Keep private evidence in `.local/`.
 
@@ -76,4 +79,4 @@ Do not repeatedly run a passing full suite without a new change or unresolved fa
 
 ## Handoff boundary
 
-The deployed release and live asset proof are recorded above. The wider state-by-state comparison remains open. Start with the unresolved findings in the current audit. The older proofs remain available for regression diagnosis.
+The deployed release and live asset proof are recorded above. Each reference pair now has a comparison. Continue from the individual mismatches and unverified behaviors in the current audit. The older proofs remain available for regression diagnosis.
