@@ -1,9 +1,10 @@
+import webPush from 'web-push';
 import {randomUUID,createECDH,randomBytes} from 'node:crypto';
 import {packWorkspace,digest} from '../../server/data-codec.mjs';
 import {initialState} from '../../server/domain/workspace.mjs';
 export const owner='reminder-fixture',origin='https://nourishing.example';
 const curve=()=>{const value=createECDH('prime256v1');value.generateKeys();return value;};
-const key=curve();export const vapid={publicKey:key.getPublicKey().toString('base64url'),privateKey:key.getPrivateKey().toString('base64url')};
+export const vapid=webPush.generateVAPIDKeys();
 export const subscription=(id='device')=>({endpoint:'https://fcm.googleapis.com/fcm/send/'+id,expirationTime:null,keys:{p256dh:curve().getPublicKey().toString('base64url'),auth:randomBytes(16).toString('base64url')}});
 export function reminderFixture(state=initialState()){
  const tables=new Map(),transactions=new Map();let time=Date.parse('2026-10-29T11:59:00Z'),lose=false,receiptFailure=false;

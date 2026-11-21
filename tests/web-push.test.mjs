@@ -1,11 +1,12 @@
+import webPush from 'web-push';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {randomUUID,createECDH,randomBytes} from 'node:crypto';
+import {randomUUID,randomBytes} from 'node:crypto';
 import {createWebPushStore} from '../server/web-push-store.mjs';
 import {parsePushSubscription,parseVapid,createWebPushTransport} from '../server/web-push.mjs';
 
 const origin='https://nourishing.example',owner='push-owner';
-const pair=()=>{const curve=createECDH('prime256v1');curve.generateKeys();return {publicKey:curve.getPublicKey().toString('base64url'),privateKey:curve.getPrivateKey().toString('base64url')};};
+const pair=webPush.generateVAPIDKeys;
 const vapid=pair(),subscription=(id='device')=>({endpoint:'https://fcm.googleapis.com/fcm/send/'+id,expirationTime:null,keys:{p256dh:pair().publicKey,auth:randomBytes(16).toString('base64url')}});
 function fixture({send=async()=>({statusCode:201})}={}){
  const tables=new Map(),transactions=new Map();let clock=Date.parse('2026-11-15T14:00:00Z'),lost=false,failReceipt=false;
