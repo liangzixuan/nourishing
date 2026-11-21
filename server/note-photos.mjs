@@ -1,11 +1,11 @@
 import {randomUUID} from 'node:crypto';
 import {normalizePhoto} from './domain/photo-images.mjs';
 import {parseNoteRecord} from './domain/workspace.mjs';
-import {applyDiaryRecordCorrection} from './domain/diary-record-correction.mjs';
+import {applyDiaryRecordUpdate} from './domain/diary-record-update.mjs';
 import {assertDiaryDaysEditable} from './domain/diary-day-status.mjs';
 
 export const NOTE_MEDIA_NAMESPACE='note_photos';
-export const notePhotoCommandFields=Object.freeze({'note.photo.save':['id','recordRevision','fields','photo']});
+export const notePhotoCommandFields=Object.freeze({'note.photo.save':['id','fields','photo']});
 const fail=(message,code=400)=>{throw Object.assign(Error(message),{code,publicMessage:message});};
 const hash=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
 function fields(value,keys){if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==keys.length||keys.some(key=>!Object.hasOwn(value,key)))fail('Invalid note fields.');}
@@ -19,8 +19,7 @@ export async function prepareNotePhoto(input){
 }
 export function validateNotePhotoAction({type,payload}){
  if(type!=='note.photo.save')fail('Invalid note action.');fields(payload,notePhotoCommandFields[type]);
- if(payload.id===null){if(payload.recordRevision!==null)fail('Start a new note.');}
- else if(typeof payload.id!=='string'||!payload.id.trim()||payload.id.length>1000||!hash(payload.recordRevision))fail('Reload this note before saving.');
+ if(payload.id!==null&&(typeof payload.id!=='string'||!payload.id.trim()||payload.id.length>1000))fail('Choose a valid note.');
  fields(payload.fields,['date','time','text','group']);
  if(typeof payload.fields.time!=='string')fail('Choose a time, or leave it empty.');
  const mode=payload.photo?.mode;if(!['keep','remove','replace'].includes(mode))fail('Choose whether to keep, remove or replace the photo.');
@@ -42,7 +41,7 @@ export function applyNotePhotoCommand(state,action,{photo}={}){
   state.notes.push(note);
  }else{
   // The source correction owner preserves photo, copy lineage and all immutable source facts.
-  const result=source(()=>applyDiaryRecordCorrection(state,{collection:'notes',id:input.id,revision:input.recordRevision,changes:input.fields,confirmed:true}));
+  const result=source(()=>applyDiaryRecordUpdate(state,{collection:'notes',id:input.id,changes:input.fields}));
   note=state.notes.find(row=>row.id===result.record.id);
  }
  if(input.photo.mode==='replace')note.imageId=photo.id;

@@ -6,13 +6,12 @@ import {digest,unpackWorkspace,rowId} from '../server/data-codec.mjs';
 import {createWorkspaceStore} from '../server/workspace-store.mjs';
 import {stagePhotoMedia} from '../server/photo-storage.mjs';
 import {initialState,act} from '../server/domain/workspace.mjs';
-import {readDiaryRecordCorrection} from '../server/domain/diary-record-correction.mjs';
 import {validateStoredPhoto} from '../server/domain/photo-images.mjs';
 import {prepareNotePhoto,applyNotePhotoCommand,validateNotePhotoAction} from '../server/note-photos.mjs';
 const date='2026-11-15',fields={date,time:'12:00',text:'A note',group:null};
 const dataUrl='data:image/png;base64,'+(await sharp({create:{width:30,height:45,channels:3,background:'#739985'}}).png().toBuffer()).toString('base64');
 const prepared=await prepareNotePhoto({dataUrl}),photo=await validateStoredPhoto(prepared.photo);
-const action=(state,changes={},image={mode:'keep'})=>({type:'note.photo.save',payload:{id:state.notes[0]?.id??null,recordRevision:state.notes[0]?readDiaryRecordCorrection(state,{collection:'notes',id:state.notes[0].id}).revision:null,fields:{...fields,...changes},photo:image}});
+const action=(state,changes={},image={mode:'keep'})=>({type:'note.photo.save',payload:{id:state.notes[0]?.id??null,fields:{...fields,...changes},photo:image}});
 
 test('note photo preparation uses source normalization without saving image metadata',async()=>{
  assert.match(prepared.photo.dataUrl,/^data:image\/jpeg;base64,/);assert.equal(prepared.photo.id,photo.id);
@@ -29,10 +28,9 @@ test('create, keep, replace and remove preserve original note identity and sourc
  applyNotePhotoCommand(state,action(state,{text:'Without photo'},{mode:'remove'}));assert.equal('imageId' in state.notes[0],false);
  applyNotePhotoCommand(state,action(state,{}, {mode:'replace',id:photo.id}),{photo});assert.equal(state.notes[0].imageId,photo.id);
 });
-test('completed days, stale revisions and image substitution do not change the note',()=>{
+test('completed days and image substitution do not change the note',()=>{
  const state=initialState();applyNotePhotoCommand(state,action(state,{}, {mode:'replace',id:photo.id}),{photo});
- const original=structuredClone(state),stale=action(state);stale.payload.recordRevision='0'.repeat(64);
- assert.throws(()=>applyNotePhotoCommand(state,stale),{code:409});
+ const original=structuredClone(state);
  assert.throws(()=>applyNotePhotoCommand(state,action(state,{}, {mode:'replace',id:'0'.repeat(64)}),{photo}),{code:400});
  assert.throws(()=>applyNotePhotoCommand(state,action(state,{date:'2026-02-30'})),{code:400});assert.deepEqual(state,original);
  act(state,'day.complete',{date,completed:true});const complete=structuredClone(state);
@@ -40,7 +38,7 @@ test('completed days, stale revisions and image substitution do not change the n
  const empty=initialState();act(empty,'day.complete',{date,completed:true});assert.throws(()=>applyNotePhotoCommand(empty,action(empty)));assert.equal(empty.notes.length,0);
 });
 test('exact note-photo contract rejects client identity, lineage and media metadata injection',()=>{
- const state=initialState();for(const changed of [{ownerId:'other'},{id:'not-new',recordRevision:null},{recordRevision:'a'.repeat(64)},{fields:{...fields,imageId:photo.id}},{fields:{...fields,source:{}}},{photo:{mode:'keep',id:photo.id}},{photo:{mode:'remove',dataUrl}},{photo:{mode:'replace',id:photo.id,dataUrl}}]){
+ const state=initialState();for(const changed of [{ownerId:'other'},{id:''},{id:12},{fields:{...fields,imageId:photo.id}},{fields:{...fields,source:{}}},{photo:{mode:'keep',id:photo.id}},{photo:{mode:'remove',dataUrl}},{photo:{mode:'replace',id:photo.id,dataUrl}}]){
   assert.throws(()=>validateNotePhotoAction({type:'note.photo.save',payload:{...action(state).payload,...changed}}),{code:400});
  }assert.deepEqual(applyNotePhotoCommand(state,{type:'other',payload:{}}),{handled:false});
 });
@@ -76,4 +74,11 @@ test('note photo replacement and deletion retain private blobs; other accounts u
  const replacement=await validateStoredPhoto((await prepareNotePhoto({dataUrl:'data:image/png;base64,'+(await sharp({create:{width:40,height:40,channels:3,background:'#222222'}}).png().toBuffer()).toString('base64')})).photo);await save(owner,replacement);assert.equal(fixture.state(owner).notes[0].imageId,replacement.id);assert.equal(fixture.state(other).notes[0].imageId,photo.id);
  await save(owner,null);assert.equal('imageId' in fixture.state(owner).notes[0],false);assert.equal(fixture.files.size,3);assert.equal(fixture.table('workspace_media').size,3);
  const state=fixture.state(owner),noteId=state.notes[0].id;await createWorkspaceStore(fixture.db,owner).command({requestId:randomUUID(),revision:digest(state),type:'note.delete',payload:{id:noteId}},async()=>null);assert.equal(fixture.state(owner).notes.length,0);assert.equal(fixture.state(other).notes.length,1);assert.equal(fixture.files.size,3);
+});
+
+test('queued photo note edits preserve attachments while subsequent text edits apply in order',()=>{
+ const state=initialState();applyNotePhotoCommand(state,action(state,{}, {mode:'replace',id:photo.id}),{photo});
+ const first=action(state,{text:'First'}),second=action(state,{text:'Second'});
+ applyNotePhotoCommand(state,first);applyNotePhotoCommand(state,second);
+ assert.equal(state.notes.length,1);assert.equal(state.notes[0].text,'Second');assert.equal(state.notes[0].imageId,photo.id);
 });

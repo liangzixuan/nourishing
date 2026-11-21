@@ -1,3 +1,4 @@
+import {prepareDiaryRecordUpdate} from './local-diary-projection.js';
 // Serializable local effects for acknowledged and pending background commands.
 import {applyProfileSettingsProjection,projectDiaryBulkWrite,copiedDiaryRecords} from './local-diary-projection.js';
 import {renameDiaryGroup} from './local-group-rename.js';
@@ -42,7 +43,7 @@ export function applyWriteToState(state,row,result){
  if(type==='biometric.delete')remove('biometrics',p.id);
  if(type==='note.add')replace('notes',{...p,id,_pending:!result});
  if(type==='exercise.add')replace('entries',{date:p.date,time:p.time,group:p.group,name:p.name,duration:p.duration,caloriesBurned:p.calories,kind:'exercise',id,_pending:!result});
- if(type==='record.correct'){const old=state[p.collection]?.find(item=>item.id===p.id);if(old)replace(p.collection,{...old,...p.changes,...(p.collection==='entries'?{caloriesBurned:p.changes.calories}:{}),_pending:!result});}
+ if(type==='record.correct'){const old=state[p.collection]?.find(item=>item.id===p.id);if(old)replace(p.collection,{...prepareDiaryRecordUpdate(state,p).after,_pending:!result});}
  if(type==='note.photo.save')for(const note of row.projection?.notes??[])replace('notes',{...note,id:p.id??id,_pending:!result});
 
  if(type==='water.add')replace('biometrics',{id,date:p.date,time:p.time,...(Object.hasOwn(p,'group')?{group:p.group}:{}),type:'Water',unit:'mL',value:p.amount,_pending:!result});

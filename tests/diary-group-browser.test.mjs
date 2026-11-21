@@ -57,8 +57,25 @@ test('Diary group actions update mixed records locally and reconcile canonical c
   await page.locator('#sheet textarea').fill('Swipe deletion test');hold=new Promise(r=>release=r);await page.locator('#sheet button[type=submit]').click();
   await localUntil(s=>s.notes.some(row=>row.text==='Swipe deletion test'&&row.group==='Breakfast'));assert.equal(fixture.state().notes.some(row=>row.text==='Swipe deletion test'),false);
   if(!await breakfast.evaluate(node=>node.open))await breakfast.locator('[data-md-fold-group]').click();
-  const pendingNote=page.locator('[data-diary-record]').filter({hasText:'Swipe deletion test'});await swipe(pendingNote,-110);await pendingNote.locator('.md-swipe-delete').click();await page.locator('[data-confirm]').click();
-  await localUntil(s=>!s.notes.some(row=>row.text==='Swipe deletion test'));hold=null;release();await waitForOutboxIdle(page,()=>!fixture.state().notes.some(row=>row.text==='Swipe deletion test'));
+  let pendingNote=page.locator('[data-diary-record]').filter({hasText:'Swipe deletion test'});
+  await pendingNote.locator('.entry-name').click();await page.locator('#sheet textarea').waitFor();assert.equal(await page.locator('#sheet textarea').isEditable(),true,'A pending note remains editable');
+  await page.locator('#sheet textarea').fill('Pending first edit');await page.locator('#sheet button[type=submit]').click();await localUntil(s=>s.notes.some(r=>r.text==='Pending first edit'));
+  const editedNote=page.locator('[data-diary-record]').filter({hasText:'Pending first edit'});await editedNote.locator('.entry-name').click();await page.locator('#sheet textarea').fill('Pending final edit');await page.locator('#sheet button[type=submit]').click();await localUntil(s=>s.notes.some(r=>r.text==='Pending final edit'));
+  await page.reload();await page.locator('.md-diary').waitFor();await localUntil(s=>s.notes.some(r=>r.text==='Pending final edit'));
+  hold=null;release();await waitForOutboxIdle(page,()=>fixture.state().notes.some(r=>r.text==='Pending final edit'));
+  assert.equal(fixture.state().notes.filter(r=>['Swipe deletion test','Pending first edit','Pending final edit'].includes(r.text)).length,1);
+  hold=new Promise(r=>release=r);
+  for(const value of [300,350]){
+   await page.locator('[data-diary-record]').filter({hasText:'Water'}).first().locator('.entry-name').click();await page.locator('#sheet [name=value]').fill(String(value));await page.locator('[data-mb-save]').click();await localUntil(s=>s.biometrics.some(r=>r.type==='Water'&&r.value===value));
+  }
+  for(const duration of [25,30]){
+   await page.locator('[data-diary-record]').filter({hasText:'Walk'}).first().locator('.entry-name').click();await page.locator('#sheet [name=duration]').fill(String(duration));await page.locator('.me-save').click();await localUntil(s=>s.entries.some(r=>r.name==='Walk'&&r.duration===duration));
+  }
+  assert.equal(fixture.state().biometrics[0].value,250);assert.equal(fixture.state().entries.find(r=>r.name==='Walk').duration,20);
+  if(!await breakfast.evaluate(node=>node.open))await breakfast.locator('[data-md-fold-group]').click();
+  pendingNote=page.locator('[data-diary-record]').filter({hasText:'Pending final edit'});await swipe(pendingNote,-110);await pendingNote.locator('.md-swipe-delete').click();await page.locator('[data-confirm]').click();
+  await localUntil(s=>!s.notes.some(row=>row.text==='Pending final edit'));hold=null;release();await waitForOutboxIdle(page,()=>!fixture.state().notes.some(row=>row.text==='Pending final edit'));
+  assert.equal(fixture.state().biometrics[0].value,350);assert.equal(fixture.state().entries.find(r=>r.name==='Walk').duration,30);
   assert.ok(sent.some(row=>row.type==='note.add'&&row.payload.group==='Breakfast'));assert.ok(sent.some(row=>row.type==='records.delete'));
   await menu();
   assert.deepEqual(await page.locator('.diary-menu-sheet button').allTextContents(),['Add Group Timestamp','Sort Group Entries by Time',"Copy Yesterday’s Group",'Create Recipe from Group','Create Meal from Group','Edit Group Quick Add Default','Copy','Show Nutrition Summary','Delete']);

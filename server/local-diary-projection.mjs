@@ -58,3 +58,5 @@ export {previewLibraryEditor} from './domain/library-editor-preview.mjs';
 export {prepareLibraryDraft,libraryDraftRows} from './domain/library-editor-draft.mjs';
 export {inspectLibraryUses} from './domain/library-references.mjs';
 export {libraryItem,recipePreview,libraryCollectionView} from './domain/library-item-view.mjs';
+
+export {prepareDiaryRecordUpdate,manuallyEditableRecord,sourceRecordReason} from './domain/diary-record-update.mjs';

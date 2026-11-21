@@ -17,7 +17,7 @@ export async function mountNoteEditor({record,date,initialGroup,show,close,heade
   if(!loading.isConnected)return;if(detail)record=detail.record;
  }catch(error){if(loading.isConnected)loading.textContent=error.message;return;}
  const editable=!record||detail.editable,limit=Math.max(1024,record?.text?.length??0),group=record?record.group??'':options.groups.includes(initialGroup)?initialGroup:'',time=record?.time??new Date().toTimeString().slice(0,5);
- let mode='keep',photo=null,pending=null,busy=false,conflict=false,serial=0,lastTime=time;
+ let mode='keep',photo=null,pending=null,busy=false,serial=0,lastTime=time;
  const camera='<svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="4"/></svg>';
  show(header(record?'Edit Note':'Add Note')+`<form class="entry-form note-editor"><fieldset class="record-fields" ${editable?'':'disabled'}><section class="note-text-card"><textarea name="text" aria-label="Note" placeholder="Write a note…" required maxlength="${limit}">${e(record?.text??'')}</textarea><div class="note-text-actions"><output data-note-count>${record?.text?.length??0}/${limit}</output><button type="button" class="icon-button" data-note-choose aria-label="Attach photo" aria-expanded="false">${camera}</button></div><div class="note-photo-choices" hidden><button type="button" data-note-source="camera">Take photo</button><button type="button" data-note-source="gallery">Choose photo</button></div><input hidden type="file" data-note-camera accept="image/jpeg,image/png,image/webp" capture="environment"><input hidden type="file" data-note-gallery accept="image/jpeg,image/png,image/webp"><div class="note-photo-preview"></div></section><label class="field-row"><span>Date</span><input type="date" name="date" aria-label="Date" required value="${e(record?.date??date)}"></label><div class="field-row"><span>Time</span><input type="time" name="time" aria-label="Time" value="${e(time)}" ${time?'':'disabled'}><input type="checkbox" class="note-time-toggle" aria-label="Include time" ${time?'checked':''}></div><label class="field-row"><span>Group</span><select name="group" aria-label="Group"><option value="">Uncategorized</option>${options.groups.map(value=>`<option value="${e(value)}" ${value===group?'selected':''}>${e(value)}</option>`).join('')}</select></label></fieldset>${editable?'':`<p class="record-disabled">${e(detail.reason)}</p>`}<p class="sheet-message" role="status"></p><footer class="entry-actions">${record&&detail.deletable?'<button type="button" class="danger" data-note-delete>Delete</button>':''}${editable?'<button type="submit" class="primary">Save</button>':''}</footer></form>`);
  const form=content.querySelector('form'),preview=form.querySelector('.note-photo-preview'),status=form.querySelector('[role=status]'),save=form.querySelector('[type=submit]'),choices=form.querySelector('.note-photo-choices'),choose=form.querySelector('[data-note-choose]');
@@ -26,11 +26,11 @@ export async function mountNoteEditor({record,date,initialGroup,show,close,heade
  function closeChoices(){choices.hidden=true;choose.setAttribute('aria-expanded','false');}
  document.addEventListener('click',event=>{if(!choices.contains(event.target)&&!choose.contains(event.target))closeChoices();},{signal:abort.signal});
  function controls(){
-  const blocked=busy||!!pending||conflict||!editable;
+  const blocked=busy||!!pending||!editable;
   form.querySelectorAll('fieldset input,fieldset select,fieldset textarea,fieldset button').forEach(node=>node.disabled=blocked);
   form.elements.time.disabled=blocked||!form.querySelector('.note-time-toggle').checked;
-  if(save){save.disabled=busy||conflict;save.textContent=pending?'Try again':busy?'Saving…':'Save';}
-  const remove=form.querySelector('[data-note-delete]');if(remove)remove.disabled=busy||!!pending||conflict;
+  if(save){save.disabled=busy;save.textContent=pending?'Try again':busy?'Saving…':'Save';}
+  const remove=form.querySelector('[data-note-delete]');if(remove)remove.disabled=busy||!!pending;
  }
  function renderPhoto(){
   const src=mode==='replace'?photo?.dataUrl:mode==='keep'?notePhotoUrl(record):null;
@@ -53,11 +53,11 @@ export async function mountNoteEditor({record,date,initialGroup,show,close,heade
   finally{if(alive()&&serial===version){busy=false;controls();}}
  });
  form.onsubmit=async event=>{
-  event.preventDefault();if(busy||conflict||!editable)return;
-  pending??={requestId:crypto.randomUUID(),revision:detail?.revision??options.revision,id:record?.id??null,recordRevision:detail?.recordRevision??null,fields:{date:form.elements.date.value,time:form.elements.time.value,text:form.elements.text.value,group:form.elements.group.value||null},photo:mode==='replace'?{mode,...photo}:{mode}};
+  event.preventDefault();if(busy||!editable)return;
+  pending??={requestId:crypto.randomUUID(),revision:detail?.revision??options.revision,id:record?.id??null,fields:{date:form.elements.date.value,time:form.elements.time.value,text:form.elements.text.value,group:form.elements.group.value||null},photo:mode==='replace'?{mode,...photo}:{mode}};
   busy=true;controls();status.textContent='';
-  try{if(mode==='keep'&&!record?.imageId)await saveRecordCommand(pending.revision,record?'record.correct':'note.add',record?{collection:'notes',id:record.id,recordRevision:pending.recordRevision,changes:pending.fields}:pending.fields);else await queueBackgroundWrite('/api/note-photos/save',pending,{notes:[{...record,...pending.fields,id:record?.id??pending.requestId,...(mode==='replace'?{imageId:photo.id,localPhoto:photo.dataUrl}:mode==='remove'?{imageId:null}:{})}]});pending=null;if(alive())close();void Promise.resolve(onChange()).catch(()=>{});}
-  catch(error){if(alive()){status.textContent=error.message;if(error.status>=400&&error.status<500){pending=null;if(error.status===409){conflict=true;const reload=document.createElement('button');reload.type='button';reload.textContent='Reload note';reload.onclick=()=>mountNoteEditor({record,date,initialGroup,show,close,header,content,onChange});status.append(reload);}}}}
+  try{if(mode==='keep'&&!record?.imageId)await saveRecordCommand(pending.revision,record?'record.correct':'note.add',record?{collection:'notes',id:record.id,changes:pending.fields}:pending.fields);else await queueBackgroundWrite('/api/note-photos/save',pending,{notes:[{...record,...pending.fields,id:record?.id??pending.requestId,...(mode==='replace'?{imageId:photo.id,localPhoto:photo.dataUrl}:mode==='remove'?{imageId:null}:{})}]});pending=null;if(alive())close();void Promise.resolve(onChange()).catch(()=>{});}
+  catch(error){if(alive()){status.textContent=error.message;if(error.status>=400&&error.status<500){pending=null;}}}
   finally{if(alive()){busy=false;pending=null;controls();}}
  };
  const remove=form.querySelector('[data-note-delete]');if(remove)remove.onclick=()=>{remove.textContent='Delete note';remove.onclick=async()=>{if(busy)return;busy=true;controls();try{await queueCommand(detail.revision,'note.delete',{id:record.id});if(alive())close();void Promise.resolve(onChange()).catch(()=>{});}catch(error){if(alive())status.textContent=error.message;}finally{if(alive()){busy=false;controls();}}};};

@@ -15,7 +15,7 @@ import {convertEnergy} from './dashboard-source/energy-units.mjs';
 const COLLECTIONS = {exercise: 'entries', biometric: 'biometrics'};
 const PANEL_CLASSES = ['mobile-food-editor', 'mobile-catalog-browser', 'mobile-exercise-editor', 'mobile-biometric'];
 const ACTION_SELECTORS =
-  '[data-record-close],[data-record-delete],[data-record-retry],[data-record-reload],[data-delete-cancel],[data-delete-confirm]';
+  '[data-record-close],[data-record-delete],[data-record-retry],[data-delete-cancel],[data-delete-confirm]';
 const BIOMETRIC_VALUE_FIELDS = ['value', 'stonePounds', 'durationHours', 'durationMinutes', 'unit'];
 
 const message = (key, values) => formatMessage(uiLanguage(), key, values);
@@ -157,8 +157,8 @@ function createBiometricSession({record, detail, options, draft, metric, hasEnve
   };
 }
 
-function syncEditorControls({root, panel, session, record, detail, busy, envelope, conflict}) {
-  const locked = busy || Boolean(envelope) || conflict;
+function syncEditorControls({root, panel, session, record, detail, busy, envelope}) {
+  const locked = busy || Boolean(envelope);
   if (!locked) {
     for (const node of root.querySelectorAll('[data-record-disabled]')) {
       node.disabled = node.dataset.recordDisabled === 'true';
@@ -175,9 +175,9 @@ function syncEditorControls({root, panel, session, record, detail, busy, envelop
     }
   }
   for (const button of root.querySelectorAll(ACTION_SELECTORS)) {
-    button.disabled = busy || (button.hasAttribute('data-record-delete') && (Boolean(envelope) || conflict));
+    button.disabled = busy || (button.hasAttribute('data-record-delete') && (Boolean(envelope)));
   }
-  if (session?.unknown && !busy && !conflict) {
+  if (session?.unknown && !busy) {
     const retry = root.querySelector('[data-mb-check]');
     if (retry) retry.disabled = false;
   }
@@ -197,7 +197,6 @@ class RecordEditorController {
     this.disposed = false;
     this.busy = false;
     this.envelope = null;
-    this.conflict = false;
     this.returnTo = null;
     this.deletePrompt = false;
 
@@ -226,7 +225,7 @@ class RecordEditorController {
   }
 
   correction(changes) {
-    return {collection: COLLECTIONS[this.kind], id: this.record.id, recordRevision: this.detail.recordRevision, changes};
+    return {collection: COLLECTIONS[this.kind], id: this.record.id, changes};
   }
 
   teardown() {
@@ -261,7 +260,7 @@ class RecordEditorController {
     if (this.deletePrompt) return this.closeDeletePrompt();
     const activeMenu = this.panel?.menu ?? this.panel?.base?.menu;
     if (activeMenu) return activeMenu.close();
-    if (this.envelope || this.conflict || this.record) return this.exit();
+    if (this.envelope || this.record) return this.exit();
     if (this.kind === 'biometric' && this.panel?.back()) return;
     if (this.returnTo) {
       const next = this.returnTo;
@@ -285,22 +284,17 @@ class RecordEditorController {
 
   errorView(error) {
     if (!this.alive()) return;
-    const messageText = this.session && !this.conflict ? '' : e(error.message);
-    const actionButton = this.conflict
-      ? `<button type="button" data-record-reload>${dc('reloadRecord')}</button>`
-      : this.envelope && !this.session
-        ? `<button type="button" data-record-retry>${t('mobileSuggest.retry')}</button>`
-        : '';
+    const messageText = this.session ? '' : e(error.message);
+    const actionButton = this.envelope && !this.session ? `<button type="button" data-record-retry>${t('mobileSuggest.retry')}</button>` : '';
     this.status().innerHTML = messageText + actionButton;
     if (!this.session) return;
     this.session.error = error.message;
-    this.session.unknown = Boolean(this.envelope) && !this.conflict;
-    if (this.conflict) this.session.readOnly = true;
+    this.session.unknown = Boolean(this.envelope);
     this.session.notify();
   }
 
   async save(type, payload) {
-    if (this.busy || this.conflict || !this.alive()) return;
+    if (this.busy || !this.alive()) return;
     if (!this.envelope) {
       this.envelope = {
         requestId: crypto.randomUUID(),
@@ -325,10 +319,6 @@ class RecordEditorController {
       void Promise.resolve(this.args.onChange()).catch(()=>{});
     } catch (error) {
       if (!this.alive()) return;
-      if (error.status >= 400 && error.status < 500 && error.status !== 408) {
-        this.envelope = null;
-        this.conflict = error.status === 409;
-      }
       this.envelope=null;
       this.errorView(error);
     } finally {
@@ -344,7 +334,7 @@ class RecordEditorController {
   }
 
   confirmDelete() {
-    if (this.busy || this.envelope || this.conflict || this.deletePrompt || !this.detail?.deletable) return;
+    if (this.busy || this.envelope || this.deletePrompt || !this.detail?.deletable) return;
     this.deletePrompt = true;
     this.root.insertAdjacentHTML(
       'beforeend',
@@ -428,7 +418,7 @@ class RecordEditorController {
       'submit',
       event => {
         event.preventDefault();
-        if (this.busy || this.envelope || this.conflict) return;
+        if (this.busy || this.envelope) return;
         const next = buildExerciseSubmitAction({
           activity,
           record: this.record,
@@ -499,7 +489,6 @@ class RecordEditorController {
 
     const buttonActions = [
       ['data-record-close', () => this.back()],
-      ['data-record-reload', () => { this.dispose(); void mountRecordEditor(this.args); }],
       ['data-record-retry', () => { void this.save(); }],
       ['data-record-delete', () => this.confirmDelete()],
       ['data-delete-cancel', () => this.closeDeletePrompt()],

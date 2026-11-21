@@ -122,13 +122,12 @@ function parseNotePhotoInput(input) {
   const invalid = () => {
     throw Object.assign(Error('Invalid note fields.'), {code: 400, publicMessage: 'Invalid note fields.'});
   };
-  if (!hasExactKeys(input, ['requestId', 'revision', 'id', 'recordRevision', 'fields', 'photo'])) invalid();
+  if (!hasExactKeys(input, ['requestId', 'revision', 'id', 'fields', 'photo'])) invalid();
   const supplied = input.photo;
   const photoKeys = supplied?.mode === 'replace' ? ['mode', 'id', 'dataUrl'] : ['mode'];
   if (!hasExactKeys(supplied, photoKeys)) invalid();
   const payload = {
     id: input.id,
-    recordRevision: input.recordRevision,
     fields: input.fields,
     photo: {mode: supplied.mode, ...(supplied.mode === 'replace' ? {id: supplied.id} : {})},
   };
