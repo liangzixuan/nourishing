@@ -51,3 +51,5 @@ export {resolveWaterSettings,parseWaterSettings,waterToMilliliters,waterFromMill
 export {isLoggedWater,loggedWaterMilliliters} from './domain/water-measurement.mjs';
 
 export {createDisplayView} from './domain/display-view.mjs';
+
+export {diarySelectionNutrition} from './domain/diary-selection-nutrition.mjs';

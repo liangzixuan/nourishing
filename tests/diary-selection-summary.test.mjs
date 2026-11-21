@@ -15,5 +15,5 @@ test('Selected summary uses canonical intake with full-day targets and leaves no
  assert.deepEqual(result.chartSummary.scores,day.scores);assert.deepEqual(result.chartSummary.hydration,day.hydration);assert.equal(result.chartSummary.energy.expenditure,day.energy.expenditure);assert.equal(result.chartSummary.energy.target,day.energy.target);assert.equal(result.chartSummary.energy.remaining,day.energy.target-selected.totals.calories);
  assert.equal(review([refs[0]]).facts.totals.protein,0);assert.equal(review([refs[1]]).facts.totals.protein,null);
  for(const records of [[],refs.slice(2)]){const fallback=review(records);assert.deepEqual(fallback.facts,day);assert.deepEqual(fallback.chartSummary,day);}
- assert.throws(()=>diaryToolsReview(state,{operation:'nutrition',revision:'old',selection:{date,scope:'selected',records:refs}}),{status:409});assert.throws(()=>review([{collection:'entries',id:'foreign'}]),{status:409});assert.throws(()=>review([refs[0],refs[0]]),{status:400});assert.deepEqual(state,before);
+ assert.deepEqual(diaryToolsReview(state,{operation:'nutrition',revision:'old',selection:{date,scope:'selected',records:refs}}),result);assert.throws(()=>review([{collection:'entries',id:'foreign'}]),{status:409});assert.throws(()=>review([refs[0],refs[0]]),{status:400});assert.deepEqual(state,before);
 });

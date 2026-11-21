@@ -4,7 +4,7 @@ import {nutrientDisplayName} from './report-source/public/nutrient-language.js';
 import {mobileDiarySummary,MobileDiary,diarySymbol} from './diary-summary-source/mobile-diary.js';
 import {escape as e} from './html.js';
 import {scoreName} from './diary-summary-source/score-labels.js';
-import {request} from './diary-api.js';
+import {watchDiarySelection} from './diary-selection-nutrition.js';
 import {waterWidgetMarkup} from './water.js';
 
 const labels=()=>({energy:coreText('diary.energy'),target:t('mobileDiary.target'),consumed:t('mobileDiary.consumed'),expenditure:t('mobileDiary.expenditure'),remaining:t('mobileDiary.remaining'),macros:coreText('diary.macros'),highlights:coreText('diary.highlights'),scores:t('mobileScoreSettings.title'),summary:coreText('diary.daily'),report:coreText('diary.allNutrients'),selected:t('mobileNutrientDetail.selection'),previous:coreText('diary.previousSummary'),next:coreText('diary.nextSummary')});
@@ -17,7 +17,7 @@ function summaryMarkup(diary,facts=diary.summary,summary=diary.summary){
  const {presentation={settings:{},scores:[]}}=diary;
  return mobileDiarySummary({summary,facts,settings:presentation.settings,unit:diary.energyUnit??'kcal',language:uiLanguage(),labels:labels(),icons,macroMode:macroMode??facts.diaryDisplay?.policy.macroDisplay??'consumed',scores:presentation.scores,nutrientName,scoreName});
 }
-const waitingMarkup=(message=coreText('diary.loadingSelection'),retry=false)=>`<section class="md-summary md-selection-status" data-md-summary role="status"><p>${e(message)}</p>${retry?`<button type="button" data-summary-retry>${e(coreText('retry'))}</button>`:''}</section>`;
+const waitingMarkup=()=>'<section class="md-summary md-selection-status" data-md-summary aria-busy="true"></section>';
 function duration(seconds){if(!Number.isFinite(seconds))return '';const minutes=Math.floor(Math.max(0,seconds)/60);return `${Math.floor(minutes/60)}h ${String(minutes%60).padStart(2,'0')}m`;}
 export function diarySummaryMarkup(diary,selection){
  const {summary,presentation={settings:{},scores:[]}}=diary,fast=presentation.fasting;
@@ -27,24 +27,14 @@ export function diarySummaryMarkup(diary,selection){
 }
 
 /** Owns summary carousel, charts and timer only. Mutations and destination navigation stay with the shell. */
-export function mountDiarySummary({root,diary,onAction,selection,onReload}){
+export function mountDiarySummary({root,diary,onAction,selection}){
  const controller=new AbortController(),header=document.createElement('div');
- let disposed=false,facts=diary.summary,chartSummary=diary.summary,ready=!selection?.records.length,conflict=false;
+ let disposed=false,facts=diary.summary,chartSummary=diary.summary,ready=!selection?.records.length;
  const panel=new MobileDiary({root,header,summary:diary.summary,context:()=>{},onDatePicker:()=>{}});
- async function loadSelection(){
-  ready=false;conflict=false;panel.update(waitingMarkup(),diary.summary);
-  try{
-   const result=await request('/api/diary/tools/review',{operation:'nutrition',selection,revision:diary.revision},controller.signal);
-   if(disposed)return;
-   if(result.revision!==diary.revision)throw Object.assign(Error(coreText('diary.changed')),{status:409});
-   facts=result.facts;chartSummary=result.chartSummary;ready=true;panel.update(summaryMarkup(diary,facts,chartSummary),chartSummary);
-  }catch(error){if(disposed)return;conflict=error.status===409;panel.update(waitingMarkup(error.message,true),diary.summary);if(conflict)root.querySelector('[data-summary-retry]').textContent=coreText('diary.reload');}
- }
- if(!ready)void loadSelection();
+ const selected=ready?null:watchDiarySelection({selection,onChange:result=>{if(disposed)return;facts=result.facts;chartSummary=result.chartSummary;ready=true;panel.update(summaryMarkup(diary,facts,chartSummary),chartSummary);}});
  const actions=new Set(['mobile-diary-energy','edit-day-targets','nutrient-contributors','configure-diary-display','all-nutrients','choose-scores','score-details','open-fasting','water','water-custom','water-menu','water-remove','water-settings','water-target']);
  root.addEventListener('toggle',event=>{if(event.target.matches('.md-water'))waterExpanded=event.target.open;},{capture:true,signal:controller.signal});
  root.addEventListener('click',event=>{
-  if(event.target.closest('[data-summary-retry]')){void(conflict?onReload?.():loadSelection());return;}
   const button=event.target.closest('[data-action]');if(!button)return;
   const action=button.dataset.action;
   if(action==='toggle-macro-display'){macroMode=(macroMode??facts.diaryDisplay?.policy.macroDisplay??'consumed')==='remaining'?'consumed':'remaining';panel.update(summaryMarkup(diary,facts,chartSummary),chartSummary);return;}
@@ -53,5 +43,5 @@ export function mountDiarySummary({root,diary,onAction,selection,onReload}){
  const initial=diary.presentation?.fasting,started=performance.now();
  const updateClock=()=>{const target=root.querySelector('[data-diary-fast-clock]');if(target&&initial?.status==='active')target.textContent=duration(initial.elapsedSeconds+(performance.now()-started)/1000);};
  const timer=initial?.status==='active'?setInterval(updateClock,30000):null;
- return {context(){return ready?{entryIds:facts.scope==='selection'?facts.selectedEntryIds:null,chartSummary}:null;},dispose(){disposed=true;controller.abort();panel.dispose();if(timer)clearInterval(timer);}};
+ return {context(){return ready?{entryIds:facts.scope==='selection'?facts.selectedEntryIds:null,chartSummary}:null;},dispose(){disposed=true;controller.abort();selected?.dispose();panel.dispose();if(timer)clearInterval(timer);}};
 }

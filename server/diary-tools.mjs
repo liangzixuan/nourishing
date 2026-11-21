@@ -3,7 +3,7 @@ export {diaryEnergy,diaryToolsPresentation} from './diary-presentation.mjs';
 import {act,prepareRecordSelection,prepareSelectionDraft,removeDiaryRecords,previewEntryExpansion} from './domain/workspace.mjs';
 import {digest} from './data-codec.mjs';
 import {sortAllDiaryEntriesByTime} from './domain/diary-order.mjs';
-import {calculateSummary,calculateSelectionNutrition,isExerciseEntry} from './domain/nutrition.mjs';
+import {diarySelectionNutrition} from './domain/diary-selection-nutrition.mjs';
 
 const fail=message=>{throw Object.assign(Error(message),{status:400,code:400,publicMessage:message});};
 function exact(input,fields){if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(key=>!fields.includes(key)))fail('Invalid diary action.');}
@@ -25,14 +25,7 @@ export function diaryToolsReview(state,input){
  if(input.operation!=='copy'&&input.destination!==undefined)fail('Choose a copy destination.');
  switch(input.operation){
   case 'expand':review=previewEntryExpansion(state,{date:input.date,id:input.id});break;
-  case 'nutrition':{
-   if(input.revision!==digest(state))throw Object.assign(Error('Diary changed. Reload diary.'),{status:409});
-   const source=prepareRecordSelection(state,input.selection),date=source.selection.date;
-   const entryIds=source.records.filter(({collection,row})=>collection==='entries'&&!isExerciseEntry(row)).map(({row})=>row.id),day=calculateSummary(state,date);
-   const facts=entryIds.length?calculateSelectionNutrition(state,date,entryIds):day,consumed=facts.totals?.calories;
-   const chartSummary=entryIds.length?{...day,consumedEnergy:facts.consumedEnergy,energy:{...day.energy,consumed,remaining:Number.isFinite(consumed)?day.energy.target-consumed:null}}:day;
-   review={selection:source.selection,facts,chartSummary};break;
-  }
+  case 'nutrition':review=diarySelectionNutrition(state,input.selection);break;
   default:review=prepareDiaryReview(state,input);break;
  }
  return {...review,revision:digest(state)};

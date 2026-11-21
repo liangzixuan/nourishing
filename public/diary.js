@@ -157,7 +157,7 @@ const diaryTools = createDiaryTools({
   onReport: () => navigate('discover','report',date),
   onShare: () => {const share=openDiaryShare(diary,{show,header,content});pickerCleanup=Object.assign(share.dispose,{back:share.back});},
   onMealAction: mealAction,
-  onNutrition: selection => openSelectionNutrition({selection,revision:diary.revision,energyUnit:diary.energyUnit,show,header,content}),
+  onNutrition: selection => openSelectionNutrition({selection,energyUnit:diary.energyUnit,show,header,content}),
 });
 
 sheet.addEventListener('click', event => {
@@ -353,7 +353,6 @@ function render() {
     diary: displayedDiary,
     onAction: summaryAction,
     selection: diaryTools.selection(),
-    onReload: load,
   });
 }
 
@@ -469,7 +468,7 @@ async function mealAction(action,entry){
     navigate('foods');await library?.openItem('meal',entry.mealId,undefined,{copy:action==='copy-edit'});return;
   }
   if(action==='adjust')return openEntryAdjustment({kind:'meal',revision:diary.revision,date:entry.date,id:entry.id,show,close,header,content,onSave:load});
-  if(action==='nutrition')return openMealNutrition({entry,revision:diary.revision,energyUnit:diary.energyUnit,show,header,content});
+  if(action==='nutrition')return openMealNutrition({entry,energyUnit:diary.energyUnit,show,header,content});
 }
 
 function openRepeatsView(initialDraft) {
