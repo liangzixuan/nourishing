@@ -26,16 +26,21 @@ if (typeof window !== 'undefined') {
   window.addEventListener('nourishing-local-changed', invalidateLocalState);
 }
 
-export async function localWorkspaceState() {
+// Keep record aliases and projected state from the same account revision.
+export async function localWorkspaceView() {
   try {
     const copy = await offlineCopy();
     if (!copy?.snapshot?.state || copy.locked) return null;
     const identity = JSON.stringify([copy.ownerId, copy.ticket.epoch, copy.revision]);
-    if (cachedState && cachedIdentity === identity) return cachedState;
-    cachedState = offlineEffectiveState(copy);
-    cachedIdentity = identity;
-    return cachedState;
+    if (!cachedState || cachedIdentity !== identity) {
+      cachedState = offlineEffectiveState(copy);
+      cachedIdentity = identity;
+    }
+    return {state:cachedState,recordIds:copy.recordIds??{}};
   } catch { return null; }
+}
+export async function localWorkspaceState() {
+  return (await localWorkspaceView())?.state??null;
 }
 const readLocalState = localWorkspaceState;
 

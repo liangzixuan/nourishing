@@ -1,4 +1,5 @@
-import {localWorkspaceState} from './local-engine.js';
+import {localWorkspaceView} from './local-engine.js';
+import {remapWriteReferences} from './write-identities.js';
 import {request} from './diary-api.js';
 
 // Selection is a read, not a save prerequisite. Recompute from pending local
@@ -9,11 +10,13 @@ export function watchDiarySelection({selection,onChange}){
   if(lifetime.signal.aborted)return;
   const current=++serial;clearTimeout(timer);requestController?.abort();const reading=new AbortController();requestController=reading;
   try{
-   const state=await localWorkspaceState();if(current!==serial||lifetime.signal.aborted)return;let result;
-   if(state){
+   const local=await localWorkspaceView();if(current!==serial||lifetime.signal.aborted)return;let result;
+   if(local){
+    const {state,recordIds}=local;
     const {diarySelectionNutrition}=await import('./local-diary-projection.js');
+    const resolved=remapWriteReferences(structuredClone(selection),recordIds);
     // A row deleted while this view was opening no longer contributes.
-    const currentSelection=selection.scope==='selected'?{...selection,records:selection.records.filter(ref=>state[ref.collection]?.some(row=>row.id===ref.id&&row.date===selection.date))}:selection;
+    const currentSelection=resolved.scope==='selected'?{...resolved,records:resolved.records.filter(ref=>state[ref.collection]?.some(row=>row.id===ref.id&&row.date===resolved.date))}:resolved;
     result=diarySelectionNutrition(state,currentSelection);
    }else result=await request('/api/diary/tools/review',{operation:'nutrition',selection},reading.signal);
    if(current!==serial||lifetime.signal.aborted)return;

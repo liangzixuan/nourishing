@@ -202,6 +202,10 @@ async function load({reuseUnchanged = false} = {}) {
     if (reuseUnchanged && (sameDiarySnapshot(diary, result) || document.querySelector('dialog[open]'))) return;
     applyDiary(result);
   } catch (error) {
+    // The response cache may have been invalidated by a completed save. The
+    // retained account snapshot still owns the diary, including pending edits.
+    const retained=id===loadId?await localDiaryView(date,diary??{}):null;
+    if(id===loadId&&retained){applyDiary(retained);return;}
     if (id === loadId) {
       notice.textContent = error.message;
       if (view === 'diary' && !reuseUnchanged) {
