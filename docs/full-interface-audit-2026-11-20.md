@@ -8,6 +8,8 @@ This audit replaces the broad coverage claims in the earlier parity audit. Versi
 
 The reference archive is `Downloads/Cronometer Reference - 2026-11-20`: 333 retained screenshot/XML pairs. All 28 contact sheets have received an overview review. This is **not** a claim that 333 current-app states have passed comparison. Personal screenshots and extracted text stay outside Git.
 
+The private index at `.local/full-parity/current-state-evidence.json` has one row for each of the 333 retained PNG/XML pairs. As of 1.0.26, 121 rows link to a current-app capture from a specific comparison. A capture can document a difference, and some earlier comparisons still need an index link.
+
 Current visual checks use the actual frontend and canonical domain/view code in local browser fixtures with synthetic data. Recognition responses and the food catalog are fixtures. These checks do not establish production authentication, AI quality, camera permissions, notification delivery, or installed-device behavior. Different viewport scaling prevents a pixel-accurate comparison.
 
 Each state needs separate evidence for layout/actions, navigation/dismissal, and applicable create/edit/cancel/delete behavior. Save flows also need immediate local results, persisted restart, delayed response, failure/retry, and no duplicate records. A screen is not complete because its parent tab exists or a unit test passes.
@@ -97,7 +99,7 @@ Ranges identify reference states, not a blanket pass. The local extracted invent
 | Calendar, 303–304 | Compared with both reference states. See D1 follow-up. | Installed-device date return and screen-reader gestures |
 | Add to Diary, 2–3 | Structure checked | Edit/reorder/hide options, each destination and return |
 | Biometrics, 5–23 | Grid and heart-rate editor structure checked | Category icons, all picker states, multi-value measurements, create/edit/delete, completed-day handling |
-| Notes, 25–32 | Unverified | Text/photo/time/group, create/edit/cancel/delete |
+| Notes, 25–32 | Compared the new and reopened note controls at 25/27. The current editor includes a date row and an edit-screen Delete action. Earlier tests cover prepared attachments, pending edits, restart and receipts. The 1.0.26 check below reproduced attachment loss if the device is offline at file selection. | Full-shell styling, native keyboard and remaining 26/28–32 screenshot states. |
 | Water, 33–42 | Implemented and checked locally: D11 | Existing water-row editing and installed-device verification; exact icon artwork differs |
 | Food search/detail/options, 43–55 | Compared the search list/drawer and populated entry form against 43–45 and 49–54. Browser checks covered tabs, sort/database choices, quantity, timestamp, group, favorites, saved edit and deletion. The search fixture had multi-add disabled by its caller. The saved-entry form exposes Save Changes. The detail menu lacks Report Issue from 51. | Fresh Diary-context multi-add and return visuals, native unit picker and an in-product reporting destination. The catalog fixture has different foods and source coverage. |
 | Recipe editor, 60–79 | Different: D6 | All four stages, import, ingredients, serving basis, advanced controls, category, review, edit/delete |
@@ -225,3 +227,14 @@ Chrome reproduced an offline failure when expanding a saved meal. The corrected 
 ### Nutrition, library and Diary controls (1.0.25, released)
 
 The follow-up table records the Report, Targets, Dashboard, custom-food editor, Diary Groups, Repeat Items, Suggest Food, Oracle and Macro Scheduler comparisons. The local run passed 657 tests and exposed three translated assertions for the previous custom-food review header. Reference 255 shows both New Food and Nutrient Review. The corrected French, German and Portuguese tests passed and the production build succeeded. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/44868147427) passed at `f0ca5a3`, with 657 tests passed, zero failed and three Linux skips. The site and all three functions reached ready. All 14 checked live assets matched the tested build and appeared in the offline manifest. The local proof is `.local/release-1.0.25-live-proof.json`.
+
+
+### R14 — offline attachment selection in Notes (open)
+
+In 1.0.26, Chrome selected a valid PNG for a new note while disconnected. The request to prepare the image failed. The editor displayed no preview and enabled Save. Pressing Save closed the editor, queued `note.add` and stored the text without an image. Reopening the note confirmed the loss. The local reproducer is `.local/audit-note-before-preparation.test.mjs` and its output is `.local/1.0.26-note-offline-baseline.log`. This test reproduces the defect. The earlier note test goes offline **after** image preparation. The successful snapshot repair in R12 covers the separate progress-photo flow.
+
+### Diary, library and offline saves (1.0.26, released)
+
+All 664 local tests passed and the production Astro build succeeded. Earlier runs exposed tests that checked the server before background chart writes finished and a group fixture that still used the compact editor. The updated tests verify both the immediate device state and the canonical result. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/44869543271) passed at `0f1ef7d`, with 661 tests passed, zero failed and three Linux skips. The site and all three functions reached ready. All 25 checked live assets matched. The startup lists matched the local build, but the full production inventory omitted four generated PWA icon files. Those files were available online.
+
+A build from a fresh copy of the same commit reproduced the omission. Astro generated the four icons after creating the offline manifest. A previously built checkout still had the icon files, which masked the issue. The correction moves icon generation into offline packaging and preloads the app manifest and the four icons.

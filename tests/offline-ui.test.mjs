@@ -2,28 +2,26 @@ import {CHROME_EXECUTABLE} from './_chrome.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
-import {readFileSync,existsSync} from 'node:fs';
-import {resolve,extname} from 'node:path';
+import {readFileSync} from 'node:fs';
 import {chromium} from 'playwright-core';
 import {initialState,act} from '../server/domain/workspace.mjs';
 import {createWorkspaceStore} from '../server/workspace-store.mjs';
 import {createDataRepository} from '../server/data-repository.mjs';
 import {diaryStoreFixture} from './fixtures/diary-store.mjs';
-import {barcodeAssets} from '../scripts/package-barcode-assets.mjs';
+import {pwaFixtureAssets} from './fixtures/pwa-assets.mjs';
 import {buildOfflineAssets} from '../scripts/package-offline-assets.mjs';
 import {createWebHandler} from '../server/http.mjs';
 import {favoriteView} from '../server/library-extras.mjs';
 
 // Uses the shipped service worker, normal app bundle, persistent store, and receipt owner.
 test('normal diary restarts offline with pending edits and isolates unlocked accounts',{timeout:30000},async()=>{
- const manifest=await buildOfflineAssets();assert.ok(manifest.precache.includes('/diary-shell.html'));assert.equal(manifest.files.includes('/diary'),false);assert.equal(manifest.files.some(path=>path.startsWith('/api/')),false);
+ const manifest=await buildOfflineAssets();for(const asset of ['/diary-shell.html','/manifest.webmanifest','/pwa-icons/icon-180.png','/pwa-icons/icon-192.png','/pwa-icons/icon-512.png','/pwa-icons/maskable-512.png'])assert.ok(manifest.precache.includes(asset),asset);assert.equal(manifest.files.includes('/diary'),false);assert.equal(manifest.files.some(path=>path.startsWith('/api/')),false);
  const date=new Date().toLocaleDateString('en-CA'),clock={now:new Date(),asOf:new Date().toISOString(),timeZone:'UTC'},seed=initialState();seed.foods=[];
  act(seed,'note.add',{date,text:'Original note'});const note=seed.notes.at(-1);act(seed,'exercise.add',{date,time:'12:00',group:'Lunch',name:'Original walk',duration:10,calories:30});const exercise=seed.entries.at(-1);act(seed,'biometric.add',{date,type:'weight',unit:'kg',value:67});const biometric=seed.biometrics.at(-1);
  const food=act(seed,'food.save',{name:'Offline Rice',serving:'100 g',grams:100,nutrients:{calories:130,protein:3,carbs:28,fat:1}});act(seed,'entry.add',{foodId:food.id,date,group:'Lunch',quantity:100,unit:'g'});
  const alice=diaryStoreFixture(seed),bob=diaryStoreFixture(initialState(),'bob'),fixtures={fixture:alice,bob},stores={fixture:createWorkspaceStore(alice.db,'fixture'),bob:createWorkspaceStore(bob.db,'bob')};
  const sent=[];let lose=false,revoked=false,base,handle,browser;
- const vendor=new Map((await barcodeAssets()).map(asset=>['/'+asset.path,asset])),publicRoot=resolve('public');
- const assets={get(path){if(vendor.has(path))return vendor.get(path);if(path==='/login')return {type:'text/html',body:'<!doctype html><title>Sign in</title>'};const file=resolve(publicRoot,'.'+(path==='/diary'?'/diary.html':path));if(!(file.startsWith(publicRoot+'/')||file.startsWith(publicRoot+'\\'))||!existsSync(file))return;const ext=extname(file);return {body:readFileSync(file),type:ext==='.html'?'text/html':ext==='.css'?'text/css':ext==='.svg'?'image/svg+xml':ext==='.woff2'?'font/woff2':ext==='.png'?'image/png':'text/javascript'};}};
+ const assets=await pwaFixtureAssets();
  const service={current:async secret=>{if(revoked)throw {code:401};return {id:secret,name:secret==='fixture'?'Alice Example':'Bob Example'};},offlineSnapshot:async secret=>stores[secret].offlineSnapshot(),offlineCommand:async(secret,input)=>stores[secret].offlineCommand(input),readDiary:async(secret,day)=>createDataRepository(fixtures[secret].db,secret).diary(day,clock),favorites:async secret=>favoriteView(fixtures[secret].state()),workspaceCommand:async(secret,input)=>{sent.push(input);const result=await stores[secret].command(input,async()=>null,clock);if(lose){lose=false;throw {code:503,publicMessage:'Lost reply'};}return result;}};
  for(const name of ['catalogSearchIndex','display','library','recordOptions','exerciseCatalog','dashboard','profileSettings','targets','fasting','reminders','repeats','charts','snapshots','nutritionReport'])service[name]=async()=>({});
  const server=createServer(async(req,res)=>{const response=await handle(new Request(base+req.url,{method:req.method,headers:req.headers,...(req.method==='GET'?{}:{body:req,duplex:'half'})}));res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));base='http://127.0.0.1:'+server.address().port;handle=createWebHandler({config:{origin:base},assets,service});
@@ -33,6 +31,13 @@ test('normal diary restarts offline with pending edits and isolates unlocked acc
   await page.reload();await page.locator('.md-diary').waitFor();await page.evaluate(async()=>{await Promise.all([import('/offline-store.js'),import('/background-writes.js')]);});
   await page.addInitScript(()=>Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>true}));
   await context.setOffline(true);await page.goto(base+'/diary');await page.locator('.md-diary').waitFor({timeout:1500});assert.equal(await page.locator('meta[name="nourishing-offline-shell"]').count(),1);assert.match(await page.locator('#page').innerText(),/Offline Rice/);
+  const cachedIcons=await page.evaluate(async()=>{
+   const manifest=await (await fetch(document.querySelector('link[rel=manifest]').href)).json();
+   const urls=[document.querySelector('link[rel=apple-touch-icon]').href,...manifest.icons.map(icon=>icon.src)];
+   return Promise.all(urls.map(async url=>{const response=await fetch(url);const bytes=new Uint8Array(await response.arrayBuffer());return [response.status,...bytes.subarray(0,8)];}));
+  });
+  assert.deepEqual(cachedIcons,Array(4).fill([200,137,80,78,71,13,10,26,10]));
+
   await page.locator('[data-action="edit-entry"]').filter({hasText:'Offline Rice'}).click();await page.getByRole('spinbutton',{name:'Amount',exact:true}).fill('200');await page.locator('.mf-form [type=submit]').click();await page.locator('#sheet').waitFor({state:'hidden'});assert.equal(alice.state().entries.find(row=>row.foodId===food.id).quantity,100);
   const queued=await page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy()).pending);assert.equal(queued.length,1);assert.equal(queued[0].transport.body.payload.quantity,200);
   await page.reload();await page.locator('.md-diary').waitFor({timeout:1500});await page.locator('[data-action="edit-entry"]').filter({hasText:'Offline Rice'}).click();assert.equal(await page.getByRole('spinbutton',{name:'Amount',exact:true}).inputValue(),'200');await page.keyboard.press('Escape');await page.locator('#sheet').waitFor({state:'hidden'});

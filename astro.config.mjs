@@ -4,7 +4,6 @@ import {diaryStylesPackaging} from './scripts/package-diary-styles.mjs';
 import {diaryBundlePackaging} from './scripts/package-diary-bundle.mjs';
 import {offlinePackaging} from './scripts/package-offline-assets.mjs';
 import {barcodePackaging} from './scripts/package-barcode-assets.mjs';
-import {pwaPackaging} from './scripts/package-pwa-icons.mjs';
 import {recipeWorkerPackaging} from './scripts/package-recipe-worker.mjs';
 
 // server/http owns streaming route limits after authentication. The adapter's
@@ -16,7 +15,6 @@ export default defineConfig({
     diaryStylesPackaging(),
     diaryBundlePackaging(),
     offlinePackaging(),
-    pwaPackaging(),
     recipeWorkerPackaging(),
     barcodePackaging(),
   ],

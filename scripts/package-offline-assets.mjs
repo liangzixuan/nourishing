@@ -4,6 +4,7 @@ import {fileURLToPath} from 'node:url';
 import {posix} from 'node:path';
 import {init,parse} from 'es-module-lexer';
 import {load} from 'cheerio';
+import {buildPwaIcons} from './package-pwa-icons.mjs';
 import {barcodeAssets} from './package-barcode-assets.mjs';
 const publicRoot=new URL('../public/',import.meta.url);
 export async function buildOfflineAssets(){
@@ -32,6 +33,12 @@ export async function buildOfflineAssets(){
  for(const script of diary('script[src]').toArray()){
   const path=diary(script).attr('src');if(path!=='/pwa-update.js')await visit(path);
  }
+ const manifestPath=diary('link[rel="manifest"]').attr('href');
+ await visit(manifestPath);
+ const manifestIcons=JSON.parse(contents.get(manifestPath).toString('utf8')).icons;
+ const generated=await buildPwaIcons();
+ for(const {path,body} of generated)contents.set('/'+path,body);
+ for(const path of [diary('link[rel="apple-touch-icon"]').attr('href'),...manifestIcons.map(icon=>icon.src)])await visit(path);
  const startup=new Set(contents.keys());
  // Styles and their fonts/icons are small shared presentation assets. Cache the
  // full inventory so nested CSS imports cannot stall the updated shell.
