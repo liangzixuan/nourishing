@@ -1,4 +1,12 @@
 const rows={
+ 'facts.calories':['Energy','Énergie','Energie','Energia'],
+ 'facts.fat':['Fat','Lipides','Fett','Gordura'],
+ 'facts.saturatedFat':['Saturated','Saturés','Gesättigte Fette','Saturadas'],
+ 'facts.transFat':['Trans-Fats','Gras trans','Transfette','Gorduras trans'],
+ 'facts.carbs':['Carbs','Glucides','Kohlenhydrate','Carboidratos'],
+ 'facts.fiber':['Fiber','Fibres','Ballaststoffe','Fibras'],
+ 'facts.sugar':['Sugars','Sucres','Zucker','Açúcares'],
+ 'facts.addedSugar':['Added Sugars','Sucres ajoutés','Zugesetzter Zucker','Açúcares adicionados'],
  servingInstruction:["Enter the serving size listed on your product’s packaging.","Saisissez la portion indiquée sur l’emballage du produit.","Gib die Portionsgröße von der Produktverpackung ein.","Digite o tamanho da porção indicado na embalagem."],
  foodExample:['e.g. Peanut bar','p. ex. barre aux arachides','z. B. Erdnussriegel','ex.: barra de amendoim'],
  servingExample:['e.g. 1 bar; 3 tsp; 250 mL','p. ex. 1 barre, 3 c. à café, 250 mL','z. B. 1 Riegel, 3 TL, 250 mL','ex.: 1 barra, 3 colheres de chá, 250 mL'],
