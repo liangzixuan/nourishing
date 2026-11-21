@@ -60,7 +60,8 @@ test('source More menu preserves search and back focus, cloud destinations and d
   await page.locator('[data-more-open=account]').click();await page.locator('[data-more-open=account-data]').click();await page.locator('#delete-account').click();await page.locator('.deletion-close').click();
   await page.locator('[data-more-back]').click();await page.locator('[data-more-open=notifications]').click();
   const toggle=page.getByRole('switch',{name:'Allow Notifications',exact:true});await toggle.waitFor();assert.equal(await toggle.isChecked(),false);
-  await toggle.check();await page.locator('[data-reminder-action=add]').waitFor();assert.equal(reminders.paused,false);
+  await toggle.check();await page.getByRole('switch',{name:'Reminder to Log Food',exact:true}).waitFor();
+  await page.locator('.push-custom-schedules>summary').click();await page.locator('[data-reminder-action=add]').waitFor();assert.equal(reminders.paused,false);
   await toggle.uncheck();await page.locator('[data-reminder-action=add]').waitFor({state:'detached'});assert.equal(reminders.paused,true);
   await page.locator('[data-more-back]').click();await page.locator('[data-more-open=notifications]').waitFor();await page.locator('[data-more-back]').click();
   const readsBefore=accountReads;await page.getByRole('button',{name:'Account',exact:true}).click();await page.getByRole('button',{name:'Change email',exact:true}).waitFor();assert.equal(accountReads,readsBefore);
