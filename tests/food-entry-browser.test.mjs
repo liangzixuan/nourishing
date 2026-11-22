@@ -82,6 +82,9 @@ test('source food entry preserves canonical preview/add/edit/favorites and error
   const short=await headerBoxes();
   assert.ok(Math.abs((short.star.left+short.title.right)/2-short.viewport/2)<2,JSON.stringify(short));
   for(const hit of [short.close,short.favorite,short.menu])assert.ok(hit.width>=44 && hit.height>=44);
+  const servings=page.getByLabel('Serving',{exact:true});
+  assert.deepEqual(await servings.locator('option').evaluateAll(rows=>rows.map(row=>row.value)),['portion:bowl:large','oz','g','servings']);
+  assert.equal(await servings.locator('option').first().textContent(),'Large bowl — 150g');
   await page.getByLabel('Amount',{exact:true}).fill('2');await page.getByLabel('Serving',{exact:true}).selectOption('portion:bowl:large');await energy().filter({hasText:'600'}).waitFor();assert.deepEqual({...previews.at(-1)}, {date,group:'Lunch',time:'',foodId:'food',quantity:2,unit:'portion',portionId:'bowl:large'});
   await page.getByLabel('Include timestamp').check();await page.getByLabel('Timestamp',{exact:true}).fill('09:30');await page.getByLabel('Group',{exact:true}).selectOption('Dinner');
   await page.getByRole('button',{name:'Fixture source',exact:true}).click();await page.getByText('Fixture source credit',{exact:true}).waitFor();

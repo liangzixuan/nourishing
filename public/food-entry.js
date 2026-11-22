@@ -31,6 +31,18 @@ export function mountFoodEntry({item,entry,quantity,date,group,groups,revision,s
   const basis=unit.basis==='grams'?'g':'mL';
   return [id,id===basis?id:`${id} — ${unit.factor.toLocaleString(uiLanguage(),{maximumFractionDigits:0})}${basis}`];
  });
+ // The diary serving list interleaves named weights with standard mass units.
+ // Mixed-basis foods keep their supplied order, since volume and mass are independent.
+ if(!ingredientOnly&&portions.size){
+  const grams=id=>{
+   const unit=quantityUnit(id);
+   return portions.get(id)?.grams??(unit?.basis==='grams'?unit.factor:null);
+  };
+  if(servingOptions.every(([id])=>id==='servings'||grams(id)>0)){
+   servingOptions.sort(([a],[b])=>(grams(b)??0)-(grams(a)??0));
+  }
+ }
+ const servingLabels=new Map(options);
  const fields='<div class="quantity-fields mf-quantity">'+quantityFields(servingOptions,entry??draft??quantity??{},ingredientOnly?t('mobileFood.serving'):undefined).replace('name="amount"',`name="amount" data-quantity-value aria-label="${e(t('mobileFood.amount'))}"`).replace('name="unit"','name="unit" data-quantity-unit')+'</div>';
  show(mobileFoodEntryMarkup({food,ingredientOnly,kind:kind+'s',entry,quantity:fields,groupOptions:groups.map(g=>`<option value="${e(g)}" ${g===(entry?.group??draft?.group??group)?'selected':''}>${e(g)}</option>`).join(''),date:entry?.date??draft?.date??date,time:entry?.time??draft?.time??'',language:uiLanguage(),favorite:favoriteButton(kind,food.id,false),copyLabel:kind==='food'&&onCopy?fc('foodMenuCopy'):null,reportLabel:kind==='food'?fc('issue'):null,icons,source,sourceDetails:details,submitLabel:submitLabel??(onApply?t("mobileSuggest.applyQuantity"):entry?t("mobileFood.save"):t("mobileBiometric.add")),backLabel:entry?t("common.close"):t("mobileFoodEditor.back")}));
  const form=content.querySelector('.mf-form'),sheet=form.closest('dialog'),preview=form.querySelector('[data-mf-preview]'),menu=form.querySelector('.mf-menu');sheet.classList.add('mf-detail');
@@ -53,7 +65,7 @@ export function mountFoodEntry({item,entry,quantity,date,group,groups,revision,s
  async function favorite(){if(busy||!favorites)return;busy=true;status.textContent='';form.querySelectorAll('button').forEach(button=>button.disabled=true);try{await setFavorite({kind,id:food.id,enabled:!favorites.items.some(row=>row.id===food.id&&row.kind===kind),revision:favorites.revision,ticket:favorites.ticket,resource:food});await onChange();if(alive())await loadFavorites();}catch(error){if(alive()){status.textContent=error.message;await loadFavorites().catch(()=>{});}}finally{busy=false;if(alive())form.querySelectorAll('button').forEach(button=>button.disabled=false);}}
  function schedule(delay=180){clearTimeout(timer);pending?.abort();const id=++serial;preview.setAttribute('aria-busy','true');timer=setTimeout(()=>update(id),delay);}
  function describeBasis(facts){
-  const select=form.elements.unit,[id,label]=options[select.selectedIndex],unit=quantityUnit(id);
+  const id=form.elements.unit.value,label=servingLabels.get(id),unit=quantityUnit(id);
   const caption=t('mobileFood.per',{amount:form.elements.amount.value,serving:unit?.id??label});
   const measure=Number.isFinite(facts.grams)?[facts.grams,'g']:Number.isFinite(facts.milliliters)?[facts.milliliters,'mL']:null;
   return measure&&measure[1]!==unit?.id?caption+' \u00b7 '+nutrition.number(measure[0])+' '+measure[1]:caption;
@@ -72,7 +84,7 @@ export function mountFoodEntry({item,entry,quantity,date,group,groups,revision,s
  preview.addEventListener('toggle',event=>{if(event.target.dataset.mfSection)sections.set(event.target.dataset.mfSection,event.target.open);},{capture:true,signal});
  form.querySelector('[data-mf-report]')?.addEventListener('click',()=>{
   closeMenu();
-  const [id,label]=options[form.elements.unit.selectedIndex],amount=form.elements.amount.value;
+  const id=form.elements.unit.value,label=servingLabels.get(id),amount=form.elements.amount.value;
   const discrete=id==='servings'||id.startsWith('portion:');
   const serving=[amount,label].filter(Boolean).join(discrete?' × ':' ');
   openFoodCorrection({host:content,anchor:menu.querySelector('summary'),signal,foodName:food.name,foodId:food.id,source,serving});
