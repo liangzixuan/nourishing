@@ -39,7 +39,7 @@ const rows={
  'diary.selectedMeal':['Create Meal from Selection','Créer un repas à partir de la sélection','Mahlzeit aus Auswahl erstellen','Criar refeição com a seleção'],
  'diary.selectedNutrition':['Show Nutrition Summary','Afficher le résumé nutritionnel','Nährstoffübersicht anzeigen','Mostrar resumo nutricional'],
  'more.storage':['Device storage','Stockage sur l’appareil','Gerätespeicher','Armazenamento no dispositivo'],
- 'more.version':['Version {{version}}','Version {{version}}','Version {{version}}','Versão {{version}}'],
+ 'more.version':['Version','Version','Version','Versão'],
  'diary.recipeCreated':['Recipe created','Recette créée','Rezept erstellt','Receita criada'],
  'diary.itemsAdded':['Items added to diary','Éléments ajoutés au journal','Einträge zum Tagebuch hinzugefügt','Itens adicionados ao diário'],
  'more.search':['Search More','Rechercher dans Plus','Mehr durchsuchen','Pesquisar em Mais'],

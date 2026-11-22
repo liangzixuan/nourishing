@@ -273,12 +273,10 @@ export function mountMore({
       return section(
         id,
         t('mobileMore.about'),
-        '<div class="mm-about"><img src="/favicon.svg" alt=""><h2>Nourishing</h2><p>' +
-          e(coreText('more.version', {version: appVersion})) +
-          '</p><button type="button" class="mm-update-btn" data-more-check-update>' +
-          e(coreText('more.checkUpdates')) +
-          '</button><p class="mm-update-status" role="status" aria-live="polite"></p></div>' +
-          group(row('licenses',coreText('more.licenses')) + row('account', t('mobileMore.account')) + row('backup', coreText('more.yourData'))),
+        group(row('licenses',coreText('more.licenses')) +
+          `<dl class="mm-version"><dt>${e(coreText('more.version'))}</dt><dd>${e(appVersion)}</dd></dl>`, 'mm-about-details') +
+        group(`<button type="button" class="mm-row" data-more-check-update><span>${e(coreText('more.checkUpdates'))}</span></button><p class="mm-update-status" role="status" aria-live="polite"></p>` +
+          row('account', t('mobileMore.account')) + row('backup', coreText('more.yourData'))),
       );
     }
   }
