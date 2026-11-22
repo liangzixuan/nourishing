@@ -87,7 +87,11 @@ export class MobileDiary {
    if(event.target.closest('[data-md-context]'))context(event);
    const group=event.target.closest('[data-md-group]'),heading=event.target.closest('[data-md-group]>summary');
    if(heading){
-    if(event.target.closest('[data-md-fold-group]')){group.open=!group.open;heading.querySelector('[data-md-fold-group]').setAttribute('aria-expanded',String(group.open));}
+    if(event.target.closest('[data-md-fold-group]')){
+     group.open=!group.open;
+     mobileDiarySession.groups.set(group.dataset.mdGroup,group.open);
+     heading.querySelector('[data-md-fold-group]').setAttribute('aria-expanded',String(group.open));
+    }
     else if(event.target.closest('[data-md-select-group]')||!event.target.closest('button,input,label')){
      event.preventDefault();const select=heading.querySelector('[data-md-select-group]');
      if(!select.disabled){onGroupSelect?.(group.dataset.mdGroup);root.querySelectorAll('[data-md-select-group]').forEach(button=>button.setAttribute('aria-pressed',String(button===select)));}
@@ -95,7 +99,6 @@ export class MobileDiary {
    }
    if(event.target.closest('.md-group summary button,.md-water summary button'))event.preventDefault();
   },options);
-  root.addEventListener('toggle',event=>{if(event.target.matches('[data-md-group]'))mobileDiarySession.groups.set(event.target.dataset.mdGroup,event.target.open);},{...options,capture:true});
   let start=null;
   root.addEventListener('pointerdown',event=>{start=event.target.closest('[data-md-summary]')?{x:event.clientX,y:event.clientY}:null;},options);
   root.addEventListener('pointerup',event=>{if(start&&Math.abs(event.clientX-start.x)>55&&Math.abs(event.clientY-start.y)<40)this.showPage(mobileDiarySession.page+(event.clientX<start.x?1:-1));start=null;},options);
