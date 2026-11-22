@@ -114,7 +114,9 @@ test('Diary selection stays local through offline edits and rapid selection chan
   assert.equal(await detail.locator('[data-card=consumed] .ds-energy-ring strong').innerText(),'133');
   assert.match(await detail.locator('[data-component=unattributed]').innerText(),/133 kcal/);
   assert.equal(await detail.locator('[data-component=resting] dd').first().textContent(),'Unknown');
+  assert.deepEqual(fixture.state(),before);
   await detail.getByRole('button',{name:'Balance',exact:true}).click();
+  await waitForOutboxIdle(page,()=>fixture.state().settings.diaryEnergyDisplay==='balance');
   assert.equal(await detail.locator('[data-card=balance] .ds-energy-ring small').textContent(),'Unknown');
   await page.waitForFunction(()=>[...document.querySelectorAll('.ds-energy canvas')].every(c=>window.Chart.getChart(c)));
   const rings=await detail.locator('canvas').evaluateAll(nodes=>nodes.map(c=>window.Chart.getChart(c).id));
@@ -128,7 +130,7 @@ test('Diary selection stays local through offline edits and rapid selection chan
   await page.context().setOffline(false);
   mkdirSync('.local/diary-selection',{recursive:true});await page.screenshot({path:'.local/diary-selection/selected.png'});await page.getByRole('button',{name:'Back',exact:true}).click();await ring(298);assert.equal(await page.locator('.md-scope').count(),0);await selectGroup();await ring(298);await page.locator('[data-tool-select-group=Lunch]').uncheck();await ring(298);assert.equal(await page.locator('.md-scope').count(),0);
   await page.evaluate(async()=>{const {applyFontPreferences}=await import('/font-presentation.js');applyFontPreferences({fontScale:2});});await page.getByRole('button',{name:'Energy Summary',exact:true}).click();await page.evaluate(()=>window.scrollTo(0,0));await page.locator('[data-md-page-id=energy] [data-action=mobile-diary-energy]').first().click();await page.locator('.ds-energy').waitFor();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.keyboard.press('Escape');await page.evaluate(async()=>{const {applyFontPreferences}=await import('/font-presentation.js');applyFontPreferences({fontScale:1});});
-  assert.deepEqual(fixture.state(),before);
+  assert.deepEqual(fixture.state(),{...before,settings:{...before.settings,diaryEnergyDisplay:'balance'}});
   await page.getByRole('checkbox',{name:'Select Rice',exact:true}).check();await ring(133);
   await page.evaluate(async()=>{window.queueTestCommand=(await import('/diary-api.js')).queueCommand;});
   await page.context().setOffline(true);
