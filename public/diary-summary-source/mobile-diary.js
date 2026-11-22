@@ -9,6 +9,11 @@ export const mobileDiarySession={page:0,groups:new Map()};
 const number=(v,language,digits=1)=>Number.isFinite(v)?v.toLocaleString(language,{maximumFractionDigits:digits}):'—';
 const button=(label,action,extra='')=>`<button type="button" data-action="${action}" ${extra}>${label}</button>`;
 export const diarySymbol=name=>`<span class="md-symbol" aria-hidden="true">${e(name)}</span>`;
+export function diaryFoodIcon(kind){
+ if(kind==='meal')return `<span class="md-meal-icon">${diarySymbol('restaurant')}</span>`;
+ if(kind==='recipe')return diarySymbol('restaurant');
+ return '<span class="md-food-icon" aria-hidden="true"></span>';
+}
 
 export function mobileDiaryHeader({date,today,complete,icons,menu,labels,language}){
  const label=date===today?labels.today:new Date(date+'T12:00:00').toLocaleDateString(language,{month:'short',day:'numeric'});

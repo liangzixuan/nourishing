@@ -39,7 +39,7 @@ import {mountRecordEditor} from './records.js';
 import {biometricCatalogDefinition} from './offline-source/server/biometric-library.mjs';
 import {biometricCatalogLabel} from './record-source/biometric-catalog-language.js';
 import {mountRepeats} from './repeats.js';
-import {mobileDiaryHeader, mobileDiaryGroups, mobileDiaryRecord, diarySymbol} from './diary-view.js';
+import {mobileDiaryHeader, mobileDiaryGroups, mobileDiaryRecord, diarySymbol, diaryFoodIcon} from './diary-view.js';
 import {escape as e} from './html.js';
 import {request, readDiaryCalendarMonth, command, clearPending, queueCommand, queuePhoto} from './diary-api.js';
 import {mountLibrary} from './library.js';
@@ -340,10 +340,8 @@ function renderDiaryRow(collection, row) {
   const swipeOptions={swipe:!diaryTools.selection(),canDelete:!diary.completed,labels:{actions:coreText('diary.actions'),remove:t('mobileRepeat.delete')}};
   const time = diary.presentation?.settings?.showTimestamp === false ? '' : row.time;
   if (collection === 'entries') {
-    const restaurantIcon = diarySymbol('restaurant');
     const icon = row.kind === 'exercise' ? '<span class="md-exercise-icon" aria-hidden="true"></span>'
-      : row.mealId ? `<span class="md-meal-icon">${restaurantIcon}</span>`
-      : row.recipeId ? restaurantIcon : '<span class="md-food-icon" aria-hidden="true"></span>';
+      : diaryFoodIcon(row.mealId?'meal':row.recipeId?'recipe':'food');
     // Older catalog records do not identify whether the user chose a preset or a specific pace.
     const selection=row.exerciseSelection;
     const walkingEffort=row.kind==='exercise'&&selection?.generalWalking&&row.name===selection.description&&(walkingEfforts[selection.code]??priorWalkingEfforts[selection.code]);

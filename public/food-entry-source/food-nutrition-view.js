@@ -3,6 +3,7 @@ import {formatMessage} from '../report-source/public/message-format.js';
 import {nutrientDisplayName,nutrientGroupName} from '../report-source/public/nutrient-language.js';
 import {displayValue,displayUnit} from '../dashboard-source/energy-display.js';
 import {chartLibrary} from '../dashboard-source/chart-library.js';
+import {consumedEnergyOrder,energyComponentColors} from '../diary-summary-source/energy-rings.js';
 const diarySymbol=()=>'<svg class="md-symbol" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>';
 
 // Shared nutrient display for diary items and unsaved food reviews.
@@ -40,9 +41,16 @@ export class FoodNutritionView{
   for(const row of this.catalog){if(['calories',...macros].includes(row.id)||hidden.has(row.id))continue;const group=row.category;if(!groups.has(group))groups.set(group,[]);groups.get(group).push(row);}
   this.target.innerHTML=section('energy',m('energy'),`<div class="mf-energy"><div class="mf-ring"><canvas aria-label="${e(m('energy'))}" role="img"></canvas><div><strong data-mf-energy>${num(energy,0)}</strong><span>${e(this.unit)}</span></div></div><div class="mf-legend">${legend}</div></div>`)+section('macros',m('macros'),['calories',...macros].map(progress).join(''))+highlighted+[...groups].map(([group,rows])=>section(group,nutrientGroupName(group,this.language),rows.map(row=>progress(row.id)).join(''))).join('')+`<small class="mf-missing">${e(m('missing'))}</small>`;
   const Chart=await chartLibrary();if(generation!==this.generation||!isCurrent())return;
-  const breakdown=nutrition.consumedEnergy,values=breakdown?.values,keys=['protein','carbohydrate','fat','alcohol','unattributed'];
-  const usable=values&&Number.isFinite(breakdown.total)&&breakdown.total>0&&keys.every(id=>Number.isFinite(values[id])&&values[id]>=0);
-  this.chart=new Chart(this.target.querySelector('canvas'),{type:'doughnut',data:{datasets:[{data:usable?keys.map(id=>values[id]):[1],backgroundColor:usable?['#59d18c','#44c9d6','#ba75cb','#f6be57','#6c7081']:['#45485a'],borderWidth:0}]},options:{animation:false,responsive:true,maintainAspectRatio:false,cutout:'85%',plugins:{legend:{display:false},tooltip:{enabled:false}}}});
+  const breakdown=nutrition.consumedEnergy;
+  const values=consumedEnergyOrder.map(id=>breakdown?.values?.[id]);
+  const usable=breakdown?.total>0&&Number.isFinite(breakdown.total)&&values.every(value=>Number.isFinite(value)&&value>=0);
+  const dataset={
+   data:usable?values:[1],
+   backgroundColor:usable?consumedEnergyOrder.map(id=>energyComponentColors[id]):['#45485a'],
+   spacing:usable&&values.filter(value=>value>0).length>1?2:0,
+   borderWidth:0
+  };
+  this.chart=new Chart(this.target.querySelector('canvas'),{type:'doughnut',data:{datasets:[dataset]},options:{animation:false,responsive:true,maintainAspectRatio:false,cutout:'85%',plugins:{legend:{display:false},tooltip:{enabled:false}}}});
  }
  dispose(){this.clear();}
 }

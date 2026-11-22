@@ -1,7 +1,7 @@
 import {chartLibrary,chartColor} from '../dashboard-source/chart-library.js';
 
 export const energyComponentColors={protein:'#61ce91',carbohydrate:'#41c8d4',fat:'#be78ce',alcohol:'#e5b965',unattributed:'#73798c',resting:'#f7d4f0',baseline:'#db80ca',exercise:'#eaa66d',tracker:'#65baad',thermicEffect:'#e0ce70'};
-const consumedOrder=['fat','protein','carbohydrate','alcohol','unattributed'];
+export const consumedEnergyOrder=['fat','protein','carbohydrate','alcohol','unattributed'];
 
 // The carousel and the detail screen chart the same captured energy allocations.
 export class DiaryEnergyRings {
@@ -17,7 +17,7 @@ export class DiaryEnergyRings {
   const energy=summary.energy??{},values=summary.consumedEnergy?.values;
   const expenditure=summary.expenditureBreakdown?.components??[];
   const slices={
-   consumed:values?consumedOrder.map(id=>values[id]):[],
+   consumed:values?consumedEnergyOrder.map(id=>values[id]):[],
    expenditure:expenditure.map(row=>row.mean),
    remaining:[energy.consumed,energy.remaining],balance:[energy.consumed,energy.balance]
   };
@@ -28,7 +28,7 @@ export class DiaryEnergyRings {
    const color=({dataIndex})=>{
     if(!known||budget&&dataIndex===1)return chartColor('pale')();
     if(budget)return '#ff8050';
-    return energyComponentColors[kind==='consumed'?consumedOrder[dataIndex]:expenditure[dataIndex].id];
+    return energyComponentColors[kind==='consumed'?consumedEnergyOrder[dataIndex]:expenditure[dataIndex].id];
    };
    const detail=this.root.classList.contains('ds-energy');
    const spacing=detail&&known&&rows.filter(value=>value>0).length>1?2:0;
