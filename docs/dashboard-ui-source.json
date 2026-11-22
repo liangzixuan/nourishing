@@ -15,9 +15,10 @@
       "source": "public/discover-settings-ui.js",
       "target": "public/dashboard-source/discover-settings-ui.js",
       "sourceSha256": "ca9787293b283fd0808c92f78d2000f6353bb285be571b60342431df953e9962",
-      "sha256": "1fe971e436a8d1670a74e6153baedcd9eea33b087439f580fd7b2f16aae6984c",
+      "sha256": "e2002e142387d5d9aa0bde0457506cfa1e845dfe79c6e2604c421c5eb60b7403",
       "transforms": [
-        "CRLF to LF"
+        "CRLF to LF",
+        "Omit the referral switch because Nourishing has no referral program."
       ]
     },
     {
@@ -62,10 +63,11 @@
       "source": "public/locales/discover.js",
       "target": "public/dashboard-source/locales/discover.js",
       "sourceSha256": "83dece6c9cb462972ca2f1fb850543538aa41b8bb4627b68b10cd1edd3e3c151",
-      "sha256": "b501e2d26c6940f5e97e7df9d32c57f76b5711b001f4feb7f6ebd1bf01bcf22f",
+      "sha256": "743fab97f4320f412795ebeeaa53b4f9abfc2392278d32e2d33c38815a09d711",
       "transforms": [
         "CRLF to LF",
-        "English Coach description states recorded diary facts and saved goals/preferences; no model guidance is implied."
+        "English Coach description states recorded diary facts and saved goals/preferences; no model guidance is implied.",
+        "Remove the labels used only by the referral switch."
       ]
     },
     {
