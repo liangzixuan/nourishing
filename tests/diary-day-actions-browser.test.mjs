@@ -66,6 +66,9 @@ test('Diary day actions use the chosen calendar date and preserve other days',as
    await networkOnly.addInitScript(()=>Object.defineProperty(window,'indexedDB',{value:undefined}));
    const p=await networkOnly.newPage();p.setDefaultTimeout(10000);await p.clock.setFixedTime(new Date(day+'T12:00:00Z'));
    await p.goto(origin+'/diary');await chooseDiaryDate(p,older);
+   const dateLabel=p.locator('[data-md-calendar]');
+   assert.equal(await dateLabel.innerText(),'Wed, Nov 18');
+   assert.equal(await dateLabel.evaluate(n=>getComputedStyle(n).fontWeight),'700');
    await p.locator('[data-diary-record]').getByText(olderMarker,{exact:true}).waitFor();
    let releaseMarkers;
    const held=new Promise(resolve=>{releaseMarkers=resolve;});

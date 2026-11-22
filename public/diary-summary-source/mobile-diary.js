@@ -16,7 +16,7 @@ export function diaryFoodIcon(kind){
 }
 
 export function mobileDiaryHeader({date,today,complete,icons,menu,labels,language}){
- const label=date===today?labels.today:new Date(date+'T12:00:00').toLocaleDateString(language,{month:'short',day:'numeric'});
+ const label=date===today?labels.today:new Date(date+'T12:00:00').toLocaleDateString(language,{weekday:'short',month:'short',day:'numeric'});
  return `<div class="md-date-bar">${button(icons.check,'complete-day',`class="md-complete ${complete?'is-complete':''}" data-completed="${!complete}" aria-label="${e(complete?labels.reopen:labels.complete)}"`)}<div class="md-date-controls">${button(icons.back,'prev-day',`aria-label="${e(labels.previous)}"`)}<button type="button" class="md-date-label" data-md-calendar aria-label="${e(labels.date)}">${e(label)}</button>${button(icons.chevron,'next-day',`aria-label="${e(labels.next)}"`)}</div>${menu.replace('>•••</summary>','>'+icons.more+'</summary>')}</div>`;
 }
 
