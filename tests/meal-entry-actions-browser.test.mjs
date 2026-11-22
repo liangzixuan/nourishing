@@ -93,7 +93,9 @@ test('saved meal actions distinguish original, copy and occurrence; local adjust
   await page.reload();await page.locator('.md-diary').waitFor();await menu();await page.getByRole('button',{name:'Adjust Meal',exact:true}).click();await adjust.locator('[data-total-energy]').filter({hasText:'150.0 kcal'}).waitFor();await save.click();await page.locator('.entry-adjustment').waitFor({state:'detached'});assert.equal(await notice.count(),0);
   let remoteReviews=0;
   await page.route('**/api/diary/tools/review',route=>{remoteReviews++;return route.abort();});
-  await page.evaluate(()=>Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>false}));
+  // The fixture serves raw assets without the installed app’s service worker.
+  await page.evaluate(()=>import('/local-engine.js').then(()=>{}));
+  await page.context().setOffline(true);
   await menu();await page.getByRole('button',{name:'Explode Meal',exact:true}).click();await page.locator('#sheet').waitFor({state:'hidden'});
   await page.locator(`[data-diary-record][data-id="${entryId}"]`).waitFor({state:'detached'});
   assert.ok(state().entries.some(row=>row.id===entryId));
@@ -102,12 +104,12 @@ test('saved meal actions distinguish original, copy and occurrence; local adjust
   assert.equal(projected[1].id,seed.entries[1].id);
   await page.screenshot({path:'.local/meal-actions/expanded-diary.png'});
   assert.equal(remoteReviews,0);
-  await page.evaluate(async()=>{Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>true});await (await import('/background-writes.js')).flushBackgroundWrites();});await page.locator(`[data-diary-record][data-id="${entryId}"]`).waitFor({state:'detached'});const children=state().entries.filter(row=>row.expandedFrom?.id===entryId);assert.equal(children.length,1);assert.equal(children[0].quantity,0.5);assert.equal(children[0].portionId,'bowl');const localServingPreview=await page.evaluate(async id=>(await import('/local-engine.js')).localPreviewDiaryItem({id,amount:2}),children[0].id);assert.equal(localServingPreview.nutrition.totals.calories,400);assert.deepEqual(state().meals.find(row=>row.id===meal.id),original[0]);assert.deepEqual(errors,[]);
+  await page.context().setOffline(false);await page.evaluate(async()=>{await (await import('/background-writes.js')).flushBackgroundWrites();});await page.locator(`[data-diary-record][data-id="${entryId}"]`).waitFor({state:'detached'});const children=state().entries.filter(row=>row.expandedFrom?.id===entryId);assert.equal(children.length,1);assert.equal(children[0].quantity,0.5);assert.equal(children[0].portionId,'bowl');const localServingPreview=await page.evaluate(async id=>(await import('/local-engine.js')).localPreviewDiaryItem({id,amount:2}),children[0].id);assert.equal(localServingPreview.nutrition.totals.calories,400);assert.deepEqual(state().meals.find(row=>row.id===meal.id),original[0]);assert.deepEqual(errors,[]);
 
   await page.locator('#foods-tab').click();
   await page.locator('[data-action=new-food]').click();
   await page.getByLabel('Name',{exact:true}).fill('Packed lunch');
-  await page.evaluate(()=>Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>false}));
+  await page.context().setOffline(true);
   await page.locator('[data-mfe-submit]:enabled').click();
   await page.locator('[data-mfe-add]:enabled').click();
   await page.getByRole('heading',{name:'Packed lunch',exact:true}).waitFor();
@@ -116,7 +118,7 @@ test('saved meal actions distinguish original, copy and occurrence; local adjust
   assert.equal(state().foods.some(row=>row.name==='Packed lunch'),false);
   await page.locator('#diary-tab').click();
   await page.locator('[data-diary-record]').filter({hasText:'Packed lunch'}).waitFor();
-  await page.evaluate(async()=>{Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>true});await (await import('/background-writes.js')).flushBackgroundWrites();});
+  await page.context().setOffline(false);await page.evaluate(async()=>{await (await import('/background-writes.js')).flushBackgroundWrites();});
   const created=state().foods.filter(row=>row.name==='Packed lunch');
   assert.equal(created.length,1);
   assert.equal(state().entries.filter(row=>row.foodId===created[0].id).length,1);
