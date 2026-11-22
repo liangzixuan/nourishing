@@ -55,12 +55,14 @@ export async function localLibraryItem({kind,id,entry}){
  try{return {...libraryItem(view.state,kind,resource,savedEntry),_local:true};}catch{return null;}
 }
 
-export async function localPreviewDiaryItem(payload,reviewedFood) {
-  if (!payload || typeof payload !== 'object') return null;
-  let state = await readLocalState();
-  if (!state) return null;
-  if(reviewedFood&&payload.foodId===reviewedFood.id&&!state.foods.some(row=>row.id===reviewedFood.id)){
-    state={...state,foods:[...state.foods,reviewedFood]};
+export async function localPreviewDiaryItem(input,reviewedFood) {
+  if (!input || typeof input !== 'object') return null;
+  const view = await localWorkspaceView();
+  if (!view) return null;
+  const payload = remapWriteReferences(structuredClone(input), view.recordIds);
+  let state = view.state;
+  if(reviewedFood&&input.foodId===reviewedFood.id&&!state.foods.some(row=>row.id===payload.foodId)){
+    state={...state,foods:[...state.foods,{...reviewedFood,id:payload.foodId}]};
   }
   try {
     let next;

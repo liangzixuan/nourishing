@@ -108,7 +108,12 @@ test('saved meal actions distinguish original, copy and occurrence; local adjust
   assert.equal(projected[1].id,seed.entries[1].id);
   await page.screenshot({path:'.local/meal-actions/expanded-diary.png'});
   assert.equal(remoteReviews,0);
-  await page.context().setOffline(false);await page.evaluate(async()=>{await (await import('/background-writes.js')).flushBackgroundWrites();});await page.locator(`[data-diary-record][data-id="${entryId}"]`).waitFor({state:'detached'});const children=state().entries.filter(row=>row.expandedFrom?.id===entryId);assert.equal(children.length,1);assert.equal(children[0].quantity,0.5);assert.equal(children[0].portionId,'bowl');const localServingPreview=await page.evaluate(async id=>(await import('/local-engine.js')).localPreviewDiaryItem({id,amount:2}),children[0].id);assert.equal(localServingPreview.nutrition.totals.calories,400);assert.deepEqual(state().meals.find(row=>row.id===meal.id),original[0]);assert.deepEqual(errors,[]);
+  await page.context().setOffline(false);await page.evaluate(async()=>{await (await import('/background-writes.js')).flushBackgroundWrites();});await page.locator(`[data-diary-record][data-id="${entryId}"]`).waitFor({state:'detached'});const children=state().entries.filter(row=>row.expandedFrom?.id===entryId);assert.equal(children.length,1);assert.equal(children[0].quantity,0.5);assert.equal(children[0].portionId,'bowl');assert.notEqual(projected[0].id,children[0].id);
+  for(const id of [projected[0].id,children[0].id]){
+   const preview=await page.evaluate(async id=>(await import('/local-engine.js')).localPreviewDiaryItem({id,amount:2}),id);
+   assert.equal(preview.nutrition.totals.calories,400);
+  }
+  assert.deepEqual(state().meals.find(row=>row.id===meal.id),original[0]);assert.deepEqual(errors,[]);
 
   await page.locator('#foods-tab').click();
   await page.locator('[data-action=new-food]').click();
