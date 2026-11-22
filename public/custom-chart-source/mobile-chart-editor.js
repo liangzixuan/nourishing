@@ -1,3 +1,4 @@
+import {symbol} from '../dashboard-source/discover-ui.js';
 import {chartMetricLabel} from '../charts-source-view.js';
 import {uiLanguage} from '../app-language.js';
 import {escape as e} from '../html.js';
@@ -45,9 +46,9 @@ export class MobileChartEditor {
  renderAxes(){
   const html=axis=>{const metric=this.chart[axis];if(!metric)return '';const kind=category(metric);
    const hasUnits=kind==='biometric'&&chartPickerOptions(this.options,metric,'unit').length>0;
-   const unitRow=hasUnits?`<button type="button" class="mce-row" data-mce-pick="unit"><strong>${e(this.m('unit'))}</strong><span>${e(metric.unit??this.m('chooseUnit'))}${img('/custom-chart-source/chevron-right.svg','mce-dropdown')}</span></button>`:`<div class="mce-row"><strong>${e(this.m('unit'))}</strong><span>${e(this.m('recordedUnit'))}</span></div>`;
-   return `<section data-mce-axis="${axis}"><h3>${e(this.m(axis))}${axis==='secondary'?`<button type="button" data-mce-remove-axis aria-label="${e(this.m('remove'))}">${img('/custom-chart-source/close.svg')}</button>`:''}</h3><div class="mce-categories" role="group" aria-label="${e(this.m(axis))}">${['biometric','nutrient','score'].map(id=>`<button type="button" data-mce-category="${id}" aria-pressed="${kind===id}">${e(this.m(id))}</button>`).join('')}</div><div class="mce-axis-card"><button type="button" class="mce-row" data-mce-pick="metric"><strong>${e(this.m(kind==='score'?'nutritionScores':kind))}</strong><span>${e(this.choiceLabel(metric))}${img('/custom-chart-source/chevron-right.svg','mce-dropdown')}</span></button>${kind==='biometric'?unitRow:''}</div></section>`};
-  this.form.querySelector('[data-mce-axes]').innerHTML=html('primary')+html('secondary')+(!this.chart.secondary?`<button type="button" class="mce-add-axis" data-mce-add-axis>${e(this.m('add'))}</button>`:'');
+   const unitRow=hasUnits?`<button type="button" class="mce-row" data-mce-pick="unit"><strong>${e(this.m('unit'))}</strong><span>${e(metric.unit??this.m('chooseUnit'))}${symbol('arrow_drop_down')}</span></button>`:`<div class="mce-row"><strong>${e(this.m('unit'))}</strong><span>${e(this.m('recordedUnit'))}</span></div>`;
+   return `<section data-mce-axis="${axis}"><h3>${e(this.m(axis))}${axis==='secondary'?`<button type="button" data-mce-remove-axis aria-label="${e(this.m('remove'))}">${img('/custom-chart-source/close.svg')}</button>`:''}</h3><div class="mce-categories" role="group" aria-label="${e(this.m(axis))}">${['biometric','nutrient','score'].map(id=>`<button type="button" data-mce-category="${id}" aria-pressed="${kind===id}">${e(this.m(id))}</button>`).join('')}</div><div class="mce-axis-card"><button type="button" class="mce-row" data-mce-pick="metric"><strong>${e(this.m(kind==='score'?'nutritionScores':kind))}</strong><span>${e(this.choiceLabel(metric))}${symbol('arrow_drop_down')}</span></button>${kind==='biometric'?unitRow:''}</div></section>`};
+  this.form.querySelector('[data-mce-axes]').innerHTML=html('primary')+html('secondary')+(!this.chart.secondary?`<button type="button" class="mce-add-axis" data-mce-add-axis><span aria-hidden="true">+</span>${e(this.m('add'))}</button>`:'');
   this.form.elements.primary.value=identity(this.chart.primary);this.form.elements.secondary.value=this.chart.secondary?identity(this.chart.secondary):'';
   if(!this.manualName)this.form.elements.name.value=[this.chart.primary,this.chart.secondary].filter(Boolean).map(metric=>this.label(metric)).join(' + ');
  }
@@ -58,18 +59,28 @@ export class MobileChartEditor {
   const standard=row=>standardChartMetric(row.metric)||identity(row.metric)===selectedId;
   if(kind==='nutrient'&&field==='metric')choices.sort((a,b)=>choiceText(a).localeCompare(choiceText(b),this.language));
   const label=this.m(field==='unit'?'unit':kind);
+  popup.dataset.mcePicker=field==='unit'?'unit':kind;
   // The native score and unit menus fit in one list. All additional supported
   // series remain reachable without mixing source measurements with coverage.
   const searchable=field==='metric'&&kind!=='score';
-  popup.innerHTML=`<h2>${e(label)}</h2>${searchable?`<input type="search" data-mce-search placeholder="${e(this.m('search'))}" aria-label="${e(this.m('search'))}">`:''}<div class="mce-picker-choices"></div>`;
+  const searchBox=searchable?`<input type="search" data-mce-search placeholder="${e(this.m('search'))}" aria-label="${e(this.m('search'))}">`:'';
+  const compactSearch=searchable&&kind==='nutrient';
+  popup.innerHTML=`<h2>${e(label)}</h2>${compactSearch?`<label class="mce-picker-search">${img('/more-source/icons/magnify.svg')}${searchBox}</label>`:searchBox}<div class="mce-picker-choices"></div>`;
   const list=popup.querySelector('.mce-picker-choices'),search=popup.querySelector('input');
   const editor=this.form.closest('.mobile-chart-editor');
   const position=()=>{
    if(!popup.open)return;
    const rect=this.pickerAnchor.getBoundingClientRect();
-   const top=Math.max(8,editor.querySelector('.sheet-header')?.getBoundingClientRect().bottom??8);
+   const top=Math.max(8,(editor.querySelector('.sheet-header')?.getBoundingClientRect().bottom??16)-8);
    const bottom=Math.min(innerHeight-8,editor.querySelector('.app-nav')?.getBoundingClientRect().top??innerHeight-8);
-   popup.style.maxHeight=Math.max(44,bottom-top)+'px';
+   let height=Math.max(48,bottom-top);
+   if(kind==='score'&&!expanded){
+    // Keep additional supported metrics in the same scrollable list, below the primary choices.
+    const standardRows=list.querySelectorAll('[data-mce-choice]');
+    const primaryHeight=[...standardRows].reduce((sum,button)=>sum+button.getBoundingClientRect().height,16);
+    height=Math.min(height,primaryHeight);
+   }
+   popup.style.maxHeight=height+'px';
    popup.style.top=Math.max(top,Math.min(rect.bottom,bottom-popup.offsetHeight))+'px';
   };
   let expanded=false;
@@ -88,9 +99,16 @@ export class MobileChartEditor {
   popup.addEventListener('cancel',event=>{event.preventDefault();event.stopPropagation();this.closePicker()});document.body.append(popup);popup.showModal();
   this.reposition=position;window.addEventListener('resize',position);position();
   const selected=list.querySelector('[aria-pressed=true]');
+  (compactSearch?selected:search??selected)?.focus({preventScroll:true});
+  position();
   if(selected)list.scrollTop=Math.max(0,selected.offsetTop-list.offsetTop-(list.clientHeight-selected.clientHeight)/2);
-  (search??selected??list.querySelector('button'))?.focus({preventScroll:true});
+  if(!search&&!selected)list.querySelector('button')?.focus({preventScroll:true});
+  // Keep the expanded search in place when focus moves to a result during a tap.
+  if(compactSearch)search.addEventListener('focus',()=>{popup.dataset.searchOpen='true';position();});
   popup.addEventListener('keydown',event=>{
+   if(compactSearch&&event.target!==search&&event.key.length===1&&!event.ctrlKey&&!event.altKey&&!event.metaKey&&event.key.trim()){
+    event.preventDefault();search.focus();search.value=event.key;render();list.scrollTop=0;return;
+   }
    if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key)||event.target===search&&['Home','End'].includes(event.key))return;
    const buttons=[...list.querySelectorAll('button')],current=buttons.indexOf(document.activeElement);
    const index=event.key==='Home'?0:event.key==='End'?buttons.length-1:event.key==='ArrowDown'?Math.min(buttons.length-1,current+1):Math.max(0,current-1);

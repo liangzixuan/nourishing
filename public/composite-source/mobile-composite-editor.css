@@ -50,6 +50,52 @@ dialog.mci-dialog{width:100%;max-width:700px;height:100dvh;max-height:100dvh;mar
 
 @media(max-width:360px){.mce-footer[data-review] .mce-navigation{flex-direction:column;gap:8px;}.mce-footer[data-review] .mce-navigation button{overflow-wrap:normal;word-break:normal;}}
 
+/* Reference review capsules sit inside full-height touch targets. */
+.mce-footer[data-review] {
+ --review-fill:var(--mobile-button-bg);
+ --review-back:var(--accent);
+ --review-ink:var(--mobile-button-ink);
+ --review-outline:var(--ink);
+ --review-dot:var(--line);
+ padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+ border-radius:16px 16px 0 0;
+ box-shadow:0 -2px 8px rgb(0 0 0 / .16);
+}
+.discover-mobile.dark .mce-footer[data-review] {
+ --review-fill:#f0f2fa;
+ --review-back:#ff6733;
+ --review-ink:#101223;
+ --review-outline:#f0f2fa;
+ --review-dot:#404252;
+ --review-active-dot:#fafbff;
+ background:#262a3b;
+}
+.mce-footer[data-review]:has(.mce-progress:not([hidden])) {
+ padding-bottom:calc(16px + env(safe-area-inset-bottom));
+}
+.recipe-editor .mce-footer[data-review] .mce-navigation {column-gap:16px;}
+.meal-editor:not(.recipe-editor) .mce-footer[data-review] .mce-navigation {column-gap:8px;}
+.mce-footer[data-review] button {
+ position:relative;isolation:isolate;box-sizing:border-box;
+ min-height:44px;padding:10px 10px 7px;border:0;background:transparent;
+ color:var(--review-ink);font:700 calc(15rem / 18)/1.25 Karla, sans-serif;
+ letter-spacing:.065em;text-transform:uppercase;
+}
+.mce-footer[data-review] button::before {
+ content:"";position:absolute;inset:4px 0;z-index:-1;
+ border-radius:999px;background:var(--review-fill);
+}
+.mce-footer[data-review] [data-mce-back]::before {background:var(--review-back);}
+.mce-footer[data-review] [data-mce-add] {
+ width:min(360px,100%);margin:8px auto 0;color:var(--review-outline);letter-spacing:.035em;
+}
+.mce-footer[data-review] [data-mce-add]::before {
+ background:transparent;border:2px solid var(--review-outline);
+}
+.mce-footer[data-review] .mce-progress {margin-top:12px;}
+.mce-footer[data-review] .mce-progress span {background:var(--review-dot);}
+.mce-footer[data-review] .mce-progress .current {background:var(--review-active-dot,var(--ink));}
+
 .mobile-composite-editor .meal-editor>.sheet-header{grid-template-columns:minmax(80px,1fr) minmax(0,auto) minmax(80px,1fr)}
 .mobile-composite-editor .meal-editor>.sheet-header>.icon-button{justify-self:start}
 .mce-header-actions{display:flex;justify-content:flex-end}

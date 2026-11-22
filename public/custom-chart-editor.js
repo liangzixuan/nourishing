@@ -35,7 +35,7 @@ export function mountCustomChartEditor(chart,data,ui){
  const owner=readDeviceCache('/api/diary').then(value=>value.ticket);
  const {_awaitingPlot,...definition}=chart??{};
  const draft=chart?definition:{version:2,name:'',primary:structuredClone(defaultChartMetrics.biometric),secondary:null,days:7,visible:true,cycleOverlay:false};
- show(`<section class="mobile-chart-editor"><header class="sheet-header"><button type="button" class="icon-button" data-mce-back aria-label="${t('discover.back')}">‹</button><h2 id="sheet-title">${e(cm(chart?'edit':'create'))}</h2></header><p class="mce-intro">${dc('twoAxes')}</p><p data-mce-error role="alert"></p><button type="button" data-mce-reload hidden>${dc('reloadLatestChart')}</button><form></form></section>`);
+ show(`<section class="mobile-chart-editor"><header class="sheet-header"><button type="button" class="icon-button" data-mce-back aria-label="${t('discover.back')}"><img src="/more-source/icons/chevron-left.svg" alt=""></button><h2 id="sheet-title">${e(cm(chart?'edit':'create'))}</h2></header><p class="mce-intro">${dc('twoAxes')}</p><p data-mce-error role="alert"></p><button type="button" data-mce-reload hidden>${dc('reloadLatestChart')}</button><form></form></section>`);
  const root=content.querySelector('.mobile-chart-editor'),form=root.querySelector('form'),dialog=content.closest('dialog'),abort=new AbortController();
  let confirmation;
  const editor=new MobileChartEditor({form,chart:draft,options:data.options,language:uiLanguage()});

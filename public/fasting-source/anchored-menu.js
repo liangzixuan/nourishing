@@ -19,7 +19,10 @@ export class AnchoredMenu{
     const minTop=Math.max(8,bounds?.top??8,anchor?host.querySelector(':scope>.dialog-head')?.getBoundingClientRect().bottom??8:8),maxBottom=Math.min(innerHeight-8,bounds?.bottom??innerHeight-8);
     if(anchor)root.style.maxHeight=Math.max(44,maxBottom-minTop)+'px';
     root.showPopover();const rect=root.getBoundingClientRect(),anchorRect=anchor?.getBoundingClientRect();
-    if(placement==='bottom'){root.style.left=Math.max(0,(innerWidth-rect.width)/2)+'px';root.style.top=Math.max(0,innerHeight-rect.height)+'px';}else{root.style.left=Math.max(8,Math.min(anchorRect?anchorRect.right-rect.width:x,innerWidth-rect.width-8))+'px';root.style.top=Math.max(minTop,Math.min(anchorRect?anchorRect.bottom:y,maxBottom-rect.height))+'px';}
+    if(placement==='bottom'){root.style.left=Math.max(0,(innerWidth-rect.width)/2)+'px';root.style.top=Math.max(0,innerHeight-rect.height)+'px';}else if(placement==='row-end'&&anchorRect){
+      root.style.left=Math.max(0,Math.min(innerWidth,anchorRect.right)-rect.width)+'px';
+      root.style.top=Math.max(minTop,Math.min(anchorRect.bottom-16,maxBottom-rect.height))+'px';
+    }else{root.style.left=Math.max(8,Math.min(anchorRect?anchorRect.right-rect.width:x,innerWidth-rect.width-8))+'px';root.style.top=Math.max(minTop,Math.min(anchorRect?anchorRect.bottom:y,maxBottom-rect.height))+'px';}
     const selected=[...root.querySelectorAll('[aria-checked=true]')].find(button=>button.dataset.menuCommand!=='');(selected||root.querySelector('button:not(:disabled)'))?.focus(bounds?{preventScroll:true}:undefined);if(bounds&&selected&&root.scrollHeight>root.clientHeight)root.scrollTop=selected.offsetTop-(root.clientHeight-selected.offsetHeight)/2;
   }
   close(restoreFocus=true){if(this.closed)return;this.closed=true;window.removeEventListener('resize',this.resize);if(this.root.matches(':popover-open'))this.root.hidePopover();this.root.remove();if(restoreFocus&&this.origin?.isConnected)this.origin.focus();this.onClose?.();}

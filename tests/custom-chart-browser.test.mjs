@@ -38,6 +38,9 @@ test('custom chart source editor creates and edits canonical axes, discards draf
   const labels=await choices.allTextContents(),center=labels.indexOf('Energy (Consumed)');
   assert.deepEqual(labels.slice(center-8,center+9),['Carbs (Net)','Carbs (Total)','Cholesterol','Choline','Chromium','Copper','Cystine','Delta Tocopherol','Energy (Consumed)','Fat','Fat (Monounsaturated)','Fat (Polyunsaturated)','Fat (Saturated)','Fat (Trans)','Fiber','Fiber (Insoluble)','Fiber (Soluble)']);
   assert.equal(await picker.getByRole('button',{name:'Energy (Consumed)',pressed:true}).count(),1);
+  assert.ok(await picker.locator('.mce-picker-search img').isVisible());
+  await page.keyboard.type('fiber');assert.equal(await picker.getByRole('searchbox').inputValue(),'fiber');assert.ok(!await picker.locator('.mce-picker-search img').isVisible());
+  assert.ok((await choices.allTextContents()).every(name=>name.toLowerCase().includes('fiber')));
   await picker.getByRole('searchbox').fill('food-data completeness');assert.ok(await choices.count()>1);
   await picker.getByRole('searchbox').fill('');await choose('Carbs (Net)');
   assert.deepEqual(JSON.parse(await page.locator('[name=primary]').inputValue()),{kind:'carbohydrate',mode:'net'});

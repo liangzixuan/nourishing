@@ -150,6 +150,10 @@ test('Diary selection stays local through offline edits and rapid selection chan
   const apply=page.locator('[data-mci-apply]');
   await page.getByLabel('Amount',{exact:true}).fill('3');await apply.click();
   await page.locator('[data-meal-next]').click();await page.locator('[data-meal-preview] [data-mf-energy]').waitFor();
+  const entriesBeforeDefinitions=fixture.state().entries;
+  assert.deepEqual(await page.locator('.mce-footer').getByRole('button').allTextContents(),['Back','Save Meal']);
+  assert.equal(await page.locator('.mce-progress:visible').count(),0);
+  assert.equal(await page.locator('.mce-navigation').evaluate(el=>getComputedStyle(el).columnGap),'8px');
   await page.context().setOffline(true);
   await page.locator('[data-meal-next]').click();await page.waitForFunction(()=>!document.querySelector('#sheet').open);
   assert.equal(fixture.state().meals.length,0);
@@ -162,8 +166,14 @@ test('Diary selection stays local through offline edits and rapid selection chan
   await page.getByLabel('Recipe Name',{exact:true}).fill('Rice batch');await page.waitForFunction(()=>document.querySelector('.recipe-editor')?.dataset.recipeBusy==='false');
   await page.screenshot({path:'.local/diary-selection/recipe-ingredients.png'});
   await page.locator('[data-mce-next]').click();await page.locator('input[name=servings]:visible').fill('2');await page.locator('[data-mce-next]').click();await page.locator('[name=instructions]').fill('Stir.');await page.locator('[data-mce-next]').click();
+  await page.getByRole('button',{name:'Save Recipe',exact:true}).waitFor();
+  assert.deepEqual(await page.locator('.mce-footer').getByRole('button').allTextContents(),['Back','Save Recipe']);
+  assert.equal(await page.locator('[data-mce-dot]:visible').count(),4);
+  assert.equal(await page.locator('[data-mce-dot]').last().getAttribute('aria-current'),'step');
+  assert.equal(await page.locator('.mce-navigation').evaluate(el=>getComputedStyle(el).columnGap),'16px');
   await page.getByRole('button',{name:'Save Recipe',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('#sheet').open);
   await waitForOutboxIdle(page,()=>fixture.state().recipes.some(row=>row.name==='Rice batch'));
+  assert.deepEqual(fixture.state().entries,entriesBeforeDefinitions);
   const recipe=fixture.state().recipes.find(row=>row.name==='Rice batch');assert.equal(recipe.servings,2);assert.equal(recipe.instructions,'Stir.');assert.equal(recipe.ingredients[0].foodId,'rice');assert.equal(recipe.ingredients[0].amount,2);
   await page.locator('#settings-tab').click();await page.getByRole('searchbox',{name:'Search More'}).waitFor();assert.equal(await page.locator('[data-md-summary]').count(),0);await page.waitForFunction(()=>!Object.values(window.Chart?.instances??{}).length);assert.deepEqual(errors,[]);assert.deepEqual(await page.evaluate(()=>window.csp),[]);assert.equal(requests.filter(row=>row.operation==='nutrition').length,0);
   await page.close();nutritionFailures=1;
