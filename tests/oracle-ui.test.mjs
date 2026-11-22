@@ -46,7 +46,7 @@ test('Oracle source flow through real Foods and Diary under production CSP',asyn
   await page.goto(origin);await page.locator('.md-summary').waitFor();await chooseDiaryDate(page,'2026-11-14');
   await page.route('**/oracle.css',route=>route.abort());
   await page.locator('#foods-tab').click();await page.locator('[data-food-insight=oracle]').click();await page.locator('[data-mo-nutrient]').waitFor();
-  assert.equal(await page.locator('.mo-header').first().evaluate(header=>getComputedStyle(header).display),'grid');
+  assert.equal(await page.evaluate(()=>getComputedStyle(document.querySelector('#sheet .mo-header')).display),'grid');
   const oracleNav=page.locator('[data-oracle-nav]');
   assert.equal(await oracleNav.locator('button').count(),5);
   assert.equal(await oracleNav.locator('[aria-current=page]').getAttribute('data-discover'),'shell-foods');
