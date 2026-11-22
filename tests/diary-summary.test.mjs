@@ -42,7 +42,7 @@ async function checkDiaryHighlights(page){
 }
 async function checkDiaryBudgets(page){
  const cases=[
-  {mode:'balance',intake:0,unit:'kcal',heading:'Balance',label:'Deficit',value:'1,850',detail:'1,850',chart:[0,1850]},
+  {mode:'balance',intake:0,unit:'kcal',heading:'Balance',label:'Deficit',value:'1,850',detail:'1850',chart:[0,1850]},
   {mode:'balance',intake:2000,unit:'kJ',heading:'Balance',label:'Surplus',value:'628',detail:'627.6',chart:[2000,0]},
   {mode:'balance',intake:1850,unit:'kcal',heading:'Balance',label:'Balance',value:'0',detail:'0',chart:[1850,0]},
   {mode:'balance',intake:100,unknown:true,unit:'kJ',heading:'Balance',label:'Balance',value:'\u2014',detail:'\u2014',chart:[1]},
@@ -72,6 +72,12 @@ async function checkDiaryBudgets(page){
   assert.equal(await budget.locator('small').textContent(),unit);
   await budget.click();
   const card=page.locator('aside [data-budget] .ds-energy-card');
+  if(unit==='kcal'&&intake===0){
+   const expenditure=page.locator('aside [data-card=expenditure]');
+   assert.equal(await expenditure.locator('[data-component=baseline] dt').textContent(),'Baseline Activity');
+   assert.equal(await expenditure.locator('[data-component=baseline] dd').last().textContent(),'14%');
+   assert.equal(await card.locator('.ds-budget-row').nth(1).locator('dd').textContent(),'- 0 kcal');
+  }
   assert.equal(await card.getAttribute('data-card'),mode);
   assert.equal(await card.locator('h3').textContent(),label);
   assert.equal(await card.locator('.ds-energy-ring strong').textContent(),detail);

@@ -30,7 +30,9 @@ export class DiaryEnergyRings {
     if(budget)return '#ff8050';
     return energyComponentColors[kind==='consumed'?consumedOrder[dataIndex]:expenditure[dataIndex].id];
    };
-   this.charts.push(new Chart(canvas,{type:'doughnut',data:{datasets:[{data:known?rows:[1],backgroundColor:color,borderWidth:kind==='consumed'?1:0,borderColor:chartColor('paper')}]},options:{responsive:true,maintainAspectRatio:false,cutout:'84%',animation:false,events:[],plugins:{legend:{display:false},tooltip:{enabled:false}}}}));
+   const detail=this.root.classList.contains('ds-energy');
+   const spacing=detail&&known&&rows.filter(value=>value>0).length>1?2:0;
+   this.charts.push(new Chart(canvas,{type:'doughnut',data:{datasets:[{data:known?rows:[1],backgroundColor:color,spacing,borderWidth:!detail&&kind==='consumed'?1:0,borderColor:chartColor('paper')}]},options:{responsive:true,maintainAspectRatio:false,cutout:'84%',animation:false,events:[],plugins:{legend:{display:false},tooltip:{enabled:false}}}}));
   }
  }
 }

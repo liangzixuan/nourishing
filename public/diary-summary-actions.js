@@ -26,11 +26,16 @@ export function openDiarySummaryAction({action,id,diary,date=diary.date,show,clo
  const present=(title,body)=>{show(header(title)+`<section class="ds-dialog">${body}</section>`);return content.querySelector('.ds-dialog');};
  if(action==='mobile-diary-energy'){
   const {energy,consumedEnergy,expenditureBreakdown}=diary.summary,unit=diary.energyUnit??'kcal';
-  const known=Number.isFinite,unknown=t('energyReport.unknown'),amount=value=>known(value)?number(displayValue(value,'kcal',unit))+' '+unit:unknown;
+  const known=Number.isFinite,unknown=t('energyReport.unknown');
+  const whole=new Intl.NumberFormat(uiLanguage(),{maximumFractionDigits:0,useGrouping:false});
+  const energyNumber=value=>unit==='kcal'?whole.format(value):number(displayValue(value,'kcal',unit));
+  const amount=value=>known(value)?energyNumber(value)+' '+unit:unknown;
   const intake=t('mobileDiary.consumed'),spent=t('mobileDiary.expenditure'),target=t('mobileDiary.target'),balance=t('energyReport.balance');
   const component=(id,value,percent,missing)=>{
-   const color=energyComponentColors[id],swatch=`<svg viewBox="0 0 12 12" aria-hidden="true"><rect width="12" height="12" rx="${['resting','baseline','exercise','tracker','thermicEffect'].includes(id)?0:6}" fill="${e(color)}"/></svg>`;
-   return `<div class="ds-energy-row" data-component="${e(id)}"><dt>${swatch}${e(t('energyChart.component.'+id))}</dt><dd>${e(missing??amount(value))}</dd><dd>${known(percent)?number(percent)+'%':''}</dd></div>`;
+   const plainBaseline=id==='baseline'&&known(energy.components?.baseline)&&energy.components.baseline===energy.components.adjustedBaseline;
+   const label=t(plainBaseline?'mobileExpenditure.baselineShort':'energyChart.component.'+id);
+   const swatch=`<svg viewBox="0 0 12 12" preserveAspectRatio="none" aria-hidden="true"><rect width="12" height="12" fill="${e(energyComponentColors[id])}"/></svg>`;
+   return `<div class="ds-energy-row" data-component="${e(id)}"${missing?' data-missing':''}><dt>${swatch}${e(label)}</dt><dd>${e(missing??amount(value))}</dd><dd>${known(percent)?whole.format(percent)+'%':''}</dd></div>`;
   };
   const empty=consumedEnergy?.methods&&Object.values(consumedEnergy.methods).every(count=>count===0);
   const consumedRows=['protein','carbohydrate','fat','alcohol','unattributed'].map(id=>{
@@ -40,12 +45,13 @@ export function openDiarySummaryAction({action,id,diary,date=diary.date,show,clo
   }).join('');
   const noExercise=diary.entries?.every(entry=>entry.kind!=='exercise');
   const expenseRows=(expenditureBreakdown?.components??[]).filter(row=>['resting','baseline','exercise'].includes(row.id)||row.mean>0).map(row=>component(row.id,row.mean,row.percent,row.id==='exercise'&&row.mean===0&&noExercise?dc('summaryWhenLogged'):null)).join('');
-  const card=(kind,title,value,rows)=>`<article class="ds-energy-card" data-card="${kind}"><header><h3>${e(title)}</h3><div class="ds-energy-ring"><canvas data-md-ring="${kind}" aria-hidden="true"></canvas><strong>${known(value)?number(displayValue(value,'kcal',unit)):'—'}</strong><small>${known(value)?e(unit):e(unknown)}</small></div></header><dl>${rows}</dl></article>`;
-  const budgetRow=(label,value)=>`<div class="ds-budget-row"><dt>${e(label)}</dt><dd>${e(amount(value))}</dd></div>`;
+  const card=(kind,title,value,rows)=>`<article class="ds-energy-card" data-card="${kind}"><header><h3>${e(title)}</h3><div class="ds-energy-ring"><canvas data-md-ring="${kind}" aria-hidden="true"></canvas><strong>${known(value)?energyNumber(value):'—'}</strong><small>${known(value)?e(unit):e(unknown)}</small></div></header><dl>${rows}</dl></article>`;
+  const budgetRow=(label,text)=>`<div class="ds-budget-row"><dt>${e(label)}</dt><dd>${e(text)}</dd></div>`;
   const budget=mode=>{
    const {label,value}=diaryEnergyBudget(energy,mode);
    const isBalance=mode==='balance';
-   return card(mode,label,value,budgetRow(isBalance?spent:target,isBalance?energy.expenditure:energy.target)+budgetRow(intake,known(energy.consumed)?-energy.consumed:null)+budgetRow(label,value));
+   const consumed=known(energy.consumed)?(energy.consumed>=0?'- ':'')+amount(Math.abs(energy.consumed)):unknown;
+   return card(mode,label,value,budgetRow(isBalance?spent:target,amount(isBalance?energy.expenditure:energy.target))+budgetRow(intake,consumed)+budgetRow(label,amount(value)));
   };
   let mode=diaryEnergyBudget(energy).mode;
   show(`<section class="ds-dialog ds-energy"><header class="sheet-header"><button type="button" data-close aria-label="${e(t('mobileDisplay.back'))}">‹</button><h2 id="sheet-title">${e(coreText('diary.energy'))}</h2><button type="button" data-ds-targets aria-label="${e(coreText('diary.editTargets'))}"><img alt="" src="/record-source/biometric-icons/cog-outline.svg"></button></header>

@@ -112,24 +112,36 @@ body:has(.water-settings) .mm-child-header h1{font-size:calc(21rem / 18)}
 #sheet:has(.ds-energy)>#sheet-content{padding:0;}
 .ds-energy:has(+.app-nav){padding-bottom:calc(var(--dc-nav-space,70px) + 16px)}
 .ds-energy>.sheet-header{position:sticky;top:0;z-index:2;display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;text-align:center;min-height:56px;padding:4px 8px;border-radius:0 0 14px 14px;background:var(--paper);}
-.ds-energy>.sheet-header h2{margin:0;font:700 1.12rem/1.3 Karla,Lato,sans-serif;}
+.ds-energy>.sheet-header h2{margin:0;padding:0;font:700 calc(21rem / 18)/1.3 Karla,Lato,sans-serif;}
 .ds-energy>.sheet-header button{font-size:1.6rem;}
 .ds-energy [data-ds-targets] img{width:22px;height:22px;vertical-align:middle;filter:var(--mobile-icon-filter);}
 .ds-energy [data-ds-report]{display:block;min-height:36px;margin:auto;color:var(--teal,#27b6b4);font:700 .8rem/1.2 Karla,sans-serif;letter-spacing:.08em;text-transform:uppercase;}
 .ds-energy-card,.ds-energy .ds-energy-mode{margin:0 0 14px;padding:16px;border-radius:10px;background:var(--paper);}
-.ds-energy-card>header{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:112px;margin:0 8px 10px 0;}
-.ds-energy-card h3{margin:0;text-align:left;font:700 .95rem/1.3 Lato,sans-serif;}
-.ds-energy-ring{display:flex;flex:none;position:relative;align-items:center;justify-content:center;flex-direction:column;width:5.8rem;height:5.8rem;text-align:center;line-height:1.25;}
+.ds-energy-card{margin-bottom:16px;padding:0 16px 8px 8px;}
+.ds-energy-card>header{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:144px;padding:0 14px 0 8px;}
+.ds-energy-card[data-card=expenditure]>header{min-height:136px;}
+.ds-energy-card h3{margin:0;text-align:left;font:700 calc(16rem / 18)/1.3 Lato,sans-serif;}
+.ds-energy-ring{display:flex;flex:none;position:relative;align-items:center;justify-content:center;flex-direction:column;width:6rem;height:6rem;transform:translateY(6px);text-align:center;line-height:1.25;}
+.ds-energy-card[data-card=expenditure] .ds-energy-ring{transform:translateY(2px);}
 .ds-energy-ring canvas{position:absolute;inset:0;}
 .ds-energy-ring strong,.ds-energy-ring small{position:relative;max-width:82%;overflow-wrap:anywhere;}
-.ds-energy-ring small{font-size:.8rem;}
+.ds-energy-ring strong{font-size:calc(16rem / 18);}
+.ds-energy-ring small{font-size:calc(14rem / 18);}
 .ds-energy-card dl{margin:0;}
-.ds-energy-card dl>div{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;padding:7px 0;border-top:1px solid var(--line);font-size:.8rem;}
-.ds-energy-card dl>div:first-child{border:0;}
-.ds-energy-card dt{font-weight:700;overflow-wrap:anywhere;}
+.ds-energy-card dl>div{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;min-height:35px;padding:6px 8px;border-top:1px solid var(--line);font-size:calc(14rem / 18);line-height:1.35;}
+.ds-energy-card dl>div:first-child{border-top-color:transparent;}
+.ds-energy-card dt{font-weight:700;letter-spacing:.035em;overflow-wrap:anywhere;}
 .ds-energy-card dd{margin:0;}
 .ds-energy-card dd:last-child{margin-left:auto;}
-.ds-energy-row dt svg{width:.68rem;height:.68rem;margin-right:8px;}
+.ds-energy-row dt svg{width:12px;height:12px;margin-right:12px;border-radius:50%;vertical-align:middle;}
+.ds-energy-card[data-card=expenditure] .ds-energy-row{position:relative;margin-left:16px;padding-left:18px;}
+.ds-energy-card[data-card=expenditure] svg{position:absolute;left:0;top:0;width:10px;height:calc(100% - 1px);border-radius:0;}
+.ds-energy-card[data-card=expenditure] .ds-energy-row:first-child svg{top:7px;height:calc(100% - 8px);}
+.ds-energy-card[data-card=expenditure] .ds-energy-row:last-child svg{height:calc(100% - 7px);}
+.ds-energy-card[data-card=expenditure] [data-missing]{color:var(--muted);}
+.ds-energy-card[data-card=expenditure] [data-missing] rect{fill:var(--line);}
+.ds-budget-row:first-child dd{font-weight:700;}
+.ds-budget-row:nth-child(2) dt{font-weight:400;}
 .ds-energy-mode legend{float:left;width:100%;font-weight:700;}
 .ds-energy-mode p{clear:both;padding-top:6px;font-size:.85rem;}
 .ds-energy-mode button{padding:8px 16px;border:1px solid var(--line);border-radius:24px;}
