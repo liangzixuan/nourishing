@@ -1,6 +1,7 @@
 @import url('./snapshot-source/mobile-snapshots.css');
 @import url('./snapshot-source/mobile-diary-calendar.css');
 @import url('./snapshot-source/mobile-photo-capture.css');
+.app-shell:has(.ms-root) .app-header.topbar{margin-bottom:0;padding-top:max(7px,env(safe-area-inset-top))}
 .snapshots{padding:16px;max-width:700px;margin:0 auto}.snapshot-status:empty{display:none}.snapshot-status{color:var(--muted)}.snapshot-status button{display:block}.snapshots [data-snapshot-add]:disabled{opacity:.5}.snapshot-missing{display:block;padding:50px 20px;color:var(--muted)}
 .ms-dialog:not(.mobile-photo-dialog){box-sizing:border-box;color:var(--ink)}
 .ms-dialog .dc-bottom{z-index:1}.ms-dialog.ms-sheet .dc-bottom button{color:#808393;font:700 calc(14rem / 18) Karla,Lato,sans-serif}.ms-dialog.ms-sheet .dc-bottom button.active{color:var(--mobile-accent-text)}.ms-dialog.ms-sheet .dc-bottom .dc-add{padding:0;color:var(--paper)}

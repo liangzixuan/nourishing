@@ -38,6 +38,13 @@ test('source scheduler supports templates, disabled preview, daily targets and r
   const save=()=>page.locator('[data-mts-save]').click(),form=()=>page.locator('[data-mts-form]');
   await page.locator('[data-mts-enabled]').click();await ready();assert.equal(state().settings.macroPlan.enabled,false);
   await page.locator('[data-mts-add]').click();await form().locator('[name=templateName]').fill('Training');
+  await page.locator('[data-mts-mode=ratios]').click();
+  assert.match(await form().innerText(),/Ratios divide energy/);
+  const energySwitch=form().getByRole('switch',{name:'Custom Energy Target'});
+  assert.match(await energySwitch.getAttribute('aria-describedby'),/mts-energy-description/);
+  await form().locator('[data-mts-help=customEnergy]').click();
+  await page.getByRole('dialog',{name:'Custom Energy Target'}).getByText(/overrides your default energy target/).waitFor();
+  await page.keyboard.press('Escape');
   await page.locator('[data-mts-template-menu]').click();await page.locator('[data-menu-command=restore]').click();
   assert.equal(await form().locator('[name=templateName]').inputValue(),'Training');
   await page.locator('[data-mts-mode=fixed]').click();
