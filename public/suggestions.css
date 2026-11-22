@@ -1,11 +1,10 @@
 @import url('./suggestion-source/mobile-meal-suggestions.css');
-@import url('./food-entry-source/mobile-food-entry.css');
 #sheet.suggestion-sheet{width:100%;max-width:700px;height:100dvh;max-height:100dvh;margin:0 auto;padding:0;border:0;border-radius:0;background:var(--bg);color:var(--ink);font:400 1rem/1.4 Lato,Arial,sans-serif;overflow:auto;overscroll-behavior:contain}
 .suggestion-sheet #sheet-content{padding:0}.suggestion-heading{position:sticky;top:0;z-index:9;padding:6px 8px;background:var(--paper);border-radius:0 0 16px 16px}
 .suggestion-sheet .ms-footer{left:0;right:0;bottom:0;transform:none;width:100%;position:sticky;margin-top:28px}.suggestion-sheet .ms-home{padding-bottom:20px}.suggestion-sheet .ms-footer{position:fixed;max-width:700px;margin-inline:auto}.suggestion-sheet [data-ms-filter-screen]{padding-bottom:100px}
 .ms-header h2{font:700 1.3rem/1.2 Karla,Lato,sans-serif;text-align:center;margin:0}.ms-home [data-source-attribution]{overflow-wrap:anywhere}
-dialog.mci-dialog{width:100%;max-width:700px;height:100dvh;max-height:100dvh;margin:0 auto;padding:0;border:0;border-radius:0;background:var(--bg);color:var(--ink);overflow-y:auto;overscroll-behavior:contain;font:400 1rem/1.4 Lato,Arial,sans-serif}
-.mci-dialog::backdrop{background:#0009}.mci-dialog [hidden]{display:none!important}.mci-dialog .mci-detail{padding:0 0 100px;margin:0;min-height:100dvh}.mci-dialog .mf-header h2{overflow-wrap:anywhere}.mci-dialog [data-mci-back]{font-size:1.8rem;min-width:44px;min-height:44px}.mci-dialog .mf-controls{margin-inline:12px}.mci-dialog [data-mci-error]{margin:12px 16px;color:var(--mobile-danger)}.mci-dialog .mf-footer button{background:var(--mobile-button-bg);color:var(--mobile-button-ink);border:0;border-radius:30px;width:100%;min-height:44px;font:inherit;font-weight:750;padding:10px 12px}.mci-dialog .mf-footer button:disabled{opacity:.5}
+.ms-quantity-dialog{font:400 1rem/1.4 Lato,Arial,sans-serif}
+.ms-quantity-dialog .mf-footer button{font:inherit;font-weight:750;padding:10px 12px}
 .ms-options [role=alert]{color:var(--mobile-danger)}
 
 dialog.mci-compact{inset:auto 0 0;height:auto;max-height:85dvh;border-radius:20px 20px 0 0;padding:16px}.mci-compact .mci-detail{min-height:0;padding-bottom:0!important}.mci-compact .mf-header{position:static;padding:0;background:transparent}.mci-compact .mf-controls{margin:0}.mci-compact .mf-source{display:none}.mci-compact .mf-footer{position:static;left:auto;transform:none;width:100%;margin-top:16px;padding:0}.mci-compact .photo-nutrition-summary{padding:12px 0;margin:0}.mci-compact .mci-all-nutrients>summary{cursor:pointer;min-height:44px;display:flex;align-items:center}.mci-compact .mci-all-nutrients .mf-preview{padding:0}

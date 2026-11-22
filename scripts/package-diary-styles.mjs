@@ -33,6 +33,8 @@ export const DIARY_STYLESHEETS = [
   '/print-report.css',
   '/report-mobile.css',
   '/food-entry-source/mobile-food-entry.css',
+  '/oracle.css',
+  '/suggestions.css',
   '/food-search-source/mobile-food-search.css',
   '/food-search-source/food-multi-add.css',
   '/diary-tools.css',

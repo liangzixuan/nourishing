@@ -9,7 +9,6 @@ import {escape as e} from './html.js';
 
 /** Source Oracle presentation. Queries, daily targets and food quantities remain server-owned. */
 export function openOracle({date,show,close,content,onAdded}){
- if(!document.querySelector('link[data-oracle-style]')){const link=document.createElement('link');link.rel='stylesheet';link.href='/oracle.css';link.dataset.oracleStyle='';document.head.append(link);}
  const day=typeof date==='function'?date():date;
  show(`<div class="oracle-heading"><header class="mo-header"><button type="button" data-oracle-close aria-label="${e(t("mobileFoodEditor.back"))}">${symbol('back')}</button><h1>${e(t("catalogInsights.oracle"))}</h1><span></span></header></div><div class="oracle-body"><p class="empty" role="status">${e(t("mobileNutrientDetail.loading"))}</p></div><nav class="dc-bottom" data-oracle-nav aria-label="${e(t("discover.nav.main"))}">${bottomNavigation("oracle",uiLanguage())}</nav>`);
  const sheet=content.closest('dialog'),root=content.querySelector('.oracle-body'),heading=content.querySelector('.oracle-heading'),events=new AbortController(),signal=events.signal;

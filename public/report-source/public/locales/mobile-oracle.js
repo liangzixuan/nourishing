@@ -1,4 +1,5 @@
 const rows={
+ introduction:['Find foods that are rich in the nutrient you choose. You can narrow your search to specific food categories and choose how to rank the results.','Trouvez des aliments riches en un nutriment. Vous pouvez limiter la recherche à certaines catégories et choisir le classement des résultats.','Finde Lebensmittel, die viel von deinem gewählten Nährstoff enthalten. Du kannst nach Lebensmittelkategorien filtern und die Sortierung der Ergebnisse wählen.','Encontre alimentos ricos no nutriente escolhido. Você pode restringir a busca a categorias específicas e escolher como classificar os resultados.'],
  searchCategories:['Search categories','Rechercher des catégories','Kategorien suchen','Pesquisar categorias'],
  searchFoods:['Search foods','Rechercher des aliments','Lebensmittel suchen','Pesquisar alimentos'],
  backResults:["Back to results","Retour aux résultats","Zurück zu Ergebnissen","Voltar aos resultados"],

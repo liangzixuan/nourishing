@@ -6,7 +6,6 @@ import {symbol} from './suggestion-source/ui.js';
 
 /** Source presentation with an account-scoped cloud transport. Drafts die with this sheet. */
 export function openSuggestions({date,show,close,content,onAdded,onPreferences}){
- if(!document.querySelector('link[data-suggestion-style]')){const link=document.createElement('link');link.rel='stylesheet';link.href='/suggestions.css';link.dataset.suggestionStyle='';document.head.append(link);}
  const day=typeof date==='function'?date():date;
  show(`<div class="suggestion-heading"><header class="ms-header"><button type="button" data-loading-close aria-label="${e(t("common.close"))}">×</button><h1>${e(t("mobileSuggest.title"))}</h1><span></span></header></div><div class="suggestion-body"><p class="empty" role="status">${e(t("mobileNutrientDetail.loading"))}</p></div>`);
  const root=content.querySelector('.suggestion-body'),heading=content.querySelector('.suggestion-heading'),sheet=root.closest('dialog');
