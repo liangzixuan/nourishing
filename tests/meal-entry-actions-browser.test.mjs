@@ -41,8 +41,12 @@ test('saved meal actions distinguish original, copy and occurrence; local adjust
   const menu=async()=>{await page.locator(`[data-diary-record][data-id="${entryId}"] [data-md-context]`).click();};
   mkdirSync('.local/meal-actions',{recursive:true});
   await menu();await page.screenshot({path:'.local/meal-actions/entry-menu.png'});
-  assert.equal(await page.locator('.diary-meal-menu button img').count(),9);
-  assert.ok(await page.locator('#sheet').evaluate(el=>el.getBoundingClientRect().bottom<=document.querySelector('.app-nav').getBoundingClientRect().top+1));
+  assert.equal(await page.locator('.diary-menu-sheet button img').count(),9);
+  const actions=page.locator('.diary-menu-sheet button');
+  assert.ok(await actions.evaluateAll(rows=>rows.every(row=>row.offsetWidth===row.parentElement.clientWidth&&row.offsetHeight===56)));
+  await page.locator('#sheet .diary-menu-navigation [data-discover=shell-foods]').click();
+  await page.locator('#sheet').waitFor({state:'hidden'});
+  await page.locator('#diary-tab').click();await menu();
   await page.mouse.click(8,12);await page.locator('#sheet').waitFor({state:'hidden'});await menu();
   await page.keyboard.press('Escape');await page.locator('#sheet').waitFor({state:'hidden'});await menu();
   assert.deepEqual(await page.locator('[data-diary-tool]').allTextContents(),['Repeat','Edit Original Meal','Edit a Copy of Meal','Adjust Meal','Explode Meal','Custom Meals Settings','Copy','Show Nutrition Summary','Delete']);

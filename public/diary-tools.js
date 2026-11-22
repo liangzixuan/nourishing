@@ -187,12 +187,14 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
     {id:'nutrition',label:mealText('nutrition'),icon:groupIcons.nutrition},
     {id:'delete',label:t('mobileRepeat.delete'),icon:groupIcons.delete,disabled:diary().completed}
    ];
-   return menuSheet(entry.facts?.name??entry.name??coreText('tools.entry'),items,action=>{
+   menuSheet(entry.facts?.name??entry.name??coreText('tools.entry'),items,action=>{
     if(action==='expand')return expand(entry);
     if(action==='settings')return mealSettings();
     if(action==='copy'||action==='delete')return actions[action](source);
     return onMealAction?.(action,entry);
-   },'diary-meal-menu');
+   });
+   menuNavigation();
+   return;
   }
   screen(coreText('tools.entry'),`<div class="diary-tools-menu">${button(t('mobileNutrientTargets.edit'),'edit')}${button(t('cyclePanel.select'),'select')}${button(coreText('tools.copy'),'copy')}${button(coreText('tools.moveGroup'),'move')}${button(t('mobileRepeat.delete'),'delete')}</div>`);
   content.querySelectorAll('[data-diary-tool]').forEach(b=>b.onclick=()=>{const action=b.dataset.diaryTool;if(action==='edit')onEdit();else if(action==='select')select(source);else actions[action](source);});

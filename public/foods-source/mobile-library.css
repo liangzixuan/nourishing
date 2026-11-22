@@ -41,8 +41,8 @@ body.discover-mobile .ml-sheet::backdrop{backdrop-filter:none;background:rgb(0 0
 .ml-delete footer button:disabled{opacity:.5;cursor:default}
 @media(max-width:360px){.library-review-dialog.ml-delete{width:calc(100% - 32px)}.ml-delete footer{gap:8px;padding:0}}
 
-:is([data-library-collection=foods],[data-library-collection=recipes]) .ml-tools button{display:inline-flex;align-items:center;gap:4px;font-size:.92rem}
-:is([data-library-collection=foods],[data-library-collection=recipes]) .ml-tools button svg{width:20px;height:20px;flex:none}
+[data-library-collection] .ml-tools button{display:inline-flex;align-items:center;gap:4px;font-size:.92rem}
+[data-library-collection] .ml-tools button svg{width:20px;height:20px;flex:none}
 .ml-action-rows.ml-sheet{padding:0 0 env(safe-area-inset-bottom)}
 .ml-action-rows.ml-sheet button{min-height:56px;gap:32px;padding:8px 16px;font-size:calc(15rem / 18)}
 .ml-action-rows.ml-sheet svg,.ml-action-rows.ml-sheet img{width:24px;height:24px;flex:none}

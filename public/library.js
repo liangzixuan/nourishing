@@ -107,7 +107,7 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
   deleteDialog?.close(false);foodEditor?.dispose();mealEditor?.dispose();recipeEditor?.dispose();const resource=saved?.resource;
   const savedChange=async()=>{await reload();void Promise.resolve(onChange()).catch(()=>{});};
   function confirmDelete(){
-   const title=itemKind==='food'?fc('deleteFood'):fc('deleteKind',{kind:labels()[itemKind]});
+   const title=fc('deleteFood');
    let pending=false;
    const dialog=new LibraryReviewDialog({
     title,closeLabel:t('common.cancel'),loading:'',canDismiss:()=>!pending,
@@ -117,7 +117,7 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
    dialog.root.classList.add('ml-delete');
    dialog.root.setAttribute('role','alertdialog');
    dialog.root.setAttribute('aria-describedby','ml-delete-prompt');
-   dialog.show(`<p id="ml-delete-prompt">${e(itemKind==='food'?fc('deleteFoodPrompt',{name:resource.name}):t('libraryLifecycle.deletePrompt',{name:resource.name}))}</p><footer><button type="button" data-action="close-dialog" data-cancel-delete>${e(t('common.cancel'))}</button><button type="button" data-confirm-delete>${e(t('mobileRepeat.delete'))}</button></footer>`);
+   dialog.show(`<p id="ml-delete-prompt">${e(fc('deleteFoodPrompt',{name:resource.name}))}</p><footer><button type="button" data-action="close-dialog" data-cancel-delete>${e(t('common.cancel'))}</button><button type="button" data-confirm-delete>${e(t('mobileRepeat.delete'))}</button></footer>`);
    const cancel=dialog.root.querySelector('[data-cancel-delete]');
    const confirm=dialog.root.querySelector('[data-confirm-delete]');
    confirm.onclick=async()=>{

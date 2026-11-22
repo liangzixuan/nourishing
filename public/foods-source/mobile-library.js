@@ -11,7 +11,7 @@ export function mobileLibraryHeader({tab,empty,retiredOnly,language,icon}){
  const genuinelyEmpty=empty&&!retiredOnly;
  const utility=retiredOnly&&!recipes?`<button type="button" data-action="library-options" aria-label="${label('mobileLibrary.options')}">${icon('more')}</button>`:'';
  const primary=recipes?`<button type="button" data-action="library-options" aria-haspopup="dialog" aria-label="${label(genuinelyEmpty?'mobileLibrary.moreOptions':'mobileLibrary.more')}">${icon('plus')}</button>`:`<button type="button" data-action="new-${kind}" aria-label="${label('mobileFoods.create.'+kind)}">${icon('plus')}</button>`;
- return `<div class="ml-header${genuinelyEmpty||tab==='foods'&&!retiredOnly?' ml-header-compact':''}${utility?' ml-header-wide':''}" ${genuinelyEmpty?'data-empty-collection="'+tab+'"':''}><button type="button" data-action="foods-home" aria-label="${label(genuinelyEmpty?'mobileLibrary.back':'mobileFoods.back')}">${icon('back')}</button><h1>${label('mobileFoods.'+tab)}</h1><div class="ml-header-actions">${utility}${primary}</div></div>`;
+ return `<div class="ml-header${!retiredOnly?' ml-header-compact':''}${utility?' ml-header-wide':''}" ${genuinelyEmpty?'data-empty-collection="'+tab+'"':''}><button type="button" data-action="foods-home" aria-label="${label(genuinelyEmpty?'mobileLibrary.back':'mobileFoods.back')}">${icon('back')}</button><h1>${label('mobileFoods.'+tab)}</h1><div class="ml-header-actions">${utility}${primary}</div></div>`;
 }
 export function mobileLibraryCollection({items,tab,query,sort,retired,showMealTip,language,icon}){
  const m=message(language),kind=tab.slice(0,-1),collator=new Intl.Collator(language,{sensitivity:'base',numeric:true});
@@ -31,9 +31,9 @@ export function mobileLibraryCollection({items,tab,query,sort,retired,showMealTi
 
 /** A native modal sheet owns focus and dismissal without replacing the editor. */
 export class MobileLibrarySheet{
- constructor({label,items,onChoose,onClose}){
+ constructor({label,items,onChoose,onClose,actionRows=false}){
   this.origin=document.activeElement;this.onClose=onClose;this.closed=false;
-  const root=document.createElement('dialog');this.root=root;root.className='ml-sheet';root.setAttribute('aria-label',label);
+  const root=document.createElement('dialog');this.root=root;root.className=actionRows?'ml-sheet ml-action-rows':'ml-sheet';root.setAttribute('aria-label',label);
   root.innerHTML=items.map(item=>`<button type="button" data-sheet-choice="${e(item.id)}"${item.selected===undefined?'':` aria-pressed="${item.selected}"`}>${item.icon||''}<span>${e(item.label)}</span></button>`).join('');
 
   root.addEventListener('cancel',event=>{event.preventDefault();this.close();});

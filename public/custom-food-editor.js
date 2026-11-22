@@ -114,7 +114,7 @@ export function mountCustomFoodEditor({resource,data,draft,show,close,content,da
  },{signal});
  root.querySelector('[data-mfe-help]').onclick=()=>{const section=root.querySelector('[data-mfe-help-section]');section.open=true;section.scrollIntoView({block:'center'});section.querySelector('summary').focus({preventScroll:true});};
  const menuButton=root.querySelector('[data-mfe-menu]');
- if(menuButton)menuButton.onclick=()=>{menu=new MobileLibrarySheet({label:resource.name,items:[{id:'delete',label:foodActionLabel('delete'),icon:'<img src="/repeat-source/delete.svg" alt="">'}],onClose:()=>{menu=null;},onChoose:()=>onAction?.('delete')});menu.root.classList.add('ml-action-rows');};
+ if(menuButton)menuButton.onclick=()=>{menu=new MobileLibrarySheet({actionRows:true,label:resource.name,items:[{id:'delete',label:foodActionLabel('delete'),icon:'<img src="/repeat-source/delete.svg" alt="">'}],onClose:()=>{menu=null;},onChoose:()=>onAction?.('delete')});};
  root.querySelectorAll('[data-food-action]').forEach(button=>button.onclick=()=>{void enqueue(async()=>{flush();const snapshot=read(),action=button.dataset.foodAction;if(['retire','restore'].includes(action)){actionChild?.dispose();actionChild=onAction?.(action,snapshot);return;}dispose();onAction?.(action,snapshot);});});
  form.addEventListener('invalid',event=>{for(let node=event.target.parentElement;node&&node!==form;node=node.parentElement)if(node.tagName==='DETAILS')node.open=true;},{capture:true,signal});
  root.addEventListener('toggle',event=>{if(event.target.dataset.mfSection)sections.set(event.target.dataset.mfSection,event.target.open);},{capture:true,signal});

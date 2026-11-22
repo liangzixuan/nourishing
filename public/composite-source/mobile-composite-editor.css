@@ -150,7 +150,6 @@ dialog.mci-dialog{width:100%;max-width:700px;height:100dvh;max-height:100dvh;mar
  border-radius:50%;font:700 1rem/1 Karla,sans-serif;
 }
 .mrs-fixed:has([data-mce-help]) { padding-block:0; }
-.ml-sheet .recipe-action-icon { width:24px;height:24px;filter:var(--mobile-icon-filter); }
 .library-review-dialog.recipe-message {
  width:min(280px,calc(100% - 32px));max-height:calc(100dvh - 32px);overflow:auto;
  box-sizing:border-box;padding:16px;border:0;border-radius:10px;background:var(--paper);color:var(--ink);
