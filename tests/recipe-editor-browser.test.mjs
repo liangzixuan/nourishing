@@ -53,6 +53,10 @@ test('Recipe source stages preserve canonical measures and reviewed versions wit
   await page.locator('[data-mce-next]').click();await page.waitForFunction(()=>document.querySelector('.recipe-editor').dataset.recipeStage==='1');await ready();
   const hint=page.locator('[data-mrs-instructions]'),servingHelp=page.getByRole('button',{name:'Learn more about Advanced Serving Sizes'});
   assert.match(await hint.innerText(),/how many servings/i);assert.equal(await servingHelp.count(),0);
+  const advanced=page.locator('[data-mrs-advanced]'),baseServing=page.locator('.mrs-base');
+  await advanced.check();assert.equal(await baseServing.isVisible(),false);
+  await page.locator('[data-mrs-mode=weight]').click();assert.equal(await page.locator('.mrs-fixed:visible').count(),2);assert.equal(await baseServing.isVisible(),false);
+  await page.locator('[data-mrs-mode=batch]').click();await advanced.uncheck();assert.equal(await baseServing.isVisible(),true);
   await page.getByLabel('Serving Name',{exact:true}).first().fill('Bowl');await page.locator('[name=servings]').fill('2');await page.locator('[data-mrs-advanced]').check();
   async function checkServingHelp(opener,dismiss){
    await opener.click();

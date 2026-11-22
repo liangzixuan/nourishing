@@ -38,7 +38,8 @@ export function openDiarySummaryAction({action,id,diary,date=diary.date,show,clo
    if((id==='alcohol'||id==='unattributed')&&!value)return '';
    return component(id,value,known(value)&&consumedEnergy.total>0?100*value/consumedEnergy.total:null,empty?dc('summaryWhenLogged'):null);
   }).join('');
-  const expenseRows=(expenditureBreakdown?.components??[]).filter(row=>['resting','baseline','exercise'].includes(row.id)||row.mean>0).map(row=>component(row.id,row.mean,row.percent)).join('');
+  const hasExercise=diary.entries.some(entry=>entry.kind==='exercise');
+  const expenseRows=(expenditureBreakdown?.components??[]).filter(row=>['resting','baseline','exercise'].includes(row.id)||row.mean>0).map(row=>component(row.id,row.mean,row.percent,row.id==='exercise'&&row.mean===0&&!hasExercise?dc('summaryWhenLogged'):null)).join('');
   const card=(kind,title,value,rows)=>`<article class="ds-energy-card" data-card="${kind}"><header><h3>${e(title)}</h3><div class="ds-energy-ring"><canvas data-md-ring="${kind}" aria-hidden="true"></canvas><strong>${known(value)?number(displayValue(value,'kcal',unit)):'—'}</strong><small>${known(value)?e(unit):e(unknown)}</small></div></header><dl>${rows}</dl></article>`;
   const budgetRow=(label,value)=>`<div class="ds-budget-row"><dt>${e(label)}</dt><dd>${e(amount(value))}</dd></div>`;
   const budget=mode=>{

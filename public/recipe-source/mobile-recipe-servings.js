@@ -62,8 +62,10 @@ export class MobileRecipeServings{
   const advanced=this.toggle.checked;this.table.classList.toggle('mrs-advanced',advanced);this.editor.root.hidden=!advanced;this.table.querySelector('[data-mrs-builtins]').hidden=!advanced;
   for(const button of this.table.querySelectorAll('[data-mrs-mode]')){button.setAttribute('aria-pressed',String(button.dataset.mrsMode===this.mode));button.hidden=button.dataset.mrsMode==='volume'&&this.mode!=='volume'&&!this.form.elements.namedItem('batchVolumeMl').value;}
   const caption=this.m(this.mode==='batch'?'perRecipe':this.mode==='weight'?'gramsPerServing':'mlPerServing');this.table.querySelector('[data-mrs-caption]').textContent=caption;this.amount.setAttribute('aria-label',caption);
-  this.yield.hidden=this.mode!=='batch';this.amount.hidden=this.mode==='batch';this.amount.required=this.mode!=='batch';this.amount.setCustomValidity('');
-  const total=this.mode==='batch'?null:this.total();this.amount.value=total===null?'':String(total/Number(this.yield.value));
+  const total=this.mode==='batch'?null:this.total(),base=this.table.querySelector('.mrs-base');
+  base.hidden=advanced&&this.name.value==='serving'&&Number(this.yield.value)===1&&(this.mode==='batch'||total!==null);
+  this.yield.hidden=this.mode!=='batch';this.amount.hidden=this.mode==='batch';this.amount.required=this.mode!=='batch'&&!base.hidden;this.amount.setCustomValidity('');
+  this.amount.value=total===null?'':String(total/Number(this.yield.value));
   const error=this.table.querySelector('[data-mrs-error]');error.hidden=this.mode==='batch'||total!==null;error.textContent=this.missingMeasure();
   this.refreshBuiltins();this.refreshRows();
  }

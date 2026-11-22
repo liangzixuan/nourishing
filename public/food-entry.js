@@ -19,12 +19,18 @@ const icons={close:svg('<path d="m6 6 12 12M18 6 6 18"/>'),more:svg('<circle cx=
 export function mountFoodEntry({item,entry,quantity,date,group,groups,revision,show,close,content,onChange,onOptimisticCommand,onBack,onAdjust,onConflict,draft,onApply,submitLabel,onCopy,viewState,ingredientOnly=false}){
  const {resource:food,options,kind}=item,source=food.source?.name??(kind==='food'?t("libraryView.customFood"):kind==='recipe'?t("recipeEditor.recipe"):fc("meal"));
  const details=[food.source?.attribution,food.source?.description,food.notes].filter(value=>typeof value==='string'&&value.trim()).map(value=>`<p>${e(value)}</p>`).join('')||`<p>${e(source)}</p>`;
- const servingOptions=ingredientOnly?options.map(([id,label])=>{
+ const portions=new Map((kind==='food'?food.portions??[]:[]).map(portion=>['portion:'+portion.id,portion]));
+ const servingOptions=options.map(([id,label])=>{
+  const portion=portions.get(id);
+  if(portion){
+   const mass=portion.grams>0,measure=mass?portion.grams:portion.milliliters;
+   if(measure>0)return [id,`${label} — ${measure.toLocaleString(uiLanguage(),{maximumSignificantDigits:8})}${mass?'g':'mL'}`];
+  }
   const unit=quantityUnit(id);
-  if(!unit)return [id,label];
+  if(!unit||(!ingredientOnly&&kind!=='food'))return [id,label];
   const basis=unit.basis==='grams'?'g':'mL';
-  return [id,id===basis?id:`${id} · ${unit.factor.toLocaleString(uiLanguage(),{maximumFractionDigits:0})} ${basis}`];
- }):options;
+  return [id,id===basis?id:`${id} — ${unit.factor.toLocaleString(uiLanguage(),{maximumFractionDigits:0})}${basis}`];
+ });
  const fields='<div class="quantity-fields mf-quantity">'+quantityFields(servingOptions,entry??draft??quantity??{},ingredientOnly?t('mobileFood.serving'):undefined).replace('name="amount"',`name="amount" data-quantity-value aria-label="${e(t('mobileFood.amount'))}"`).replace('name="unit"','name="unit" data-quantity-unit')+'</div>';
  show(mobileFoodEntryMarkup({food,ingredientOnly,kind:kind+'s',entry,quantity:fields,groupOptions:groups.map(g=>`<option value="${e(g)}" ${g===(entry?.group??draft?.group??group)?'selected':''}>${e(g)}</option>`).join(''),date:entry?.date??draft?.date??date,time:entry?.time??draft?.time??'',language:uiLanguage(),favorite:favoriteButton(kind,food.id,false),copyLabel:kind==='food'&&onCopy?fc('foodMenuCopy'):null,reportLabel:kind==='food'?fc('issue'):null,icons,source,sourceDetails:details,submitLabel:submitLabel??(onApply?t("mobileSuggest.applyQuantity"):entry?t("mobileFood.save"):t("mobileBiometric.add")),backLabel:entry?t("common.close"):t("mobileFoodEditor.back")}));
  const form=content.querySelector('.mf-form'),sheet=form.closest('dialog'),preview=form.querySelector('[data-mf-preview]'),menu=form.querySelector('.mf-menu');sheet.classList.add('mf-detail');
@@ -47,8 +53,8 @@ export function mountFoodEntry({item,entry,quantity,date,group,groups,revision,s
  async function favorite(){if(busy||!favorites)return;busy=true;status.textContent='';form.querySelectorAll('button').forEach(button=>button.disabled=true);try{await setFavorite({kind,id:food.id,enabled:!favorites.items.some(row=>row.id===food.id&&row.kind===kind),revision:favorites.revision,ticket:favorites.ticket,resource:food});await onChange();if(alive())await loadFavorites();}catch(error){if(alive()){status.textContent=error.message;await loadFavorites().catch(()=>{});}}finally{busy=false;if(alive())form.querySelectorAll('button').forEach(button=>button.disabled=false);}}
  function schedule(delay=180){clearTimeout(timer);pending?.abort();const id=++serial;preview.setAttribute('aria-busy','true');timer=setTimeout(()=>update(id),delay);}
  function describeBasis(facts){
-  const option=form.elements.unit.selectedOptions[0],unit=ingredientOnly?quantityUnit(option.value):null;
-  const caption=t('mobileFood.per',{amount:form.elements.amount.value,serving:unit?.id??option.textContent});
+  const select=form.elements.unit,[id,label]=options[select.selectedIndex],unit=quantityUnit(id);
+  const caption=t('mobileFood.per',{amount:form.elements.amount.value,serving:unit?.id??label});
   const measure=Number.isFinite(facts.grams)?[facts.grams,'g']:Number.isFinite(facts.milliliters)?[facts.milliliters,'mL']:null;
   return measure&&measure[1]!==unit?.id?caption+' \u00b7 '+nutrition.number(measure[0])+' '+measure[1]:caption;
  }
@@ -66,9 +72,9 @@ export function mountFoodEntry({item,entry,quantity,date,group,groups,revision,s
  preview.addEventListener('toggle',event=>{if(event.target.dataset.mfSection)sections.set(event.target.dataset.mfSection,event.target.open);},{capture:true,signal});
  form.querySelector('[data-mf-report]')?.addEventListener('click',()=>{
   closeMenu();
-  const selected=form.elements.unit.selectedOptions[0],amount=form.elements.amount.value;
-  const discrete=selected?.value==='servings'||selected?.value.startsWith('portion:');
-  const serving=[amount,selected?.textContent].filter(Boolean).join(discrete?' × ':' ');
+  const [id,label]=options[form.elements.unit.selectedIndex],amount=form.elements.amount.value;
+  const discrete=id==='servings'||id.startsWith('portion:');
+  const serving=[amount,label].filter(Boolean).join(discrete?' × ':' ');
   openFoodCorrection({host:content,anchor:menu.querySelector('summary'),signal,foodName:food.name,foodId:food.id,source,serving});
  },{signal});
  form.addEventListener('click',event=>{const action=event.target.closest('[data-action]')?.dataset.action;if(action==='close-dialog')close();if(action==='picker-back')(onBack??close)();if(action==='mobile-food-source'){const source=form.querySelector('[data-mf-source]');source.hidden=!source.hidden;}if(event.target.closest('[data-mf-dismiss]'))closeMenu();if(event.target.closest('[data-mf-copy]')){const kept={values:{...Object.fromEntries(new FormData(form)),time:form.elements.time.value},timestamp:form.querySelector('[data-mf-timestamp]').checked,sections:[...sections],sourceOpen:!form.querySelector('[data-mf-source]').hidden,scrollTop:sheet.scrollTop};closeMenu();onCopy?.(kept);}if(event.target.closest('[data-mf-favorite],[data-favorite-id]')){closeMenu();void favorite();}if(event.target.closest('[data-retry]'))schedule(0);if(event.target.closest('[data-delete]')){closeMenu();void save('entry.delete',{id:entry.id});}if(event.target.closest('[data-adjust]')){closeMenu();onAdjust();}},{signal});
