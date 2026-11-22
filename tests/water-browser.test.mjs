@@ -64,6 +64,9 @@ test('Water controls save locally, survive restart and lost replies, and preserv
   await page.reload();await page.locator('.md-diary').waitFor();await page.waitForFunction(()=>document.querySelector('.md-water small')?.textContent.startsWith('8 /'));hold=null;release();await waitForOutboxIdle(page,()=>fixture.state().biometrics.length===1);
   assert.equal(fixture.state().biometrics[0].value,236.5882365);assert.equal(fixture.state().biometrics[0].group,'Uncategorized');
   await menu();await page.getByRole('menuitem',{name:'Water Settings',exact:true}).click();await page.locator('.water-settings').waitFor();await page.screenshot({path:'.local/water/settings-default.png'});
+  assert.equal(await page.getByLabel('Container Size',{exact:true}).inputValue(),'8.00');
+  assert.equal(await page.locator('[data-water-wheel] [aria-selected=true]').innerText(),'64.00 fl oz / 8 glasses');
+  await page.getByText('Water added in the water widget will contribute to your total water nutrient target.',{exact:true}).waitFor();
   await page.locator('[data-water-unit=mL]').click();await page.waitForFunction(()=>document.querySelector('[data-water-unit=mL]')?.getAttribute('aria-pressed')==='true');await page.getByLabel('Container Size',{exact:true}).fill('250');await page.getByLabel('Container Size',{exact:true}).dispatchEvent('change');await waitForOutboxIdle(page,()=>fixture.state().settings.waterSettings?.containerMl===250);
   await page.getByRole('listbox',{name:'Daily Water Tracking Goal'}).focus();await page.keyboard.press('ArrowDown');await waitForOutboxIdle(page,()=>fixture.state().settings.waterSettings?.goalMl===2000);
   await page.keyboard.press('End');await page.keyboard.press('ArrowDown');await waitForOutboxIdle(page,()=>fixture.state().settings.waterSettings?.goalMl===15500);

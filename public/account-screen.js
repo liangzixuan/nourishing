@@ -25,7 +25,7 @@ const token={userId:params.get('userId'),secret:params.get('secret')};
 if(!embedded&&location.search)history.replaceState(null,'',location.pathname);
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function api(path,body,method='POST',signal){
- const ticket=method!=='GET'?(await readDeviceCache('/api/diary').catch(()=>({}))).ticket:null;
+ const ticket=method!=='GET'&&path!=='/api/account/reauthenticate'?(await readDeviceCache('/api/diary').catch(()=>({}))).ticket:null;
  if(ticket)await invalidateDeviceCache(ticket).catch(()=>{});
  try{return await accountNetwork(path,body,method,signal);}finally{if(ticket)await invalidateDeviceCache(ticket).catch(()=>{});}
 }

@@ -13,7 +13,7 @@ export class WheelColumn{
   root.addEventListener('keydown',event=>{const steps={ArrowDown:1,ArrowUp:-1,PageDown:5,PageUp:-5};if(event.key in steps){event.preventDefault();this.select(this.index+steps[event.key]);}else if(['Home','End'].includes(event.key)){event.preventDefault();this.select(event.key==='Home'?0:this.items.length-1);}});
   this.setItems(items,value);this.resize=new ResizeObserver(()=>this.align());this.resize.observe(root);
  }
- setItems(items,value){this.items=items;this.index=Math.max(0,items.findIndex(item=>item.value===value));this.root.innerHTML=items.map((item,index)=>`<div role="option" id="time-wheel-${this.key}-${index}" data-wheel-index="${index}" data-wheel-value="${e(item.value)}">${e(item.label)}</div>`).join('');this.align();this.paint();}
+ setItems(items,value){this.items=items;this.index=Math.max(0,items.findIndex(item=>item.value===value));this.root.innerHTML=items.map((item,index)=>`<div role="option" id="time-wheel-${this.key}-${index}" data-wheel-index="${index}" data-wheel-value="${e(item.value)}">${item.parts?item.parts.map(part=>part.strong?'<strong>'+e(part.text)+'</strong>':e(part.text)).join(''):e(item.label)}</div>`).join('');this.align();this.paint();}
  height(){return parseFloat(getComputedStyle(this.root.firstElementChild).height)||32;}
  align(){if(!this.disposed)this.root.scrollTop=this.index*this.height();}
  read(){const index=Math.max(0,Math.min(this.items.length-1,Math.round(this.root.scrollTop/this.height())));if(index!==this.index){this.index=index;this.paint();this.onChange?.(this.items[index].value);}return this.items[this.index].value;}

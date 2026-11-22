@@ -10,15 +10,16 @@ export const waterPolicy=diary=>resolveWaterSettings({...diary.presentation?.set
 export function waterRecordAmount(diary,row){const amount=loggedWaterMilliliters(row);if(amount===null)return null;const policy=waterPolicy(diary);return `${number(waterFromMilliliters(amount,policy.unit))} ${policy.unit}`;}
 const number=(value,digits=2)=>value.toLocaleString(uiLanguage(),{maximumFractionDigits:digits});
 const units=['mL','fl oz','cup'];
-const icon=filled=>`<img src="/record-source/biometric-icons/cup-${filled?'water':'outline'}.svg" alt="">`;
+const inputVolume=value=>value.toLocaleString('en-US',{useGrouping:false,minimumFractionDigits:2,maximumFractionDigits:8});
 export function newestWaterEntry(diary){return [...(diary.biometrics??[])].reverse().find(row=>isLoggedWater(row)&&loggedWaterMilliliters(row)!==null);}
 const hintKey = ownerId => 'nourishing.waterHintDismissed.' + ownerId;
 export function dismissWaterHint(button,ownerId){
  button.closest('.water-hint')?.remove();
  try{if(ownerId)localStorage.setItem(hintKey(ownerId),'1');}catch{/* The current view still dismisses the tip when storage is unavailable. */}
 }
-function glassMarkup(full,mark){
- return `<svg class="water-cup" viewBox="0 0 39 52" aria-hidden="true"><path class="water-cup-outline" d="M3 1h33q2 0 1.8 2L34 48q-.2 3-3 3H8q-2.8 0-3-3L1.2 3Q1 1 3 1Z"/>${full?'<path fill="url(#water-level)" d="M2.6 6h33.8L33 45H6Z"/>':''}<path class="water-cup-base" d="M6 46h27"/></svg>${mark?`<span aria-hidden="true">${mark}</span>`:''}`;
+const waterFill=id=>`<svg width="0" height="0" aria-hidden="true" class="water-fill"><defs><linearGradient id="${id}" x2="0" y2="1"><stop stop-color="#1ec4cb"/><stop offset="1" stop-color="#007781"/></linearGradient></defs></svg>`;
+function glassMarkup(full,mark,level="water-level"){
+ return `<svg class="water-cup" viewBox="0 0 39 52" aria-hidden="true"><path class="water-cup-outline" d="M3 1h33q2 0 1.8 2L34 48q-.2 3-3 3H8q-2.8 0-3-3L1.2 3Q1 1 3 1Z"/>${full?`<path fill="url(#${level})" d="M2.6 6h33.8L33 45H6Z"/>`:''}<path class="water-cup-base" d="M6 46h27"/></svg>${mark?`<span aria-hidden="true">${mark}</span>`:''}`;
 }
 export function waterWidgetMarkup(diary,{expanded=false,ownerId}={}){
  if(diary.presentation?.settings.showWater===false)return '';
@@ -47,15 +48,14 @@ export function waterWidgetMarkup(diary,{expanded=false,ownerId}={}){
   <span><b>${e(m('total'))}</b> - ${e(amount)}</span><span>${percent}%</span>
   <progress aria-label="${e(m('total'))}" max="100" value="${Math.min(100,percent)}"></progress>
  </button>`:'';
- const fill=`<svg width="0" height="0" aria-hidden="true" class="water-fill"><defs><linearGradient id="water-level" x2="0" y2="1"><stop stop-color="#1ec4cb"/><stop offset="1" stop-color="#007781"/></linearGradient></defs></svg>`;
- return `<details class="md-water" ${expanded?'open':''}>${heading}${fill}<div class="water-glasses">${glasses}</div>${more}${hint}${targetBar}</details>`;
+ return `<details class="md-water" ${expanded?'open':''}>${heading}${waterFill('water-level')}<div class="water-glasses">${glasses}</div>${more}${hint}${targetBar}</details>`;
 }
 export function openWaterMenu(anchor,onChoose,{completed=false}={}){
  return new AnchoredMenu({anchor,origin:anchor,label:m('settings'),className:'water-menu',items:[{id:'water',label:m('addGlass'),icon:'/record-source/biometric-icons/cup-water.svg',disabled:completed},{id:'water-custom',label:m('custom'),icon:'/shell-source/navigation/plus.svg',disabled:completed},{id:'water-settings',label:m('settings'),icon:'/record-source/biometric-icons/cog-outline.svg'}],onChoose});
 }
 export function openWaterAmount({policy,onAdd,onAdded}){
  const dialog=document.createElement('dialog');dialog.className='mdtp-dialog water-amount';dialog.setAttribute('aria-label',m('custom'));
- dialog.innerHTML=`<form><header><h2>${e(m('custom'))}</h2><button type="button" data-water-close aria-label="${e(m('close'))}">×</button></header><label class="water-amount-row"><strong>${e(m('amount'))}</strong><input name="amount" type="number" min="0.01" step="any" required value="${Number(waterFromMilliliters(policy.containerMl,policy.unit).toFixed(8))}" aria-label="${e(m('amount'))}"><span>${e(policy.unit)}</span></label><p role="status"></p><button class="dc-button dc-pill" type="submit">${e(m('add'))}</button></form>`;
+ dialog.innerHTML=`<form><header><h2>${e(m('custom'))}</h2><button type="button" data-water-close aria-label="${e(m('close'))}">×</button></header><label class="water-amount-row"><strong>${e(m('amount'))}</strong><input name="amount" type="number" min="0.01" step="any" required value="${inputVolume(waterFromMilliliters(policy.containerMl,policy.unit))}" aria-label="${e(m('amount'))}"><span>${e(policy.unit)}</span></label><p role="status"></p><button class="dc-button dc-pill" type="submit">${e(m('add'))}</button></form>`;
  let busy=false,closed=false,back;const form=dialog.querySelector('form'),origin=document.activeElement;
  const close=()=>{if(closed)return;closed=true;back?.release();dialog.close();dialog.remove();if(origin?.isConnected)origin.focus({preventScroll:true});};
  dialog.addEventListener('cancel',event=>{event.preventDefault();close();});dialog.addEventListener('click',event=>{if(event.target.closest('[data-water-close]'))close();if(event.target===dialog){const box=dialog.getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)close();}});
@@ -75,7 +75,12 @@ export function mountWaterSettings({root,settings,groups,onSave}){
  function goalItems(){
   const s=current.waterSettings,start=Math.max(1,Math.round(s.goalMl/s.containerMl)-30);
   const amounts=[...new Set([...Array.from({length:61},(_,i)=>Number((s.containerMl*(start+i)).toFixed(8))).filter(value=>value<=20000),s.goalMl])].sort((a,b)=>a-b);
-  return amounts.map(value=>({value,label:`${number(waterFromMilliliters(value,s.unit))} ${s.unit} / ${m('glasses',{count:number(value/s.containerMl)})}`}));
+  return amounts.map(value=>{
+   const volume=waterFromMilliliters(value,s.unit).toLocaleString(uiLanguage(),{minimumFractionDigits:2,maximumFractionDigits:2});
+   const count=number(value/s.containerMl),[prefix,suffix]=m('glasses',{count:'{count}'}).split('{count}');
+   const parts=[{text:volume,strong:true},{text:' '+s.unit+' / '+prefix},{text:count,strong:true},{text:suffix}];
+   return {value,label:parts.map(part=>part.text).join(''),parts};
+  });
  }
  function settleGoal(){
   if(!wheel)return;const goalMl=wheel.read();
@@ -85,7 +90,7 @@ export function mountWaterSettings({root,settings,groups,onSave}){
  function render(){
   wheel?.dispose();const s=current.waterSettings,amount=waterFromMilliliters(s.containerMl,s.unit);
   const toggle=(key,label,checked)=>`<label class="mds-row"><strong>${e(label)}</strong><input type="checkbox" role="switch" class="dc-switch" data-water-toggle="${key}" ${checked?'checked':''}></label>`;
-  root.innerHTML=`<div class="water-settings"><section class="mds-group">${toggle('showWater',m('showWidget'),current.showWater!==false)}${toggle('showEntries',m('showEntries'),s.showEntries)}<button class="mds-row water-group" type="button" data-water-group><strong>${e(m('group'))}</strong><span>${e(s.group??m('current'))}</span><span aria-hidden="true">⌄</span></button>${toggle('showTotal',m('showTotal'),s.showTotal)}<div class="mds-row"><strong>${e(m('units'))}</strong><div class="water-units" role="group" aria-label="${e(m('units'))}">${units.map(unit=>`<button type="button" data-water-unit="${e(unit)}" aria-pressed="${s.unit===unit}">${e(unit==='mL'?'ml':unit)}</button>`).join('')}</div></div></section><h2>${e(m('goal'))}</h2><section class="mds-group water-goal"><div class="mdtp-wheels"><div data-water-wheel></div></div><h2>${e(m('container'))}</h2><label class="water-container">${icon(true)}<strong>${e(m('glass'))}</strong><input type="number" min="0.01" step="any" required data-water-container aria-label="${e(m('container'))}" value="${Number(amount.toFixed(8))}"><span>${e(s.unit)}</span></label></section><p role="status" aria-live="polite"></p></div>`;
+  root.innerHTML=`<div class="water-settings"><section class="mds-group">${toggle('showWater',m('showWidget'),current.showWater!==false)}${toggle('showEntries',m('showEntries'),s.showEntries)}<button class="mds-row water-group" type="button" data-water-group><strong>${e(m('group'))}</strong><span>${e(s.group??m('current'))}</span><span class="water-group-chevron" aria-hidden="true"></span></button>${toggle('showTotal',m('showTotal'),s.showTotal)}<div class="mds-row"><strong>${e(m('units'))}</strong><div class="water-units" role="group" aria-label="${e(m('units'))}">${units.map(unit=>`<button type="button" data-water-unit="${e(unit)}" aria-pressed="${s.unit===unit}">${e(unit==='mL'?'ml':unit)}</button>`).join('')}</div></div></section><h2>${e(m('goal'))}</h2><section class="mds-group water-goal"><div class="mdtp-wheels"><div data-water-wheel></div></div><h2>${e(m('container'))}</h2><label class="water-container">${waterFill('water-container-level')}${glassMarkup(true,'','water-container-level')}<strong>${e(m('glass'))}</strong><input type="number" min="0.01" step="any" required data-water-container aria-label="${e(m('container'))}" value="${inputVolume(amount)}"><span>${e(s.unit)}</span></label></section><p class="water-help">${e(m('settingsHint'))}</p><p role="status" aria-live="polite"></p></div>`;
   wheel=new WheelColumn({root:root.querySelector('[data-water-wheel]'),key:'water-goal',label:m('goal'),items:goalItems(),value:s.goalMl,onChange:()=>{},onSettled:settleGoal});
  }
  root.addEventListener('change',event=>{const key=event.target.dataset.waterToggle;if(key){void persist(key==='showWater'?{showWater:event.target.checked}:{waterSettings:{...current.waterSettings,[key]:event.target.checked}});return;}if(event.target.matches('[data-water-container]')){const input=event.target;if(!input.reportValidity())return;try{void persist({waterSettings:{...current.waterSettings,containerMl:waterToMilliliters(Number(input.value),current.waterSettings.unit)}},{renderAfter:true});}catch(error){root.querySelector('[role=status]').textContent=error.message;}}},{signal:events.signal});

@@ -219,6 +219,11 @@ function buildAuthAndLifecycleMethods(ctx) {
         mapViewError(error);
       }
     },
+    reauthenticateAccount: async (secret, ownerId, password) => {
+      const account = await resolveAccount(secret);
+      if (account.$id !== ownerId) throw Object.assign(Error('Your account changed. Reopen your account.'), {code: 409, publicMessage: 'Your account changed. Reopen your account.'});
+      await confirmAccountPassword({account, password, budget, auth: new Account(elevated()), users: new Users(elevated())});
+    },
     prepareAccountDeletion: async (secret, {password}) => {
       const account = await resolveAccount(secret);
       await confirmAccountPassword({account, password, budget, auth: new Account(elevated()), users: new Users(elevated())});

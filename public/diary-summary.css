@@ -41,7 +41,60 @@
 .md-records tr:has(.md-biometric-amount) td:last-child{padding-right:20px!important}
 .md-records tr:has(.md-biometric-amount) .md-record{gap:15px}
 .md-biometric-amount{overflow-wrap:anywhere}
-.water-settings{padding:20px 0 28px}.water-settings h2{font:700 calc(15rem / 18)/1.4 Karla,Lato,sans-serif;text-transform:uppercase;color:var(--muted);margin:18px 16px 10px}.water-settings .mds-row{gap:12px;min-height:60px}.water-settings .water-group{padding-left:30px;width:100%;text-align:left}.water-group>span:first-of-type{text-align:right}.water-settings .water-units{display:flex;border-radius:30px;background:var(--pale);padding:3px}.water-units button{border:0;background:none;color:inherit;font:700 calc(16rem / 18)/1.3 Karla,sans-serif;border-radius:30px;min-width:48px;min-height:34px}.water-units [aria-pressed=true]{background:var(--ink);color:var(--paper)}.water-goal{padding:16px}.water-goal .mdtp-wheels{grid-template-columns:minmax(0,1fr);max-width:none;border:1px solid var(--line);border-radius:12px;background:var(--page,#101020);height:224px;--wheel-height:32px}.water-goal .mdtp-wheels [role=listbox]{padding-block:96px}.water-goal .mdtp-wheels [role=option]{font-size:calc(17rem / 18);font-weight:400}.water-goal h2{text-align:center;margin-top:20px}.water-container{display:flex;align-items:center;gap:12px;margin:8px 0}.water-container img{width:42px;height:54px;filter:invert(62%) sepia(63%) saturate(1200%) hue-rotate(130deg)}.water-container strong{flex:1;font:700 calc(16rem / 18)/1.3 Karla,sans-serif}.water-container input{width:80px;min-width:0;text-align:center;border:1px solid var(--muted);border-radius:12px;padding:12px 6px;background:none;color:var(--ink);font:inherit}.water-settings [role=status]:empty{display:none}.water-settings [role=status]{margin:12px;color:var(--danger)}.water-amount-row{display:flex;align-items:center;gap:14px}.water-amount-row strong{flex:1}.water-amount-row input{width:68px;min-width:0;color:var(--ink);background:none;font:inherit;text-align:center;padding:14px 6px;border:1px solid var(--muted);border-radius:12px}.water-amount header button{font-size:32px}.water-amount .dc-pill{display:block;margin:24px auto 0}.water-amount [role=status]:empty{display:none}
+body:has(.water-settings) .topbar:has(.mm-child-header){padding:0;margin:0;border-radius:0 0 16px 16px}
+body:has(.water-settings) .mm-child-header{padding:4px 6px}
+body:has(.water-settings) .mm-child-header h1{font-size:calc(21rem / 18)}
+.water-settings{padding:32px 0 28px;font:400 calc(15rem / 18)/1.3 Lato,sans-serif}
+.water-settings h2{margin:0;padding:16px 16px 8px;font:700 calc(14rem / 18)/1.35714 Lato,sans-serif;text-transform:uppercase;color:var(--muted)}
+.water-settings .mds-group{border-radius:9px;margin:0}
+.water-settings .mds-row{gap:8px;min-height:61px;padding:12px 16px;font:inherit}
+.water-settings .mds-row strong,.water-container strong,.water-amount-row strong{font:700 calc(15rem / 18)/1.3 Karla,Lato,sans-serif}
+.water-settings .mds-row:has([data-water-toggle=showEntries]){border-bottom:0}
+.water-settings .water-group{padding:0 40px 9px 32px;min-height:40px}
+.water-group>span:first-of-type{text-align:right;min-width:0;max-width:62%;overflow-wrap:anywhere}
+.water-group-chevron{width:0;height:0;border:5px solid transparent;border-top-color:currentColor;border-bottom:0;opacity:.8}
+.water-settings .mds-row:has(.water-units){min-height:65px}
+.water-settings .mds-row .dc-switch{width:56px!important;min-width:56px;height:28px;min-height:28px!important;max-height:28px!important}
+.water-settings .mds-row .dc-switch::after{left:3px;width:22px;height:22px}
+.water-settings .mds-row .dc-switch:checked::after{transform:translateX(28px)}
+.water-units{display:flex;max-width:66%;border-radius:30px;background:var(--pale);padding:2px 4px}
+.water-units button{border:0;background:none;color:inherit;font:700 calc(14rem / 18)/1.3 Lato,sans-serif;border-radius:30px;min-width:0;width:59px;min-height:29px;padding:2px 5px}
+.water-units [aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.water-goal{padding:16px}
+.water-goal .mdtp-wheels{--wheel-height:calc(32rem / 18);--water-wheel-size:calc(200rem / 18);grid-template-columns:minmax(0,1fr);max-width:none;height:var(--water-wheel-size);border:1px solid var(--line);border-radius:9px;background:var(--bg);overflow:hidden}
+.water-goal .mdtp-wheels::before{left:9px;right:9px;top:50%;height:calc(40rem / 18);transform:translateY(-50%);background:var(--paper)}
+.water-goal .mdtp-wheels [role=listbox]{padding-block:calc((var(--water-wheel-size) - var(--wheel-height) - 2px) / 2);mask-image:none}
+.water-goal .mdtp-wheels [role=option]{display:block;text-align:center;font:400 calc(15rem / 18)/var(--wheel-height) Lato,sans-serif;white-space:pre;transform:none}
+.water-goal [role=option][data-distance="1"]{transform:scale(.98,.85)}
+.water-goal [role=option][data-distance="2"]{transform:scale(.94,.7)}
+.water-goal [role=option][data-distance="3"]{transform:scale(.85,.35)}
+.water-goal .mdtp-wheels [role=option][data-distance="3"]:has(~ [aria-selected=true]){transform:translateY(12px) scale(.84,.36)}
+.water-goal .mdtp-wheels [aria-selected=true]~[role=option][data-distance="3"]{transform:translateY(-12px) scale(.84,.36)}
+.water-goal h2{text-align:center;padding:16px 0 8px}
+.water-container{display:flex;align-items:center;gap:8px;margin:0}
+.water-container>.water-cup{flex:none;width:37px;height:50px;margin-right:8px}
+.water-container strong{min-width:0;flex:1}
+.water-container input,.water-amount-row input{box-sizing:border-box;min-width:0;width:70px;min-height:48px;text-align:center;border:1px solid var(--muted);border-radius:10px;padding:6px;background:none;color:var(--ink);font:400 calc(15rem / 18)/1.3 Lato,sans-serif;appearance:textfield}
+.water-container input::-webkit-inner-spin-button,.water-amount-row input::-webkit-inner-spin-button{appearance:none}
+.water-help{margin:8px 16px 0;font:inherit}
+.water-settings [role=status]:empty,.water-amount [role=status]:empty{display:none}
+.water-settings [role=status]{margin:12px;color:var(--danger)}
+.water-amount.mdtp-dialog{--water-nav:var(--dc-nav-space,var(--dc-nav-height,70px));bottom:var(--water-nav);max-height:calc(100dvh - var(--water-nav));padding:6px 16px 16px;font:400 calc(15rem / 18)/1.3 Lato,sans-serif}
+.water-amount::backdrop{background:linear-gradient(to top,transparent var(--dc-nav-space,var(--dc-nav-height,70px)),#0008 var(--dc-nav-space,var(--dc-nav-height,70px)))}
+.water-amount header{margin:0 -10px 6px 0}
+.water-amount h2{font:700 calc(16rem / 18)/1.35 Lato,sans-serif}
+.water-amount header button{font:400 27px/1 Lato,sans-serif}
+.water-amount-row{display:flex;align-items:center;gap:16px}
+.water-amount-row strong{flex:1}
+.water-amount-row input:not(:focus){color:var(--muted)}
+.water-amount .dc-pill{display:block;width:66%;min-height:36px;margin:16px auto 0}
+@media(max-width:360px){
+ .water-settings .water-group{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;padding:6px 16px 10px 32px}
+ .water-group>strong{grid-column:1/-1}
+ .water-group>span:first-of-type{max-width:none;text-align:left}
+ .water-goal{padding:12px}.water-container{flex-wrap:wrap}.water-units{max-width:65%}
+}
+
 @font-face{font-family:"Nourishing Diary Symbols";src:url("/diary-summary-source/diary-symbols.woff2") format("woff2");font-weight:400;font-style:normal;font-display:block;}
 .ds-dialog{color:var(--ink);font-family:Lato,Arial,sans-serif;}
 .ds-dialog fieldset{border:0;padding:0;margin:0;min-width:0;}

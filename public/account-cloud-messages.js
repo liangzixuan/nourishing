@@ -1,6 +1,13 @@
 import {createUITranslator,t} from './app-language.js';
 export const accountCloudMessages={
   "en": {
+    "accountCloud.reconnectEdit": "Reconnect to save your account changes.",
+    "accountCloud.enterPassword": "Enter Your Password",
+    "accountCloud.reauthReason": "For your security, please re-enter your password to continue",
+    "accountCloud.enterName": "Enter Name",
+    "accountCloud.continueEdit": "Continue",
+    "accountCloud.checkPassword": "Check your current password, or sign in again.",
+    "accountCloud.reconnectPassword": "Reconnect to verify your password.",
     "accountCloud.bulk.title": "Bulk Delete Diary Data",
     "accountCloud.bulk.account": "Delete My Account",
     "accountCloud.bulk.accountNote": "By deleting your account you are permanently deleting all of your account data.",
@@ -277,6 +284,13 @@ export const accountCloudMessages={
     "accountCloud.pleaseWait": "Please wait…"
   },
   "fr": {
+    "accountCloud.reconnectEdit": "Reconnectez-vous au réseau pour enregistrer vos modifications.",
+    "accountCloud.enterPassword": "Saisissez votre mot de passe",
+    "accountCloud.reauthReason": "Pour votre sécurité, saisissez à nouveau votre mot de passe pour continuer",
+    "accountCloud.enterName": "Saisissez votre nom",
+    "accountCloud.continueEdit": "Continuer",
+    "accountCloud.checkPassword": "Vérifiez votre mot de passe actuel ou reconnectez-vous.",
+    "accountCloud.reconnectPassword": "Reconnectez-vous au réseau pour vérifier votre mot de passe.",
     "accountCloud.bulk.title": "Supprimer des données du journal",
     "accountCloud.bulk.account": "Supprimer mon compte",
     "accountCloud.bulk.accountNote": "La suppression de votre compte efface définitivement toutes ses données.",
@@ -553,6 +567,13 @@ export const accountCloudMessages={
     "accountCloud.pleaseWait": "Veuillez patienter…"
   },
   "de": {
+    "accountCloud.reconnectEdit": "Stelle eine Internetverbindung her, um deine Änderungen zu speichern.",
+    "accountCloud.enterPassword": "Passwort eingeben",
+    "accountCloud.reauthReason": "Gib zur Sicherheit dein Passwort erneut ein, um fortzufahren",
+    "accountCloud.enterName": "Namen eingeben",
+    "accountCloud.continueEdit": "Weiter",
+    "accountCloud.checkPassword": "Prüfe dein aktuelles Passwort oder melde dich erneut an.",
+    "accountCloud.reconnectPassword": "Stelle eine Internetverbindung her, um dein Passwort zu prüfen.",
     "accountCloud.bulk.title": "Tagebuchdaten gesammelt löschen",
     "accountCloud.bulk.account": "Mein Konto löschen",
     "accountCloud.bulk.accountNote": "Wenn Sie Ihr Konto löschen, werden alle Ihre Kontodaten dauerhaft gelöscht.",
@@ -829,6 +850,13 @@ export const accountCloudMessages={
     "accountCloud.pleaseWait": "Bitte warten…"
   },
   "pt-BR": {
+    "accountCloud.reconnectEdit": "Reconecte-se para salvar as alterações da sua conta.",
+    "accountCloud.enterPassword": "Digite sua senha",
+    "accountCloud.reauthReason": "Para sua segurança, digite sua senha novamente para continuar",
+    "accountCloud.enterName": "Digite o nome",
+    "accountCloud.continueEdit": "Continuar",
+    "accountCloud.checkPassword": "Confira sua senha atual ou entre novamente.",
+    "accountCloud.reconnectPassword": "Reconecte-se para verificar sua senha.",
     "accountCloud.bulk.title": "Excluir dados do diário em massa",
     "accountCloud.bulk.account": "Excluir minha conta",
     "accountCloud.bulk.accountNote": "Ao excluir sua conta, você exclui permanentemente todos os dados dela.",

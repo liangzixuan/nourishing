@@ -108,10 +108,23 @@ function registerAccountRoutes(add) {
     auth: 'secret',
     handler: async ({api, secret, json}) => json(200, {...(await api.current(secret)), sessionContext: sessionContext(secret)}),
   });
+  add('POST', '/api/account/reauthenticate', {
+    auth: 'secret',
+    noSearch: 'Invalid account request.',
+    handler: async ({api, secret, body, json}) => {
+      fields(body, ['ownerId', 'password']);
+      await api.reauthenticateAccount(secret, string(body.ownerId, 1, 128), string(body.password, 8, 256));
+      return json(200, {ownerId: body.ownerId, sessionContext: sessionContext(secret)});
+    },
+  });
   add('POST', '/api/account/update', {
     auth: 'secret',
     noSearch: 'Invalid account request.',
-    handler: async ({api, secret, body, json}) => json(200, await api.updateAccount(secret, parseAccountEdit(body))),
+    handler: async ({api, secret, body, json}) => {
+      const {confirmedSession, ...edit} = fields(body, ['kind', 'name', 'email', 'password', 'oldPassword', 'confirmedSession']);
+      if (confirmedSession !== undefined && confirmedSession !== sessionContext(secret)) fail(409, 'Your session changed. Reopen your account.');
+      return json(200, await api.updateAccount(secret, parseAccountEdit(edit)));
+    },
   });
   add('PUT', '/api/profile', {
     auth: 'none',
