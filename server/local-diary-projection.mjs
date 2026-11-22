@@ -71,6 +71,7 @@ export {catalogExerciseRecord,resolveExerciseWeight,savedExerciseSettings,priorW
 export {storeChartDefinition} from './domain/chart-definition-store.mjs';
 
 export {applyFastingChange,applyFastingCommand,fastingView} from './fasting.mjs';
+export {fastingRecordLabel} from './domain/fasting-view.mjs';
 
 export {prepareFoodMultiReview} from './domain/food-multi-review.mjs';
 

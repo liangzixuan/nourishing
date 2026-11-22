@@ -3,6 +3,7 @@ import {coreText} from '../core-cloud-messages.js';
 import {isStandardMobileNutrient,mobileNutrientName} from '../mobile-nutrient-groups.js';
 import {formatMessage as targetMessage} from '../targets-source/message-format.js';
 import {mobileDiarySettings,mobileQuickAddSettings} from './mobile-diary-settings.js';
+import {diaryCalendarKinds} from '../snapshot-source/diary-calendar.mjs';
 import {calendarMarker} from '../snapshot-source/mobile-diary-calendar.js';
 import {escape as e} from '../html.js';
 import {diaryGroupSlots} from '../local-group-rename.js';
@@ -11,7 +12,6 @@ const icon='<img src="/more-source/icons/chevron-right.svg" alt="">';
 const toggles=()=>[['showTimestamp',t('mobileDisplay.showTimestamp')],['showEnergy',t('mobileDisplay.showEnergy')],['showMacros',t('mobileDisplay.showMacros')],['showHighlights',t('mobileDisplay.showHighlights')],['showWater',t('mobileDisplay.showWater')]];
 const listScreens=new Set(['energyUnit','summaryNutrient','groupSubtotals']);
 const subtotalModes=()=>[['none',t('settings.none')],['calories',t('targetSetup.macro.calories')],['macros',t('settings.macroLabel')],['summary',coreText('display.sameSummary')]];
-const calendarKinds=()=>[['food',t('mobileDisplay.kind.food')],['exercise',t('mobileDisplay.kind.exercise')],['biometric',t('mobileDisplay.kind.biometric')],['note',t('mobileDisplay.kind.note')],['fast',t('nav.fasting')]];
 const themes=()=>[['light',t('settings.light')],['dark',t('settings.dark')],['system',t('settings.system')]];
 /** Saved MobileDisplay rows and modal choices, bounded to working cloud consumers. */
 export class MobileDisplay {
@@ -76,8 +76,20 @@ export class MobileDisplay {
   };
   this.lock();
  }
- render(){if(listScreens.has(this.navigation.screen)){this.renderList(this.navigation.screen);return;}const s=this.settings,diary=this.navigation.screen==='diary',calendar=this.navigation.screen==='calendar',font=this.navigation.screen==='fontScale';this.onTitle(font?t('mobileDisplay.fontScale'):diary?t('mobileDisplay.diary'):calendar?t('mobileDisplay.calendar'):this.navigation.screen==='quickAdd'?coreText('display.quickAdd'):t('mobileDisplay.title'));const toggle=([key,label])=>`<label class="mds-row"><strong>${label}</strong><input type="checkbox" role="switch" class="dc-switch" data-display-toggle="${key}" ${(key==='showHighlights'?s.diaryDisplay.showHighlights:s[key])?'checked':''}></label>`;
- const rows=calendar?calendarKinds().map(([key,label])=>`<label class="mds-row">${calendarMarker(key)}<strong>${label}</strong><input type="checkbox" role="switch" class="dc-switch" data-display-toggle="calendar:${key}" ${s.diaryCalendar[key]?'checked':''}></label>`).join(''):diary?this.row('groupSubtotals',coreText('display.subtotals'),subtotalModes().find(([key])=>key===s.diaryTable.groupSubtotals)[1]):this.row('energyUnit',t('mobileDisplay.units'),s.energyUnit==='kJ'?t('mobileDisplay.kJ'):t('mobileDisplay.kcal'))+toggle(toggles()[0])+this.row('summaryNutrient',t('mobileDisplay.summaryNutrient'),this.summaryLabel(s.diaryTable.summaryNutrient))+toggles().slice(1).map(toggle).join('')+this.row('water',waterText('settings'),'')+this.row('pauseLife',t('mobileDisplay.pauseLife'),'')+this.row('dashboard',t('discover.title.dashboard-settings'),'')+this.row('diary',t('mobileDisplay.diary'),'')+this.row('calendar',t('mobileDisplay.calendar'),'')+this.row('theme',t('mobileDisplay.theme'),themes().find(([key])=>key===s.theme)?.[1]??t('settings.dark'))+this.row('fontScale',t('mobileDisplay.fontScale'),s.matchDeviceFontSize?coreText('display.browserDefault'):s.fontScale.toFixed(2)+'×')+this.row('appLanguage',t('mobileDisplay.appLanguage'),appLanguages.find(row=>row.id===s.appLanguage)?.name??'English');
+ renderCalendar(){
+  this.onTitle(t('mobileDisplay.calendar'));
+  const rows=diaryCalendarKinds.map(kind=>{
+   const label=e(t('mobileDisplay.kind.'+kind));
+   const checked=this.settings.diaryCalendar[kind]?' checked':'';
+   return `<label class="mds-row">${calendarMarker(kind)}<strong>${label}</strong><input type="checkbox" role="switch" class="dc-switch" data-display-toggle="calendar:${kind}"${checked}></label>`;
+  }).join('');
+  this.root.innerHTML=`<div class="mds-calendar-settings" data-display-root aria-busy="${this.saving}">
+   <section class="mds-group">${rows}</section><p class="mds-calendar-help">${e(coreText('display.calendarHelp'))}</p>
+   <p class="mds-status" role="status" aria-live="polite"></p></div>`;
+  this.lock();
+ }
+ render(){if(this.navigation.screen==='calendar'){this.renderCalendar();return;}if(listScreens.has(this.navigation.screen)){this.renderList(this.navigation.screen);return;}const s=this.settings,diary=this.navigation.screen==='diary',font=this.navigation.screen==='fontScale';this.onTitle(font?t('mobileDisplay.fontScale'):diary?t('mobileDisplay.diary'):this.navigation.screen==='quickAdd'?coreText('display.quickAdd'):t('mobileDisplay.title'));const toggle=([key,label])=>`<label class="mds-row"><strong>${label}</strong><input type="checkbox" role="switch" class="dc-switch" data-display-toggle="${key}" ${(key==='showHighlights'?s.diaryDisplay.showHighlights:s[key])?'checked':''}></label>`;
+ const rows=diary?this.row('groupSubtotals',coreText('display.subtotals'),subtotalModes().find(([key])=>key===s.diaryTable.groupSubtotals)[1]):this.row('energyUnit',t('mobileDisplay.units'),s.energyUnit==='kJ'?t('mobileDisplay.kJ'):t('mobileDisplay.kcal'))+toggle(toggles()[0])+this.row('summaryNutrient',t('mobileDisplay.summaryNutrient'),this.summaryLabel(s.diaryTable.summaryNutrient))+toggles().slice(1).map(toggle).join('')+this.row('water',waterText('settings'),'')+this.row('pauseLife',t('mobileDisplay.pauseLife'),'')+this.row('dashboard',t('discover.title.dashboard-settings'),'')+this.row('diary',t('mobileDisplay.diary'),'')+this.row('calendar',t('mobileDisplay.calendar'),'')+this.row('theme',t('mobileDisplay.theme'),themes().find(([key])=>key===s.theme)?.[1]??t('settings.dark'))+this.row('fontScale',t('mobileDisplay.fontScale'),s.matchDeviceFontSize?coreText('display.browserDefault'):s.fontScale.toFixed(2)+'×')+this.row('appLanguage',t('mobileDisplay.appLanguage'),appLanguages.find(row=>row.id===s.appLanguage)?.name??'English');
  const child={settings:s,row:this.row.bind(this),toggle:this.toggle.bind(this),groupsOpen:this.groupsOpen};this.root.innerHTML=`<div data-display-root aria-busy="${this.saving}">${font?`<section class="mds-group">${this.toggle('matchDeviceFontSize',coreText('display.browserSize'),s.matchDeviceFontSize)}</section><section class="mds-font"><p>${e(coreText('display.fontHelp'))}</p><label for="mds-font">${e(coreText('display.customFont'))} <output data-display-font-value>${s.fontScale.toFixed(2)}×</output></label><input id="mds-font" type="range" data-display-font aria-label="${e(coreText('display.customFont'))}" min="0.75" max="2" step="0.05" value="${s.fontScale}" ${s.matchDeviceFontSize?'disabled':''}><div class="mds-font-limits"><span>0.75×</span><span>2.00×</span></div></section>`:diary?mobileDiarySettings(child):this.navigation.screen==='quickAdd'?mobileQuickAddSettings({...child,actions:this.quickAddActions}):`<section class="mds-group">${rows}</section>`}<p class="mds-status" role="status" aria-live="polite"></p></div>`;this.lock();}
 
  lock(){for(const node of [...this.root.querySelectorAll('input,button:not([data-display-retry]):not([data-display-reload])'),...this.dialog?.querySelectorAll('input,[data-display-apply]')??[]])node.disabled=this.saving||!!this.pending||node.hasAttribute('data-display-font')&&this.settings.matchDeviceFontSize;this.root.querySelector('[data-display-root]')?.setAttribute('aria-busy',String(this.saving));}

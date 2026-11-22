@@ -18,19 +18,19 @@
   border-radius: 0;
 }
 .coach-panel :is([data-first-use],[data-coach-ack]) .coach-editor-header h2 {
-  font: 700 16px/1.25 Karla, system-ui, sans-serif;
+  font: 700 calc(16rem / 18)/1.25 Karla, system-ui, sans-serif;
 }
 .coach-panel :is([data-first-use],[data-coach-ack]) .coach-editor-header button {
   padding-inline: 6px;
   color: var(--green, #218d91);
-  font: 700 14px/1.25 Karla, system-ui, sans-serif;
+  font: 700 calc(14rem / 18)/1.25 Karla, system-ui, sans-serif;
   text-transform: uppercase;
   letter-spacing: .06em;
 }
 .coach-panel :is([data-first-use],[data-coach-ack]) .coach-editor-body {
   padding: 0;
   gap: 16px;
-  font-size: 16px;
+  font-size: calc(16rem / 18);
   line-height: 1.25;
 }
 .coach-panel :is([data-first-use],[data-coach-ack]) .coach-editor-body > p {
@@ -39,8 +39,8 @@
   line-height: 1.25;
 }
 .coach-panel [data-first-use] .coach-editor-body > p {
-  font-size: 14px;
-  line-height: 19px;
+  font-size: calc(14rem / 18);
+  line-height: calc(19rem / 18);
 }
 .coach-panel [data-first-use] .coach-chip-section {
   padding: 16px;
@@ -50,7 +50,7 @@
 }
 .coach-panel [data-first-use] :is(.coach-chip-section h3,.coach-chip-section > label) {
   margin: 0 0 7px;
-  font: 700 14px/16px Karla, system-ui, sans-serif;
+  font: 700 calc(14rem / 18)/calc(16rem / 18) Karla, system-ui, sans-serif;
 }
 .coach-panel [data-first-use] .coach-chips {
   gap: 0 10px;
@@ -65,7 +65,7 @@
   border-block: 6px solid transparent;
   background: transparent;
   color: inherit;
-  font: 600 14px/20px Karla, system-ui, sans-serif;
+  font: 600 calc(14rem / 18)/calc(20rem / 18) Karla, system-ui, sans-serif;
 }
 .coach-panel [data-first-use] .coach-chips button::before {
   content: '';

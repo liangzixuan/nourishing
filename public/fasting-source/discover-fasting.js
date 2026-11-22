@@ -4,6 +4,7 @@ import {scheduleRepeatLabel} from './fasting-schedule-facts.js';
 import {escape as e,symbol as icon,button as b,row,toggle} from './ui.js';
 import {widgetToggle} from './ui.js';
 import {formatMessage} from '../report-source/public/message-format.js';
+import {fastingRecordLabel} from '../local-diary-projection.js';
 const message=(language,key,values)=>formatMessage(language,'discover.fasting.'+key,values);
 const number=(value,language)=>value.toLocaleString(language,{maximumFractionDigits:1});
 export const fastingTimeLabel=(value,language='en',timeZone)=>new Date(value).toLocaleString(language,{timeZone,month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
@@ -29,6 +30,7 @@ export function fastingScreenMarkup({preferences:p,widgets,askToStopFast,history
 }
 const duration=(seconds,language)=>{
  if(seconds===null)return '—';const minutes=Math.floor(seconds/60),t=(key,value)=>message(language,key,{count:number(value,language)});
+ if(minutes===0)return '< '+t('minutes',1);
  return minutes>=60?t('hours',Math.floor(minutes/60))+(minutes%60?' '+t('minutes',minutes%60):''):t('minutes',minutes);
 };
 export function fastingStatsMarkup(history,language='en'){
@@ -42,8 +44,8 @@ export function fastingHistoryMarkup(history,language='en',{selected=new Set(),d
  const stop=disabled?'disabled':'',all=history.rows.length&&history.rows.every(record=>selected.has(record.id));
  const controls=`<div class="dc-fast-history-selection"><label><input type="checkbox" data-fh-list-all aria-label="${e(h('selectLoaded'))}" ${all?'checked':''} ${stop}><span>${e(h('selectAll'))}</span></label>${selected.size?`<button type="button" class="dc-button dc-fast-selected-delete" data-fh-list-delete-selected ${stop}>${e(h('deleteSelectedCount',{count:selected.size}))}</button>`:''}</div>`;
  const markup=history.rows.map(record=>{
-  const name=record.label??(record.end===null?t('active'):duration(record.durationSeconds,language)),repeat=record.repeat?recurrenceMessage(language,'preset.'+repeatPreset(record.repeat,localTime(record.start,timeZone))):recurrenceMessage(language,'preset.once');
   const elapsed=record.end===null?t('active'):duration(record.durationSeconds,language),id=e(record.id);
+  const name=fastingRecordLabel(record)??elapsed,repeat=record.repeat?recurrenceMessage(language,'preset.'+repeatPreset(record.repeat,localTime(record.start,timeZone))):recurrenceMessage(language,'preset.once');
   const time=(value,field)=>`<div><span>${e(t(field+'Time'))}</span>${b(value?'<time datetime="'+e(value)+'" title="'+e(value)+'">'+e(fastingTimeLabel(value,language,timeZone))+'</time>':e(t('active')),'history-'+field,'dc-fast-history-timestamp',`data-id="${id}" data-history-field="${field}" aria-label="${e(t(field+'Time')+' '+(value?fastingTimeLabel(value,language,timeZone):t('active')))}" ${stop}`)}</div>`;
   return `<article class="dc-fast-history-row" data-fast-history-row="${id}"><div class="dc-fast-history-heading"><label class="dc-fast-history-check"><input type="checkbox" data-fh-list-select="${id}" aria-label="${e(h('select',{start:name}))}" ${selected.has(record.id)?'checked':''} ${stop}></label><strong>${e(name)}</strong>${b(e(t('edit')),'history-edit','dc-fast-history-edit',`data-id="${id}" aria-label="${e(t('edit')+' '+name)}" ${stop}`)}<button type="button" class="dc-button dc-fast-row-delete" data-fh-list-delete="${id}" aria-label="${e(h('delete')+' '+name)}" ${stop}><span aria-hidden="true"></span></button></div><div class="dc-fast-history-detail"><div>${e(elapsed)} - <span class="dc-fast-history-repeat">${e(repeat)}</span></div><div class="dc-fast-history-times">${time(record.start,'start')}${time(record.end,'end')}</div></div></article>`;
  }).join('');

@@ -69,7 +69,7 @@ export function mountSnapshots({root,date,onChange=async()=>{},onReady}){
  }
  window.addEventListener('nourishing-back',event=>{if(back()){event.preventDefault();event.stopImmediatePropagation();}},{capture:true,signal:abort.signal});
  function clearMutationRetry(){if(pendingMutation){pendingMutation=null;message('');}}
- function openSource(){if(busy||pending)return;clearMutationRetry();const owner=popup(m('source'),`<h2>${e(m('source'))}</h2>${['camera','files'].map(source=>`<button type="button" class="ms-choice" data-snapshot-source="${source}">${icon(source==='camera'?'camera':'folder')}<strong>${e(m(source))}</strong></button>`).join('')}`);
+ function openSource(){if(busy||pending)return;clearMutationRetry();const owner=popup(m('source'),`<h2>${e(m('source'))}</h2>${['camera','files'].map(source=>`<button type="button" class="ms-choice" data-snapshot-source="${source}">${icon(source==='camera'?'camera':'folder')}<strong>${e(m(source))}</strong></button>`).join('')}`, 'ms-source');
   owner.querySelectorAll('[data-snapshot-source]').forEach(button=>button.onclick=()=>{back();if(button.dataset.snapshotSource==='camera'){const host=popup(m('camera'),'');camera=new MobilePhotoCapture({dialog:host,language:uiLanguage(),title:m('camera'),showHint:false,fileName:'snapshot.jpg',onClose:back,onFile:file=>{back();void selectFile(file);}});}else shell.querySelector('[data-snapshot-gallery]').click();});
  }
  shell.querySelector('input[type=file]').onchange=event=>{const file=event.target.files?.[0];event.target.value='';if(file)void selectFile(file);};

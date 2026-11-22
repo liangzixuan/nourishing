@@ -71,6 +71,25 @@ test('source fasting settings, schedule/date/repeat, history and retry through n
  assert.equal(await retryRead.isEnabled(),true);await retryRead.click();
  await page.waitForFunction(()=>document.querySelector('[data-discover=timer-down]')?.getAttribute('aria-pressed')==='true');
  assert.equal(await timer.isEnabled(),true);assert.equal(writes.length,beforeWrites+1);
+ // Stopping a scheduled fast preserves the occurrence name even after deleting its schedule.
+ clock.now=new Date('2026-11-14T18:00:59Z');clock.asOf=clock.now.toISOString();
+ await page.locator('[data-fasting-back]').click();
+ await page.locator('[data-discover=end-fast]').click();
+ await page.locator('.fasting-quick [data-confirm-fast]').click();
+ await page.locator('.fasting-quick').waitFor({state:'detached'});
+ await page.locator('[data-discover=fasting]').first().click();
+ await page.locator('[data-fast-section=history] summary').click();
+ const occurrence=state.fasts.find(record=>record.scheduled);
+ const scheduledRow=page.locator(`[data-fast-history-row="${occurrence.id}"]`);
+ const heading=await scheduledRow.locator('.dc-fast-history-heading strong').innerText();
+ const detail=await scheduledRow.locator('.dc-fast-history-detail > div').first().innerText();
+ await scheduledRow.locator('[data-discover=history-edit]').click();
+ const nameField=page.locator('.fasting-editor [name=label]');
+ assert.deepEqual([heading,detail,await nameField.inputValue()],['Renamed','< 1 min - Does Not Repeat','Renamed']);
+ await nameField.fill('Early finish');
+ await page.locator('.fasting-editor [type=submit]').click();
+ await scheduledRow.getByText('Early finish',{exact:true}).waitFor();
+ assert.equal(state.fasts.find(record=>record.id===occurrence.id).scheduled.label,'Renamed');
  // History paging detects changed revisions and enforces the canonical 100-row delete bound.
  for(let index=0;index<100;index++)applyFastingCommand(state,{type:'fast.record',payload:{start:'2026-11-12T12:00',end:'2026-11-13T04:00',goalHours:16,label:'Earlier '+index}},clock);
  await page.evaluate(()=>window.mount());await page.locator('.dc-fast-footer').waitFor();await page.locator('[data-fast-section=history] summary').click();assert.equal(await page.locator('[data-fast-history-row]').count(),25);state.fasts[0].note='External change';await page.locator('[data-fh-list-more]').click();await page.getByRole('button',{name:'Reload latest',exact:true}).waitFor();await page.getByRole('button',{name:'Reload latest',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('[data-fasting-status]'));

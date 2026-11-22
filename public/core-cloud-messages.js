@@ -139,6 +139,7 @@ const rows={
  'diary.display':['Diary Display','Affichage du journal','Tagebuchanzeige','Exibição do diário'],
  'diary.macroDisplay':['Macro Display','Affichage des macros','Makroanzeige','Exibição de macros'],
  'diary.highlight':['Highlighted nutrient {{index}}','Nutriment en évidence {{index}}','Hervorgehobener Nährstoff {{index}}','Nutriente em destaque {{index}}'],
+ 'display.calendarHelp':['Select what you would like to display in your calendar.','Choisissez ce que vous souhaitez afficher dans votre calendrier.','Wähle aus, was in deinem Kalender angezeigt werden soll.','Selecione o que você quer ver no calendário.'],
  'display.sameSummary':['Same as Summary Column in Diary','Comme la colonne récapitulative du journal','Wie die Übersichtsspalte im Tagebuch','Igual à coluna de resumo do Diário'],
  'display.subtotals':['Group Subtotals','Sous-totaux des groupes','Gruppensummen','Subtotais dos grupos'],
  'display.renameGroup':['Rename Group','Renommer le groupe','Gruppe umbenennen','Renomear grupo'],
