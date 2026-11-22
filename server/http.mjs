@@ -216,6 +216,27 @@ function registerAccountRoutes(add) {
 }
 
 function registerDeletionRoutes(add) {
+  const rangeFields = ['start', 'end', 'timeZone', 'types'];
+  add('POST', '/api/account/diary-data/preview', {
+    auth: 'prebody',
+    noSearch: 'Invalid diary range.',
+    maxBytes: 2048,
+    handler: async ({api, secret, body, json}) => {
+      fields(body, rangeFields);
+      return json(200, await api.previewDiaryRangeRemoval(secret, body));
+    },
+  });
+  add('POST', '/api/account/diary-data/delete', {
+    auth: 'prebody',
+    noSearch: 'Invalid diary range.',
+    maxBytes: 4096,
+    handler: async ({api, secret, body, json}) => {
+      fields(body, [...rangeFields, 'ownerId', 'requestId', 'revision', 'password', 'confirmation']);
+      const {ownerId, password, confirmation, ...selection} = body;
+      if (confirmation !== 'delete') fail(400, 'Confirm permanent deletion of the selected diary data.');
+      return json(200, await api.removeDiaryRange(secret, string(ownerId, 1, 36), string(password, 8, 256), selection));
+    },
+  });
   add('POST', '/api/account/deletion/prepare', {
     auth: 'prebody',
     noSearch: 'Invalid account request.',

@@ -55,7 +55,9 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
    page.querySelectorAll('[data-action^="new-"]').forEach(button=>button.disabled=!data);
   }else{
    const items=data?collectionItems():null;
-   page.innerHTML=`<section class="library-page">${renderHeader(mobileLibraryHeader({tab:kind+'s',empty:items?.length===0&&!retired,language:uiLanguage(),icon}))}${items?collectionMarkup(items):`<p class="empty">${e(t("mobileNutrientDetail.loading"))}</p>`}</section>`;
+   const empty=items?.length===0&&!retired;
+   const retiredOnly=empty&&data.items.some(item=>item.kind===kind&&item.retired);
+   page.innerHTML=`<section class="library-page">${renderHeader(mobileLibraryHeader({tab:kind+'s',empty,retiredOnly,language:uiLanguage(),icon}))}${items?collectionMarkup(items):`<p class="empty">${e(t("mobileNutrientDetail.loading"))}</p>`}</section>`;
    if(data)bindCollection();
   }
  }

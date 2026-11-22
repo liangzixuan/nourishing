@@ -122,8 +122,8 @@ export function mountMore({
   }
 
   function heading(title) {
-    const help = screen === 'notifications'
-      ? `<button type="button" data-notification-help aria-label="${e(t('mobileMore.manual'))}">${moreIcon('help-circle')}</button>`
+    const help = (screen === 'notifications' || screen === 'bulk-delete')
+      ? `<button type="button" ${screen==='notifications'?'data-notification-help':'data-bulk-help'} aria-label="${e(t('mobileMore.manual'))}">${moreIcon('help-circle')}</button>`
       : undefined;
     headerRoot.innerHTML = moreBackHeader(title, help);
     document.body.classList.add('more-destination');
@@ -197,8 +197,8 @@ export function mountMore({
 
   function navigate(id) {
     if (screen === 'home') scroll = window.scrollY;
-    if (id === 'account' || id === 'account-data') {
-      return childView(id, id==='account'?t('mobileMore.account'):coreText('more.accountData'), host =>
+    if (id === 'account' || id === 'account-data' || id === 'bulk-delete') {
+      return childView(id, id==='account'?t('mobileMore.account'):id==='bulk-delete'?accountMessage('accountCloud.bulk.title'):coreText('more.accountData'), host =>
         mountAccount({
           root: host,
           embedded: true,
@@ -332,13 +332,17 @@ export function mountMore({
   const click = event => {
     const button = event.target.closest('[data-more-open]');
     const updateButton = event.target.closest('[data-more-check-update]');
-    const help = event.target.closest('[data-notification-help]');
+    const help = event.target.closest('[data-bulk-help],[data-notification-help]');
     if (button) {
       event.preventDefault();
       open(button.dataset.moreOpen);
     } else if (help) {
       help.focus({preventScroll: true});
-      show(header(t('mobileMore.manual')) + manualTopics('notifications'));
+      if (screen === 'bulk-delete') {
+        show(header(accountMessage('accountCloud.bulk.title')) + '<p>' + e(accountMessage('accountCloud.bulk.choose')) + '</p><p>' + e(accountMessage('accountCloud.bulk.scope')) + '</p><p>' + e(accountMessage('accountCloud.bulk.irreversible')) + '</p>');
+      } else {
+        show(header(t('mobileMore.manual')) + manualTopics('notifications'));
+      }
     } else if (updateButton) {
       event.preventDefault();
       void checkForUpdates(updateButton);

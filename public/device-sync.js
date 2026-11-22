@@ -18,7 +18,7 @@ export async function ensureDeviceSnapshot({refresh=false,ownerId}={}){
  if(snapshotRead?.key===key)return snapshotRead.promise;
  const promise=(async()=>{
   const snapshot=await request('/api/offline');
-  return saveOfflineSnapshot(snapshot,{ownerId:ticket.ownerId,epoch:ticket.epoch,...(copy?{revision:copy.revision}:{})});
+  return saveOfflineSnapshot(snapshot,{...ticket,revision:copy?.revision??0});
  })();
  snapshotRead={key,promise};
  try{return await promise;}finally{if(snapshotRead?.promise===promise)snapshotRead=null;}

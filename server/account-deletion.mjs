@@ -4,7 +4,7 @@ const fail=(message,code=409)=>{throw Object.assign(Error(message),{code,publicM
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const optional=async work=>{try{return await work();}catch(error){if(error.code===404)return null;throw error;}};
 // Active deletion jobs persist table indexes. Append tables to preserve those cursors.
-const ownerTables=['workspace_records','workspace_media','workspace_recoveries','health_reviews','backup_reviews','command_receipts','account_deletions','push_deliveries'];
+const ownerTables=['workspace_records','workspace_media','workspace_recoveries','health_reviews','backup_reviews','command_receipts','account_deletions','push_deliveries','diary_removal_jobs'];
 const singletonTables=['push_accounts','fasting_dispatch','workspace_heads','profiles','reminder_dispatch'];
 
 /** Bounded, resumable cleanup. Caller has already confirmed the account password before prepare. */

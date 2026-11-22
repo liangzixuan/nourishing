@@ -4,6 +4,7 @@ import {mobileFoodEntryMarkup} from './food-entry-source/mobile-food-entry.js';
 import {FoodNutritionView} from './food-entry-source/food-nutrition-view.js';
 import {request,command} from './diary-api.js';
 import {localPreviewDiaryItem} from './local-engine.js';
+import {openFoodCorrection} from './food-correction.js';
 import {quantityFields,quantityValue} from './quantity.js';
 import {quantityUnit} from './report-source/server/quantity-units.mjs';
 import {favoriteButton,readFavorites,setFavorite} from './library-extras.js';
@@ -25,7 +26,7 @@ export function mountFoodEntry({item,entry,quantity,date,group,groups,revision,s
   return [id,id===basis?id:`${id} · ${unit.factor.toLocaleString(uiLanguage(),{maximumFractionDigits:0})} ${basis}`];
  }):options;
  const fields='<div class="quantity-fields mf-quantity">'+quantityFields(servingOptions,entry??draft??quantity??{},ingredientOnly?t('mobileFood.serving'):undefined).replace('name="amount"',`name="amount" data-quantity-value aria-label="${e(t('mobileFood.amount'))}"`).replace('name="unit"','name="unit" data-quantity-unit')+'</div>';
- show(mobileFoodEntryMarkup({food,ingredientOnly,kind:kind+'s',entry,quantity:fields,groupOptions:groups.map(g=>`<option value="${e(g)}" ${g===(entry?.group??draft?.group??group)?'selected':''}>${e(g)}</option>`).join(''),date:entry?.date??draft?.date??date,time:entry?.time??draft?.time??'',language:uiLanguage(),favorite:favoriteButton(kind,food.id,false),canCopy:kind==='food'&&Boolean(onCopy),icons,source,sourceDetails:details,submitLabel:submitLabel??(onApply?t("mobileSuggest.applyQuantity"):entry?fc("saveChanges"):t("mobileBiometric.add")),backLabel:entry?t("common.close"):t("mobileFoodEditor.back")}));
+ show(mobileFoodEntryMarkup({food,ingredientOnly,kind:kind+'s',entry,quantity:fields,groupOptions:groups.map(g=>`<option value="${e(g)}" ${g===(entry?.group??draft?.group??group)?'selected':''}>${e(g)}</option>`).join(''),date:entry?.date??draft?.date??date,time:entry?.time??draft?.time??'',language:uiLanguage(),favorite:favoriteButton(kind,food.id,false),copyLabel:kind==='food'&&onCopy?fc('foodMenuCopy'):null,reportLabel:kind==='food'?fc('issue'):null,icons,source,sourceDetails:details,submitLabel:submitLabel??(onApply?t("mobileSuggest.applyQuantity"):entry?fc("saveChanges"):t("mobileBiometric.add")),backLabel:entry?t("common.close"):t("mobileFoodEditor.back")}));
  const form=content.querySelector('.mf-form'),sheet=form.closest('dialog'),preview=form.querySelector('[data-mf-preview]'),menu=form.querySelector('.mf-menu');sheet.classList.add('mf-detail');
  form.elements.group.setAttribute('aria-label',t("mobileRepeat.group"));
  if(viewState?.values){for(const [key,value]of Object.entries(viewState.values)){const input=form.elements.namedItem(key);if(input&&'value'in input)input.value=value;}form.querySelector('[data-mf-timestamp]').checked=viewState.timestamp;form.elements.time.disabled=!viewState.timestamp;form.querySelector('[data-mf-source]').hidden=!viewState.sourceOpen;}
@@ -36,7 +37,12 @@ export function mountFoodEntry({item,entry,quantity,date,group,groups,revision,s
  const alive=()=>!disposed&&form.isConnected;
  const payload=()=>{const v=Object.fromEntries(new FormData(form));return {date:v.date,group:v.group,time:form.querySelector('[data-mf-timestamp]').checked?v.time:'',...(entry?{id:entry.id}:{[kind+'Id']:food.id}),...quantityValue(form)};};
  function closeMenu(){menu.open=false;for(const el of form.querySelectorAll('[inert]'))el.inert=false;menu.querySelector('summary').focus();}
- function renderFavorite(){const host=form.querySelector('.mf-favorite');host.innerHTML=favoriteButton(kind,food.id,favorites.items.some(row=>row.id===food.id&&row.kind===kind));form.querySelector('[data-mf-favorite] span').textContent=host.querySelector('button').getAttribute('aria-label');}
+ function renderFavorite(){
+  const enabled=favorites.items.some(row=>row.id===food.id&&row.kind===kind);
+  form.querySelector('.mf-favorite').innerHTML=favoriteButton(kind,food.id,enabled);
+  const label=kind==='food'?(enabled?'foodMenuRemoveFavorite':'foodMenuAddFavorite'):(enabled?'removeFavorite':'addFavorite');
+  form.querySelector('[data-mf-favorite] span').textContent=fc(label);
+ }
  async function loadFavorites(){favorites=await readFavorites(signal);if(alive())renderFavorite();}
  async function favorite(){if(busy||!favorites)return;busy=true;status.textContent='';form.querySelectorAll('button').forEach(button=>button.disabled=true);try{await setFavorite({kind,id:food.id,enabled:!favorites.items.some(row=>row.id===food.id&&row.kind===kind),revision:favorites.revision,ticket:favorites.ticket,resource:food});await onChange();if(alive())await loadFavorites();}catch(error){if(alive()){status.textContent=error.message;await loadFavorites().catch(()=>{});}}finally{busy=false;if(alive())form.querySelectorAll('button').forEach(button=>button.disabled=false);}}
  function schedule(delay=180){clearTimeout(timer);pending?.abort();const id=++serial;preview.setAttribute('aria-busy','true');timer=setTimeout(()=>update(id),delay);}
@@ -58,6 +64,13 @@ export function mountFoodEntry({item,entry,quantity,date,group,groups,revision,s
  form.addEventListener('input',event=>{if(event.target.matches('input,select'))schedule();},{signal});
  form.addEventListener('change',event=>{if(event.target.matches('[data-mf-timestamp]')){form.elements.time.disabled=!event.target.checked;if(event.target.checked&&!form.elements.time.value)form.elements.time.value=new Date().toTimeString().slice(0,5);}schedule();},{signal});
  preview.addEventListener('toggle',event=>{if(event.target.dataset.mfSection)sections.set(event.target.dataset.mfSection,event.target.open);},{capture:true,signal});
+ form.querySelector('[data-mf-report]')?.addEventListener('click',()=>{
+  closeMenu();
+  const selected=form.elements.unit.selectedOptions[0],amount=form.elements.amount.value;
+  const discrete=selected?.value==='servings'||selected?.value.startsWith('portion:');
+  const serving=[amount,selected?.textContent].filter(Boolean).join(discrete?' × ':' ');
+  openFoodCorrection({host:content,anchor:menu.querySelector('summary'),signal,foodName:food.name,foodId:food.id,source,serving});
+ },{signal});
  form.addEventListener('click',event=>{const action=event.target.closest('[data-action]')?.dataset.action;if(action==='close-dialog')close();if(action==='picker-back')(onBack??close)();if(action==='mobile-food-source'){const source=form.querySelector('[data-mf-source]');source.hidden=!source.hidden;}if(event.target.closest('[data-mf-dismiss]'))closeMenu();if(event.target.closest('[data-mf-copy]')){const kept={values:{...Object.fromEntries(new FormData(form)),time:form.elements.time.value},timestamp:form.querySelector('[data-mf-timestamp]').checked,sections:[...sections],sourceOpen:!form.querySelector('[data-mf-source]').hidden,scrollTop:sheet.scrollTop};closeMenu();onCopy?.(kept);}if(event.target.closest('[data-mf-favorite],[data-favorite-id]')){closeMenu();void favorite();}if(event.target.closest('[data-retry]'))schedule(0);if(event.target.closest('[data-delete]')){closeMenu();void save('entry.delete',{id:entry.id});}if(event.target.closest('[data-adjust]')){closeMenu();onAdjust();}},{signal});
  menu.addEventListener('toggle',()=>{for(const el of form.children)if(!el.classList.contains('mf-header'))el.inert=menu.open;for(const el of form.querySelector('.mf-header').children)if(el!==menu)el.inert=menu.open;if(menu.open)menu.querySelector('[data-mf-favorite]').focus();},{signal});
  sheet.addEventListener('cancel',event=>{if(menu.open){event.preventDefault();event.stopImmediatePropagation();closeMenu();}},{capture:true,signal});

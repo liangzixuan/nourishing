@@ -45,7 +45,8 @@ test('finish preserves replacement identity and original absence can finish norm
 });
 test('drains owned operations and removes all generations, legacy orphans and account last',async()=>{
  const f=await setup(),operation=await f.lifecycle.enter('owner','upload'),{ticket}=await f.deletion.prepare('owner');
- for(const table of ['workspace_records','workspace_media','workspace_recoveries','health_reviews','backup_reviews','command_receipts'])for(let i=0;i<105;i++)f.put(table,'row'+String(i).padStart(3,'0'),{ownerId:'owner',generation:i%2?'old':'staged'});
+ for(const table of ['workspace_records','workspace_media','workspace_recoveries','health_reviews','backup_reviews','command_receipts','diary_removal_jobs'])for(let i=0;i<105;i++)f.put(table,'row'+String(i).padStart(3,'0'),{ownerId:'owner',generation:i%2?'old':'staged'});
+ f.put('diary_removal_jobs','other-job',{ownerId:'other'});
  // Media mappings must carry an owned file reference; missing files are already removed.
  for(const row of f.table('workspace_media').values())row.fileId='missing-'+row.$id;
  for(const table of ['fasting_dispatch','reminder_dispatch','profiles','workspace_heads'])f.put(table,'owner',{ownerId:'owner'});for(const table of ['fasting_dispatch','reminder_dispatch'])f.put(table,'other',{ownerId:'other'});f.put('workspace_records','foreign',{ownerId:'other'});f.put('catalog_foods','shared',{name:'Public catalog'});
@@ -53,6 +54,7 @@ test('drains owned operations and removes all generations, legacy orphans and ac
  await f.deletion.begin(ticket,'owner');await f.deletion.step(ticket.id);assert.equal(f.accounts.get('owner').status,false);assert.deepEqual(f.accounts.get('owner').sessions,[]);assert.equal((await f.deletion.status(ticket,{advance:true})).status,'pending');assert.ok(f.table('workspace_records').size>100);
  await f.lifecycle.settle(operation);const result=await finish(f,ticket);assert.equal(result.status,'deleted');assert.equal(f.accounts.has('owner'),false);assert.ok(f.accounts.has('other'));assert.equal(f.files.size,1);assert.ok(f.files.has('foreign'));assert.equal(f.table('workspace_records').size,1);assert.equal(f.table('catalog_foods').size,1);assert.equal(f.table('account_lifecycle').has('owner'),false);assert.equal(f.table('account_deletions').get(ticket.id).ownerId,'');assert.equal((await f.deletion.begin(ticket,'owner')).status,'deleted');
  for(const table of ['fasting_dispatch','reminder_dispatch']){assert.equal(f.table(table).has('owner'),false);assert.equal(f.table(table).has('other'),true);}
+ assert.deepEqual([...f.table('diary_removal_jobs').keys()],['other-job']);
 });
 test('unknown upload stays pending indefinitely and deletion failures resume with retained identity',async()=>{
  const f=await setup(),op=await f.lifecycle.enter('owner','upload');await f.lifecycle.hold(op);const {ticket}=await f.deletion.prepare('owner');await f.deletion.begin(ticket,'owner');await f.deletion.step(ticket.id);const waiting=await f.deletion.step(ticket.id);assert.equal(waiting.status,'needs_attention');assert.ok(f.accounts.has('owner'));assert.equal(f.table('account_operations').size,1);

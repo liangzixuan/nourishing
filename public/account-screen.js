@@ -1,5 +1,5 @@
 import {coreText} from './core-cloud-messages.js';
-import {moreRow} from './more-source/menu-view.js';
+import {moreIcon,moreRow} from './more-source/menu-view.js';
 import {accountDisplay,accountDisplayKey,cacheAccountDisplay} from './account-display.js';
 import {cachedRead} from './device-requests.js';
 import {request as diaryRequest} from './diary-api.js';
@@ -14,6 +14,7 @@ import {rememberOfflineAccount,lockCurrentOffline,leaveOfflineAccount} from './o
 import {disconnectCurrentPush} from './reminders.js';
 import {installButton,refreshInstallButton} from './pwa.js';
 import {createAccountDeletion} from './account-deletion.js';
+import {mountBulkDiaryDeletion} from './account-diary-deletion.js';
 export function mountAccount({root,embedded=false,section,onIdentity=()=>{}}){
 let disposed=false,profileSerial=0;const lifetime=new AbortController();
 const alive=()=>!disposed&&root.isConnected;
@@ -32,7 +33,7 @@ async function accountNetwork(path,body,method,signal){
   const response=await fetch(path,{method,signal:signal??lifetime.signal,credentials:'same-origin',cache:'no-store',headers:body?{'Content-Type':'application/json'}:{},...(body?{body:JSON.stringify(body)}:{})}).catch(error=>{if(error.name==='AbortError')throw error;throw Error(requestErrorMessage(null,503));});
   const result=await response.json().catch(()=>{throw Error(requestErrorMessage(null,503));});if(!response.ok)throw Object.assign(Error(requestErrorMessage(result,response.status)),{status:response.status,errorCode:result.errorCode});return result;
 }
-let editor=null;
+let editor=null,bulk=null;
 let deletion=createAccountDeletion({root,request:api,onSignIn:()=>accountForm('login'),beforeDelete:()=>leaveOfflineAccount(root)});
 const notice=()=>'<p id="notice" class="notice" role="status"></p>';
 function message(text,error=false){const el=root.querySelector('#notice');if(el){el.textContent=text;el.classList.toggle('error',error);}}
@@ -63,7 +64,7 @@ async function profile(knownUser=null){
     const {ticket}=await readDeviceCache(accountDisplayKey);
     if(ticket&&ticket.ownerId!==value.id)throw new DOMException('Account changed.','AbortError');
     return accountDisplay(value);
-  },lifetime.signal,{onRefresh:value=>{if(alive()&&serial===profileSerial&&!root.querySelector('dialog[open]')&&!root.querySelector('form:focus-within'))void profile(value);}}):await api('/api/account',null,'GET');}catch(error){if(!alive()||serial!==profileSerial)return;if(error.status===401){await lockCurrentOffline();if(!await deletion.recover())accountForm('login');return;}root.innerHTML=`<h1>${m("mobileMore.account")}</h1>${notice()}<button id="retry">${m("mobileSuggest.retry")}</button>`;message(error.message,true);root.querySelector('#retry').onclick=profile;return;}
+  },lifetime.signal,{onRefresh:value=>{if(alive()&&!bulk&&serial===profileSerial&&!root.querySelector('dialog[open]')&&!root.querySelector('form:focus-within'))void profile(value);}}):await api('/api/account',null,'GET');}catch(error){if(!alive()||serial!==profileSerial)return;if(error.status===401){await lockCurrentOffline();if(!await deletion.recover())accountForm('login');return;}root.innerHTML=`<h1>${m("mobileMore.account")}</h1>${notice()}<button id="retry">${m("mobileSuggest.retry")}</button>`;message(error.message,true);root.querySelector('#retry').onclick=profile;return;}
   if(!alive()||serial!==profileSerial)return;
   if(!embedded)await rememberOfflineAccount(user);
   else if(knownUser){const {ticket}=await readDeviceCache(accountDisplayKey);await cacheAccountDisplay(user,ticket);}
@@ -71,8 +72,13 @@ async function profile(knownUser=null){
   onIdentity(accountDisplay(user));
   const display=await (embedded?diaryRequest('/api/display',undefined,lifetime.signal):api('/api/display',null,'GET')).catch(()=>null);if(!alive()||serial!==profileSerial)return;if(display?.settings?.appLanguage)applyAppLanguage(display.settings.appLanguage);applyTheme(display?.settings?.theme);applyFontPreferences(display?.settings);
   if(section==='account-data'){
-   root.innerHTML=`<section class="mm-group">${moreRow('backup',coreText('more.backup'))}<button type="button" class="mm-row delete-account" id="delete-account">${m('accountCloud.deleteAccount')}</button></section>`;
+   root.innerHTML=`<section class="mm-group account-data-menu">${moreRow('bulk-delete',m('accountCloud.bulk.title'))}<button type="button" class="mm-row" id="delete-account"><span>${m('accountCloud.bulk.account')}</span>${moreIcon('chevron-right','mm-chevron')}</button></section><p class="account-data-note">${m('accountCloud.bulk.accountNote')}</p>`;
    root.querySelector('#delete-account').onclick=deletion.open;
+   return;
+  }
+  if(section==='bulk-delete'){
+   bulk?.dispose();
+   bulk=mountBulkDiaryDeletion({root,ownerId:user.id,timeZone:user.profile.timeZone||Intl.DateTimeFormat().resolvedOptions().timeZone,request:accountNetwork});
    return;
   }
   const zone=user.profile.timeZone==='UTC'?Intl.DateTimeFormat().resolvedOptions().timeZone:user.profile.timeZone;
@@ -91,7 +97,7 @@ const mode=embedded?'account':location.pathname.slice(1);
 // Appwrite serves this static root before Astro's catch-all route.
 if(['register','login','forgot-password','reset-password'].includes(mode))accountForm(mode);else if(mode==='verify-email')verification();else profile();
 
-window.addEventListener('pagehide',()=>{deletion.dispose();editor?.dispose();},{signal:lifetime.signal});
+window.addEventListener('pagehide',()=>{deletion.dispose();editor?.dispose();bulk?.dispose();bulk=null;},{signal:lifetime.signal});
 window.addEventListener('pageshow',event=>{if(event.persisted&&(mode==='account'||mode==='')){deletion=createAccountDeletion({root,request:api,onSignIn:()=>accountForm('login'),beforeDelete:()=>leaveOfflineAccount(root)});profile();}},{signal:lifetime.signal});
-return {back(){const dialog=root.querySelector('dialog[open]');if(dialog){dialog.dispatchEvent(new Event('cancel',{cancelable:true}));return true;}return false;},dispose(){disposed=true;profileSerial++;lifetime.abort();deletion.dispose();editor?.dispose();root.replaceChildren();root.classList.remove('account-surface');}};
+return {back(){const dialog=root.querySelector('dialog[open]');if(dialog){dialog.dispatchEvent(new Event('cancel',{cancelable:true}));return true;}return false;},dispose(){disposed=true;profileSerial++;lifetime.abort();deletion.dispose();editor?.dispose();bulk?.dispose();bulk=null;root.replaceChildren();root.classList.remove('account-surface');}};
 }

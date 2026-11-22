@@ -5,3 +5,41 @@ body.dark .account-surface{--panel:var(--paper,#25283a);--border:var(--line,#555
 .account-surface .delete-account{display:block;width:100%;margin-top:16px;background:transparent;color:var(--danger)}.account-surface .account-delete-dialog{width:min(calc(100% - 32px),440px);max-height:calc(100dvh - 32px);padding:0;border:1px solid var(--border);border-radius:20px;background:var(--panel);color:inherit;overflow:auto}.account-surface .account-delete-dialog::backdrop{background:#0009}.account-surface .account-delete-dialog header{padding:16px 20px;position:sticky;top:0}.account-surface .account-delete-dialog h2{font-size:calc(24rem / 18);margin:0}.account-surface .account-delete-dialog section{padding:0 20px 24px}.account-surface .account-delete-dialog p{margin:20px 0}.account-surface .account-delete-dialog form{margin-top:24px;gap:14px}.account-surface .account-delete-dialog .notice{min-height:0;margin:0;color:var(--danger)}.account-surface .account-delete-dialog .deletion-close{background:transparent;color:inherit;border:0;font-size:30px;padding:0;min-width:44px;min-height:44px}.account-surface .account-delete-dialog .danger{background:#ffb29c;color:#42170c}.account-surface .account-delete-dialog [data-deletion-backup]{width:100%;font-size:calc(16rem / 18)}.account-surface .account-delete-dialog .links{margin-bottom:0}
 
 .account-surface .account-identity{padding:0;overflow:hidden}.account-surface .account-identity .account-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;border-radius:0;border:0;border-bottom:1px solid var(--border);padding:16px;margin:0;background:transparent;color:inherit;text-align:left;font-size:calc(16rem / 18);font-weight:600;width:100%}.account-surface .account-row .muted{overflow-wrap:anywhere;text-align:right;font-weight:400}.account-surface .account-identity .account-verification{margin:0;padding:12px 16px;font-size:calc(14rem / 18);color:var(--muted)}.account-surface .account-identity #verify{margin:0;border:0;border-top:1px solid var(--border);border-radius:0;font-size:calc(16rem / 18)}.account-surface .account-edit-dialog{width:min(calc(100% - 32px),440px);max-height:calc(100dvh - 32px);padding:0;border:1px solid var(--border);border-radius:20px;background:var(--panel);color:inherit;overflow:auto}.account-surface .account-edit-dialog::backdrop{background:#0009}.account-surface .account-edit-dialog header{padding:16px 20px;position:sticky;top:0}.account-surface .account-edit-dialog h2{font-size:calc(22rem / 18);margin:0}.account-surface .account-edit-dialog section{padding:4px 20px 24px}.account-surface .account-edit-dialog .account-edit-close{background:none;color:inherit;font-size:28px;min-width:44px;padding:0}.account-surface .account-edit-dialog form{gap:16px}.account-surface .account-edit-dialog p{margin:0;font-size:calc(16rem / 18)}.account-surface .account-edit-dialog .notice{min-height:0;color:var(--danger)}.account-surface .account-edit-dialog .account-edit-actions{display:flex;gap:12px;justify-content:flex-end}.account-surface .account-edit-dialog [hidden]{display:none!important}.account-surface .account-edit-dialog [data-edit-check]{margin-top:16px}
+
+.more-page .account-surface:has(.account-data-menu),
+.more-page .account-surface:has(.bulk-diary-form){padding:0}
+.account-surface .account-data-menu{margin:0;border-radius:12px}
+.account-surface .account-data-menu .mm-row{
+ display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:56px;
+ margin:0;padding:14px 16px;border:0;border-bottom:1px solid var(--border);border-radius:0;
+ background:var(--panel);color:inherit;font:700 calc(15rem / 18)/1.3 Karla,Lato,sans-serif;letter-spacing:.01em;text-align:start
+}
+.account-surface .account-data-menu .mm-row:last-child{border-bottom:0}
+.account-surface .account-data-note{margin:12px 16px 12px 20px;color:inherit;font-size:calc(13rem / 18);line-height:1.35}
+.account-surface .bulk-diary-form{gap:0;padding-block:16px 32px;font-size:calc(16rem / 18);overflow-wrap:anywhere}
+.bulk-diary-form :is(p,fieldset,legend){margin:0}
+.bulk-diary-form fieldset{min-width:0;border:0;padding:0}
+.bulk-diary-form legend{padding:0 0 12px}
+.bulk-diary-form .bulk-range,.bulk-diary-form .bulk-types{background:var(--panel);border-radius:12px;padding:16px}
+.bulk-diary-form .bulk-range{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px}
+.account-surface .bulk-range select{width:auto;max-width:100%;min-height:44px;padding:6px 8px;border:0}
+.bulk-diary-form .bulk-dates{padding:12px 16px 16px}
+.bulk-custom{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,10rem),1fr));gap:12px;padding:12px 16px}
+.bulk-custom label,.bulk-custom input{min-width:0}
+.bulk-diary-form [hidden]{display:none!important}
+.bulk-diary-form .bulk-options{display:grid;grid-auto-flow:column;grid-template-rows:repeat(3,auto);grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);column-gap:8px}
+.account-surface .bulk-check{min-height:44px;display:flex;align-items:center;gap:10px;line-height:1.35}
+.account-surface .bulk-check input{appearance:none;flex:0 0 20px;width:20px;height:20px;min-height:0;margin:0 2px;padding:0;border:2px solid var(--accent);border-radius:0;cursor:pointer}
+.account-surface .bulk-check input:checked{appearance:auto;accent-color:var(--accent)}
+.bulk-diary-form .bulk-info{margin-top:12px;padding:16px;border-radius:12px;color:#193c3e;background:#c4d7d5}
+.bulk-confirm{display:grid;gap:12px;padding:16px}
+.bulk-confirm .bulk-check{font-weight:400}
+.bulk-warning{display:grid;gap:3px;background:#f9ddd2;color:#672611;border-radius:12px;padding:12px;text-align:center}
+.bulk-diary-form .notice{margin:0;min-height:0}
+.bulk-actions{display:flex;flex-wrap:wrap;gap:12px}
+.bulk-actions button{flex:1 1 9rem}
+body.dark .bulk-info{background:#31474c;color:#e0f2ef}
+body.dark .bulk-warning{background:#51362e;color:#ffcfbc}
+@media(max-width:24rem){
+ .bulk-diary-form .bulk-options{grid-auto-flow:row;grid-template-rows:none;grid-template-columns:1fr}
+}

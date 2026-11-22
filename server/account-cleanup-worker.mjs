@@ -1,3 +1,4 @@
+import {pruneDiaryRemovalJobs} from './diary-range-removal-jobs.mjs';
 import {pruneExpiredReminderReceipts} from './expired-reminder-receipts.mjs';
 import {createAccountLifecycle} from './account-lifecycle.mjs';
 import {Query} from 'node-appwrite';
@@ -43,6 +44,13 @@ export async function runAccountCleanup({db,deletion,lifecycle,database='nourish
  if(timeLeft()){
   try{const receipts=await pruneExpiredReminderReceipts({db,lifecycle:lifecycle??createAccountLifecycle({db,database,now:clock}),database,now:started,limit:maxPrune,timeLeft});result.reminderReceiptsPruned=receipts.pruned;result.reminderOwnersSkipped=receipts.skipped;result.failed+=receipts.failed;}
   catch{result.failed++;}
+ }
+ if(timeLeft()){
+  try{
+   const removal=await pruneDiaryRemovalJobs({db,database,now:started,limit:maxJobs,timeLeft});
+   if(removal.examined)result.diaryRemoval=removal;
+   result.failed+=removal.failed;
+  }catch{result.failed++;}
  }
  return result;
 }

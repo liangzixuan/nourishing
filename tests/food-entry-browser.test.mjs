@@ -12,6 +12,16 @@ import {libraryItem} from '../server/library-view.mjs';
 import {favoriteView} from '../server/library-extras.mjs';
 import {digest} from '../server/data-codec.mjs';
 
+test('food correction MIME preserves photo bytes across chunks and keeps private file names out of headers',async()=>{
+ const {correctionDraft}=await import('../public/food-correction-email.js');
+ const bytes=Buffer.alloc(65001);for(let i=0;i<bytes.length;i++)bytes[i]=i%251;
+ const file=new File([bytes],'personal-name.heic');
+ const blob=await correctionDraft({subject:'Correção de alimento',body:'2 µg\nBcc: part of the report',photos:[{role:'package-front',file}],signal:new AbortController().signal});
+ const source=await blob.text(),parts=[...source.matchAll(/Content-Transfer-Encoding: base64\r\n\r\n([A-Za-z0-9+/=\r\n]+)--/g)];
+ assert.equal(parts.length,2);assert.ok(!source.includes('personal-name'));assert.ok(!/^Bcc:/im.test(source));
+ assert.ok(source.includes('Content-Type: image/heic'));assert.equal(Buffer.from(parts[0][1],'base64').toString(),'2 µg\r\nBcc: part of the report');
+ assert.ok(parts[1][1].trimEnd().split('\r\n').every(line=>line.length<=76));assert.deepEqual(Buffer.from(parts[1][1],'base64'),bytes);
+});
 test('source food entry preserves canonical preview/add/edit/favorites and error recovery',async()=>{
  const state=initialState(),date='2026-11-16',commands=[],previews=[];let failPreview=false,failSave=false,origin,handler;
  state.foods.push({id:'food',name:'Rice<script>x</script>',serving:'100 g',grams:100,nutrients:{calories:200,protein:4},portions:[{id:'bowl:large',label:'Large bowl',grams:150}],source:{name:'Fixture source',attribution:'Fixture source credit'}},{id:'unknown',name:'LongUnbrokenFoodName'.repeat(6),serving:'1 serving',nutrients:{}});
@@ -25,6 +35,43 @@ test('source food entry preserves canonical preview/add/edit/favorites and error
  try{
   browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.setDefaultTimeout(15000);page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{if(message.text().includes('Content Security Policy'))errors.push(message.text());});await page.goto(origin);await page.getByRole('button',{name:'Open',exact:true}).click();
   const energy=()=>page.locator('[data-mf-energy]');await energy().filter({hasText:'200'}).waitFor();assert.equal(await page.locator('.mf-form script').count(),0);assert.ok(await page.locator('[data-mf-section]').count()>5);assert.equal(await page.getByLabel('Include timestamp').isChecked(),false);
+  await page.locator('.mf-menu>summary').click();
+  assert.equal(await page.locator('[data-mf-favorite]').innerText(),'Add to Favorites');
+  await page.getByRole('button',{name:'Report Issue',exact:true}).click();
+  const report=page.getByRole('dialog',{name:'Report Issue',exact:true});
+  await report.waitFor();assert.equal(await report.getByRole('link',{name:'Open email app'}).count(),0);
+  await report.getByLabel('Describe the issue').fill('The label shows 4 g of fibre & 10 µg of iodine.');
+  const compose=report.getByRole('link',{name:'Open email app'});
+  const mailto=new URL(await compose.getAttribute('href'));
+  assert.equal(mailto.protocol,'mailto:');assert.match(mailto.searchParams.get('body'),/10 µg of iodine/);
+  assert.equal(mailto.pathname,'ericziliang@gmail.com');assert.match(mailto.searchParams.get('body'),/Rice<script>x<\/script>/);
+  assert.match(mailto.searchParams.get('body'),/Fixture source/);assert.ok(!mailto.searchParams.get('body').includes('Lunch'));
+  const fileBytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64');
+  await report.getByLabel('Package front (optional)').setInputFiles({name:'unsupported.txt',mimeType:'text/plain',buffer:Buffer.from('text')});
+  await report.getByText('Choose an image file.').waitFor();assert.ok(await report.getByRole('button',{name:'Download email draft'}).isDisabled());
+  await report.getByLabel('Package front (optional)').setInputFiles({name:'private-front.png',mimeType:'image/png',buffer:fileBytes});
+  await report.getByLabel('Nutrition label (optional)').setInputFiles({name:'private-label.png',mimeType:'image/png',buffer:fileBytes});
+  await report.getByText('The downloaded draft includes your photos.',{exact:false}).waitFor();
+  assert.ok(!new URL(await compose.getAttribute('href')).searchParams.has('attachment'));
+  await page.setViewportSize({width:320,height:710});
+  assert.ok(await report.evaluate(node=>node.scrollWidth<=node.clientWidth));
+  const downloading=page.waitForEvent('download');await report.getByRole('button',{name:'Download email draft'}).click();
+  const downloaded=await downloading;assert.equal(downloaded.suggestedFilename(),'nourishing-food-correction.eml');
+  const eml=readFileSync(await downloaded.path(),'utf8');
+  assert.match(eml,/^X-Unsent: 1\r?$/m);assert.match(eml,/^To: ericziliang@gmail\.com\r?$/m);assert.ok(!eml.includes('private-front.png'));
+  assert.ok(eml.includes('filename="package-front.png"'));assert.ok(eml.includes('filename="nutrition-label.png"'));
+  const bodies=[...eml.matchAll(/Content-Transfer-Encoding: base64\r\n\r\n([A-Za-z0-9+/=\r\n]+)--/g)].map(match=>Buffer.from(match[1],'base64'));
+  assert.equal(bodies[0].toString().replace(/\r\n/g,'\n'),mailto.searchParams.get('body').replace(/\r\n/g,'\n'));
+  assert.deepEqual(bodies.slice(1),[fileBytes,fileBytes]);
+  assert.equal(await report.getByRole('button',{name:'Remove photo'}).count(),2);await report.getByRole('button',{name:'Remove photo'}).first().click();
+  assert.equal(await report.getByRole('button',{name:'Remove photo'}).count(),1);
+  await page.keyboard.press('Escape');assert.equal(await report.count(),0);assert.ok(await page.locator('.mf-form').isVisible());
+  assert.equal(await page.locator('.mf-menu summary').evaluate(el=>el===document.activeElement),true);
+  await page.locator('.mf-menu>summary').click();await page.locator('[data-mf-report]').click();
+  assert.equal(await report.getByLabel('Describe the issue').inputValue(),'');
+  assert.equal(await report.getByRole('button',{name:'Remove photo'}).count(),0);
+  await report.getByRole('button',{name:'Close',exact:true}).click();
+
   const headerBoxes=()=>page.locator('.mf-entry-header').evaluate(header=>{
     const box=selector=>header.querySelector(selector).getBoundingClientRect().toJSON();
     const text=selector=>{const range=document.createRange();range.selectNodeContents(header.querySelector(selector));return range.getBoundingClientRect().toJSON();};
@@ -41,6 +88,7 @@ test('source food entry preserves canonical preview/add/edit/favorites and error
   await page.locator('.mf-menu>summary').click();await page.locator('.mf-menu[open]').waitFor();await page.keyboard.press('Escape');assert.equal(await page.locator('.mf-menu[open]').count(),0);assert.equal(await page.locator('#sheet[open]').count(),1);
   await page.locator('.mf-menu>summary').click();await page.locator('[data-mf-dismiss]').click({position:{x:5,y:150}});assert.equal(await page.locator('.mf-menu[open]').count(),0);
   await page.getByRole('button',{name:'Add to favorites',exact:true}).click();await page.getByRole('button',{name:'Remove from favorites',exact:true}).waitFor();assert.equal(state.settings.favorites[0].id,'food');
+  await page.locator('.mf-menu>summary').click();assert.equal(await page.locator('[data-mf-favorite]').innerText(),'Remove from Favorites');await page.keyboard.press('Escape');
   failPreview=true;await page.getByLabel('Amount',{exact:true}).fill('1');await page.getByText('Preview unavailable',{exact:false}).waitFor();await page.getByRole('button',{name:'Try again',exact:true}).click();await energy().filter({hasText:'300'}).waitFor();
   failSave=true;await page.getByRole('button',{name:'Add to Diary',exact:true}).click();await page.getByText('Save unavailable',{exact:true}).waitFor();assert.equal(state.entries.length,0);await page.getByRole('button',{name:'Add to Diary',exact:true}).click();await page.locator('#sheet').waitFor({state:'hidden'});assert.equal(state.entries.length,1);assert.equal(state.entries[0].time,'09:30');assert.equal(state.entries[0].group,'Dinner');assert.equal(state.entries[0].portionId,'bowl:large');
   await page.evaluate(entry=>window.openFood('food',entry),state.entries[0]);await energy().filter({hasText:'300'}).waitFor();await page.getByLabel('Amount',{exact:true}).fill('2');await page.getByRole('button',{name:'Save Changes',exact:true}).click();await page.locator('#sheet').waitFor({state:'hidden'});assert.equal(state.entries[0].quantity,2);

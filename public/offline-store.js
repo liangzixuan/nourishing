@@ -19,7 +19,44 @@ function assertTicket(active,copy,expected,{revision=false,unlocked=true}={}){if
 export async function readWriteCopy(){return transact(({active,copy})=>copy?{...copy,ticket:ticket(active,copy)}:null,false);}
 export async function offlineCopy(){const copy=await readWriteCopy();return copy?.snapshot?copy:null;}
 export async function activateOfflineAccount(ownerId,{sessionContext=null}={}){if(typeof ownerId!=='string'||!ownerId)throw offlineFailure('signInFirst');return transact(({active,meta,responses})=>{if(active.ownerId!==ownerId){active={ownerId,epoch:crypto.randomUUID()};resetResponses(active,meta,responses);}active.cacheLocked=false;active.sessionContext=/^[a-f0-9]{64}$/.test(sessionContext??'')?sessionContext:null;meta.put(active,'active');return {...ticket(active,null),...cacheTicket(active)};});}
-export async function saveOfflineSnapshot(snapshot,expected){return transact(({active,copy,accounts,meta,responses})=>{assertTicket(active,copy,expected,{unlocked:false});if(snapshot?.version!==1||snapshot.identity?.ownerId!==active.ownerId||typeof snapshot.identity.generation!=='string'||!snapshot.identity.generation)throw offlineFailure('otherSnapshot');if(copy?.snapshot?.identity.generation===snapshot.identity.generation&&(copy.pending.some(row=>row.transport)||expected.revision!==undefined&&copy.revision!==expected.revision))return {...copy,ticket:ticket(active,copy),snapshotRefreshed:false};if(copy?.snapshot&&copy.snapshot.identity.generation!==snapshot.identity.generation){resetResponses(active,meta,responses);meta.put(active,'active');}const pending=copy?.pending??[];for(const row of pending){if(row.command.generation==null)row.command.generation=snapshot.identity.generation;else if(row.command.generation!==snapshot.identity.generation){row.status='conflict';row.error='The diary was restored. Review this change.';row.messageKey='accountCloud.offlineError.restored';}}const next={...(copy?.hideMealAdjustmentNotice?{hideMealAdjustmentNotice:true}:{}),...(copy?.fastingContext&&copy.snapshot?.identity.generation===snapshot.identity.generation?{fastingContext:copy.fastingContext}:{}),ownerId:active.ownerId,snapshot:structuredClone(snapshot),pending,recordIds:copy?.recordIds??{},locked:false,revision:(copy?.revision??0)+1};accounts.put(next);return {...next,ticket:ticket(active,next),snapshotRefreshed:true};});}
+// Keep the account and any edits queued by another open tab.
+export async function expireOfflineSnapshot(expected){
+ return transact(({active,copy,accounts})=>{
+  assertTicket(active,copy,expected);
+  if(copy?.pending.length)return;
+  const current=copy??{ownerId:active.ownerId,revision:0,pending:[],recordIds:{},locked:false};
+  accounts.put({...current,snapshot:null,revision:current.revision+1});
+ });
+}
+export async function saveOfflineSnapshot(snapshot,expected){
+ return transact(({active,copy,accounts,meta,responses})=>{
+  assertTicket(active,copy,expected,{unlocked:false});
+  const generation=snapshot?.identity?.generation;
+  if(snapshot?.version!==1||snapshot.identity?.ownerId!==active.ownerId||typeof generation!=='string'||!generation)throw offlineFailure('otherSnapshot');
+  const sameGeneration=copy?.snapshot?.identity.generation===generation;
+  // A late read must never put a discarded generation back on this device.
+  const staleResponse=expected.cacheRevision!==undefined&&expected.cacheRevision!==(active.cacheRevision??0);
+  const staleCopy=copy&&expected.revision!==undefined&&copy.revision!==expected.revision;
+  if(copy&&(staleResponse||staleCopy||(sameGeneration&&copy.pending.some(row=>row.transport)))){
+   return {...copy,ticket:ticket(active,copy),snapshotRefreshed:false};
+  }
+  if(copy?.snapshot&&!sameGeneration){resetResponses(active,meta,responses);meta.put(active,'active');}
+  const pending=copy?.pending??[];
+  for(const row of pending){
+   if(row.command.generation==null)row.command.generation=generation;
+   else if(row.command.generation!==generation){
+    row.status='conflict';row.error='The diary was restored. Review this change.';row.messageKey='accountCloud.offlineError.restored';
+   }
+  }
+  const next={
+   ...(copy?.hideMealAdjustmentNotice?{hideMealAdjustmentNotice:true}:{}),
+   ...(copy?.fastingContext&&sameGeneration?{fastingContext:copy.fastingContext}:{}),
+   ownerId:active.ownerId,snapshot:structuredClone(snapshot),pending,recordIds:copy?.recordIds??{},locked:false,revision:(copy?.revision??0)+1
+  };
+  accounts.put(next);
+  return {...next,ticket:ticket(active,next),snapshotRefreshed:true};
+ });
+}
 export async function changeOfflineCopy(expected,change,{strict=false}={}){return transact(({active,copy,accounts})=>{assertTicket(active,copy,expected,{revision:strict});if(!copy)throw offlineFailure('keepFirst');const next=change(structuredClone(copy));if(!next)return;next.revision=copy.revision+1;accounts.put(next);return {...next,ticket:ticket(active,next)};});}
 export async function lockOfflineAccount(expected){return transact(({active,copy,accounts,meta,responses})=>{if(expected)assertTicket(active,copy,expected,{unlocked:false});active.epoch=crypto.randomUUID();active.cacheLocked=true;resetResponses(active,meta,responses);meta.put(active,'active');if(copy)accounts.put({...copy,locked:true,revision:copy.revision+1});});}
 export async function clearOfflineAccount({discardPending=false}={}){return transact(({active,copy,accounts,meta,copies,responses})=>{const pendingCount=copies.reduce((sum,row)=>sum+row.pending.length,0);if(pendingCount&&!discardPending)throw Object.assign(offlineFailure('syncBeforeSignout'),{pendingCount});accounts.clear();responses.clear();meta.delete('response-lru');meta.put({ownerId:null,epoch:crypto.randomUUID(),cacheRevision:0,cacheLocked:true},'active');},true,true);}

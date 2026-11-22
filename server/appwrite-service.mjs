@@ -14,6 +14,7 @@ import {createReminderDispatcher} from './reminder-schedules-dispatch.mjs';
 import {createWebPushStore} from './web-push-store.mjs';
 import {parseTextFoodLog} from './text-log.mjs';
 import {createFastingDispatcher} from './scheduler-dispatch.mjs';
+import {createDiaryRangeRemovalStore} from './diary-range-removal-store.mjs';
 import {createCsvImportStore} from './csv-import-store.mjs';
 import {favoriteView} from './library-extras.mjs';
 import {createAccountLifecycle} from './account-lifecycle.mjs';
@@ -87,6 +88,7 @@ const REMINDER_MUTATION_METHODS = new Set([
   'offlineCommand',
   'restoreBackup',
   'importCsv',
+  'removeDiaryRange',
   'barcodeSave',
   'savePhoto',
   'saveNotePhoto',
@@ -138,7 +140,7 @@ function parseNotePhotoInput(input) {
 
 async function dispatchPostMutationJobs({config, key, accountId, name, input}) {
   const scheduleChanged =
-    ['restoreBackup', 'importCsv'].includes(name) ||
+    ['restoreBackup', 'importCsv', 'removeDiaryRange'].includes(name) ||
     (name === 'workspaceCommand' && /^(?:fast|fasting)\./.test(input[0]?.type ?? ''));
   if (process.env.SCHEDULER_ENABLED === 'true' && scheduleChanged) {
     const queueClient = new Client().setEndpoint(config.endpoint).setProject(config.project).setKey(key);
@@ -196,6 +198,26 @@ function buildAuthAndLifecycleMethods(ctx) {
     withRequest: fn => requestScope.run({accounts: new Map(), profiles: new Map()}, fn),
     authenticate: async secret => {
       await resolveAccount(secret);
+    },
+    previewDiaryRangeRemoval: async (secret, input) => {
+      const account = await resolveAccount(secret);
+      const store = createDiaryRangeRemovalStore({db: new TablesDB(elevated()), ownerId: account.$id});
+      try {
+        return {...await store.preview(input), ownerId: account.$id};
+      } catch (error) {
+        mapViewError(error);
+      }
+    },
+    removeDiaryRange: async (secret, expectedOwner, password, input) => {
+      const account = await resolveAccount(secret);
+      if (account.$id !== expectedOwner) throw Object.assign(Error('Your account changed. Open Account Data again.'), {code: 409, publicMessage: 'Your account changed. Open Account Data again.'});
+      await confirmAccountPassword({account, password, budget, auth: new Account(elevated()), users: new Users(elevated())});
+      const store = createDiaryRangeRemovalStore({db: new TablesDB(elevated()), ownerId: account.$id});
+      try {
+        return await store.remove(input);
+      } catch (error) {
+        mapViewError(error);
+      }
     },
     prepareAccountDeletion: async (secret, {password}) => {
       const account = await resolveAccount(secret);

@@ -1,5 +1,5 @@
 #Requires -Version 7.3
-param([Parameter(Mandatory)][ValidateSet('fasting_dispatch','reminder_dispatch','push_accounts','push_deliveries')][string]$TableId)
+param([Parameter(Mandatory)][ValidateSet('fasting_dispatch','reminder_dispatch','push_accounts','push_deliveries','diary_removal_jobs')][string]$TableId)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $config = Join-Path $root 'appwrite.config.json'

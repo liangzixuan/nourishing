@@ -49,15 +49,20 @@ test('Foods preserves source home cards, collection navigation and item utilitie
   for(const [kind,title] of [['meal','Create Meal'],['recipe','Create Recipe'],['food','New Food']]){await page.locator('[data-action="new-'+kind+'"]').click();await page.getByRole('heading',{name:title,exact:true}).waitFor();await page.getByRole('button',{name:'Close',exact:true}).click();}
   await page.locator('[data-tab=recipes]').click();
   assert.equal(await page.getByRole('heading',{name:'No Recipes',exact:true}).count(),1);
+  assert.equal(await page.locator('.ml-empty-card p').innerText(),'Custom recipes that you create\nor import will appear here');
   assert.equal(await page.getByRole('searchbox').count(),1);
   assert.equal(await page.locator('.ml-tools').count(),0);
-  await page.getByRole('button',{name:'More actions',exact:true}).click();
+  await page.getByRole('button',{name:'More options',exact:true}).click();
   await page.getByRole('button',{name:'Import Recipe',exact:true}).click();
   await importer.getByRole('heading',{name:'Import Recipe',exact:true}).waitFor();
   await page.keyboard.press('Escape');await page.locator('[data-recipe-close]').click();
   await page.locator('[data-action=foods-home]').click();
   await page.locator('[data-tab=meals]').click();
   assert.equal(await page.getByRole('heading',{name:'Create a Meal',exact:true}).count(),1);
+  assert.equal(await page.locator('article.ml-empty-card p').innerText(),'Save time logging your meals! Combine frequently consumed items into Meals for more efficient tracking.');
+  assert.equal(await page.locator('.ml-empty-icon').first().evaluate(n=>n.getBoundingClientRect().width),56);
+  assert.deepEqual(await page.locator('.ml-header button').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('aria-label'))),['Back','Create Meal']);
+  assert.equal(await page.getByRole('searchbox').count(),0);
   await page.getByRole('button',{name:'Dismiss tip',exact:true}).click();
   assert.equal(await page.locator('.ml-meal-tip').count(),0);
   await page.locator('[data-action=foods-home]').click();
