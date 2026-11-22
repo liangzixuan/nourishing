@@ -246,8 +246,8 @@ export function mountMore({
       return section(
         id,
         t('mobileMore.support'),
-        group(row('manual', t('mobileMore.manual')) + link(coreText('more.contactUs'), 'mailto:'+supportEmail) + link(coreText('more.reportBug'), 'https://github.com/liangzixuan/nourishing/issues', true)) +
-          group(row('backup', coreText('more.backup')) + row('reminders', t('nav.reminders'))),
+        group(row('manual', t('mobileMore.manual')) + link(coreText('more.contactUs'), 'mailto:'+supportEmail) + link(coreText('more.reportBug'), 'https://github.com/liangzixuan/nourishing/issues', true), 'mm-support-links') +
+          group(row('backup', coreText('more.backup')) + row('reminders', t('nav.reminders')), 'mm-support-links'),
       );
     }
     if (id === 'manual') {
