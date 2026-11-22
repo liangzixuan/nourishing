@@ -7,11 +7,28 @@ import {usesCompoundWeight} from './weight-entry.js';
 import {usesSleepDuration} from './sleep-duration.js';
 import {usesStoolScale,stoolTypes,stoolUnit} from '../offline-source/server/stool-scale.mjs';
 
-const categories={Body:'human-male-height',Cardio:'heart-pulse',Labs:'test-tube',Mental:'head-heart'};
+const categories={Body:'#body',Cardio:'heart-pulse',Labs:'#labs',Mental:'health/mental-health'};
 const order={Body:['bicep-size','body-fat','body-temp-variation','body-temperature','bust-size','calf-size','chest-size','fat-free-mass','forearm-size','height','hip-size','neck-size','recovery','skeletal-muscle-mass','skin-temperature','stool','thigh-size','total-body-water','upper-arm-size','waist-size','weight','wrist-size'],Cardio:['blood-pressure','heart-rate','heart-rate-variability-hrv','oxygen-saturation-spo2','pulse-wave-velocity','respiration-rate','resting-heart-rate','v02-max'],Labs:['25-hydroxy-vitamin-d','blood-glucose','c-reactive-protein','ferritin','hdl-cholesterol','hematocrit','hemoglobin','hemoglobin-a1c','insulin','ketones-blood','ketones-breath','ketones-urine','ldl-cholesterol','oxygen-saturation-spo2','total-cholesterol','triglycerides'],Mental:['energy-level','mood','sleep','sleep-score']};
-const icon=name=>`<img src="/record-source/biometric-icons/${name}.svg" alt="" aria-hidden="true">`;
-const icons={'fat-free-mass':'scale-bathroom','skeletal-muscle-mass':'human-male-height',weight:'scale-bathroom',height:'human-male-height','body-fat':'water-percent','body-temp-variation':'thermometer','body-temperature':'thermometer','skin-temperature':'thermometer','total-body-water':'water-percent',stool:'toilet',recovery:'restore','blood-pressure':'blood-bag','heart-rate':'heart-pulse','heart-rate-variability-hrv':'heart-pulse','resting-heart-rate':'heart-pulse','pulse-wave-velocity':'heart-pulse','respiration-rate':'lungs','blood-glucose':'diabetes',insulin:'needle','energy-level':'lightning-bolt',mood:'emoticon-happy',sleep:'bed','sleep-score':'sleep'};
-const metricIcon=metric=>icons[metric.selection.id]||(metric.categories.includes('Body')?'tape-measure':metric.categories.includes('Labs')?'test-tube':metric.categories.includes('Cardio')?'heart-pulse':'chart-bell-curve');
+const iconRoot='/record-source/biometric-icons/';
+function icon(name){
+ if(name.startsWith('#'))return `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="${iconRoot}measurements.svg${name}"></use></svg>`;
+ return `<img src="${iconRoot}${name}.svg" alt="" aria-hidden="true">`;
+}
+const icons={
+ 'bicep-size':'#bicep-size','body-fat':'#body-fat','body-temp-variation':'#body-temp-variation',
+ 'body-temperature':'#body-temperature','bust-size':'#bust-size','calf-size':'#calf-size',
+ 'chest-size':'#chest-size','fat-free-mass':'#fat-free-mass','forearm-size':'#forearm-size',
+ height:'#height','hip-size':'#hip-size','neck-size':'#neck-size',recovery:'#recovery',
+ 'skeletal-muscle-mass':'#skeletal-muscle-mass','skin-temperature':'#skin-temperature',stool:'#stool',
+ 'thigh-size':'#thigh-size','total-body-water':'#total-body-water','upper-arm-size':'#upper-arm-size',
+ 'waist-size':'#waist-size',weight:'scale-bathroom','wrist-size':'#wrist-size',
+ 'blood-pressure':'health/blood-pressure_monitor','heart-rate':'#heart-rate','heart-rate-variability-hrv':'heart-pulse',
+ 'oxygen-saturation-spo2':'health/pulse-oximeter','pulse-wave-velocity':'health/heart-cardiogram',
+ 'respiration-rate':'health/lungs','resting-heart-rate':'health/heart-cardiogram','v02-max':'#v02-max',
+ 'blood-glucose':'diabetes',insulin:'needle','energy-level':'lightning-bolt',
+ mood:'emoticon-happy',sleep:'bed','sleep-score':'sleep'
+};
+const metricIcon=metric=>icons[metric.selection.id]||(metric.categories.includes('Labs')?'test-tube':'chart-bell-curve');
 
 /** Mobile presentation; the existing session owns validation, receipts and save recovery. */
 export class MobileBiometricPanel{

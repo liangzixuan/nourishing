@@ -2,7 +2,7 @@ const rows=[
  ["metric.hematocrit","Hematocrit","Hématocrite","Hämatokrit","Hematócrito"],
  [
   "metric.bicep-size",
-  "Bicep size",
+  "Bicep Size",
   "Tour de biceps",
   "Bizepsumfang",
   "Circunferência do bíceps"

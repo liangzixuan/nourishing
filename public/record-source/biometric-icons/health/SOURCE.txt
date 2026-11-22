@@ -1,0 +1,2 @@
+Health Icons, filled 48 px icons.
+https://github.com/resolvetosavelives/healthicons/tree/fe100687bdbb0bb99220fc4ec752a515d19d1dbc/public/icons/svg/filled
