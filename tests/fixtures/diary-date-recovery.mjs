@@ -6,11 +6,16 @@ import {chooseDiaryDate} from '../../scripts/diary-test-navigation.mjs';
 export async function checkColdDateRecovery(page,{origin,from,to,marker,scenario='recover'}){
  const snapshotGate=Promise.withResolvers(),readGate=Promise.withResolvers();
  const dayPath='/api/diary?date='+to;
- const lockedSnapshot=Promise.withResolvers();
+ const lockedSnapshot=Promise.withResolvers(),startupFailed=Promise.withResolvers();
  let failures=0,snapshotReads=0;
  const readMessage='Temporary date failure';
  await page.route('**/api/offline',async route=>{
   snapshotReads++;
+  if(scenario==='unavailable'&&snapshotReads===1){
+   await route.fulfill({status:503,json:{error:'Temporary snapshot failure'}});
+   startupFailed.resolve();
+   return;
+  }
   if(scenario==='lock'){
    // Sign-in navigation can cancel the browser request. Hold the actual server response before locking.
    const snapshot=await route.fetch();
@@ -32,6 +37,9 @@ export async function checkColdDateRecovery(page,{origin,from,to,marker,scenario
   const displayed=await header.getAttribute('data-date');
   if(from)assert.equal(displayed,from);
   assert.notEqual(displayed,to);
+  // Make the retry scenario explicit. A held startup failure could otherwise be
+  // shared with the selected-date recovery or complete just before it starts.
+  if(scenario==='unavailable')await startupFailed.promise;
   await header.locator('[data-md-calendar]').click();
   const picker=page.locator('.mdc-dialog');await picker.locator('[data-mdc-jump]').fill(to.slice(0,7));
   await picker.locator('[data-mdc-date="'+to+'"]').click();
@@ -79,7 +87,7 @@ export async function checkColdDateRecovery(page,{origin,from,to,marker,scenario
    assert.notEqual(await header.evaluateAll(nodes=>nodes[0]?.dataset.date),to);
    assert.equal(await page.locator('[data-diary-record]').getByText(marker,{exact:true}).count(),0);
   }
-  assert.equal(failures,1);assert.equal(snapshotReads,1);
+  assert.equal(failures,1);assert.equal(snapshotReads,scenario==='unavailable'?2:1);
   return {injectedDateFailures:failures,snapshotReads,snapshotStatus,displayRecovered:scenario==='recover'};
  }finally{readGate.resolve();snapshotGate.resolve();}
 }
