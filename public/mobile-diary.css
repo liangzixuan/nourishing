@@ -29,7 +29,7 @@
 
 .md-energy-item>strong{white-space:normal;overflow-wrap:anywhere;}.md-summary-heading button{overflow-wrap:anywhere;}.md-highlights{align-items:start;}.md-record-menu .md-symbol{font-size:21px;}.md-pagination .md-symbol{font-size:19px;}.md-summary-heading .md-symbol{font-size:20px;}
 
-.md-records [data-collection=notes] .md-record-menu{color:#e5b965!important;}.md-records [data-collection=biometrics] .md-record-menu{color:#61ce91!important;}
+.md-records [data-collection=notes] .md-record-menu{color:#f7bb39!important;}.md-note-icon{width:20px;height:20px}.md-records [data-collection=biometrics] .md-record-menu{color:#61ce91!important;}
 
 .md-group summary{flex-wrap:wrap;}.md-group-subtotal{display:flex;flex-wrap:wrap;gap:2px 8px;justify-content:flex-end;margin-left:auto;font-size:.75rem;max-width:60%;min-width:0;}.md-group-subtotal>span{white-space:normal;overflow-wrap:anywhere;}.md-group-subtotal small{font-size:inherit;}
 
@@ -56,4 +56,4 @@
 .md-meal-icon{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#00a3a6;color:var(--paper)}
 .md-meal-icon .md-symbol{font-size:13px;line-height:1}
 
-.md-records tr:has(.md-food-energy-unit) td{padding-block:5px!important;height:54px}
+.md-records tr:is([data-collection=notes],:has(.md-food-energy-unit,.water-row-energy)) td{padding-block:5px!important;height:54px}

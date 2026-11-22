@@ -9,12 +9,12 @@
 .md-fasting-body button{min-height:40px;color:inherit;}
 .md-water+.md-group{margin-top:15px;}
 .md-record-menu .water-row-icon{width:22px;height:22px;filter:invert(62%) sepia(63%) saturate(1200%) hue-rotate(130deg)}
-.md-water summary{min-height:56px;gap:16px;padding:6px 16px}
+.md-water summary{min-height:56px;column-gap:6px;padding:4px 16px 4px 0}
 .md-water summary .water-heading{flex:1;display:grid;gap:2px}
 .md-water summary strong{font-weight:700}
 .md-water summary small{margin:0;font-size:calc(12rem / 18);white-space:nowrap}
 .md-water summary .md-group-chevron{margin:0 2px}
-.md-water .md-group-add{font-size:25px;width:20px;min-height:40px}
+.md-water .md-group-add{font-size:25px;width:46px;min-height:48px}
 .md-water .water-glasses{display:grid;grid-template-columns:repeat(8,minmax(0,39px));gap:clamp(2px,1.7vw,8px);padding:0 16px}
 .md-water .water-glass{position:relative;display:grid;place-items:center;min-width:0;height:auto;aspect-ratio:39/52}
 .water-cup{display:block;width:100%;height:100%}
@@ -141,7 +141,9 @@ body:has(.water-settings) .mm-child-header h1{font-size:calc(21rem / 18)}
 
 .water-menu button{display:flex;align-items:center;gap:14px;min-height:48px}.water-menu img{width:24px;height:24px;filter:invert(55%) sepia(45%) saturate(600%) hue-rotate(130deg)}
 
-.water-menu{background:var(--pale);min-width:220px}.water-group-menu{min-width:220px}
+.water-menu{background:var(--pale);min-width:220px}.water-group-menu{width:236px;padding:0;font-size:calc(14rem / 18)}
+.water-group-menu button{min-height:48px}
+.water-group-menu button[aria-checked=true]{font-weight:400}
 
 .mss-screen{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
 .mss-screen .sheet-header{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;align-items:center;text-align:center}

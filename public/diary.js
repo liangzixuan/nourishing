@@ -360,16 +360,16 @@ function renderDiaryRow(collection, row) {
   const waterAmount=isNote?null:waterRecordAmount(diary,row);
   const heartRate=!isNote&&row.type===heartRateDefinition.type;
   const metricName=heartRate?biometricCatalogLabel({selection:{kind:'catalog',id:heartRateDefinition.id},label:heartRateDefinition.label},uiLanguage()):row.type;
-  const timestamp=isNote?'':diaryTimestamp(time);
+  const timestamp=diaryTimestamp(time);
   const thumb = isNote ? notePhotoThumbnail(row) : '';
   return mobileDiaryRecord({
     ...swipeOptions,
     id: row.id,
     collection,
     name: isNote ? row.text : waterAmount?waterText('water'):metricName,
-    meta: isNote?e(time):waterAmount?[timestamp,e(waterAmount)].filter(Boolean).join(' - '):timestamp,
+    meta: waterAmount?[timestamp,e(waterAmount)].filter(Boolean).join(' - '):timestamp,
     amount: isNote?'':waterAmount?`<span class="water-row-energy">${(0).toLocaleString(uiLanguage(),{minimumFractionDigits:1})}<small>${e(diary.energyUnit??'kcal')}</small></span>`:`<span class="md-biometric-amount">${num(row.value,20)}<small>${e(row.unit)}</small></span>`,
-    icon: waterAmount?'<img class="water-row-icon" src="/record-source/biometric-icons/water.svg" alt="">':heartRate?'<span class="md-heart-rate-icon" aria-hidden="true"></span>':diarySymbol(isNote?'description':'monitor_heart'),
+    icon: waterAmount?'<img class="water-row-icon" src="/record-source/biometric-icons/water.svg" alt="">':heartRate?'<span class="md-heart-rate-icon" aria-hidden="true"></span>':isNote?'<svg class="md-note-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M4 2h10l6 6v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Zm9 2v5h5Zm-7 9v2h11v-2Zm0 4v2h9v-2Z"/></svg>':diarySymbol('monitor_heart'),
     selectBox: diaryTools.selectBox(collection, row),
     action: isNote ? 'edit-note' : 'edit-biometric',
     extra: thumb

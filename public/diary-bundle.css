@@ -54,7 +54,7 @@ html,body{overscroll-behavior:none}
 
 .md-energy-item>strong{white-space:normal;overflow-wrap:anywhere;}.md-summary-heading button{overflow-wrap:anywhere;}.md-highlights{align-items:start;}.md-record-menu .md-symbol{font-size:21px;}.md-pagination .md-symbol{font-size:19px;}.md-summary-heading .md-symbol{font-size:20px;}
 
-.md-records [data-collection=notes] .md-record-menu{color:#e5b965!important;}.md-records [data-collection=biometrics] .md-record-menu{color:#61ce91!important;}
+.md-records [data-collection=notes] .md-record-menu{color:#f7bb39!important;}.md-note-icon{width:20px;height:20px}.md-records [data-collection=biometrics] .md-record-menu{color:#61ce91!important;}
 
 .md-group summary{flex-wrap:wrap;}.md-group-subtotal{display:flex;flex-wrap:wrap;gap:2px 8px;justify-content:flex-end;margin-left:auto;font-size:.75rem;max-width:60%;min-width:0;}.md-group-subtotal>span{white-space:normal;overflow-wrap:anywhere;}.md-group-subtotal small{font-size:inherit;}
 
@@ -81,7 +81,7 @@ html,body{overscroll-behavior:none}
 .md-meal-icon{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#00a3a6;color:var(--paper)}
 .md-meal-icon .md-symbol{font-size:13px;line-height:1}
 
-.md-records tr:has(.md-food-energy-unit) td{padding-block:5px!important;height:54px}
+.md-records tr:is([data-collection=notes],:has(.md-food-energy-unit,.water-row-energy)) td{padding-block:5px!important;height:54px}
 
 /* /mobile-food-entry.css */
 #dialog.mobile-food-picker.mf-detail{width:100%;max-width:700px;height:100dvh;max-height:100dvh;margin:0 auto;border:0;border-radius:0;padding:0;background:var(--bg);color:var(--ink);overflow-y:auto;overscroll-behavior:contain;font-size:1rem;}
@@ -2356,12 +2356,14 @@ html[data-nourishing-native] [data-nourishing-health-connect]{display:inline-fle
 .note-photo-preview.expanded img{height:auto;max-height:70dvh}
 .note-photo-actions{display:flex;gap:12px;justify-content:center}
 .note-photo-preview button:not(.note-photo-open){border:0;background:none;color:var(--green);padding:12px 4px}
-.note-editor .note-time-toggle{width:22px;flex:none;accent-color:var(--orange,#f5793b)}
+#sheet .note-editor input.note-time-toggle{width:24px;height:24px;min-height:0;margin:0;flex:none;accent-color:#ff763e}
 .note-photo-thumbnail{display:block;width:60px;height:60px;object-fit:cover;border-radius:8px;margin-top:8px}
 .note-editor .sheet-message button{margin-left:8px}
 .note-editor .field-row{background:var(--paper);padding:4px 16px;min-height:60px}
 .note-editor label.field-row{min-height:56px}
-.note-editor .field-row input[type=time],.note-editor .field-row select{width:auto;margin-left:auto}
+#sheet .note-editor .field-row input[type=time]{position:relative;width:72px;min-width:0;min-height:44px;margin-left:auto;padding:0 5px;border:solid transparent;border-width:8px 0;border-radius:9px / 15px;background:var(--pale);background-clip:padding-box;font:400 calc(14rem / 18)/1.3 Lato,sans-serif}
+#sheet .note-editor input[type=time]::-webkit-calendar-picker-indicator{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+#sheet .note-editor .field-row select{width:auto;min-height:44px;margin-left:auto;border:0;background-color:transparent;font:400 calc(14rem / 18)/1.3 Lato,sans-serif}
 .note-editor .entry-actions{position:static;justify-content:center;background:transparent;border:0;padding:16px}
 .note-editor .entry-actions .primary{position:relative;width:66%;flex:none;min-height:36px;padding:4px 14px;text-transform:uppercase}
 .note-editor .entry-actions .primary::after{content:"";position:absolute;inset:-6px 0}
@@ -2781,12 +2783,12 @@ body.discover-mobile dialog.mee-activity-editor{
 .md-fasting-body button{min-height:40px;color:inherit;}
 .md-water+.md-group{margin-top:15px;}
 .md-record-menu .water-row-icon{width:22px;height:22px;filter:invert(62%) sepia(63%) saturate(1200%) hue-rotate(130deg)}
-.md-water summary{min-height:56px;gap:16px;padding:6px 16px}
+.md-water summary{min-height:56px;column-gap:6px;padding:4px 16px 4px 0}
 .md-water summary .water-heading{flex:1;display:grid;gap:2px}
 .md-water summary strong{font-weight:700}
 .md-water summary small{margin:0;font-size:calc(12rem / 18);white-space:nowrap}
 .md-water summary .md-group-chevron{margin:0 2px}
-.md-water .md-group-add{font-size:25px;width:20px;min-height:40px}
+.md-water .md-group-add{font-size:25px;width:46px;min-height:48px}
 .md-water .water-glasses{display:grid;grid-template-columns:repeat(8,minmax(0,39px));gap:clamp(2px,1.7vw,8px);padding:0 16px}
 .md-water .water-glass{position:relative;display:grid;place-items:center;min-width:0;height:auto;aspect-ratio:39/52}
 .water-cup{display:block;width:100%;height:100%}
@@ -2913,7 +2915,9 @@ body:has(.water-settings) .mm-child-header h1{font-size:calc(21rem / 18)}
 
 .water-menu button{display:flex;align-items:center;gap:14px;min-height:48px}.water-menu img{width:24px;height:24px;filter:invert(55%) sepia(45%) saturate(600%) hue-rotate(130deg)}
 
-.water-menu{background:var(--pale);min-width:220px}.water-group-menu{min-width:220px}
+.water-menu{background:var(--pale);min-width:220px}.water-group-menu{width:236px;padding:0;font-size:calc(14rem / 18)}
+.water-group-menu button{min-height:48px}
+.water-group-menu button[aria-checked=true]{font-weight:400}
 
 .mss-screen{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
 .mss-screen .sheet-header{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;align-items:center;text-align:center}

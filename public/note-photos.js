@@ -21,6 +21,9 @@ export async function mountNoteEditor({record,date,initialGroup,show,close,heade
   if(!loading.isConnected)return;if(detail)record=detail.record;
  }catch(error){if(loading.isConnected)loading.textContent=error.message;return;}
  const editable=!record||detail.editable,limit=Math.max(1024,record?.text?.length??0),group=record?record.group??'':options.groups.includes(initialGroup)?initialGroup:'',time=record?.time??new Date().toTimeString().slice(0,5);
+ // Ungrouped notes display in Uncategorized. Keep the stored value when editing one.
+ const groups=options.groups.includes('Uncategorized')?options.groups:['',...options.groups];
+ const noteGroupValue=name=>name==='Uncategorized'&&!group?'':name;
  let mode='keep',photo=null,pending=null,busy=false,serial=0,lastTime=time;
  const camera='<svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="4"/></svg>';
  const countLabel=used=>coreText('note.charactersUsed',{used,limit});
@@ -47,8 +50,10 @@ export async function mountNoteEditor({record,date,initialGroup,show,close,heade
     <input type="checkbox" class="note-time-toggle" aria-label="${e(coreText('note.includeTime'))}" ${time?'checked':''}>
    </div>
    <label class="field-row"><span>${e(t('notes.groupLabel'))}</span><select name="group">
-    <option value="">${e(t('notes.uncategorized'))}</option>
-    ${options.groups.map(value=>`<option value="${e(value)}" ${value===group?'selected':''}>${e(value)}</option>`).join('')}
+    ${groups.map(name=>{
+     const value=noteGroupValue(name);
+     return `<option value="${e(value)}" ${value===group?'selected':''}>${e(name||t('notes.uncategorized'))}</option>`;
+    }).join('')}
    </select></label>
   </fieldset>
   ${editable?'':`<p class="record-disabled">${e(detail.reason)}</p>`}

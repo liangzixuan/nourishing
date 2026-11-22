@@ -33,6 +33,8 @@ test('offline note photo selection survives cancel, restart, queued edits, accou
   const open=()=>page.locator('#open').click(),text=page.getByRole('textbox',{name:'Note',exact:true}),save=page.locator('.note-editor [type=submit]');
   const choose=async()=>{await page.locator('[data-note-gallery]').setInputFiles({name:'note.png',mimeType:'image/png',buffer:bytes});await page.waitForFunction(()=>document.querySelector('.note-photo-preview img')?.naturalWidth===20);};
   await page.evaluate(async()=>{(await import('/app-language.js')).applyAppLanguage('fr');});await open();
+  const group=page.locator('.note-editor select[name=group]');await group.waitFor();
+  assert.deepEqual(await group.locator('option').allTextContents(),fixture.state('fixture').settings.groups);
   await page.getByRole('heading',{name:'Ajouter une note'}).waitFor();
   const frenchText=page.locator('.note-editor textarea');await frenchText.fill('abc');
   assert.equal(await page.locator('[data-note-count]').getAttribute('aria-label'),'3 caractères utilisés sur 1024');

@@ -12,12 +12,14 @@
 .note-photo-preview.expanded img{height:auto;max-height:70dvh}
 .note-photo-actions{display:flex;gap:12px;justify-content:center}
 .note-photo-preview button:not(.note-photo-open){border:0;background:none;color:var(--green);padding:12px 4px}
-.note-editor .note-time-toggle{width:22px;flex:none;accent-color:var(--orange,#f5793b)}
+#sheet .note-editor input.note-time-toggle{width:24px;height:24px;min-height:0;margin:0;flex:none;accent-color:#ff763e}
 .note-photo-thumbnail{display:block;width:60px;height:60px;object-fit:cover;border-radius:8px;margin-top:8px}
 .note-editor .sheet-message button{margin-left:8px}
 .note-editor .field-row{background:var(--paper);padding:4px 16px;min-height:60px}
 .note-editor label.field-row{min-height:56px}
-.note-editor .field-row input[type=time],.note-editor .field-row select{width:auto;margin-left:auto}
+#sheet .note-editor .field-row input[type=time]{position:relative;width:72px;min-width:0;min-height:44px;margin-left:auto;padding:0 5px;border:solid transparent;border-width:8px 0;border-radius:9px / 15px;background:var(--pale);background-clip:padding-box;font:400 calc(14rem / 18)/1.3 Lato,sans-serif}
+#sheet .note-editor input[type=time]::-webkit-calendar-picker-indicator{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+#sheet .note-editor .field-row select{width:auto;min-height:44px;margin-left:auto;border:0;background-color:transparent;font:400 calc(14rem / 18)/1.3 Lato,sans-serif}
 .note-editor .entry-actions{position:static;justify-content:center;background:transparent;border:0;padding:16px}
 .note-editor .entry-actions .primary{position:relative;width:66%;flex:none;min-height:36px;padding:4px 14px;text-transform:uppercase}
 .note-editor .entry-actions .primary::after{content:"";position:absolute;inset:-6px 0}
