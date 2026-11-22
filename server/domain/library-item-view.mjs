@@ -1,7 +1,7 @@
 import {foodCategories,foodTags} from './food-taxonomy.mjs';
 import {resolveRecipeQuantity} from './recipe-quantity.mjs';
 import {catalog,entryFacts} from './nutrition.mjs';
-import {recipeWeight} from './recipe-weight.mjs';
+import {recipeWeight,ingredientWeightGrams} from './recipe-weight.mjs';
 import {availableQuantityUnits} from './quantity-units.mjs';
 import {recipeForEntry} from './recipe-entry.mjs';
 import {mealForEntry} from './meal-entry.mjs';
@@ -17,12 +17,21 @@ export function libraryItem(state,kind,resource,entry){
  return {kind,resource,options,ingredients,nutrients:catalog.map(({id,name,unit,category})=>({id,name,unit,category})),energyUnit:state.settings.energyUnit??'kcal',facts:entryFacts(state,{[kind+'Id']:resource.id,amount:1,...(entry??{})})};
 }
 export function libraryIngredientRows(state,items){
- return items.map(row=>{const childKind=row.recipeId?'recipe':'food',child=state[childKind+'s'].find(r=>r.id===row[childKind+'Id']);return {...row,name:child?.name??'Missing ingredient',source:child?.source??null,options:child?libraryQuantityOptions(state,childKind,child):null};});
-
+ return items.map(row=>{
+  const key=row.recipeId?'recipeId':'foodId',collection=row.recipeId?state.recipes:state.foods;
+  return libraryIngredientRow(state,row,collection.find(item=>item.id===row[key]));
+ });
 }
 
-export function libraryQuantityOptions(state,kind,item){
- const grams=kind==='recipe'?recipeWeight(item,state).grams:kind==='food'?item.grams:null;
+export function libraryIngredientRow(state,row,child){
+ if(!child)return {...row,name:'Missing ingredient',source:null,options:null,grams:null};
+ const kind=row.recipeId?'recipe':'food',weight=kind==='recipe'?recipeWeight(child,state).grams:child.grams;
+ const grams=ingredientWeightGrams(row,child,weight);
+ const options=libraryQuantityOptions(state,kind,child,weight);
+ return {...row,name:child.name,source:child.source??null,options,grams};
+}
+
+export function libraryQuantityOptions(state,kind,item,grams=kind==='recipe'?recipeWeight(item,state).grams:kind==='food'?item.grams:null){
  const volume=kind==='recipe'?item.batchVolumeMl:kind==='food'?item.milliliters:null;
  return [['servings',kind==='meal'?'meal':item.serving??'serving'],...availableQuantityUnits({grams,milliliters:volume}).map(unit=>[unit.id,unit.label]),...(kind==='recipe'?[['batch','Full recipe']]:[]),...(item.portions??[]).map(p=>['portion:'+p.id,p.label])];
 }

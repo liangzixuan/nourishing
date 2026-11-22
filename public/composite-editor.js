@@ -1,18 +1,18 @@
 import {compositeHeader,compositeHelp,compositeNameField} from './composite-source/mobile-composite-header.js';
 import {previewLocalLibrary} from './library-local.js';
 import {uiLanguage,t} from './app-language.js';
-import {fc,foodActionLabel,foodQuantityUnit} from './food-cloud-messages.js';
+import {fc,foodActionLabel} from './food-cloud-messages.js';
 import {LibraryEditorSave} from './library-editor-save.js';
 
 import {escape as e} from './html.js';
 import {FoodNutritionView} from './food-entry-source/food-nutrition-view.js';
 import {MobileLibrarySheet} from './foods-source/mobile-library.js';
-import {openCompositeIngredient} from './composite-items.js';
-const identity=row=>(row.recipeId?'recipe:':'food:')+(row.recipeId??row.foodId);
+import {openCompositeIngredient,ingredientRow} from './composite-items.js';
 
 /** Source meal stages, with transient edits and the existing canonical meal command. */
 export function mountMealEditor({saved,data,draft,selection,show,close,content,date,onSaved,onAction,openEntry}){
- const resource=saved?.resource,values=structuredClone(draft??{name:resource?.name??'',items:resource?.items??[]}),names=new Map((saved?.ingredients??[]).map(row=>[identity(row),{name:row.name,source:row.options?(row.source?.name??(row.recipeId?t("recipeEditor.recipe"):t("mobileSearch.food"))):'',options:row.options}]));
+ const resource=saved?.resource,values=structuredClone(draft??{name:resource?.name??'',items:resource?.items??[]});
+ const views=new WeakMap(values.items.map((row,i)=>[row,(saved?.ingredients)?.[i]]));
  show('<section class="meal-editor"></section>');const root=content.querySelector('.meal-editor'),sheet=content.closest('dialog'),abort=new AbortController();sheet.classList.add('mobile-composite-editor');
  let stage=0,ordering=false,disposed=false,busy=false,saveAdd=false,ready=false,generation=0,previewRequest,footerSize,child,menu,nutrition,error='';
  let help;
@@ -22,7 +22,7 @@ export function mountMealEditor({saved,data,draft,selection,show,close,content,d
  function render(){
   if(!alive())return;saver.clearReview();cleanupPreview();footerSize?.disconnect();ready=false;
   const libraryReview=stage&&!selection;
-  const rows=values.items.map((row,index)=>{const label=names.get(identity(row)),unit=row.unit==='portion'?label?.options?.find(([id])=>id==='portion:'+row.portionId)?.[1]??foodQuantityUnit('portion'):foodQuantityUnit(row.unit??'servings');return `<div class="composite-item-row"><button type="button" data-meal-item="${index}" data-mci-edit><span class="mci-item-name">${e(label?.name??fc("mealItem"))}</span><span class="mci-item-quantity">${e(row.quantity??row.amount)} ${e(unit)}</span><span class="mci-item-source">${e(label?.source??'')}</span></button><button type="button" data-meal-remove="${index}" data-composite-remove aria-label="${e(fc('removeItem',{number:index+1}))}">×</button>${ordering?`<div class="composite-reorder"><button type="button" data-meal-move="${index}" data-direction="-1" aria-label="${e(fc('moveItemUp',{number:index+1}))}" ${index===0?'disabled':''}>↑</button><button type="button" data-meal-move="${index}" data-direction="1" aria-label="${e(fc('moveItemDown',{number:index+1}))}" ${index===values.items.length-1?'disabled':''}>↓</button></div>`:''}</div>`;}).join('');
+  const rows=values.items.map((row,i)=>ingredientRow('meal',row,views.get(row),i,values.items.length,ordering)).join('');
   root.innerHTML=`${compositeHeader('meal',!!resource)}<form data-form="meal"><p class="meal-status" role="alert">${e(error)}</p><section class="mce-stage" data-mce-stage="ingredients" ${stage?'hidden':''}>${compositeNameField('meal',values.name)}<div class="mci-list"><h3>${e(t("mobileSuggest.items"))}</h3><div class="composite-items-editor"><div class="composite-items-heading"><button type="button" data-composite-add>${e(fc("addMealItem"))}</button></div>${rows}${values.items.length>1&&!ordering?`<button type="button" class="mce-reorder" data-meal-reorder>${e(fc('reorderItems'))}</button>`:''}</div></div></section><section class="mce-stage mce-review mfe-review" data-mce-stage="review" ${stage?'':'hidden'}><h2>${e(values.name)}</h2><div class="mf-preview" data-meal-preview></div></section><footer class="mce-footer" ${stage?'data-review':'data-first-step'}><div class="mce-navigation"><button type="button" data-meal-back data-mce-back ${stage?'':'hidden'}>${e(t("mobileFoodEditor.back"))}</button><button type="submit" data-meal-next data-mce-next>${ordering?t("mobileExpenditure.done"):stage?fc("saveMeal"):t("mobileFoodEditor.next")}</button></div><button type="submit" data-mce-add ${libraryReview?'':'hidden'}>${e(t("mobileCompositeEditor.saveAdd"))}</button><div class="mce-progress" ${libraryReview&&!resource?'':'hidden'}><span class="${stage?'':'current'}"></span><span class="${stage?'current':''}"></span></div></footer></form>`;
   root.querySelector('input[name=name]').addEventListener('input',event=>{values.name=event.target.value;saver.clearReview();});
   footerSize=new ResizeObserver(()=>{const form=root.querySelector('form');form.style.setProperty('--mce-footer-height',root.querySelector('.mce-footer').getBoundingClientRect().height+'px');form.style.setProperty('--mce-header-height',root.querySelector('.sheet-header').getBoundingClientRect().height+'px');});footerSize.observe(root.querySelector('.mce-footer'));footerSize.observe(root.querySelector('.sheet-header'));
@@ -47,7 +47,7 @@ export function mountMealEditor({saved,data,draft,selection,show,close,content,d
   finally{busy=false;if(alive())controls();}
  }
 
- function editItem(index){child?.close();child=openCompositeIngredient({selection,date:date(),items:values.items,index,nutrients:data.nutrients,energyUnit:data.energyUnit,onApply:(row,label)=>{if(index===undefined)values.items.push(row);else values.items[index]=row;names.set(identity(row),label);error='';render();},onClose:()=>child=null});}
+ function editItem(index){child?.close();child=openCompositeIngredient({selection,date:date(),items:values.items,index,nutrients:data.nutrients,energyUnit:data.energyUnit,onApply:(row,label)=>{if(index===undefined)values.items.push(row);else values.items[index]=row;views.set(row,label);error='';render();},onClose:()=>child=null});}
  function back(){if(help){help.close();return;}if(child){child.back();return;}if(menu){menu.close();return;}if(busy)return;if(stage&&!saver.locked){stage=0;render();}else{dispose();close();}}
  function dispose(){if(disposed)return;disposed=true;help?.close(false);saver.dispose();cleanupPreview();footerSize?.disconnect();abort.abort();child?.close();menu?.close(false);observer.disconnect();sheet.classList.remove('mobile-composite-editor');}
  root.addEventListener('submit',event=>{event.preventDefault();if(busy)return;if(ordering){ordering=false;render();return;}if(stage)void save(event.submitter?.hasAttribute('data-mce-add'));else{if(!values.items.length){error=fc("addMealItemRequired");render();return;}error='';stage=1;render();}},{signal:abort.signal});

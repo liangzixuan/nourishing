@@ -10,6 +10,17 @@ export function parseCookedWeightGrams(value){
   return value;
 }
 
+export function ingredientWeightGrams(item,resource,weight){
+  const recipe=item.recipeId!==undefined;
+  if(item.quantity!==undefined){
+    const quantity=recipe?resolveRecipeMeasurement(resource,item,weight):resolveFoodQuantity(resource,item);
+    return quantity.quantity===0?0:quantity.grams;
+  }
+  parseServingAmount(item.amount);
+  if(recipe&&(!known(resource.servings)||resource.servings<=0))invalid('Recipe yield must be a positive serving count.');
+  return item.amount===0?0:known(weight)&&weight>0?item.amount*weight/(recipe?resource.servings:1):null;
+}
+
 /** Evaluate child masses before their parents. A partial ingredient sum is
  * coverage only; a measured cooked mass remains a separate conversion basis. */
 export function recipeWeight(recipe,{foods=[],recipes=[]}={}){
@@ -23,16 +34,8 @@ export function recipeWeight(recipe,{foods=[],recipes=[]}={}){
     for(const item of items){
       const child=item.recipeId!==undefined?byRecipe.get(item.recipeId):null,food=byFood.get(item.foodId);
       if(!child&&!food)continue;
-      let grams;
-      if(item.quantity!==undefined){
-        const quantity=child?resolveRecipeMeasurement(child,item,facts.get(child.id)?.grams??null):resolveFoodQuantity(food,item);
-        grams=quantity.quantity===0?0:quantity.grams;
-      }else{
-        parseServingAmount(item.amount);
-        if(child&&(!known(child.servings)||child.servings<=0))invalid('Recipe yield must be a positive serving count.');
-        const batch=child?facts.get(child.id)?.grams:food.grams;
-        grams=item.amount===0?0:known(batch)&&batch>0?item.amount*batch/(child?child.servings:1):null;
-      }
+      const weight=child?facts.get(child.id)?.grams??null:food.grams;
+      const grams=ingredientWeightGrams(item,child??food,weight);
       if(grams!==null){if(!known(grams))invalid('An ingredient weight exceeds the supported range.');sum+=grams;measured++;}
     }
     if(!Number.isFinite(sum))invalid('The ingredient weight total exceeds the supported range.');

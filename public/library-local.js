@@ -2,7 +2,7 @@ import {ensureDeviceSnapshot} from './device-sync.js';
 import {offlineEffectiveState} from './offline-model.js';
 import {request,queueCommand} from './diary-api.js';
 import {remapWriteReferences} from './write-identities.js';
-import {previewLibraryEditor,prepareLibraryDraft,libraryDraftRows,inspectLibraryUses,checkLibraryDeletion} from './local-diary-projection.js';
+import {previewLibraryEditor,libraryIngredientRows,prepareLibraryDraft,libraryDraftRows,inspectLibraryUses,checkLibraryDeletion} from './local-diary-projection.js';
 
 async function context(kind,input,selection){
  const copy=await ensureDeviceSnapshot();
@@ -23,10 +23,20 @@ async function context(kind,input,selection){
  }
  return {state,draft,foods,ticket:copy.ticket};
 }
-export async function previewLocalLibrary(input,signal,selection){
+async function previewContext(input,signal,selection){
  const local=await context(input.kind,input.draft,selection);
  if(signal?.aborted)throw new DOMException('Cancelled.','AbortError');
+ return local;
+}
+export async function previewLocalLibrary(input,signal,selection){
+ const local=await previewContext(input,signal,selection);
  return previewLibraryEditor(local.state,{...input,draft:local.draft});
+}
+export async function previewLocalIngredient(row,date,signal,selection){
+ const input={kind:'meal',date,draft:{name:'Item preview',items:[row]}};
+ const {state,draft}=await previewContext(input,signal,selection);
+ const result=previewLibraryEditor(state,{...input,draft});
+ return {...result,row:libraryIngredientRows(state,draft.items)[0]};
 }
 export async function localLibraryEditReview(kind,draft){
  const local=await context(kind,draft);prepareLibraryDraft(local.state,kind,local.draft);

@@ -1,11 +1,24 @@
-import {previewLocalLibrary} from './library-local.js';
+import {previewLocalIngredient} from './library-local.js';
 import {uiLanguage,t} from './app-language.js';
-import {fc} from './food-cloud-messages.js';
+import {fc,foodQuantityUnit} from './food-cloud-messages.js';
 import {localLibraryItem} from './local-engine.js';
 import {request} from './diary-api.js';
 import {mountFoodPicker} from './food-picker.js';
 import {MobileIngredientDetail} from './suggestion-source/mobile-ingredient-detail.js';
 import {escape as e} from './html.js';
+
+export function ingredientRow(kind,row,view,index,count,ordering){
+ const recipe=kind==='recipe',number=index+1;
+ const name=view?.name??fc(recipe?'ingredient':'mealItem');
+ const unit=row.unit==='portion'?view?.options?.find(([id])=>id==='portion:'+row.portionId)?.[1]??foodQuantityUnit('portion'):foodQuantityUnit(row.unit??'servings');
+ const grams=Number.isFinite(view?.grams)?' - '+new Intl.NumberFormat(uiLanguage(),{minimumFractionDigits:1,maximumFractionDigits:1}).format(view.grams)+'g':'';
+ const source=view?.options?(view.source?.name??(row.recipeId?t('recipeEditor.recipe'):t('mobileSearch.food'))):'';
+ const move=(direction,key,symbol,disabled)=>`<button type="button" data-${kind}-move="${index}" data-direction="${direction}" aria-label="${e(fc(key,{number}))}" ${disabled?'disabled':''}>${symbol}</button>`;
+ return `<div class="composite-item-row">
+  <button type="button" data-${kind}-item="${index}" data-mci-edit><span class="mci-item-name">${e(name)}</span><span class="mci-item-quantity">${e(row.quantity??row.amount)} ${e(unit)}${e(grams)}</span><span class="mci-item-source">${e(source)}</span></button>
+  <button type="button" data-${kind}-remove="${index}" data-composite-remove aria-label="${e(fc(recipe?'removeIngredient':'removeItem',{number}))}">×</button>
+  ${ordering?`<div class="composite-reorder">${move(-1,recipe?'moveIngredientUp':'moveItemUp','↑',index===0)}${move(1,recipe?'moveIngredientDown':'moveItemDown','↓',index===count-1)}</div>`:''}</div>`;
+}
 
 /** One transient search/detail layer. The parent owns the ingredient list. */
 export function openCompositeIngredient({date,items,index,nutrients,energyUnit,onApply,onClose,kind:parentKind='meal',excludeRecipe=null,selection}){
@@ -24,8 +37,8 @@ export function openCompositeIngredient({date,items,index,nutrients,energyUnit,o
    const key=kind+'Id',resource={...item.resource,quantityOptions:item.options},previous=index===undefined?{}:items[index];
    detail=new MobileIngredientDetail({root:dialog,resource,kind:kind+'s',source:previous,language:uiLanguage(),unit:energyUnit,catalog:nutrients,sourceLabel:resource.source?.name??(kind==='recipe'?t("recipeEditor.recipe"):t("mobileSearch.food")),applyLabel:index===undefined?(parentKind==='recipe'?t("mobileCompositeEditor.addToRecipe"):t("mobileSuggest.addToMeal")):t("mobileSuggest.applyQuantity"),
     normalize:quantity=>({[key]:id,...quantity}),
-    preview:(row,signal)=>previewLocalLibrary({kind:'meal',date,draft:{name:'Item preview',items:[row]}},signal,selection),
-    onApply:row=>{onApply(row,{name:resource.name,source:resource.source?.name??(kind==='recipe'?t("recipeEditor.recipe"):t("mobileSearch.food")),options:item.options});close();}});
+    preview:(row,signal)=>previewLocalIngredient(row,date,signal,selection),
+    onApply:(row,result)=>{onApply(row,result.row);close();}});
   }catch(error){if(alive()&&generation===serial)dialog.innerHTML=`<header class="mf-header"><button type="button" data-mci-back aria-label="${e(t("mobileFoodEditor.back"))}">‹</button><h2>${e(fc("mealItemTitle"))}</h2></header><p role="alert">`+e(error.message)+'</p>';}
  }
  dialog.addEventListener('click',event=>{if(event.target.closest('[data-mci-back]'))back();if(event.target===dialog){const b=dialog.getBoundingClientRect();if(event.clientX<b.left||event.clientX>b.right||event.clientY<b.top||event.clientY>b.bottom)back();}});

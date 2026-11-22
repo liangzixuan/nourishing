@@ -5,7 +5,7 @@ import {isIP} from 'node:net';
 import {createGunzip,createInflate,createBrotliDecompress} from 'node:zlib';
 import ipaddr from 'ipaddr.js';
 import {parseRecipe,importRecipe as parseRecipeInput} from './domain/importers.mjs';
-import {libraryQuantityOptions} from './library-view.mjs';
+import {libraryIngredientRow} from './domain/library-item-view.mjs';
 import {parseIngredientLine,convertIngredient} from './domain/recipe-ingredients.mjs';
 import {matchIngredient,assessIngredientMatch} from './domain/recipe-matching.mjs';
 import {interpretRecipeYield} from './domain/recipe-yield.mjs';
@@ -116,6 +116,6 @@ export function prepareRecipeImportSave(state,catalog,draft){
 export function prepareRecipeImportDraft(state,catalog,draft){
  const {rows,...recipe}=prepareRecipeImportSave(state,catalog,draft);
  recipe.ingredients=rows.map(row=>({foodId:row.ref.id,...row.quantity}));
- const ingredients=rows.map((row,index)=>{const food=row.ref.kind==='catalog'?catalog.get(row.ref.id):state.foods.find(item=>item.id===row.ref.id);return {...recipe.ingredients[index],name:food.name,source:food.source??null,options:libraryQuantityOptions(state,'food',food)};});
+ const ingredients=rows.map((row,index)=>{const food=row.ref.kind==='catalog'?catalog.get(row.ref.id):state.foods.find(item=>item.id===row.ref.id);return libraryIngredientRow(state,recipe.ingredients[index],food);});
  return {revision:digest(state),recipe,ingredients};
 }

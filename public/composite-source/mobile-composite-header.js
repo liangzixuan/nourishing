@@ -11,7 +11,7 @@ export function compositeHeader(kind,saved){
 export function compositeNameField(kind,value){
  const label=fc(kind==='recipe'?'recipeName':'mealName');
  const prompt=fc('requiredNamePrompt',{name:label});
- return `<label class="composite-name"><input name="name" aria-label="${e(label)}" placeholder="${e(prompt)}" value="${e(value??'')}" required maxlength="300"><span aria-hidden="true">${e(label)}</span></label>`;
+ return `<label class="composite-name"><input name="name" aria-label="${e(label)}" placeholder="${e(prompt)}" value="${e(value??'')}" required maxlength="300"><span aria-hidden="true">${e(kind==='recipe'?prompt:label)}</span></label>`;
 }
 
 export function compositeHelp(topic,onClose){
