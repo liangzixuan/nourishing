@@ -1,5 +1,4 @@
-// The product contact is shown before handing the draft to an email client.
-export const foodCorrectionRecipient='ericziliang@gmail.com';
+import {supportEmail} from './support-contact.js';
 
 const crlf=text=>text.replace(/\r\n|\r|\n/g,'\r\n');
 const base64=bytes=>btoa(String.fromCharCode(...bytes));
@@ -14,7 +13,7 @@ export function photoType(file){
 }
 
 export function correctionMailto(subject,body){
- return 'mailto:'+foodCorrectionRecipient+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(crlf(body));
+ return 'mailto:'+supportEmail+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(crlf(body));
 }
 
 async function appendBase64(parts,blob,signal){
@@ -33,7 +32,7 @@ export async function correctionDraft({subject,body,photos,signal}){
  // The composing mail client supplies the sender. X-Unsent is a client hint for opening an editable draft.
  const parts=[[
   'X-Unsent: 1','Date: '+new Date().toUTCString().replace(/GMT$/,'+0000'),
-  'To: '+foodCorrectionRecipient,'Subject: '+subjectHeader,'MIME-Version: 1.0',
+  'To: '+supportEmail,'Subject: '+subjectHeader,'MIME-Version: 1.0',
   'Content-Type: multipart/mixed; boundary="'+boundary+'"','','--'+boundary,
   'Content-Type: text/plain; charset=UTF-8','Content-Transfer-Encoding: base64','',''
  ].join('\r\n')];

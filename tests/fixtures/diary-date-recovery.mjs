@@ -32,7 +32,11 @@ export async function checkColdDateRecovery(page,{origin,from,to,marker,scenario
   assert.equal(await header.getAttribute('data-date'),displayed);
   assert.equal(await page.locator('[data-diary-record]').getByText(marker,{exact:true}).count(),0);
   if(scenario==='newer')await chooseDiaryDate(page,displayed);
-  if(scenario==='leave')await page.locator('#foods-tab').click();
+  if(scenario==='leave'){
+   await page.locator('#foods-tab').click();
+   // Finish navigating with the snapshot still held, so a late Diary read cannot mask a failed Foods load.
+   await page.locator('[data-tab=foods]').waitFor();
+  }
   if(scenario==='lock')await page.evaluate(async()=>{await(await import('/offline-store.js')).lockOfflineAccount();});
   if(scenario==='switch')await page.evaluate(async()=>{await(await import('/device-cache.js')).initializeDeviceCache('different-account');});
   const response=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/offline');
@@ -45,12 +49,14 @@ export async function checkColdDateRecovery(page,{origin,from,to,marker,scenario
    assert.equal(await page.locator('#notice').innerText(),'');
   }else if(scenario==='unavailable'){
    await page.getByText(readMessage,{exact:true}).waitFor();
-  }else if(scenario==='leave'){
-   await page.locator('[data-tab=foods]').waitFor();assert.equal(await header.isVisible(),false);
   }
   if(['leave','newer'].includes(scenario)){
    await page.waitForFunction(async()=>!!(await(await import('/offline-store.js')).readWriteCopy())?.snapshot);
    await page.evaluate(()=>new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done))));
+  }
+  if(scenario==='leave'){
+   assert.equal(await page.locator('[data-tab=foods]').isVisible(),true);
+   assert.equal(await header.isVisible(),false);
   }
   if(scenario==='lock')await page.waitForURL('**/login');
   else if(!['leave','newer'].includes(scenario))await page.locator('#page[aria-busy=false]').waitFor({state:'attached'});

@@ -15,6 +15,7 @@ import {createDataRepository} from '../server/data-repository.mjs';
 import {createWorkspaceStore} from '../server/workspace-store.mjs';
 import {diaryToolsReview} from '../server/diary-tools.mjs';
 import {diaryCalendarView} from '../server/diary-calendar-view.mjs';
+import {libraryView} from '../server/library-view.mjs';
 import {reportView} from '../server/nutrition-views.mjs';
 import {createWebHandler} from '../server/http.mjs';
 
@@ -29,6 +30,7 @@ test('Diary day actions use the chosen calendar date and preserve other days',as
  seed.settings.completedDays=[previous];
  const fixture=diaryStoreFixture(seed),store=createWorkspaceStore(fixture.db,'fixture'),repo=createDataRepository(fixture.db,'fixture');
  const service={current:async()=>({id:'fixture',email:'fixture@example.com'}),offlineSnapshot:()=>store.offlineSnapshot(),
+  library:async()=>libraryView(fixture.state()),
   readDiary:(_,date)=>repo.diary(date,clock),diaryCalendar:(_,input)=>diaryCalendarView(fixture.state(),input,clock),
   nutritionReport:(_,input)=>reportView(fixture.state(),input,clock),diaryToolsReview:(_,input)=>diaryToolsReview(fixture.state(),input),
   workspaceCommand:(_,input)=>store.command(input,async()=>null,clock),offlineCommand:(_,input)=>store.offlineCommand(input,clock)};

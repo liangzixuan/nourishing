@@ -1,7 +1,8 @@
+import {supportEmail} from './support-contact.js';
 import {escape as e} from './html.js';
 import {fc} from './food-cloud-messages.js';
 import {t} from './app-language.js';
-import {correctionDraft,correctionMailto,foodCorrectionRecipient,photoType} from './food-correction-email.js';
+import {correctionDraft,correctionMailto,photoType} from './food-correction-email.js';
 
 export function openFoodCorrection({host,anchor,signal,foodName,source,foodId,serving}){
  const dialog=document.createElement('dialog'),lifetime=new AbortController(),subject=fc('correctionSubject');
@@ -11,7 +12,7 @@ export function openFoodCorrection({host,anchor,signal,foodName,source,foodId,se
  const dl=context.map(([label,value])=>`<dt>${e(label)}</dt><dd>${e(value)}</dd>`).join('');
  dialog.className='mf-issue';dialog.setAttribute('aria-labelledby','mf-issue-title');
  dialog.innerHTML=`<header><h2 id="mf-issue-title">${e(fc('issue'))}</h2><button type="button" data-cancel aria-label="${e(t('common.close'))}">×</button></header>
-  <form><dl><dt>${e(fc('issueTo'))}</dt><dd>${e(foodCorrectionRecipient)}</dd>${dl}</dl>
+  <form><dl><dt>${e(fc('issueTo'))}</dt><dd>${e(supportEmail)}</dd>${dl}</dl>
   <label>${e(fc('issueDescribe'))}<textarea name="description" rows="4" required></textarea></label>
   ${photos}<p class="mf-issue-hint" hidden>${e(fc('issueAttachments'))}</p><p role="status"></p>
   <div class="mf-issue-actions"><a data-compose>${e(fc('issueCompose'))}</a><button type="submit">${e(fc('issueDownload'))}</button></div></form>`;

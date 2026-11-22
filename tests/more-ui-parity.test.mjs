@@ -53,6 +53,7 @@ test('source More menu preserves search and back focus, cloud destinations and d
   await page.getByRole('button',{name:'Edit name',exact:true}).click();await page.getByRole('dialog').waitFor();await page.evaluate(()=>window.more.back());assert.equal(await page.getByRole('dialog').count(),0);assert.equal(await page.getByRole('heading',{name:'Account',exact:true}).count(),1);
   await page.getByRole('button',{name:'Back',exact:true}).click();assert.equal(await search.evaluate(node=>node===document.activeElement),false);
   await page.locator('[data-more-open=support]').click();assert.equal(await page.getByRole('link',{name:/Report a bug/}).getAttribute('href'),'https://github.com/liangzixuan/nourishing/issues');
+  assert.equal(await page.getByRole('link',{name:'Contact Us',exact:true}).getAttribute('href',{timeout:1500}),'mailto:ericziliang@gmail.com');
   await page.locator('[data-more-open=manual]').click();await page.locator('.mm-manual-topic summary').first().click();await page.getByText(/Swipe left to reveal Delete/).waitFor();
   await page.goBack();await page.getByRole('heading',{name:'Support',exact:true}).waitFor();await page.locator('[data-more-back]').click();
   await page.locator('[data-more-open=about]').click();await page.locator('[data-more-open=licenses]').click();await page.getByRole('button',{name:'Chart.js',exact:true}).click();await page.locator('.mm-license').filter({hasText:'Permission is hereby granted'}).waitFor();await page.locator('[data-more-back]').click();

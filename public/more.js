@@ -1,3 +1,4 @@
+import {supportEmail} from './support-contact.js';
 import {licenseNotices} from './more-source/license-notices.js';
 import {appVersion} from './app-version.js';
 import {mountAccount} from './account-screen.js';
@@ -245,7 +246,7 @@ export function mountMore({
       return section(
         id,
         t('mobileMore.support'),
-        group(row('manual', t('mobileMore.manual')) + link(coreText('more.reportBug'), 'https://github.com/liangzixuan/nourishing/issues', true)) +
+        group(row('manual', t('mobileMore.manual')) + link(coreText('more.contactUs'), 'mailto:'+supportEmail) + link(coreText('more.reportBug'), 'https://github.com/liangzixuan/nourishing/issues', true)) +
           group(row('backup', coreText('more.backup')) + row('reminders', t('nav.reminders'))),
       );
     }
