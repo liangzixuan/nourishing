@@ -51,7 +51,7 @@ export function waterWidgetMarkup(diary,{expanded=false,ownerId}={}){
  return `<details class="md-water" ${expanded?'open':''}>${heading}${waterFill('water-level')}<div class="water-glasses">${glasses}</div>${more}${hint}${targetBar}</details>`;
 }
 export function openWaterMenu(anchor,onChoose,{completed=false}={}){
- return new AnchoredMenu({anchor,origin:anchor,label:m('settings'),className:'water-menu',items:[{id:'water',label:m('addGlass'),icon:'/record-source/biometric-icons/cup-water.svg',disabled:completed},{id:'water-custom',label:m('custom'),icon:'/shell-source/navigation/plus.svg',disabled:completed},{id:'water-settings',label:m('settings'),icon:'/record-source/biometric-icons/cog-outline.svg'}],onChoose});
+ return new AnchoredMenu({anchor,origin:anchor,modal:true,label:m('settings'),className:'water-menu',items:[{id:'water',label:m('addGlass'),icon:'/record-source/biometric-icons/cup-water.svg',disabled:completed},{id:'water-custom',label:m('custom'),icon:'/shell-source/navigation/plus.svg',disabled:completed},{id:'water-settings',label:m('settings'),icon:'/record-source/biometric-icons/cog-outline.svg'}],onChoose});
 }
 export function openWaterAmount({policy,onAdd,onAdded}){
  const dialog=document.createElement('dialog');dialog.className='mdtp-dialog water-amount';dialog.setAttribute('aria-label',m('custom'));
