@@ -10,7 +10,7 @@ import {parseDiaryTablePolicy} from './domain/diary-display.mjs';
 import {prepareDiaryDisplayCommand} from './diary-display-settings.mjs';
 import {parseWaterSettings} from './domain/water-settings.mjs';
 const visibility=['showTimestamp','showEnergy','showMacros','showWater'];
-export const displayCommandFields={'display.save':['appLanguage','fontScale','matchDeviceFontSize','energyUnit','theme',...visibility,'diaryDisplay','diaryTable','diaryCalendar','diaryGroups','diaryQuickAdd','alwaysExpandMeals','waterSettings']};
+export const displayCommandFields={'display.save':['appLanguage','fontScale','matchDeviceFontSize','energyUnit','diaryEnergyDisplay','theme',...visibility,'diaryDisplay','diaryTable','diaryCalendar','diaryGroups','diaryQuickAdd','alwaysExpandMeals','waterSettings']};
 const fail=message=>{throw Object.assign(Error(message),{status:400});};
 export function displayView(state){return {revision:digest(state),...createDisplayView(state)};}
 
@@ -27,6 +27,7 @@ export function prepareDisplayCommand(state,{type,payload}){
  if(Object.hasOwn(payload,'alwaysExpandMeals')){if(typeof payload.alwaysExpandMeals!=='boolean')fail('Choose whether to expand meals.');patch.alwaysExpandMeals=payload.alwaysExpandMeals;}
  if(Object.hasOwn(payload,'diaryCalendar'))patch.diaryCalendar=parseDiaryCalendar(payload.diaryCalendar);
  if(Object.hasOwn(payload,'diaryTable'))patch.diaryTable=parseDiaryTablePolicy(payload.diaryTable);
+ if(Object.hasOwn(payload,'diaryEnergyDisplay'))patch.diaryEnergyDisplay=payload.diaryEnergyDisplay;
  if(Object.hasOwn(payload,'energyUnit'))patch.energyUnit=parseEnergyUnit(payload.energyUnit);
  if(Object.hasOwn(payload,'theme')){if(!['light','dark','system'].includes(payload.theme))fail('Choose a theme.');patch.theme=payload.theme;}
  if(Object.hasOwn(payload,'showTimestamp')){if(typeof payload.showTimestamp!=='boolean')fail('Choose whether to show timestamps.');patch.showTimestamp=payload.showTimestamp;}

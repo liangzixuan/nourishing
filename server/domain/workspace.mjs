@@ -708,6 +708,10 @@ export function act(s,type,p={},context={}) {
       else if(next.healthConnectGroup!==undefined)parseHealthConnectGroup(next.healthConnectGroup,next.groups);
       if(p.theme!==undefined){if(!['light','dark','system'].includes(p.theme))fail('Unknown theme.');next.theme=p.theme;}
       for(const key of ['showEnergy','showMacros','alwaysExpandMeals','showTimestamp','showWater','matchDeviceFontSize'])if(p[key]!==undefined){if(typeof p[key]!=='boolean')fail(`${key} must be boolean.`);next[key]=p[key];}
+      if(Object.hasOwn(p,'diaryEnergyDisplay')){
+        if(!['remaining','balance'].includes(p.diaryEnergyDisplay))fail('Choose Target or Balance for the Diary.');
+        next.diaryEnergyDisplay=p.diaryEnergyDisplay;
+      }
       if(Object.hasOwn(p,'diarySort')){if(!['source','time'].includes(p.diarySort))fail('Choose added order or time within each diary group.');next.diarySort=p.diarySort;}
       if(p.favorites!==undefined)next.favorites=favoriteReferences(s,p.favorites);
       if(Object.hasOwn(p,'scoreSelection'))next.scoreSelection=parseScoreSelection(p.scoreSelection);

@@ -20,10 +20,35 @@ const switchRow=(label,name,checked)=>`<label class="ds-setting"><span>${e(label
 const button=(label,attributes='')=>`<button type="button" ${attributes}>${label}</button>`;
 
 /** Dialog adapter: all calculations and saved settings remain owned by the workspace domain. */
-export function openDiarySummaryAction({action,id,diary,date=diary.date,show,close,header,content,onChange,onTargets,onReport,onFasting,navigation='diary',ownerTicket}){
+export function openDiarySummaryAction({action,id,anchor,diary,date=diary.date,show,close,header,content,onChange,onTargets,onReport,onFasting,navigation='diary',ownerTicket}){
  if(action==='edit-day-targets'){onTargets?.(date);return true;}
  if(action==='open-fasting'){onFasting?.();return true;}
  const present=(title,body)=>{show(header(title)+`<section class="ds-dialog">${body}</section>`);return content.querySelector('.ds-dialog');};
+ if(action==='score-details'){
+  const score=diary.summary.scores.find(row=>row.id===id);if(!score)return false;
+  const m=(key,values)=>formatMessage(uiLanguage(),'mobileScoreDetail.'+key,values),name=scoreName(score),key=['overall','keto','oral','calciumAbsorption','dataQuality'].includes(id)?id:'progress';
+  const confidence=id==='dataQuality'?diary.summary.dataQuality?.overall?.rawValue:score.confidence?.value;
+  const root=present(`${name}: ${number(score.value)}%`,`<h3>${m('function')}</h3><div class="msd-card">${e(m(key,{name}))}</div><h3>${m('quality')}</h3><div class="msd-card">${e(Number.isFinite(confidence)?m(id==='dataQuality'?'qualityValue':'confidence',{value:number(confidence)+'%'}):m('noConfidence'))}</div>${button(e(m('report')),'data-ds-report class="ds-primary"')}`);
+  root.querySelector('[data-ds-report]').onclick=()=>{close();onReport?.(date);};return true;
+ }
+ if(!['mobile-diary-energy','toggle-energy-display','configure-diary-display','choose-scores'].includes(action))return false;
+ const owner=ownerTicket??readDeviceCache('/api/diary').then(cached=>cached.ticket);
+ async function saveSettings(type,payload){
+  const ticket=await owner;
+  if(!ticket||!await ensureDeviceSnapshot({ownerId:ticket.ownerId}))throw Error(t('mobileNutrientTargets.reopen'));
+  return queueCommand(diary.revision,type,payload,{ticket});
+ }
+ async function changeEnergyDisplay(mode){
+  await saveSettings('display.save',{diaryEnergyDisplay:mode});
+  await onChange?.();
+ }
+ if(action==='toggle-energy-display'){
+  anchor.disabled=true;
+  void changeEnergyDisplay(diary.summary.energy.display==='balance'?'remaining':'balance')
+   .catch(error=>{const status=anchor.closest('.md-summary')?.querySelector('[role=status]');if(status)status.textContent=error.message;})
+   .finally(()=>{anchor.disabled=false;});
+  return true;
+ }
  if(action==='mobile-diary-energy'){
   const {energy,consumedEnergy,expenditureBreakdown}=diary.summary,unit=diary.energyUnit??'kcal';
   const known=Number.isFinite,unknown=t('energyReport.unknown');
@@ -62,26 +87,19 @@ export function openDiarySummaryAction({action,id,diary,date=diary.date,show,clo
   const draw=()=>void rings.draw(diary.summary);
   root.querySelector('[data-ds-targets]').onclick=()=>onTargets?onTargets(date):close();
   root.querySelector('[data-ds-report]').onclick=()=>{close();onReport?.(date);};
-  root.querySelector('.ds-energy-mode').onclick=event=>{
-   const choice=event.target.closest('[data-mode]');if(!choice||choice.dataset.mode===mode)return;
-   mode=choice.dataset.mode;root.querySelector('[data-budget]').innerHTML=budget(mode);
-   root.querySelectorAll('[data-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.mode===mode)));draw();
+  const controls=root.querySelector('.ds-energy-mode');
+  controls.onclick=async event=>{
+   const choice=event.target.closest('[data-mode]');if(!choice||controls.disabled||choice.dataset.mode===mode)return;
+   controls.disabled=true;
+   try{
+    await changeEnergyDisplay(choice.dataset.mode);
+    if(!root.isConnected)return;
+    mode=choice.dataset.mode;root.querySelector('[data-budget]').innerHTML=budget(mode);
+    controls.querySelectorAll('[data-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.mode===mode)));draw();
+   }catch(error){root.querySelector('[role=status]').textContent=error.message;}
+   finally{controls.disabled=false;}
   };
   draw();return ()=>rings.clear();
- }
- if(action==='score-details'){
-  const score=diary.summary.scores.find(row=>row.id===id);if(!score)return false;
-  const m=(key,values)=>formatMessage(uiLanguage(),'mobileScoreDetail.'+key,values),name=scoreName(score),key=['overall','keto','oral','calciumAbsorption','dataQuality'].includes(id)?id:'progress';
-  const confidence=id==='dataQuality'?diary.summary.dataQuality?.overall?.rawValue:score.confidence?.value;
-  const root=present(`${name}: ${number(score.value)}%`,`<h3>${m('function')}</h3><div class="msd-card">${e(m(key,{name}))}</div><h3>${m('quality')}</h3><div class="msd-card">${e(Number.isFinite(confidence)?m(id==='dataQuality'?'qualityValue':'confidence',{value:number(confidence)+'%'}):m('noConfidence'))}</div>${button(e(m('report')),'data-ds-report class="ds-primary"')}`);
-  root.querySelector('[data-ds-report]').onclick=()=>{close();onReport?.(date);};return true;
- }
- if(action!=='configure-diary-display'&&action!=='choose-scores')return false;
- const owner=ownerTicket??readDeviceCache('/api/diary').then(cached=>cached.ticket);
- async function saveSettings(type,payload){
-  const ticket=await owner;
-  if(!ticket||!await ensureDeviceSnapshot({ownerId:ticket.ownerId}))throw Error(t('mobileNutrientTargets.reopen'));
-  return queueCommand(diary.revision,type,payload,{ticket});
  }
  if(action==='configure-diary-display'){
   const settings=diary.presentation.settings,policy=diary.summary.diaryDisplay.policy;

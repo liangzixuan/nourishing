@@ -42,7 +42,7 @@ async function checkDiaryHighlights(page){
 }
 async function checkDiaryBudgets(page){
  const cases=[
-  {mode:'balance',intake:0,unit:'kcal',heading:'Balance',label:'Deficit',value:'1,850',detail:'1850',chart:[0,1850]},
+  {mode:'balance',intake:0,unit:'kcal',heading:'Balance',label:'Deficit',value:'1850',detail:'1850',chart:[0,1850]},
   {mode:'balance',intake:2000,unit:'kJ',heading:'Balance',label:'Surplus',value:'628',detail:'627.6',chart:[2000,0]},
   {mode:'balance',intake:1850,unit:'kcal',heading:'Balance',label:'Balance',value:'0',detail:'0',chart:[1850,0]},
   {mode:'balance',intake:100,unknown:true,unit:'kJ',heading:'Balance',label:'Balance',value:'\u2014',detail:'\u2014',chart:[1]},
@@ -64,7 +64,7 @@ async function checkDiaryBudgets(page){
    }});
   },view(state));
   const budget=page.locator('.md-energy-item').last();
-  assert.equal(await page.locator('[data-md-page-id=energy] [data-action="edit-day-targets"]').textContent(),heading);
+  assert.equal(await page.locator('[data-md-page-id=energy] [data-action="toggle-energy-display"]').textContent(),heading);
   assert.equal(await budget.getAttribute('data-kind'),mode);
   assert.equal(await budget.locator('canvas').getAttribute('data-md-ring'),mode);
   assert.equal(await budget.locator('canvas').getAttribute('aria-label'),label);
@@ -88,6 +88,15 @@ async function checkDiaryBudgets(page){
 }
 test('summary settings persist through canonical validators and reject stale or invalid choices',()=>{
  const state=initialState(),base=view(state).presentation.scoreDisplay;
+ const originalTargets=structuredClone(state.settings.targets);
+ for(const mode of ['balance','remaining']){
+  applyWorkspaceCommand(state,{type:'display.save',payload:{diaryEnergyDisplay:mode}});
+  assert.equal(view(state).summary.energy.display,mode);
+  assert.deepEqual(state.settings.targets,originalTargets);
+ }
+ assert.throws(()=>applyWorkspaceCommand(state,{type:'display.save',payload:{diaryEnergyDisplay:'invalid'}}));
+ assert.equal(view(state).summary.energy.display,'remaining');
+
  applyWorkspaceCommand(state,{type:'scoreDisplay.change',payload:{base,change:{kind:'replace',index:0,scoreId:'protein'}}});
  assert.equal(view(state).presentation.scores[0].id,'protein');
  assert.throws(()=>applyWorkspaceCommand(state,{type:'scoreDisplay.change',payload:{base,change:{kind:'replace',index:0,scoreId:'fiber'}}}),{status:409});
@@ -124,9 +133,9 @@ test('source diary carousel, rings, water, actions and disposal work on a phone 
  });await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));let browser;
  try{
   browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915},isMobile:true,hasTouch:true}),errors=[];page.on('pageerror',error=>errors.push(error.message));await page.addInitScript(()=>{window.cspViolations=[];document.addEventListener('securitypolicyviolation',event=>window.cspViolations.push({directive:event.violatedDirective,uri:event.blockedURI}));});await page.goto(`http://127.0.0.1:${server.address().port}`);await page.locator('[data-md-summary]').waitFor();await page.waitForFunction(()=>Object.keys(window.Chart?.instances??{}).length===3);
-  assert.deepEqual(await page.locator('.md-energy-item strong').allTextContents(),['0','Consumed','—','Expenditure','2,000','Remaining']);
+  assert.deepEqual(await page.locator('.md-energy-item strong').allTextContents(),['0','Consumed','—','Expenditure','2000','Remaining']);
   await page.getByRole('button',{name:'Remaining',exact:false}).first().click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).kind,'remaining');
-  await page.getByRole('button',{name:'Target',exact:true}).click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).action,'edit-day-targets');
+  await page.getByRole('button',{name:'Target',exact:true}).click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).action,'toggle-energy-display');
   await page.locator('[data-md-dot="1"]').click();assert.equal(await page.locator('[data-md-page-id=macros]').isVisible(),true);const consumed=await page.locator('[data-md-page-id=macros] .md-target').first().textContent();
   await page.getByRole('button',{name:'Consumed',exact:true}).click();const remaining=await page.locator('[data-md-page-id=macros] .md-target').first().textContent();assert.notEqual(consumed,remaining);assert.match(remaining,/2,000/);
   await page.locator('[data-md-page-id=macros] [data-id=protein]').click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).id,'protein');

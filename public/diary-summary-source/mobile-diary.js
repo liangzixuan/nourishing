@@ -6,7 +6,7 @@ import {displayValue,displayUnit} from '../dashboard-source/energy-display.js';
 
 // View-only state survives diary mutations and tab changes; no health data is stored here.
 export const mobileDiarySession={page:0,groups:new Map()};
-const number=(v,language,digits=1)=>Number.isFinite(v)?v.toLocaleString(language,{maximumFractionDigits:digits}):'—';
+const number=(v,language,digits=1,useGrouping=true)=>Number.isFinite(v)?v.toLocaleString(language,{maximumFractionDigits:digits,useGrouping}):'—';
 const button=(label,action,extra='')=>`<button type="button" data-action="${action}" ${extra}>${label}</button>`;
 export const diarySymbol=name=>`<span class="md-symbol" aria-hidden="true">${e(name)}</span>`;
 export function diaryFoodIcon(kind){
@@ -53,10 +53,10 @@ function highlightReading(row,amount,target,unit,language){
 
 export function mobileDiarySummary({summary,facts,settings,unit,language,labels,icons,macroMode,scores,nutrientName,scoreName}){
  const pages=[],energy=summary.energy??{},selected=facts?.scope==='selection';
- const ring=(id,label,value)=>button(`<span class="md-ring"><canvas data-md-ring="${id}" role="img" aria-label="${e(label)}"></canvas><span><strong>${number(displayValue(value,'kcal',unit),language,0)}</strong><small>${e(unit)}</small></span></span><strong>${e(label)}</strong>`,'mobile-diary-energy',`class="md-energy-item" data-kind="${id}"`);
+ const ring=(id,label,value)=>button(`<span class="md-ring"><canvas data-md-ring="${id}" role="img" aria-label="${e(label)}"></canvas><span><strong>${number(displayValue(value,'kcal',unit),language,0,false)}</strong><small>${e(unit)}</small></span></span><strong>${e(label)}</strong>`,'mobile-diary-energy',`class="md-energy-item" data-kind="${id}"`);
  if(settings.showEnergy!==false){
   const budget=diaryEnergyBudget(energy);
-  pages.push({id:'energy',title:labels.energy,body:`<div class="md-summary-heading">${button(e(labels.energy)+icons.chevron,'mobile-diary-energy')} ${button(e(budget.heading),'edit-day-targets')}</div><div class="md-energy-rings">${ring('consumed',labels.consumed,energy.consumed)}${ring('expenditure',labels.expenditure,energy.expenditure)}${ring(budget.mode,budget.label,budget.value)}</div>`});
+  pages.push({id:'energy',title:labels.energy,body:`<div class="md-summary-heading">${button(e(labels.energy)+icons.chevron,'mobile-diary-energy')} ${button(e(budget.heading)+'<svg aria-hidden="true" viewBox="0 0 24 24" fill="var(--green)"><path d="M6.99 11 3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>','toggle-energy-display')}</div><div class="md-energy-rings">${ring('consumed',labels.consumed,energy.consumed)}${ring('expenditure',labels.expenditure,energy.expenditure)}${ring(budget.mode,budget.label,budget.value)}</div>`});
  }
  const targetRow=(row,kind)=>{
   const value=macroMode==='remaining'&&kind==='macros'?row.remaining:row.value,amount=displayValue(value,row.unit,unit),target=displayValue(row.target,row.unit,unit),empty=row.coverage?.total===0;
