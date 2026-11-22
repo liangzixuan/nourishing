@@ -26,7 +26,13 @@ export function mobileDiaryGroups({groups,configuredGroups=groups,records,render
 export function mobileDiaryRecord({id,collection,name,meta,amount,icon,selectBox,action,extra='',swipe=false,canDelete=false,labels={}}){
  const options=swipe?`<button type="button" class="md-swipe-action md-swipe-options" data-md-swipe-action data-md-swipe-options aria-label="${e(labels.actions)}: ${e(name)}" hidden><img src="/snapshot-source/dots-vertical.svg" alt=""></button>`:'';
  const remove=swipe&&canDelete?`<button type="button" class="md-swipe-action md-swipe-delete" data-md-swipe-action data-md-delete aria-label="${e(labels.remove)}: ${e(name)}" hidden><img src="/repeat-source/delete.svg" alt=""></button>`:'';
- return `<tr data-diary-record ${swipe?'data-md-swipable':''} data-collection="${e(collection)}" data-id="${e(id)}"><td>${options}<div class="md-record">${selectBox}<button type="button" class="md-record-menu" data-md-context aria-label="${e(name)}: actions">${icon}</button><div class="md-record-text">${button(`<span class="food-name">${e(name)}</span>`,action,`class="entry-name" data-id="${e(id)}"`)}<div class="food-meta">${meta}</div>${extra}</div></div></td><td ${collection==='entries'?`data-diary-summary-entry="${e(id)}"`:''}>${remove}<div class="md-record-amount">${amount}</div></td></tr>`;
+ const metaId=`md-meta-${e(collection)}-${e(id)}`;
+ const edit=button(
+  `<span class="food-name">${e(name)}</span><span class="food-meta" id="${metaId}">${meta}</span>`,
+  action,
+  `class="entry-name" data-id="${e(id)}" aria-label="${e(name)}"${meta?` aria-describedby="${metaId}"`:''}`,
+ );
+ return `<tr data-diary-record ${swipe?'data-md-swipable':''} data-collection="${e(collection)}" data-id="${e(id)}"><td>${options}<div class="md-record">${selectBox}<button type="button" class="md-record-menu" data-md-context aria-label="${e(name)}: actions">${icon}</button><div class="md-record-text">${edit}${extra}</div></div></td><td ${collection==='entries'?`data-diary-summary-entry="${e(id)}"`:''}>${remove}<div class="md-record-amount">${amount}</div></td></tr>`;
 }
 
 const shortHighlights=new Set(['addedSugar','vitaminB12','vitaminA','folate']);

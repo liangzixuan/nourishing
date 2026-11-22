@@ -112,7 +112,7 @@ test('Diary day actions use the chosen calendar date and preserve other days',as
   await action('report');await page.locator('.mobile-report-toolbar').getByText(/Nov 20, 2026/).waitFor();await shot('daily-report');
   await page.locator('#diary-tab').click();await page.locator('.md-diary').waitFor();
   await action('sort-all');await idle(s=>s.settings.diarySort==='time');
-  assert.deepEqual(await page.locator('[data-diary-record] .entry-name').allTextContents(),['Morning fixture','Evening fixture']);
+  assert.deepEqual(await page.locator('[data-diary-record] .food-name').allTextContents(),['Morning fixture','Evening fixture']);
   await action('select');await page.getByRole('heading',{name:'Multi Select Mode'}).waitFor();await page.getByRole('button',{name:'Back',exact:true}).click();
   await action('copy');await sheet.waitFor({state:'hidden'});await action('paste');await page.locator('.diary-tools-sheet input[name=date]').fill(next);
   await page.locator('.diary-tools-sheet button.primary').click();await confirm.waitFor();await page.keyboard.press('Escape');assert.equal(count(saved().entries,next),0);

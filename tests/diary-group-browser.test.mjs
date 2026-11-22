@@ -67,6 +67,7 @@ test('Diary group actions update mixed records locally and reconcile canonical c
   await page.keyboard.press('Enter');await page.locator('.diary-menu-sheet').waitFor();await dismiss();
   const riceRow=page.locator('[data-diary-record]').filter({hasText:'Rice'}).first();
   assert.equal(await riceRow.locator('.food-meta').innerText(),'12:00 pm - 1 serving');
+  assert.equal(await riceRow.locator('.food-meta').evaluate(node=>node.closest('button')?.dataset.action),'edit-entry');
   assert.equal(await riceRow.locator('.md-record-time').count(),1);
   assert.deepEqual((await riceRow.locator('[data-diary-column=calories]').innerText()).trim().split(/\s+/),['100.0','kcal']);
   await swipe(riceRow,110);assert.equal(await riceRow.locator('.md-swipe-options').isVisible(),true,'Right swipe reveals options');

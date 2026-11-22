@@ -38,7 +38,7 @@ test('Display source controls change the production Diary and persist with cance
  try{
   browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});page=await browser.newPage({viewport:{width:412,height:915},colorScheme:'dark',extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.addInitScript(()=>{window.csp=[];document.addEventListener('securitypolicyviolation',e=>window.csp.push(e.violatedDirective));});await page.goto(base+'/diary');await page.locator('.md-diary').waitFor();const entry=page.locator('[data-diary-record]').filter({hasText:'Display fixture rice'});assert.match(await entry.innerText(),/12:34/);
   const heartRate=page.locator('[data-diary-record][data-collection=biometrics]').first();
-  assert.equal(await heartRate.locator('.entry-name').innerText(),'Heart Rate');
+  assert.equal(await heartRate.locator('.food-name').innerText(),'Heart Rate');
   assert.equal(await heartRate.locator('.food-meta').innerText(),'12:53 pm');
   assert.equal(await heartRate.locator('.md-record-amount').innerText(),'82\nbpm');
   assert.ok(await heartRate.locator('.md-record-menu .md-heart-rate-icon').isVisible());
