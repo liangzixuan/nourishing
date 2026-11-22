@@ -42,9 +42,11 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
  function time(source,title=t('diaryActions.time.set')){const records=refs(source).map(({collection,row})=>({collection,id:row.id,group:row.group??null,time:row.time??''})),revision=diary().revision;actionForm(title,`<label class="field-row"><span>${e(t('appActions.time'))}</span><input name="time" type="time"></label>`,values=>save('records.set-time',{date:date(),time:values.time,records},revision));}
  function remove(source){
   const count=refs(source).length,revision=diary().revision;
-  const title=coreText(count===1?'tools.deleteEntry':'tools.deleteEntries');
-  const prompt=coreText(count===1?'tools.deleteOneConfirm':'tools.deleteConfirm',{count});
-  show(`<section class="diary-delete-confirm"><h2 id="sheet-title">${e(title)}</h2><p>${e(prompt)}</p><p role="status"></p><footer><button type="button" data-close>${e(t('common.cancel'))}</button><button type="button" data-confirm>${e(t('mobileRepeat.delete'))}</button></footer></section>`);
+  const day=source.scope==='day';
+  const title=coreText(day?'tools.deleteDayTitle':count===1?'tools.deleteEntry':'tools.deleteEntries');
+  const prompt=coreText(day?'tools.deleteDayConfirm':count===1?'tools.deleteOneConfirm':'tools.deleteConfirm',{count});
+  const action=day?coreText('tools.deleteAll'):t('mobileRepeat.delete');
+  show(`<section class="diary-delete-confirm" data-scope="${e(source.scope)}"><h2 id="sheet-title">${e(title)}</h2><p>${e(prompt)}</p><p role="status"></p><footer><button type="button" data-close>${e(t('common.cancel'))}</button><button type="button" data-confirm>${e(action)}</button></footer></section>`);
   const button=content.querySelector('[data-confirm]'),status=content.querySelector('[role=status]');
   button.onclick=async()=>{button.disabled=true;try{await save('records.delete',{selection:source,confirmed:true},revision);}catch(error){if(status.isConnected){status.textContent=error.message;button.disabled=false;}}};
  }

@@ -1,3 +1,4 @@
+import {checkLibraryDeleteDialog} from './fixtures/library-delete-dialog.mjs';
 import {libraryBrowserBoot} from './fixtures/library-browser.mjs';
 import {waitForOutboxIdle} from './fixtures/browser-outbox.mjs';
 import {offlineSnapshot} from '../server/offline.mjs';
@@ -75,7 +76,7 @@ test('custom food details, label/basis, portions and review save through the rea
   const foodId=state.foods[0].id, item=page.locator(`[data-library-item="${foodId}"]`);
   await page.locator('[data-tab=foods]').click();await item.click();await settle();
   const chooseDelete=async()=>{await page.locator('[data-mfe-menu]').click();await page.getByRole('button',{name:'Delete',exact:true}).click();};
-  await chooseDelete();await page.locator('[data-cancel-delete]').click();await settle();
+  const restored=await checkLibraryDeleteDialog(page,'[data-mfe-menu]',['Delete']);await page.keyboard.press('Escape');await restored();await settle();
   await page.route('**/api/workspace/command',route=>route.abort('internetdisconnected'));
   await chooseDelete();await page.locator('[data-confirm-delete]').click();
   await page.locator('#sheet').waitFor({state:'hidden'});await item.waitFor({state:'detached'});

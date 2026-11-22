@@ -88,5 +88,26 @@ test('photo recognition flows into compact macros, editable amounts and discard-
   await page.evaluate(()=>window.initialGroup='Lunch');await page.locator('#open').click();await upload();await page.locator('.photo-macros').filter({hasText:'200 kcal'}).waitFor();assert.equal(await page.getByLabel('Group',{exact:true}).inputValue(),'Lunch');await page.getByRole('button',{name:'Close',exact:true}).click();await page.locator('#open').click();await page.getByRole('button',{name:'Choose photo',exact:true}).waitFor();assert.equal(await page.locator('.photo-thumb').count(),0);assert.equal(await page.evaluate(()=>window.saved.length),3);await page.getByRole('button',{name:'Close',exact:true}).click();
   await page.evaluate(()=>window.optimistic=true);await page.locator('#open').click();await upload();await page.locator('[data-quantity]').click();await page.locator('.photo-portion-sheet [name=unit]').selectOption('portion:cup');await page.getByRole('spinbutton',{name:'Amount',exact:true}).fill('2');await page.locator('.photo-portion-sheet').getByText('600 kcal',{exact:true}).waitFor();await page.getByRole('button',{name:'Save',exact:true}).click();await page.getByRole('button',{name:'Add to diary',exact:true}).click();await page.locator('#sheet').waitFor({state:'hidden'});const optimistic=await page.evaluate(()=>window.optimisticSaved);assert.equal(optimistic.payload.rows[0].portionId,'cup');assert.equal(optimistic.rows[0].portionId,'cup');assert.deepEqual(optimistic.rows[0].food,state.foods[0]);assert.equal(optimistic.rows[0].preview.nutrition.totals.calories,600);
   await page.locator('#open').click();await upload();await page.locator('[data-save]:not(:disabled)').waitFor();await page.getByRole('button',{name:'Add to diary',exact:true}).click();await page.locator('#sheet').waitFor({state:'hidden'});const untouched=await page.evaluate(()=>window.optimisticSaved);assert.deepEqual(untouched.rows[0].food,state.foods[0]);assert.equal(untouched.rows[0].preview.nutrition.totals.calories,200);assert.equal(previews,0);assert.deepEqual(errors,[]);
+  const observed=analysis.suggestions[0],optional=analysis.suggestions[1];
+  analysis.suggestions=[...Array.from({length:16},(_,observationIndex)=>({...observed,observationIndex})),optional];
+  await page.locator('#open').click();await upload();
+  const thumb=page.locator('.photo-thumb'),add=page.locator('[data-addition]');
+  await thumb.waitFor();
+  const bounds=()=>page.evaluate(()=>{
+   const rect=selector=>document.querySelector(selector).getBoundingClientRect();
+   return {title:rect('.sheet-header').top,thumbnail:rect('.photo-thumb').top,footer:rect('.photo-log-actions').bottom,scroll:document.querySelector('#sheet').scrollTop};
+  });
+  const atTop=await bounds();
+  const pinned=async()=>{
+   const moved=await bounds();
+   assert.ok(moved.scroll>500,'The long food list scrolled');
+   for(const part of ['title','thumbnail','footer'])assert.ok(Math.abs(moved[part]-atTop[part])<2,`${part} moved from ${atTop[part]} to ${moved[part]}`);
+  };
+  await add.scrollIntoViewIfNeeded();await pinned();
+  await add.click();await page.locator('[data-undo-addition]').waitFor();await pinned();
+  await thumb.locator('[data-gallery]').click();await page.locator('.photo-action-menu').waitFor();
+  await page.keyboard.press('Escape');await page.locator('.photo-action-menu').waitFor({state:'detached'});await pinned();
+  await page.locator('[data-quantity="15"]').click();await page.locator('.photo-portion-sheet [data-cancel]').first().click();
+  await page.locator('.photo-portion-sheet').waitFor({state:'detached'});await pinned();
  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
 });

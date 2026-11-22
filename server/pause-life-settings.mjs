@@ -1,9 +1,9 @@
 import {digest} from './data-codec.mjs';
-import {defaultPauseLife,parsePauseLife} from './domain/pause-life.mjs';
+import {resolvePauseLife,parsePauseLife} from './domain/pause-life.mjs';
 
 export const pauseLifeCommandFields={'pauseLife.save':['policy']};
 export function pauseLifeView(state){
- return {revision:digest(state),policy:parsePauseLife(state.settings.pauseLife)??{...defaultPauseLife}};
+ return {revision:digest(state),policy:resolvePauseLife(state.settings.pauseLife)};
 }
 export function preparePauseLifeCommand(state,{type,payload}){
  if(type!=='pauseLife.save')return {type,payload};

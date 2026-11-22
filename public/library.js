@@ -1,5 +1,6 @@
 import {uiLanguage,t} from './app-language.js';
 import {pushBackHandler} from './back-history.js';
+import {LibraryReviewDialog} from './targets-source/library-review-dialog.js';
 import {fc,foodActionLabel} from './food-cloud-messages.js';
 import {mountRecipeEditor} from './recipe-editor.js';
 import {deleteLocalLibraryItem} from './library-local.js';
@@ -18,7 +19,15 @@ import {localLibraryItem,localLibraryView} from './local-engine.js';
 import {mealActionText} from './meal-action-messages.js';
 const labels=()=>({food:t("mobileSearch.food"),recipe:t("recipeEditor.recipe"),meal:fc("meal")});
 export function mountLibrary({page,show,close,header,content,date,openEntry,onChange,headerRoot}){
- let data,kind='food',screen='home',showMealTip=true,sort='recent',retired=false,query='',disposed=false,serial=0,extrasCleanup,optionsSheet,foodEditor,mealEditor,recipeEditor,collectionBack=null;
+ let data,kind='food',screen='home',showMealTip=true,sort='recent',retired=false,query='',disposed=false,serial=0,extrasCleanup,optionsSheet,foodEditor,mealEditor,recipeEditor,collectionBack=null,deleteDialog;
+ // A browser Back request reaches the outer sheet before its editor handles it.
+ const backFromDelete=event=>{
+  if(!deleteDialog)return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  deleteDialog.dismiss();
+ };
+ window.addEventListener('nourishing-back',backFromDelete,{capture:true});
  const leaveCollection=({popHistory=true}={})=>{screen='home';query='';if(collectionBack){const handle=collectionBack;collectionBack=null;handle.release({popHistory});}render();};
  const alive=id=>!disposed&&id===serial;
  async function reload(){
@@ -77,27 +86,46 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
  async function openItem(itemKind,id,keptDraft,{copy=false}={}){show(header(labels()[itemKind])+`<p class="empty">${e(t("mobileNutrientDetail.loading"))}</p>`);const loading=content.querySelector('.empty');try{const item=await localLibraryItem({kind:itemKind,id})??await request('/api/library/item?'+new URLSearchParams({kind:itemKind,id}));if(!data)data=await localLibraryView()??await request('/api/library');if(!disposed&&loading.isConnected){if(copy){const resource={...item.resource};delete resource.id;editor(itemKind,{...item,resource:undefined},keptDraft??{name:mealActionText('copyName',{name:resource.name}),items:structuredClone(resource.items)});}else editor(itemKind,item,keptDraft);}}catch(error){if(!disposed&&loading.isConnected)loading.textContent=error.message;}}
 
  function editor(itemKind,saved,draft,importOptions={}){
-  foodEditor?.dispose();mealEditor?.dispose();recipeEditor?.dispose();const resource=saved?.resource;
+  deleteDialog?.close(false);foodEditor?.dispose();mealEditor?.dispose();recipeEditor?.dispose();const resource=saved?.resource;
   const savedChange=async()=>{await reload();void Promise.resolve(onChange()).catch(()=>{});};
-  function confirmDelete(kept){
+  function confirmDelete(){
    const title=itemKind==='food'?fc('deleteFood'):fc('deleteKind',{kind:labels()[itemKind]});
-   show(header(title)+`<p class="sheet-message">${e(t('libraryLifecycle.deletePrompt',{name:resource.name}))}</p><div class="entry-actions"><button type="button" data-cancel-delete>${e(t('common.cancel'))}</button><button type="button" class="danger" data-confirm-delete>${e(t('mobileRepeat.delete'))}</button></div><p role="status" class="sheet-message"></p>`);
-   const cancel=content.querySelector('[data-cancel-delete]'),confirm=content.querySelector('[data-confirm-delete]'),status=content.querySelector('[role=status]');
-   cancel.onclick=()=>editor(itemKind,saved,kept);
+   let pending=false;
+   const dialog=new LibraryReviewDialog({
+    title,closeLabel:t('common.cancel'),loading:'',canDismiss:()=>!pending,
+    onClose:()=>{deleteDialog=null;},
+   });
+   deleteDialog=dialog;
+   dialog.root.classList.add('ml-delete');
+   dialog.root.setAttribute('role','alertdialog');
+   dialog.root.setAttribute('aria-describedby','ml-delete-prompt');
+   dialog.show(`<p id="ml-delete-prompt">${e(t('libraryLifecycle.deletePrompt',{name:resource.name}))}</p><footer><button type="button" data-action="close-dialog" data-cancel-delete>${e(t('common.cancel'))}</button><button type="button" data-confirm-delete>${e(t('mobileRepeat.delete'))}</button></footer>`);
+   const cancel=dialog.root.querySelector('[data-cancel-delete]');
+   const confirm=dialog.root.querySelector('[data-confirm-delete]');
    confirm.onclick=async()=>{
+    pending=true;
     cancel.disabled=confirm.disabled=true;
-    try{await deleteLocalLibraryItem(itemKind,resource.id,data.revision);await savedChange();if(confirm.isConnected)close();}
-    catch(error){status.textContent=error.message;cancel.disabled=confirm.disabled=false;}
+    try{
+     await deleteLocalLibraryItem(itemKind,resource.id,data.revision);
+     await savedChange();
+     if(!dialog.closed){dialog.close(false);close();}
+    }catch(error){
+     if(dialog.closed)return;
+     dialog.error(error);
+     pending=false;
+     cancel.disabled=confirm.disabled=false;
+     cancel.focus();
+    }
    };
   }
   if(itemKind==='food'){
-   const action=(label,kept)=>{const back=()=>openItem('food',resource.id,kept);if(label==='share')extrasCleanup=openLibrarySharing({kind:'food',id:resource.id,show,header,content,close,onBack:back,onChange:savedChange});else if(label==='print')extrasCleanup=openFoodPrint({id:resource.id,show,header,content,onBack:back});else if(['retire','restore'].includes(label))return retireEditor('food',resource);else if(label==='log')openEntry('food',resource.id);else if(label==='delete')confirmDelete(kept);};
+   const action=(label,kept)=>{const back=()=>openItem('food',resource.id,kept);if(label==='share')extrasCleanup=openLibrarySharing({kind:'food',id:resource.id,show,header,content,close,onBack:back,onChange:savedChange});else if(label==='print')extrasCleanup=openFoodPrint({id:resource.id,show,header,content,onBack:back});else if(['retire','restore'].includes(label))return retireEditor('food',resource);else if(label==='log')openEntry('food',resource.id);else if(label==='delete')confirmDelete();};
    foodEditor=mountCustomFoodEditor({...importOptions,resource,data,draft,show,close,content,date,openEntry,onSaved:savedChange,onAction:action});return;
   }
   if(itemKind==='meal'||itemKind==='recipe'){
-   const action=(label,kept)=>{if(label==='delete')confirmDelete(kept);};
+   const action=label=>{if(label==='delete')confirmDelete();};
    const editorMount=itemKind==='recipe'?mountRecipeEditor:mountMealEditor;const mounted=editorMount({...importOptions,onImported:prepared=>editor('recipe',null,prepared.recipe,{imported:prepared}),saved,data,draft,show,close,content,date,onSaved:savedChange,onAction:action,openEntry});if(itemKind==='recipe')recipeEditor=mounted;else mealEditor=mounted;return;
   }
  }
- render();reload();return {reload,openItem,dispose(){disposed=true;serial++;if(collectionBack){collectionBack.release({popHistory:false});collectionBack=null;}retirement.dispose();foodEditor?.dispose();mealEditor?.dispose();recipeEditor?.dispose();extrasCleanup?.();optionsSheet?.close(false);itemMenu.dispose();data=null;page.removeEventListener('click',select);headerRoot?.removeEventListener('click',select);document.body.classList.remove('foods-home-mobile','mobile-library');}};
+ render();reload();return {reload,openItem,dispose(){disposed=true;serial++;window.removeEventListener('nourishing-back',backFromDelete,{capture:true});deleteDialog?.close(false);if(collectionBack){collectionBack.release({popHistory:false});collectionBack=null;}retirement.dispose();foodEditor?.dispose();mealEditor?.dispose();recipeEditor?.dispose();extrasCleanup?.();optionsSheet?.close(false);itemMenu.dispose();data=null;page.removeEventListener('click',select);headerRoot?.removeEventListener('click',select);document.body.classList.remove('foods-home-mobile','mobile-library');}};
 }

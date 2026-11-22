@@ -2,9 +2,10 @@ import {escape as esc} from '../html.js';
 
 /** Owns a library review layer, without replacing or reconstructing its editor. */
 export class LibraryReviewDialog {
- constructor({title,closeLabel,loading,onClose,mobile=false}) {
+ constructor({title,closeLabel,loading,onClose,mobile=false,canDismiss=()=>true}) {
   this.origin=document.activeElement;
   this.onClose=onClose;
+  this.canDismiss=canDismiss;
   this.controller=new AbortController();
   this.operationId=crypto.randomUUID();
   this.closed=false;
@@ -13,15 +14,15 @@ export class LibraryReviewDialog {
   root.className='library-review-dialog'+(mobile?' library-review-mobile':'');
   root.setAttribute('aria-label',title);
   root.innerHTML=`<div class="dialog-head"><h2>${esc(title)}</h2><button type="button" data-library-review-close aria-label="${esc(closeLabel)}">×</button></div><div class="dialog-body"><div data-library-review-error role="alert" hidden></div><div data-library-review-content><p>${esc(loading)}</p></div></div>`;
-  root.addEventListener('cancel',event=>{event.preventDefault();this.close();});
+  root.addEventListener('cancel',event=>{event.preventDefault();this.dismiss();});
   root.addEventListener('close',()=>this.close());
   root.addEventListener('click',event=>{
    if(event.target.closest('[data-library-review-close],[data-action=close-dialog]')) {
-    event.preventDefault();event.stopPropagation();this.close();return;
+    event.preventDefault();event.stopPropagation();this.dismiss();return;
    }
    if(event.target===root){
     const rect=root.getBoundingClientRect();
-    if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)this.close();
+    if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)this.dismiss();
    }
   });
   document.body.append(root);root.showModal();
@@ -38,6 +39,7 @@ export class LibraryReviewDialog {
   const target=this.root.querySelector('[data-library-review-error]');
   target.hidden=false;target.className='dialog-error';target.textContent=error.message||String(error);
  }
+ dismiss(){if(this.canDismiss())this.close();}
  close(restoreFocus=true){
   if(this.closed)return;
   this.closed=true;this.controller.abort();
