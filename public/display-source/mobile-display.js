@@ -108,9 +108,44 @@ export class MobileDisplay {
    <p class="mds-status" role="status" aria-live="polite"></p></div>`;
   this.lock();
  }
- render(){if(this.navigation.screen==='calendar'){this.renderCalendar();return;}if(listScreens.has(this.navigation.screen)){this.renderList(this.navigation.screen);return;}const s=this.settings,diary=this.navigation.screen==='diary',font=this.navigation.screen==='fontScale';this.onTitle(font?t('mobileDisplay.fontScale'):diary?t('mobileDisplay.diary'):this.navigation.screen==='quickAdd'?t('mobileDisplay.quickAdd'):t('mobileDisplay.title'));const toggle=([key,label])=>`<label class="mds-row"><strong>${label}</strong><input type="checkbox" role="switch" class="dc-switch" data-display-toggle="${key}" ${(key==='showHighlights'?s.diaryDisplay.showHighlights:s[key])?'checked':''}></label>`;
- const rows=diary?this.row('groupSubtotals',coreText('display.subtotals'),subtotalModes().find(([key])=>key===s.diaryTable.groupSubtotals)[1]):this.row('energyUnit',t('mobileDisplay.units'),s.energyUnit==='kJ'?t('mobileDisplay.kJ'):t('mobileDisplay.kcal'))+toggle(toggles()[0])+this.row('summaryNutrient',t('mobileDisplay.summaryNutrient'),this.summaryLabel(s.diaryTable.summaryNutrient))+toggles().slice(1).map(toggle).join('')+this.row('water',waterText('settings'),'')+this.row('pauseLife',t('mobileDisplay.pauseLife'),'')+this.row('dashboard',t('discover.title.dashboard-settings'),'')+this.row('diary',t('mobileDisplay.diary'),'')+this.row('calendar',t('mobileDisplay.calendar'),'')+this.row('theme',t('mobileDisplay.theme'),themes().find(([key])=>key===s.theme)?.[1]??t('settings.dark'))+this.row('fontScale',t('mobileDisplay.fontScale'),s.matchDeviceFontSize?coreText('display.browserDefault'):s.fontScale.toFixed(2)+'×')+this.row('appLanguage',t('mobileDisplay.appLanguage'),appLanguages.find(row=>row.id===s.appLanguage)?.name??'English');
- const child={settings:s,row:this.row.bind(this),toggle:this.toggle.bind(this),groupsOpen:this.groupsOpen};this.root.innerHTML=`<div data-display-root aria-busy="${this.saving}">${font?`<section class="mds-group mds-font-mode">${this.toggle('matchDeviceFontSize',coreText('display.browserSize'),s.matchDeviceFontSize)}</section>${fontScaleControl(s)}`:diary?mobileDiarySettings(child):this.navigation.screen==='quickAdd'?mobileQuickAddSettings(child):`<section class="mds-group">${rows}</section>`}<p class="mds-status" role="status" aria-live="polite"></p></div>`;this.lock();}
+ overview(){
+  const settings=this.settings;
+  const [timestamp,...sections]=toggles();
+  const toggle=([key,label])=>this.toggle(key,label,key==='showHighlights'?settings.diaryDisplay.showHighlights:settings[key]);
+  const rows=[
+   this.row('energyUnit',t('mobileDisplay.units'),settings.energyUnit==='kJ'?t('mobileDisplay.kJ'):t('mobileDisplay.kcal')),
+   toggle(timestamp),
+   this.row('summaryNutrient',t('mobileDisplay.summaryNutrient'),this.summaryLabel(settings.diaryTable.summaryNutrient)),
+   ...sections.map(toggle),
+   this.row('pauseLife',t('mobileDisplay.pauseLife'),''),
+   this.row('dashboard',t('discover.title.dashboard-settings'),''),
+   this.row('diary',t('mobileDisplay.diary'),''),
+   this.row('calendar',t('mobileDisplay.calendar'),''),
+   this.row('theme',t('mobileDisplay.theme'),themes().find(([key])=>key===settings.theme)?.[1]??t('settings.dark')),
+   this.row('fontScale',t('mobileDisplay.fontScale'),settings.matchDeviceFontSize?coreText('display.browserDefault'):settings.fontScale.toFixed(2)+'×'),
+   this.row('appLanguage',t('mobileDisplay.appLanguage'),appLanguages.find(row=>row.id===settings.appLanguage)?.name??'English')
+  ];
+  return `<section class="mds-group mds-overview">${rows.join('')}</section><section class="mds-group mds-overview">${this.row('water',waterText('settings'),'')}</section>`;
+ }
+ render(){
+  const screen=this.navigation.screen;
+  if(screen==='calendar'){this.renderCalendar();return;}
+  if(listScreens.has(screen)){this.renderList(screen);return;}
+  const settings=this.settings,child={settings,row:this.row.bind(this),toggle:this.toggle.bind(this),groupsOpen:this.groupsOpen};
+  let body,title;
+  switch(screen){
+   case 'fontScale':
+    title=t('mobileDisplay.fontScale');
+    body=`<section class="mds-group mds-font-mode">${this.toggle('matchDeviceFontSize',coreText('display.browserSize'),settings.matchDeviceFontSize)}</section>${fontScaleControl(settings)}`;
+    break;
+   case 'diary': title=t('mobileDisplay.diary');body=mobileDiarySettings(child);break;
+   case 'quickAdd': title=t('mobileDisplay.quickAdd');body=mobileQuickAddSettings(child);break;
+   default: title=t('mobileDisplay.title');body=this.overview();
+  }
+  this.onTitle(title);
+  this.root.innerHTML=`<div data-display-root aria-busy="${this.saving}">${body}<p class="mds-status" role="status" aria-live="polite"></p></div>`;
+  this.lock();
+ }
 
  lock(){for(const node of [...this.root.querySelectorAll('input,button:not([data-display-retry]):not([data-display-reload])'),...this.dialog?.querySelectorAll('input,[data-display-apply]')??[]])node.disabled=this.saving||!!this.pending||node.hasAttribute('data-display-font')&&this.settings.matchDeviceFontSize;this.root.querySelector('[data-display-root]')?.setAttribute('aria-busy',String(this.saving));}
  open(key){if(this.saving||this.pending)return;if(['pauseLife','dashboard','water'].includes(key)){this.onDestination?.(key);return;}if(listScreens.has(key)||['diary','calendar','quickAdd','fontScale'].includes(key)){this.navigation.screen=key;this.render();window.scrollTo(0,0);return;}const options=key==='appLanguage'?appLanguages.map(({id,name})=>[id,name]):key.startsWith('quickAdd:')?this.quickAddActions.map(({id})=>[id,t('shortcut.'+id)]):key==='theme'?themes(coreText('display.systemTheme')):null;if(!options)return;this.closeDialog();const dialog=document.createElement('dialog');this.dialog=dialog;this.returnFocus=document.activeElement;dialog.className=key==='theme'?'mds-dialog mds-theme-dialog settings-compact-dialog':'mds-dialog';dialog.setAttribute('aria-label',key.startsWith('quickAdd:')?key.slice(9):({appLanguage:t('mobileDisplay.appLanguage'),theme:t('mobileDisplay.changeTheme')})[key]);dialog.innerHTML=`<form><h2>${e(dialog.getAttribute('aria-label'))}</h2><div class="mds-choices">${options.map(([value,label])=>`<label><input type="radio" name="choice" value="${e(value)}" ${value===(key.startsWith('quickAdd:')?this.settings.diaryQuickAdd.shortcuts.find(row=>row.group===key.slice(9))?.action??'food':['summaryNutrient','groupSubtotals'].includes(key)?this.settings.diaryTable[key]:this.settings[key])?'checked':''}><span>${e(label)}</span></label>`).join('')}</div><p role="status" aria-live="polite"></p><footer><button type="button" data-display-cancel>${e(t('mobileDisplay.cancel'))}</button><button type="submit" data-display-apply>${e(t('mobileDisplay.ok'))}</button></footer></form>`;

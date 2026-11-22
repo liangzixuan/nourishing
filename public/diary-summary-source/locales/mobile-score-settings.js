@@ -30,10 +30,10 @@ const rows={
   "Fechar"
  ],
  "hint": [
-  "Choose up to eight scores for your Diary.",
-  "Choisissez jusqu’à huit scores pour votre journal.",
-  "Wähle bis zu acht Bewertungen für dein Tagebuch.",
-  "Escolha até oito pontuações para seu diário."
+  "Select up to eight nutrition scores to highlight at the top of your Diary screen.",
+  "Choisissez jusqu’à huit scores nutritionnels à afficher en haut de votre journal.",
+  "Wähle bis zu acht Nährstoffbewertungen für den oberen Bereich deines Tagebuchs.",
+  "Escolha até oito pontuações nutricionais para mostrar no topo do seu diário."
  ],
  "add": [
   "Add Score",

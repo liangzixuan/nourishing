@@ -2846,19 +2846,26 @@ body.discover-mobile dialog.mee-activity-editor{
 .mds-meals-help{margin:8px 16px 16px;color:var(--ink);font:400 calc(14rem / 18)/1.4 Lato,sans-serif}
 .mds-diary-switches,.mds-font-mode{margin-bottom:0}
 .mds-diary-switches .mds-row,.mds-font-mode .mds-row{min-height:60px}
+.mds-overview button.mds-row{min-height:57px}
+.mds-overview button.mds-row:last-child{min-height:56px}
+.mds-overview label.mds-row{min-height:61px}
+.mds-overview .mds-row{font-size:calc(14rem / 18)}
+.mds-overview .mds-row strong{font-size:calc(15rem / 18)}
 .mds-diary-options .mds-row{min-height:56px;font-size:calc(14rem / 18)}
 .mds-diary-switches .mds-row strong,.mds-diary-options .mds-row strong,.mds-font-mode .mds-row strong{font-size:calc(15rem / 18)}
 .mds-group-edit{display:grid;grid-template-columns:auto minmax(0,150px) minmax(56px,1fr);align-items:center;gap:8px;min-height:55px;box-sizing:border-box;border-block-end:1px solid var(--line);padding:3px 6px 3px 25px}
 .mds-group-edit:last-child{border:0}
 .mds-group-edit label{font:700 calc(16rem / 18)/1.3 Karla,Lato,sans-serif;margin:0;overflow-wrap:anywhere}
 .mds-group-edit input[type=text]{box-sizing:border-box;width:100%;min-width:0;height:48px;border:1px solid var(--muted);border-radius:10px;padding:6px 10px;background:transparent;color:var(--ink);font:400 calc(15rem / 18)/1.3 Lato,sans-serif}
-.mds-group-edit input[role=switch],.mds-diary-switches input[role=switch],.mds-font-mode input[role=switch]{justify-self:end;width:56px!important;min-width:56px;height:28px;min-height:28px!important;max-height:28px!important;box-sizing:border-box;margin:0}
-:is(.mds-group-edit,.mds-diary-switches,.mds-font-mode) .dc-switch::after{left:3px;top:3px;width:22px;height:22px}
-:is(.mds-group-edit,.mds-diary-switches,.mds-font-mode) .dc-switch:checked::after{transform:translateX(28px)}
+.mds-group-edit input[role=switch],.mds-diary-switches input[role=switch],.mds-font-mode input[role=switch],.mds-overview input[role=switch]{justify-self:end;width:56px!important;min-width:56px;height:28px;min-height:28px!important;max-height:28px!important;box-sizing:border-box;margin:0}
+:is(.mds-group-edit,.mds-diary-switches,.mds-font-mode,.mds-overview) .dc-switch::after{left:3px;top:3px;width:22px;height:22px}
+:is(.mds-group-edit,.mds-diary-switches,.mds-font-mode,.mds-overview) .dc-switch:checked::after{transform:translateX(28px)}
 .mds-pause-programs{margin:0;padding:0;border:0;min-width:0;}.mds-pause-programs label{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:44px;padding:8px 16px;font:700 1rem/1.3 Karla,Lato,sans-serif;cursor:pointer;}.mds-pause-programs span{min-width:0;overflow-wrap:anywhere;}.mds-pause-programs input{width:22px;height:22px;flex:none;margin:0;accent-color:var(--ink);}.mds-pause-programs:disabled{color:var(--muted);opacity:.6;}
 
 .mds-choice-list .mds-row,.mds-additional summary{min-height:52px;padding:12px 16px;font:700 calc(16rem / 18)/1.35 Karla,Lato,sans-serif;overflow-wrap:anywhere}
 .mds-choice-list .mds-row[aria-pressed=true]{min-height:57px}
+.mds-choice-list>.mds-row:last-child{min-height:51px}
+.mds-choice-list>.mds-row:last-child[aria-pressed=true]{min-height:56px}
 .mds-check{margin-inline-start:auto;color:var(--green);font-size:1.2rem}
 .mds-additional summary{cursor:pointer}
 
@@ -3068,21 +3075,25 @@ body:has(.water-settings) .mm-child-header h1{font-size:calc(21rem / 18)}
 .water-group-menu button[aria-checked=true]{font-weight:400}
 
 .mss-screen{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
-.mss-screen .sheet-header{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;align-items:center;text-align:center}
-.mss-screen .sheet-header h2{margin:0;font-size:1.2rem}
+.mss-screen .sheet-header{display:grid;grid-template-columns:40px minmax(0,1fr) 48px;gap:0;min-height:56px;padding:4px 8px;align-items:center;text-align:center}
+.mss-screen .sheet-header h2{margin:0;padding:0 48px;grid-column:1 / -1;grid-row:1;font-size:calc(21rem / 18)}
+.mss-screen .sheet-header button{grid-row:1;z-index:1}
+.mss-screen .sheet-header [data-back]{grid-column:1;width:40px;min-height:40px;margin:0}
+.mss-screen .sheet-header [data-help],.mss-screen .sheet-header>span{grid-column:3;grid-row:1}
 .mss-screen .sheet-header button{display:grid;place-items:center;width:48px;min-height:48px;padding:0}
 .mss-screen .sheet-header img{width:24px;height:24px;filter:var(--mobile-icon-filter)}
 .mss-screen fieldset{padding-top:16px}
 .mss-screen .ds-setting{min-height:60px;padding:12px 16px;border-radius:12px;font-size:calc(16rem / 18)}
-.mss-screen .ds-setting input[role=switch]{appearance:none;box-sizing:border-box;width:52px;height:28px;min-height:0;margin:0;border:0;border-radius:24px;background:var(--muted);position:relative;cursor:pointer}
+.mss-screen .ds-setting input[role=switch]{appearance:none;box-sizing:border-box;width:56px;height:28px;min-height:0;margin:0;border:0;border-radius:24px;background:var(--muted);position:relative;cursor:pointer}
 .mss-screen .ds-setting input[role=switch]:checked{background:var(--orange,#ff784e)}
 .mss-screen .ds-setting input[role=switch]::before{content:"";position:absolute;inset:3px auto 3px 3px;width:22px;height:22px;border-radius:50%;background:white}
-.mss-screen .ds-setting input[role=switch]:checked::before{left:27px}
+.mss-screen .ds-setting input[role=switch]:checked::before{left:31px}
 .mss-screen h3{display:grid;place-items:center;min-height:43px;margin:0;padding:8px 16px;font-size:calc(14rem / 18);text-transform:uppercase}
 .mss-screen .ds-list button{min-height:57px;padding:12px 16px;font-size:calc(16rem / 18)}
-.mss-screen .ds-list button:last-child{border-bottom:0}
+.mss-screen [data-slot] img{width:24px;height:24px;filter:var(--mobile-icon-filter)}
+.mss-screen .ds-list button:last-child{min-height:56px;border-bottom:0}
 .mss-screen .mss-selected{color:var(--green)}
-.mss-hint{padding:0 16px;font-size:.9rem}
+.mss-hint{margin:8px 0 16px;padding:0 16px;font-size:calc(15rem / 18);line-height:1.35}
 .mss-other{margin:12px 0}
 .mss-other summary{padding:12px;cursor:pointer}
 .mss-screen .dc-bottom{position:fixed;bottom:0;left:0;right:0;z-index:2}
