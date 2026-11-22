@@ -102,14 +102,14 @@ export function mountSnapshots({root,date,onChange=async()=>{},onReady}){
  function openOptions(row){
   clearMutationRetry();
   const owner=popup(m('options'),[['date','pencil'],['caption','pencil'],['delete','delete']].map(([action,img])=>`<button type="button" class="ms-choice" data-snapshot-action="${action}">${icon(img)}<strong>${e(m(action))}</strong></button>`).join('')+`<nav class="dc-bottom" aria-label="${t('discover.nav.main')}">${bottomNavigation('progress',uiLanguage())}</nav>`,'ms-sheet');
-  owner.querySelectorAll('[data-snapshot-action]').forEach(button=>button.onclick=()=>{back();if(button.dataset.snapshotAction==='date')calendar=new MobileDiaryCalendar({loadMonth:readDiaryCalendarMonth,date:row.date,language:uiLanguage(),label:m('date'),onChoose:chosen=>mutate('snapshot.update',{id:row.id,date:chosen}),onClose:()=>{calendar=null;}});else if(button.dataset.snapshotAction==='caption')caption(row);else remove(row);});
+  owner.querySelectorAll('[data-snapshot-action]').forEach(button=>button.onclick=()=>{back();if(button.dataset.snapshotAction==='date')calendar=new MobileDiaryCalendar({loadMonth:readDiaryCalendarMonth,date:row.date,language:uiLanguage(),label:m('date'),className:'ms-date',onChoose:chosen=>mutate('snapshot.update',{id:row.id,date:chosen}),onClose:()=>{calendar=null;}});else if(button.dataset.snapshotAction==='caption')caption(row);else remove(row);});
  }
  function caption(row){
-  const owner=popup(m('captionTitle'),`<h2>${e(m('captionTitle'))}</h2><textarea data-snapshot-caption maxlength="10000" aria-label="${e(m('captionTitle'))}">${e(row.note)}</textarea><p data-snapshot-error role="alert"></p><footer><button type="button" data-snapshot-back>${e(m('cancel'))}</button><button type="button" data-snapshot-save>${e(m('save'))}</button></footer>`);
-  owner.querySelector('textarea').focus();owner.querySelector('[data-snapshot-save]').onclick=()=>mutate('snapshot.update',{id:row.id,note:owner.querySelector('textarea').value},owner);
+  const owner=popup(m('captionTitle'),`<h2 tabindex="-1" autofocus>${e(m('captionTitle'))}</h2><textarea data-snapshot-caption maxlength="10000" aria-label="${e(m('captionTitle'))}">${e(row.note)}</textarea><p data-snapshot-error role="alert"></p><footer><button type="button" data-snapshot-back>${e(m('cancel'))}</button><button type="button" data-snapshot-save>${e(m('save'))}</button></footer>`,'ms-caption-editor');
+  owner.querySelector('[data-snapshot-save]').onclick=()=>mutate('snapshot.update',{id:row.id,note:owner.querySelector('textarea').value},owner);
  }
  function remove(row){
-  const owner=popup(m('deleteTitle'),`<h2>${e(m('deleteTitle'))}</h2><p>${e(m('deleteHint'))}</p><p data-snapshot-error role="alert"></p><footer><button type="button" data-snapshot-back>${e(m('cancel'))}</button><button type="button" class="ms-danger" data-snapshot-delete>${e(m('delete'))}</button></footer>`);
+  const owner=popup(m('deleteTitle'),`<h2>${e(m('deleteTitle'))}</h2><p>${e(m('deleteHint'))}</p><p data-snapshot-error role="alert"></p><footer><button type="button" data-snapshot-back>${e(m('cancel'))}</button><button type="button" class="ms-danger" data-snapshot-delete>${e(m('delete'))}</button></footer>`,'ms-delete-confirm');
   owner.querySelector('[data-snapshot-delete]').onclick=()=>mutate('snapshot.delete',{id:row.id},owner);
  }
  async function mutate(type,payload,owner=null){

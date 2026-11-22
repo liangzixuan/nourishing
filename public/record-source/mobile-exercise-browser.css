@@ -92,29 +92,53 @@
 }
 
 
-/* The exercise hierarchy uses three square tiles per row on a phone. */
+/* Border space belongs to the tile's touch target. The colored face sits inside it. */
 .exercise-browser .mcb-grid {
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:clamp(8px,3.2vw,14px);
-  padding:clamp(8px,3.2vw,14px);
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,max(5.5rem,30%)),1fr));
+  gap:0;
+  padding:8px;
 }
 .exercise-browser .mcb-grid button {
   display:grid;
-  grid-template-rows:46px minmax(2.4em,auto);
+  grid-template-rows:52px minmax(32px,auto);
   justify-items:center;
   align-content:center;
+  gap:8px;
   aspect-ratio:1;
-  min-height:0;
-  gap:6px;
-  padding:8px 4px;
-  font:600 .72rem/1.2 Lato,sans-serif;
+  min-height:min-content;
+  padding:4px;
+  border:8px solid transparent;
+  border-radius:18px;
+  background-clip:padding-box;
+  font:700 calc(13rem / 18)/1.25 Karla,Lato,sans-serif;
 }
-.record-surface .exercise-browser .mcb-grid img {
-  width:44px;
-  height:44px;
+.exercise-browser .mcb-grid button:hover {background-clip:padding-box}
+.record-surface .exercise-browser .mcb-grid :is(img,svg) {
+  width:52px;
+  height:52px;
+  translate:0 -6px;
 }
-.record-surface:has(.exercise-browser) .dialog-head h2 {font-size:1.1rem}
-.exercise-browser .mcb-footer button {width:68%;font-size:.8rem}
+.exercise-browser .mcb-grid svg {color:var(--muted);fill:currentColor}
+.exercise-browser :is([data-meb-node=hiking],[data-meb-node=household],[data-meb-node=occupational],[data-meb-node=strength]) span {
+  max-width:5.35rem;
+}
+.record-surface:has(.exercise-browser) .dialog-head h2 {font-size:calc(20rem / 18)}
+.record-surface:has(.exercise-browser) .dialog-head {padding-inline:6px}
+.record-surface:has(.exercise-browser) .dialog-head:has(.mcb-search) {row-gap:4px;padding-inline:16px}
+.record-surface:has(.exercise-browser) .dialog-head:has(.mcb-search)>button {translate:-10px 0}
+.record-surface:has(.exercise-browser) .mcb-search {padding-block:0}
+.record-surface:has(.exercise-browser) .mcb-search input {font-size:calc(14rem / 18)}
+.exercise-browser .mcb-footer button {
+  position:relative;
+  width:min(100%,15.25rem);
+  min-height:36px;
+  padding:6px 14px;
+  font-size:.8rem;
+}
+.exercise-browser .mcb-footer button::after {content:"";position:absolute;inset:-4px 0}
+@media (hover:none) {
+  .exercise-browser .mcb-grid button:hover {background-color:var(--paper)}
+}
 @media (min-width:600px) {
-  .exercise-browser .mcb-grid {grid-template-columns:repeat(auto-fit,minmax(108px,1fr))}
+  .exercise-browser .mcb-grid {grid-template-columns:repeat(auto-fit,minmax(min(100%,7rem),1fr))}
 }

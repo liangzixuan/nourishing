@@ -34,6 +34,7 @@ test('source scheduler supports templates, disabled preview, daily targets and r
  try{
   browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));await page.goto(base);
   const ready=()=>page.locator('[data-mts-ready]').waitFor(),open=async()=>{await page.getByRole('button',{name:'Targets',exact:true}).click();await page.getByRole('button',{name:'Macro Scheduler',exact:true}).click();await ready();};await open();
+  const tip=page.locator(".mts-tip");assert.match(await tip.innerText(),/Easily set daily macro targets/);assert.equal(await tip.locator("p [data-mts-defaults]").isVisible(),true);assert.match(await page.locator(".mts-empty").innerText(),/schedule your targets for each day of the week/);
   const save=()=>page.locator('[data-mts-save]').click(),form=()=>page.locator('[data-mts-form]');
   await page.locator('[data-mts-enabled]').click();await ready();assert.equal(state().settings.macroPlan.enabled,false);
   await page.locator('[data-mts-add]').click();await form().locator('[name=templateName]').fill('Training');

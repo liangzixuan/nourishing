@@ -1,4 +1,5 @@
 import {formatMessage} from './message-format.js';
+import {supportsCameraTorch,cameraTorchEnabled} from '../camera-torch.js';
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const MAX_BARCODE_IMAGE_BYTES=8*1024*1024;
 const ZXING_VERSION='3.1.6';
@@ -90,9 +91,9 @@ export class BarcodeCameraSession{
   }
   torchSupported(){
     if(!this.running)return false;
-    try{const track=this.stream?.getVideoTracks?.()[0],value=track?.getCapabilities?.().torch;return typeof track?.applyConstraints==='function'&&(value===true||Array.isArray(value)&&value.includes(true)&&value.includes(false));}catch{return false;}
+    return supportsCameraTorch(this.stream?.getVideoTracks?.()[0]);
   }
-  torchEnabled(){try{return this.running&&this.stream?.getVideoTracks?.()[0]?.getSettings?.().torch===true;}catch{return false;}}
+  torchEnabled(){return this.running&&cameraTorchEnabled(this.stream?.getVideoTracks?.()[0]);}
   async setTorch(enabled){
     if(!this.torchSupported())return false;
     const generation=this.generation,track=this.stream.getVideoTracks()[0];

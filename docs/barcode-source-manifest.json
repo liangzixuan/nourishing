@@ -6,10 +6,11 @@
     "outputEncoding": "UTF-8",
     "transforms": [
       "Normalize CRLF line endings to LF",
-      "Keep the camera view visible for manual entry. Submit from the numeric footer and retain the image picker under scanner help."
+      "Keep the camera view visible for manual entry. Submit from the numeric footer and retain the image picker under scanner help.",
+      "Share the camera torch capability and state checks with the Photo Log viewfinder."
     ],
     "sourceSha256": "adc2b5049e402583ac219287a2def2dd6772f9a2bb56aa072189346f108eb6ae",
-    "outputSha256": "996c0e5fe67dffb09afba7647de5f715824a5b52a484a8d3e2e40050a031656f"
+    "outputSha256": "6c195b8a8af00bf6a566498f853373fd9f6ac02668c0bbc65a09890ccc19fdd0"
   },
   {
     "source": "public/message-formatter.js",

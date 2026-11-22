@@ -21,7 +21,7 @@ export function mobileRepeatsMarkup({language,rows,name,quantity,icon,query='',s
  }).join('');
  return `<div class="mr-home"><label class="mr-search">${icon('search')}<input type="search" data-mr-search aria-label="${e(m('search'))}" placeholder="${e(m('search'))}" value="${e(query)}"></label>
   ${rows.length?`<div class="mr-list-tools"><span>${e(m('count',{count:rows.length}))}</span><button type="button" data-action="sort-repeats">${icon('sort')}${e(formatMessage(language,'mobileLibrary.'+sort))}</button></div>`:''}
-  <div class="mr-items">${cards||`<section class="mr-empty"><span class="mr-repeat-icon" aria-hidden="true">${icon('repeat')}</span><div><h2>${e(m('emptyTitle'))}</h2><p>${e(m('emptyHelp'))}</p></div></section>`}</div>
+  <div class="mr-items">${cards||`<section class="mr-empty"><span class="mr-repeat-icon" aria-hidden="true"></span><div><h2>${e(m('emptyTitle'))}</h2><p>${e(m('emptyHelp'))}</p></div></section>`}</div>
   <p data-mr-no-results hidden>${e(m('noResults'))}</p>${rows.length?`<button type="button" class="mr-review" data-action="apply-repeats">${e(formatMessage(language,'repeat.reviewDay'))}</button>`:''}</div>`;
 }
 export class MobileRepeatList{

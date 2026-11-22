@@ -1,4 +1,5 @@
 import {MobileLibrarySheet} from './foods-source/mobile-library.js';
+import {MobilePhotoCapture} from './snapshot-source/mobile-photo-capture.js';
 import {icon} from './foods-source/icons.js';
 import {pushBackHandler} from './back-history.js';
 import {AnchoredMenu} from './targets-source/anchored-menu.js';
@@ -62,8 +63,10 @@ export function mountPhotoLog({show, close, header, content, date, groups, initi
   show(`<section class="photo-log"><div class="photo-log-heading">${header(t("mobilePhoto.title"))}<div data-photo-summary></div></div><input type="file" accept="image/jpeg,image/png,image/webp" data-photo-gallery><input type="file" accept="image/*" capture="environment" data-photo-camera><div class="photo-log-body"></div></section>`);
   const shell = content.querySelector('.photo-log'), body = shell.querySelector('.photo-log-body');
   const photoSummary = shell.querySelector('[data-photo-summary]');
+  let entryCamera;
+  function releaseEntryCamera() { entryCamera?.dispose();entryCamera=null; }
   const alive = () => !disposed && shell.isConnected;
-  function dispose() { if (disposed) return; disposed = true; serial++; abort?.abort();  nutritionCache.clear(); itemCache.clear(); itemLoads.clear(); additionDrafts.clear(); createCleanup?.(); swapMenu?.close(false); closePortion(); closeMenu(); pickerCleanup?.(); observer.disconnect(); originalImage = null; analysis = null; rows = []; }
+  function dispose() { if (disposed) return; disposed = true; serial++; abort?.abort();releaseEntryCamera();nutritionCache.clear(); itemCache.clear(); itemLoads.clear(); additionDrafts.clear(); createCleanup?.(); swapMenu?.close(false); closePortion(); closeMenu(); pickerCleanup?.(); observer.disconnect(); originalImage = null; analysis = null; rows = []; }
   const observer = new MutationObserver(() => {if (!shell.isConnected) dispose();});observer.observe(content, {childList: true, subtree: true});
   function replace(html, summary = '') {
     nutritionVersion++;pickerCleanup?.();pickerCleanup = null;
@@ -71,12 +74,23 @@ export function mountPhotoLog({show, close, header, content, date, groups, initi
     body.innerHTML = html;body.scrollTop = 0;
   }
   const picker = camera => {if (!pendingSave) shell.querySelector(camera ? '[data-photo-camera]' : '[data-photo-gallery]').click();};
-  shell.querySelectorAll('input[type=file]').forEach(input => {input.onchange = async () => {const file = input.files?.[0];input.value = '';if (!file) return;
+  async function acceptFile(file) {
+    if (!file || !alive()) return;
+    releaseEntryCamera();
     const id = ++serial;abort?.abort();analysis = null;originalImage = null;rows = [];lastAddition = undefined;energyExpanded = true;additionDrafts.clear();
     if (file.size > MAX_IMAGE_BYTES) return errorView(fc('photoTooLarge'));
     try {const image = await prepareUploadImage(file);if (!alive() || id !== serial) return;originalImage = image;analyze();} catch (error) {if (alive() && id === serial) errorView(error.message);}
+  }
+  shell.querySelectorAll('input[type=file]').forEach(input => {input.onchange = () => {
+    const file=input.files?.[0];input.value='';void acceptFile(file);
   };});
-  function start() {replace(`<div class="photo-start"><button type="button" class="primary" data-camera>${e(t("mobilePhoto.capture"))}</button><button type="button" class="more-results" data-gallery>${e(t("mobilePhoto.gallery"))}</button></div>`);body.querySelector('[data-camera]').onclick = () => picker(true);body.querySelector('[data-gallery]').onclick = () => picker(false);}
+  function start() {
+    entryCamera=new MobilePhotoCapture({dialog:shell.closest('dialog'),language:uiLanguage(),showHint:false,
+      closeLabel:t('common.close'),flashLabel:t('barcode.flash'),flashError:t('barcode.flashFailed'),
+      onNativeCamera:()=>picker(true),onFile:acceptFile,
+      onClose:()=>{releaseEntryCamera();close();}});
+    entryCamera.root.classList.add('photo-entry-camera');
+  }
   function errorView(message) {replace(`<div class="photo-error"><p class="sheet-message" role="status">${e(message)}</p>${originalImage ? `<button class="primary" type="button" data-retry>${e(t("mobileSuggest.retry"))}</button>` : ''}<button class="more-results" type="button" data-gallery>${e(t("mobilePhoto.gallery"))}</button></div>`);body.querySelector('[data-gallery]').onclick = () => picker(false);if (originalImage) body.querySelector('[data-retry]').onclick = analyze;}
   async function analyze() {
     abort?.abort();abort = new AbortController();const signal = abort.signal, id = ++serial;analysis = null;rows = [];

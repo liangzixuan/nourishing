@@ -27,7 +27,7 @@ const weightSuffix=unit=>unit==='lb'?'lbs':unit;
 /** A Profile field owns one compact dialog and one idempotent save. */
 export function openProfileEditor({kind,data,date,onSaved,onClose}){
  const language=uiLanguage(),l=labels[language]??labels.en,focus=document.activeElement;
- const dialog=document.createElement('dialog');dialog.className='profile-editor';if(['age','weight','sex'].includes(kind))dialog.classList.add('settings-compact-dialog');dialog.dataset.profileEditor=kind;
+ const dialog=document.createElement('dialog');dialog.className='profile-editor';if(['age','weight','sex','height'].includes(kind))dialog.classList.add('settings-compact-dialog');dialog.dataset.profileEditor=kind;
  const title=kind==='age'?l.birthday:kind==='sex'?dc('sex'):t('measurementCatalog.metric.'+({weight:'weight',height:'height',bodyFat:'body-fat'}[kind]));
  dialog.setAttribute('aria-label',title);dialog.innerHTML=`<form><h2 tabindex="-1" autofocus>${e(title)}</h2><div class="profile-editor-fields"></div><p role="status" aria-live="polite"></p><footer><button type="button" data-profile-cancel>${e(t('common.cancel'))}</button><button type="submit">${e(t('common.save'))}</button></footer></form>`;
  const form=dialog.querySelector('form'),fields=dialog.querySelector('.profile-editor-fields'),status=dialog.querySelector('[role=status]');

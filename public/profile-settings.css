@@ -66,3 +66,22 @@
 .profile-editor.settings-compact-dialog[data-profile-editor=sex] footer {margin-top:auto}
 .profile-editor[data-profile-editor=sex] .profile-wheels {--wheel-height:25px;--wheel-padding:42px;height:109px;width:80%;margin-inline:auto}
 .profile-reference-note {margin:14px 0 8px;font-size:calc(13rem / 18);line-height:1.3}
+
+.profile-editor.settings-compact-dialog[data-profile-editor=height] {
+  width:min(336px,calc(100% - 32px));
+}
+.profile-editor[data-profile-editor=height] .profile-wheels {
+  --wheel-height:max(20px,calc(20rem / 18));
+  --wheel-padding:calc((125px - var(--wheel-height)) / 2);
+  width:200px;height:125px;gap:16px;
+  grid-template-columns:minmax(0,75fr) minmax(0,109fr);
+}
+.profile-editor[data-profile-editor=height] .profile-wheels::before,
+.profile-editor[data-profile-editor=height] .profile-wheels::after {
+  content:"";position:absolute;grid-row:1;grid-column:1 / 2;
+  inset:50% 9px auto;transform:translateY(-50%);
+  height:max(25px,var(--wheel-height));border-radius:8px;
+  background:var(--pale);z-index:-1;
+}
+.profile-editor[data-profile-editor=height] .profile-wheels::after {grid-column:2 / 3}
+body.dark .profile-editor[data-profile-editor=height] {--paper:#262a3b;--pale:#393c4c}

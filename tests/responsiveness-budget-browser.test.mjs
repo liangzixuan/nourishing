@@ -341,7 +341,7 @@ test('core Diary, Photo Log, and More interactions respond instantly under 1500m
     await page.getByRole('button', {name: /photo/i}).first().click();
     for (const input of ['[data-photo-camera]', '[data-photo-gallery]']) {
       await page.locator(input).dispatchEvent('cancel', {bubbles: true, cancelable: false});
-      assert.ok(await page.locator('[data-camera]').isVisible(), 'cancelling the file picker keeps Photo Log open');
+      assert.ok(await page.locator('.photo-entry-camera [data-mpc=shutter]').isVisible(), 'cancelling the file picker keeps Photo Log open');
     }
     await page.locator('[data-photo-gallery]').setInputFiles({
       name: 'meal.png',

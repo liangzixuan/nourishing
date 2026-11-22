@@ -1,6 +1,7 @@
 import {createUITranslator,t} from './app-language.js';
 export const accountCloudMessages={
   "en": {
+    "accountCloud.preferences": "Account preferences",
     "accountCloud.reconnectEdit": "Reconnect to save your account changes.",
     "accountCloud.enterPassword": "Enter Your Password",
     "accountCloud.reauthReason": "For your security, please re-enter your password to continue",
@@ -54,10 +55,11 @@ export const accountCloudMessages={
     "accountCloud.sendVerificationEmail": "Send verification email",
     "accountCloud.editName": "Edit name",
     "accountCloud.changeEmail": "Change email",
-    "accountCloud.changePassword": "Change password",
+    "accountCloud.changePassword": "Change Password",
     "accountCloud.imperial": "Imperial",
     "accountCloud.saveSettings": "Save settings",
     "accountCloud.signOut": "Sign out",
+    "accountCloud.logOut": "Log Out",
     "accountCloud.deleteAccount": "Delete account",
     "accountCloud.saved": "Saved.",
     "accountCloud.verificationEmailSent": "Verification email sent.",
@@ -284,6 +286,7 @@ export const accountCloudMessages={
     "accountCloud.pleaseWait": "Please wait…"
   },
   "fr": {
+    "accountCloud.preferences": "Préférences du compte",
     "accountCloud.reconnectEdit": "Reconnectez-vous au réseau pour enregistrer vos modifications.",
     "accountCloud.enterPassword": "Saisissez votre mot de passe",
     "accountCloud.reauthReason": "Pour votre sécurité, saisissez à nouveau votre mot de passe pour continuer",
@@ -341,6 +344,7 @@ export const accountCloudMessages={
     "accountCloud.imperial": "Impérial",
     "accountCloud.saveSettings": "Enregistrer les paramètres",
     "accountCloud.signOut": "Se déconnecter",
+    "accountCloud.logOut": "Se déconnecter",
     "accountCloud.deleteAccount": "Supprimer le compte",
     "accountCloud.saved": "Enregistré.",
     "accountCloud.verificationEmailSent": "E-mail de vérification envoyé.",
@@ -567,6 +571,7 @@ export const accountCloudMessages={
     "accountCloud.pleaseWait": "Veuillez patienter…"
   },
   "de": {
+    "accountCloud.preferences": "Kontoeinstellungen",
     "accountCloud.reconnectEdit": "Stelle eine Internetverbindung her, um deine Änderungen zu speichern.",
     "accountCloud.enterPassword": "Passwort eingeben",
     "accountCloud.reauthReason": "Gib zur Sicherheit dein Passwort erneut ein, um fortzufahren",
@@ -624,6 +629,7 @@ export const accountCloudMessages={
     "accountCloud.imperial": "Imperial",
     "accountCloud.saveSettings": "Einstellungen speichern",
     "accountCloud.signOut": "Abmelden",
+    "accountCloud.logOut": "Abmelden",
     "accountCloud.deleteAccount": "Konto löschen",
     "accountCloud.saved": "Gespeichert.",
     "accountCloud.verificationEmailSent": "Bestätigungs-E-Mail gesendet.",
@@ -850,6 +856,7 @@ export const accountCloudMessages={
     "accountCloud.pleaseWait": "Bitte warten…"
   },
   "pt-BR": {
+    "accountCloud.preferences": "Preferências da conta",
     "accountCloud.reconnectEdit": "Reconecte-se para salvar as alterações da sua conta.",
     "accountCloud.enterPassword": "Digite sua senha",
     "accountCloud.reauthReason": "Para sua segurança, digite sua senha novamente para continuar",
@@ -907,6 +914,7 @@ export const accountCloudMessages={
     "accountCloud.imperial": "Imperial",
     "accountCloud.saveSettings": "Salvar configurações",
     "accountCloud.signOut": "Sair",
+    "accountCloud.logOut": "Sair",
     "accountCloud.deleteAccount": "Excluir conta",
     "accountCloud.saved": "Salvo.",
     "accountCloud.verificationEmailSent": "E-mail de verificação enviado.",

@@ -24,6 +24,7 @@ The remaining audit continues from the release recorded below. Screen-level comp
 - Dark theme by default; System follows the device. Keep headers/navigation fixed and Discover swipes responsive.
 - Photo Log: selecting/capturing a photo starts recognition automatically with a scan animation; concise results; whole item opens editing; closing discards; default group Uncategorized unless explicitly selected. No Find Foods step or provider/allowance explanation.
 - A Photo Log or Barcode save made during its signed review window can sync after expiry. Use the time recorded by the signed-in device when it durably saved the change.
+- Nourishing is free. Omit subscription and billing controls. Keep the existing sign-in and omit optional two-factor authentication. These two rows in Account reference 171 are outside the parity scope.
 - Restore Default Settings applies to Nutrient Targets. Keep separately owned macro, calorie and energy settings intact.
 - Screenshots take precedence over manuals. Inspect real CRUD, menus, folds, back/outside dismissal, and blank/populated states.
 - The user has given standing approval to push commits. This includes the repository’s normal CI and production deployment on master. Do not stop after each small step or repeatedly ask for confirmation. Ask only for genuinely missing information or user-only device actions. No mandatory external review/sign-off.

@@ -2,9 +2,12 @@ import {KETO_PRESETS,MACRO_ENERGY_DENSITY,DEFAULT_MACRO_RATIOS} from '../report-
 import {convertEnergy} from '../report-source/server/energy-units.mjs';
 import {parseTemplateSettings} from '../report-source/server/macro-templates.mjs';
 export const macroKeys=['protein','carbohydrate','fat'];
+export function ratioDraft(policy=DEFAULT_MACRO_RATIOS){
+ return {basis:policy.basis,values:{...policy.values}};
+}
 export function templateDraft(template,defaults){
  const settings=structuredClone(template?.settings??defaults),m=settings.macro;
- return {id:template?.id??crypto.randomUUID(),name:template?.name??'',editing:!!template,mode:m.mode,fixed:m.mode==='fixed'?{...m.targets}:{protein:null,carbohydrate:null,fat:null},ratios:m.mode==='ratios'?{basis:m.basis,values:{...m.values}}:{basis:DEFAULT_MACRO_RATIOS.basis,values:{...DEFAULT_MACRO_RATIOS.values}},keto:m.mode==='keto'?{...m}:{version:1,mode:'keto',program:'moderate',leanBodyMassKg:null,...KETO_PRESETS.moderate,proteinAddition:0},energy:settings.energy,fixedUnit:'grams'};
+ return {id:template?.id??crypto.randomUUID(),name:template?.name??'',editing:!!template,mode:m.mode,fixed:m.mode==='fixed'?{...m.targets}:{protein:null,carbohydrate:null,fat:null},ratios:ratioDraft(m.mode==='ratios'?m:undefined),keto:m.mode==='keto'?{...m}:{version:1,mode:'keto',program:'moderate',leanBodyMassKg:null,...KETO_PRESETS.moderate,proteinAddition:0},energy:settings.energy,fixedUnit:'grams'};
 }
 export function draftSettings(draft){
  const macro=draft.mode==='fixed'?{mode:'fixed',targets:{...draft.fixed}}:draft.mode==='ratios'?{version:1,mode:'ratios',basis:draft.ratios.basis,values:{...draft.ratios.values}}:{version:1,mode:'keto',program:draft.keto.program,leanBodyMassKg:draft.keto.leanBodyMassKg,proteinPerKg:draft.keto.proteinPerKg,carbohydrateGrams:draft.keto.carbohydrateGrams,athleticBonus:draft.keto.athleticBonus,proteinAddition:draft.keto.proteinAddition};

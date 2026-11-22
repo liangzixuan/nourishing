@@ -2,7 +2,10 @@ import {escape as e} from './discover-ui.js';
 import {exerciseNavigation} from './exercise-navigation.js';
 import {createExerciseSearch} from './exercise-search.mjs';
 let catalogue=null,pending=null;
-const icon=name=>`<img src="/record-source/exercise-icons/${name}.svg" alt="" aria-hidden="true">`;
+const iconRoot='/record-source/exercise-icons/';
+const icon=name=>name.startsWith('#')
+ ? `<svg aria-hidden="true" focusable="false" viewBox="0 0 48 48"><use href="${iconRoot}equipment.svg${name}"></use></svg>`
+ : `<img src="${iconRoot}${name}.svg" alt="" aria-hidden="true">`;
 export class MobileExerciseBrowser{
  constructor({root,dialog,api,message,snapshot={node:'root',query:'',parent:null},onNavigate,onSelect,onCustom}){
   Object.assign(this,{root,dialog,api,message,snapshot:{...snapshot},onNavigate,onSelect,onCustom});this.abort=new AbortController();this.disposed=false;dialog.classList.add('mobile-food-editor','mobile-catalog-browser');root.classList.add('mcb-content','exercise-browser');

@@ -46,7 +46,7 @@ export class MobileBiometricPanel{
  header(){
   const d=this.session.draft,browse=this.mode==='browse',title=browse?(this.category?biometricCategoryLabel(this.category,this.language):this.m('title')):d.custom?this.m('customTitle'):this.metric()?.selection.id==='pulse-wave-velocity'?this.m('pulseWaveTitle'):biometricCatalogLabel(this.metric(),this.language);
   this.dialog.classList.add('mobile-food-editor','mobile-biometric');this.dialog.classList.toggle('mobile-catalog-browser',browse);
-  const head=this.dialog.querySelector('.dialog-head');head.querySelector('h2').textContent=(this.session.editing?'Edit ':'')+title;head.querySelector('button').innerHTML=browse&&this.category?'<img src="/record-source/exercise-icons/chevron-left.svg" alt="">':symbol('close');head.querySelector('[data-mb-search-label]')?.remove();
+  const head=this.dialog.querySelector('.dialog-head');head.querySelector('h2').textContent=title;head.querySelector('button').innerHTML=browse&&this.category?'<img src="/record-source/exercise-icons/chevron-left.svg" alt="">':symbol('close');head.querySelector('[data-mb-search-label]')?.remove();
   if(browse&&!this.category)head.insertAdjacentHTML('beforeend',`<label class="mcb-search" data-mb-search-label><img src="/record-source/exercise-icons/magnify.svg" alt=""><input type="search" data-mb-search placeholder="${e(this.m('search'))}" aria-label="${e(this.m('search'))}" value="${e(d.search)}"></label>`);
  }
  render(){
@@ -75,7 +75,7 @@ export class MobileBiometricPanel{
   if(!pair&&!stool){if(d.custom||this.freeUnit)fields+=row('unit',this.m('unit'),'required maxlength="30"');else fields+=`<button type="button" class="mb-row" data-mb-unit ${sleep?'disabled':''}><strong>${e(this.m('units'))}</strong><span class="mb-value">${e(sleep?this.m('hoursMinutes'):d.unit)}${sleep?'':dropdownIcon}</span></button>`}
   if(this.session.editing)fields+=row('date','Date','type="date" required');
   fields+=`<div class="mb-row"><label for="mb-time">${e(this.m('timestamp'))}</label><span class="mb-value"><input id="mb-time" type="time" name="time" value="${e(d.time)}" ${d.time?'':'readonly tabindex="-1"'}><input type="checkbox" data-mb-time-toggle aria-label="${e(this.m('timestamp'))}" ${d.time?'checked':''}></span></div><button type="button" class="mb-row" data-mb-group><strong>${e(this.m('group'))}</strong><span class="mb-value">${e(d.group||this.message('noGroup'))}${dropdownIcon}</span></button>`;
-  this.root.innerHTML=`<form data-form="mobile-biometric"><section class="mb-card">${fields}</section><p data-mb-error role="alert" hidden></p><p data-mb-status role="status" hidden></p><button type="submit" class="mb-save" data-mb-save>${e(this.session.editing?'Save Changes':this.m('add'))}</button><button type="button" class="mb-save" data-mb-check hidden>${e(this.m('check'))}</button></form>`;
+  this.root.innerHTML=`<form data-form="mobile-biometric"><section class="mb-card">${fields}</section><p data-mb-error role="alert" hidden></p><p data-mb-status role="status" hidden></p><button type="submit" class="mb-save" data-mb-save>${e(this.session.editing?formatMessage(this.language,'common.save'):this.m('add'))}</button><button type="button" class="mb-save" data-mb-check hidden>${e(this.m('check'))}</button></form>`;
  }
  input(event){
   if(this.locked()||!event.target.closest('[data-form=mobile-biometric]'))return;const node=event.target,d=this.session.draft;

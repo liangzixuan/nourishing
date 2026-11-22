@@ -57,7 +57,13 @@ test('source More menu preserves search and back focus, cloud destinations and d
   await page.goBack();await page.getByRole('heading',{name:'Support',exact:true}).waitFor();await page.locator('[data-more-back]').click();
   await page.locator('[data-more-open=about]').click();await page.locator('[data-more-open=licenses]').click();await page.getByRole('button',{name:'Chart.js',exact:true}).click();await page.locator('.mm-license').filter({hasText:'Permission is hereby granted'}).waitFor();await page.locator('[data-more-back]').click();
   await page.goBack();await page.getByRole('heading',{name:'About',exact:true}).waitFor();await page.locator('[data-more-back]').click();
-  await page.locator('[data-more-open=account]').click();await page.locator('[data-more-open=account-data]').click();await page.locator('#delete-account').click();await page.locator('.deletion-close').click();
+  await page.locator('[data-more-open=account]').click();
+  const landing=page.locator('.account-landing-list');
+  await landing.waitFor();assert.equal(await landing.locator('button').count(),5);
+  assert.equal((await landing.locator('[data-account-edit=password]').innerText()).trim(),'Change Password');
+  const preferences=page.locator('.account-preferences');await preferences.locator('summary').click();
+  assert.equal(await preferences.locator('[name=units]').inputValue(),'metric');assert.ok(await preferences.locator('[name=timeZone]').isVisible());
+  await landing.locator('[data-more-open=account-data]').click();await page.locator('#delete-account').click();await page.locator('.deletion-close').click();
   await page.locator('[data-more-back]').click();await page.locator('[data-more-open=notifications]').click();
   const toggle=page.getByRole('switch',{name:'Allow Notifications',exact:true});await toggle.waitFor();assert.equal(await toggle.isChecked(),false);
   const help=page.locator('[data-notification-help]');
