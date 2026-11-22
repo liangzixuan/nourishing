@@ -157,7 +157,9 @@ export class FoodCatalog {
 
   categories() {
     if(!this.db)return [];
-    return this.db.prepare(`SELECT json_extract(compact,'$.category.id') AS category_id,json_extract(compact,'$.category.name') AS category_name,count(*) AS food_count FROM food_insights WHERE json_type(compact,'$.category.id')='text' AND COALESCE(json_extract(facts,'$.sample'),0)<>1 GROUP BY category_id,category_name ORDER BY category_name,category_id`).all().map(row=>({id:row.category_id,name:row.category_name,foodCount:row.food_count}));
+    return this.db.prepare(`SELECT json_extract(compact,'$.category.id') AS category_id,json_extract(compact,'$.category.name') AS category_name,
+      json_group_array(DISTINCT COALESCE(NULLIF(json_extract(compact,'$.source.dataset'),''),NULLIF(json_extract(compact,'$.source.name'),''),json_extract(compact,'$.source.datasetId'))) AS source_names,
+      count(*) AS food_count FROM food_insights WHERE json_type(compact,'$.category.id')='text' AND COALESCE(json_extract(facts,'$.sample'),0)<>1 GROUP BY category_id,category_name ORDER BY category_name,category_id`).all().map(row=>({id:row.category_id,name:row.category_name,foodCount:row.food_count,sourceNames:JSON.parse(row.source_names).filter(Boolean).sort()}));
   }
 
   /** Minimal normalized facts only; source bodies and original records never leave SQLite here. */

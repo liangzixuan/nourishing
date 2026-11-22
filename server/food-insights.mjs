@@ -28,7 +28,14 @@ export function createInsightCatalog(foods,{metadata={},sourceFactDigests={},nut
    for(let i=0;i<food.nutrients.length;i+=2){const key=food.nutrients[i];if(!Number.isSafeInteger(key)||key<0||key>=nutrientIds.length||seen.has(key))throw Error('Invalid compact catalog nutrient index.');seen.add(key);}
   }
   index.set(food.id,food);search.set(food.id,[food.name,...(food.translations??[]).map(row=>row.name),...catalogSourceAliases(food.source)].join(' '));
-  if(food.sample!==true&&food.category?.id){const prior=categories.get(food.category.id);categories.set(food.category.id,{id:food.category.id,name:food.category.name,foodCount:(prior?.foodCount??0)+1});}
+  if(food.sample!==true&&food.category?.id){
+   const {id,name}=food.category;
+   const category=categories.get(id)??{id,name,foodCount:0,sourceNames:new Set()};
+   const sourceName=food.source?.dataset||food.source?.name||food.source?.datasetId;
+   if(sourceName)category.sourceNames.add(sourceName);
+   category.foodCount++;
+   categories.set(id,category);
+  }
  }
  // The full catalog keeps its packed values. Only selected facts cross into
  // domain calculations, which continue to receive their normal object shape.
@@ -66,7 +73,7 @@ export function createInsightCatalog(foods,{metadata={},sourceFactDigests={},nut
   disposeSearch:()=>searchIndex.dispose(),
   get(id){const food=index.get(id);return !food?null:Array.isArray(food.nutrients)?{...food,nutrients:valuesFor(food)}:food;},
   status:()=>({...metadata,available:true,foodCount:foods.length}),
-  categories:()=>[...categories.values()].sort((a,b)=>a.name.localeCompare(b.name)||a.id.localeCompare(b.id)),
+  categories:()=>[...categories.values()].map(row=>({...row,sourceNames:[...row.sourceNames].sort()})).sort((a,b)=>a.name.localeCompare(b.name)||a.id.localeCompare(b.id)),
   identicalSnapshotIds(saved){return new Set(saved.filter(food=>food.readOnly===true&&catalogIdentity(food.source)&&sourceFactDigests[catalogSourceId(food)]===contentDigest(foodSourceFacts(food))).map(food=>food.id));},
   projectInsights(selected,{query='',portions='none'}={}){
    if(!['none','first','all'].includes(portions)||!Array.isArray(selected)||!selected.length||selected.some(id=>!nutrients.some(n=>n.id===id)))invalid('Choose supported nutrient and serving options.');

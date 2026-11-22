@@ -1,4 +1,5 @@
 const rows={
+ foodName:['Food Name','Nom de l’aliment','Lebensmittelname','Nome do alimento'],
  'facts.calories':['Energy','Énergie','Energie','Energia'],
  'facts.fat':['Fat','Lipides','Fett','Gordura'],
  'facts.saturatedFat':['Saturated','Saturés','Gesättigte Fette','Saturadas'],

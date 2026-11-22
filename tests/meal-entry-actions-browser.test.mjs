@@ -108,7 +108,7 @@ test('saved meal actions distinguish original, copy and occurrence; local adjust
 
   await page.locator('#foods-tab').click();
   await page.locator('[data-action=new-food]').click();
-  await page.getByLabel('Name',{exact:true}).fill('Packed lunch');
+  await page.getByRole('textbox',{name:'Food Name',exact:true}).fill('Packed lunch');
   await page.context().setOffline(true);
   await page.locator('[data-mfe-submit]:enabled').click();
   await page.locator('[data-mfe-add]:enabled').click();

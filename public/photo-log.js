@@ -118,7 +118,7 @@ export function mountPhotoLog({show, close, header, content, date, groups, initi
     closeMenu();
     const historyEntry=pushBackHandler(()=>menuDialog?.close());
     menuDialog=new MobileLibrarySheet({label,items,onChoose,onClose:()=>{menuDialog=null;historyEntry.release();}});
-    menuDialog.root.classList.add('photo-action-menu');
+    menuDialog.root.classList.add('photo-action-menu','ml-action-rows');
   }
   const candidateFor=suggestion=>suggestion.candidates.find(candidate=>candidate.ref.id===suggestion.selection?.id&&candidate.ref.kind===suggestion.selection?.kind);
   function optionalRow(suggestion){if(!additionDrafts.has(suggestion.additionIndex))additionDrafts.set(suggestion.additionIndex,makeRow(suggestion,candidateFor(suggestion)));return additionDrafts.get(suggestion.additionIndex);}
