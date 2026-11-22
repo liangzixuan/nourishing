@@ -6,10 +6,20 @@ import {chooseDiaryDate} from '../../scripts/diary-test-navigation.mjs';
 export async function checkColdDateRecovery(page,{origin,from,to,marker,scenario='recover'}){
  const snapshotGate=Promise.withResolvers(),readGate=Promise.withResolvers();
  const dayPath='/api/diary?date='+to;
+ const lockedSnapshot=Promise.withResolvers();
  let failures=0,snapshotReads=0;
  const readMessage='Temporary date failure';
  await page.route('**/api/offline',async route=>{
-  snapshotReads++;await snapshotGate.promise;
+  snapshotReads++;
+  if(scenario==='lock'){
+   // Sign-in navigation can cancel the browser request. Hold the actual server response before locking.
+   const snapshot=await route.fetch();
+   lockedSnapshot.resolve(snapshot.status());
+   await snapshotGate.promise;
+   await route.fulfill({response:snapshot});
+   return;
+  }
+  await snapshotGate.promise;
   if(scenario==='unavailable')await route.fulfill({status:503,json:{error:'Temporary snapshot failure'}});
   else await route.continue();
  });
@@ -37,9 +47,15 @@ export async function checkColdDateRecovery(page,{origin,from,to,marker,scenario
    // Finish navigating with the snapshot still held, so a late Diary read cannot mask a failed Foods load.
    await page.locator('[data-tab=foods]').waitFor();
   }
-  if(scenario==='lock')await page.evaluate(async()=>{await(await import('/offline-store.js')).lockOfflineAccount();});
-  const response=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/offline');
-  snapshotGate.resolve();const snapshot=await response;const snapshotStatus=snapshot.status();
+  let snapshotStatus;
+  if(scenario==='lock'){
+   snapshotStatus=await lockedSnapshot.promise;
+   await page.evaluate(async()=>{await(await import('/offline-store.js')).lockOfflineAccount();});
+   snapshotGate.resolve();
+  }else{
+   const response=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/offline');
+   snapshotGate.resolve();snapshotStatus=(await response).status();
+  }
   assert.equal(snapshotStatus,scenario==='unavailable'?503:200);
   if(scenario==='recover'){
    await header.locator('[data-md-calendar]').waitFor();
