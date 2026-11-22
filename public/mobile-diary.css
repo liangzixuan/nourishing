@@ -56,6 +56,7 @@
 .md-record:has(.md-food-icon){gap:15px}
 .md-record:has(.md-food-icon) .food-meta{font-size:calc(14rem / 18)}
 .md-records tr:has(.md-food-icon) .md-record-amount{padding-inline-end:8px}
+.md-exercise-icon{display:inline-block;flex:none;width:20px;height:20px;background:#00bfc6;mask:url('/record-source/exercise-icons/run.svg') center/contain no-repeat}
 .md-food-icon{display:inline-block;width:16px;height:18px;background:linear-gradient(#209c54 0 24%,#ea3b04 24%);mask:url(/shell-source/navigation/apple-whole.svg) center/contain no-repeat;}
 .md-meal-icon{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#00a3a6;color:var(--paper)}
 .md-meal-icon .md-symbol{font-size:13px;line-height:1}

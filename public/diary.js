@@ -341,7 +341,7 @@ function renderDiaryRow(collection, row) {
   const time = diary.presentation?.settings?.showTimestamp === false ? '' : row.time;
   if (collection === 'entries') {
     const restaurantIcon = diarySymbol('restaurant');
-    const icon = row.kind === 'exercise' ? diarySymbol('fitness_center')
+    const icon = row.kind === 'exercise' ? '<span class="md-exercise-icon" aria-hidden="true"></span>'
       : row.mealId ? `<span class="md-meal-icon">${restaurantIcon}</span>`
       : row.recipeId ? restaurantIcon : '<span class="md-food-icon" aria-hidden="true"></span>';
     // Older catalog records do not identify whether the user chose a preset or a specific pace.

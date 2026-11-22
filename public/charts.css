@@ -25,5 +25,7 @@ body{--mcl-fasting:rgba(80,182,190,.16);--mcl-grid:color-mix(in srgb,var(--ink) 
 [data-chart-manager]:has(.app-nav){padding-bottom:calc(var(--dc-nav-space,80px) + 16px)}
 [data-chart-manager] .app-nav{position:fixed;bottom:0;inset-inline:0;max-width:none}
 .chart-manager-header{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;text-align:center}.chart-manager-header [data-manager-back]{min-height:44px;font-size:1.5rem}.chart-manager-header h2{grid-column:2}
-[data-chart-manager] .mcl-row:has([data-manage-chart]){padding-block:0}.mcl-row [data-manage-chart]{align-self:stretch;min-height:56px}.mcl-row[data-create-chart]{text-align:left}
+[data-chart-manager] .mcl-row:has([data-manage-chart]){padding-block:0;border-top:0}
+[data-chart-manager] .mcl-row:has([data-manage-chart]):not(:last-child){border-bottom:1px solid var(--line)}
+.mcl-row [data-manage-chart]{align-self:stretch;min-height:60px}.mcl-row[data-create-chart]{text-align:left}
 .chart-visibility:checked{background:var(--accent)}

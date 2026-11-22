@@ -50,7 +50,9 @@ export class CatalogExerciseEditor{
  }
  openEffort(){
   this.menu?.close(false);this.base.menu?.close(false);const origin=this.form.querySelector('[data-mec-effort]');origin.setAttribute('aria-expanded','true');
-  this.menu=new AnchoredMenu({origin,anchor:origin,className:'mec-effort-menu',label:this.m('effort'),items:this.choices.map(row=>({id:row.code,label:this.label(row),selected:row.code===this.activity.code})),onChoose:code=>{this.activity=this.choices.find(row=>row.code===code);if(!this.form.elements.id.value)this.manual=false;this.refresh()},onClose:()=>{this.menu=null;origin.setAttribute('aria-expanded','false')}});
+  const walking=this.titleKey==='generalWalking';
+  const placement=walking?{edgeInset:0,y:origin.querySelector('.me-value').getBoundingClientRect().bottom}:{};
+  this.menu=new AnchoredMenu({origin,anchor:origin,...placement,className:walking?'mec-effort-menu mec-walking-menu':'mec-effort-menu',label:this.m('effort'),items:this.choices.map(row=>({id:row.code,label:this.label(row),selected:row.code===this.activity.code})),onChoose:code=>{this.activity=this.choices.find(row=>row.code===code);if(!this.form.elements.id.value)this.manual=false;this.refresh()},onClose:()=>{this.menu=null;origin.setAttribute('aria-expanded','false')}});
  }
  back(){if(this.menu){this.menu.close();return true}return this.base.back()}
  dispose(){this.disposed=true;this.abort.abort();this.menu?.close(false);this.base.dispose()}

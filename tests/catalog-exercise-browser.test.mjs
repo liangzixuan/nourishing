@@ -113,9 +113,15 @@ test('Diary estimates with each account’s cold options cache and reopens a pen
 
   await context.setOffline(true);await save();await row.waitFor();
   assert.equal(await row.locator('.food-name').innerText(),'General Walking');
+  assert.equal(await row.locator('.md-exercise-icon').evaluate(icon=>getComputedStyle(icon).backgroundColor),'rgb(0, 191, 198)');
   assert.match(await row.innerText(),/10\.0 min - Light/);
   assert.match(await row.innerText(),/-26\.2\s*kcal/);
   await edit();await page.getByRole('button',{name:/Effort Level.*Light/}).click();
+  const light=await page.getByRole('menuitemradio',{name:'Light',exact:true}).boundingBox();
+  const effort=await page.locator('[data-mec-effort]').boundingBox();
+  assert.equal(light.width,236);
+  assert.equal(light.height,48);
+  assert.equal(light.x+light.width,effort.x+effort.width);
   await page.getByRole('menuitemradio',{name:'Moderate',exact:true}).click();
   assert.equal(await page.locator('[data-mec-description]').innerText(),'Requires moderate effort. Speeds up heart rate and breathing but does not leave you out of breath.');
   await page.locator('[name=duration]').fill('15');
