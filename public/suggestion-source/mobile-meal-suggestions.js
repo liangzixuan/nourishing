@@ -22,7 +22,7 @@ function filterChoices(field,available){
 
 // Presentation only: MealSuggestionsPanel owns requests, filters and preference outcomes.
 export class MobileMealSuggestionsView {
- constructor(panel,{header,onBack,icon,nutrients,groups=[]}){Object.assign(this,{panel,header,onBack,icon,nutrients});this.m=key=>formatMessage(panel.language,'mobileSuggest.'+key);this.groups=groups;this.group=groups.includes('Uncategorized')?'Uncategorized':groups[0];this.time=new Date().toTimeString().slice(0,5);this.screen='filters';this.drafts=[];this.pages=[];this.selection=0;}
+ constructor(panel,{header,onBack,icon,nutrients,groups=[]}){Object.assign(this,{panel,header,onBack,icon,nutrients});this.m=key=>formatMessage(panel.language,'mobileSuggest.'+key);this.groups=groups;this.group=groups.includes('Uncategorized')?'Uncategorized':groups[0];this.time='';this.screen='filters';this.drafts=[];this.pages=[];this.selection=0;}
  button(label,action,attributes=''){return `<button type="button" data-meal-action="${action}" ${attributes}>${e(label)}</button>`}
  optionsButton(){return `<button type="button" data-ms-options aria-label="${e(this.m('options'))}">${diarySymbol('more_vert')}</button>`;}
  heading(){

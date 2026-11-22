@@ -94,6 +94,20 @@ test('source Suggest Food: filters, impact, ingredient review, preferences and d
   assert.ok((await suggestions.evaluateAll(cards=>cards.map(card=>card.dataset.mealId))).includes(secondKey));
   await page.locator('[data-ms-options]:visible').click();await page.locator('[data-ms-group]').selectOption('Evening meal');await page.getByLabel('Time',{exact:true}).fill('18:30');await page.keyboard.press('Escape');failSave=true;const count=state.entries.length;await page.locator('.ms-result').first().locator('[data-meal-action="review"]').click();await page.waitForFunction(()=>window.added===1);assert.equal(await page.locator('#sheet').isVisible(),false);await waitForOutboxIdle(page,()=>lostSaveCount!==null);assert.ok(lostSaveCount>count);assert.equal(state.entries.length,lostSaveCount);const saves=writes.filter(row=>row.type==='meal.log');assert.equal(saves.length,2);assert.deepEqual(saves[0],saves[1]);assert.equal(saves[0].payload.group,'Evening meal');assert.equal(saves[0].payload.time,'18:30');
   await page.locator('#launch').click();await page.locator('#meal-custom').waitFor();assert.equal(await page.locator('[data-meal-filter]:checked').count(),0);await page.locator('[data-ms-options]:visible').click();assert.equal(await page.locator('.ms-filter-options button:visible').count(),1);await page.screenshot({path:'.local/suggestions-ui/filter-options.png'});await page.keyboard.press('Escape');assert.equal(await page.locator('.ms-filter-options').isVisible(),false);assert.equal(await page.locator('#sheet').isVisible(),true);await page.evaluate(()=>window.dispatchEvent(new Event('nourishing-back',{cancelable:true})));assert.equal(await page.locator('#sheet').isVisible(),false);
+  assert.ok(state.entries.slice(count).every(entry=>entry.time==='18:30'));
+  await page.locator('#launch').click();
+  await page.locator('#meal-custom').waitFor();
+  await page.locator('[data-meal-action="get"]').click();
+  const saveWithoutTime=page.locator('.ms-result').first().locator('[data-meal-action="review"]:enabled');
+  await saveWithoutTime.waitFor();
+  await page.locator('[data-ms-options]:visible').click();
+  assert.equal(await page.getByLabel('Time',{exact:true}).inputValue(),'');
+  await page.keyboard.press('Escape');
+  const timedCount=state.entries.length;
+  await saveWithoutTime.click();
+  await page.waitForFunction(()=>window.added===2);
+  await waitForOutboxIdle(page,()=>state.entries.length>timedCount);
+  assert.ok(state.entries.slice(timedCount).every(entry=>entry.time===''));
   await page.evaluate(async()=>{await (await import('/device-cache.js')).invalidateDeviceCache();});let release;heldOptions=new Promise(resolve=>{release=resolve;});await page.locator('#launch').click();await page.locator('[data-loading-close]').waitFor();assert.equal(await page.locator('.suggestion-body [role=status]').textContent(),'Loading…');await page.locator('[data-loading-close]').click();release();heldOptions=null;await page.waitForFunction(()=>document.querySelector('#sheet-content').children.length===0);await page.waitForTimeout(100);assert.equal(await page.locator('#sheet').isVisible(),false);
   assert.deepEqual(errors,[]);assert.deepEqual(await page.evaluate(()=>window.violations),[]);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
