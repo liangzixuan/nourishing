@@ -30,7 +30,10 @@
 .md-group-chevron .md-symbol{font-size:calc(22rem / 18);width:22px;height:22px;transform:rotate(90deg);}details[open]>summary .md-group-chevron .md-symbol{transform:rotate(-90deg);}.md-group-add .md-symbol,.md-record-menu .md-symbol{font-size:calc(21rem / 18);width:21px;height:21px;}.md-pagination .md-symbol{font-size:calc(19rem / 18);width:19px;height:19px;}.md-summary-heading .md-symbol{font-size:calc(20rem / 18);width:20px;height:20px;}
 .md-pagination{height:32px;}.md-macros{gap:2px;padding:2px 0;}.md-target{font-size:calc(14rem / 18)!important;row-gap:1px;}.md-target>span:first-child{white-space:normal;}.md-target strong{font:600 calc(15rem / 18) Karla,Lato,sans-serif;}.md-target small{font-size:calc(13rem / 18);grid-column:2;grid-row:1;align-self:center;text-align:right;}.md-target progress{height:9px;}.md-highlights{grid-auto-flow:column;grid-template-rows:repeat(var(--md-rows,4),auto);gap:2px 15px;}.md-highlights .md-target{column-gap:4px;row-gap:1px;}.md-highlights progress{grid-column:1/-1;grid-row:2;}.md-highlights small{grid-column:2;grid-row:1;font-size:calc(13rem / 18);}.md-highlights strong{font-size:calc(14rem / 18);}
 
-.md-energy-item>strong{white-space:normal;overflow-wrap:anywhere;}.md-summary-heading button{overflow-wrap:anywhere;}.md-highlights{align-items:start;}.md-record-menu .md-symbol{font-size:21px;}.md-pagination .md-symbol{font-size:19px;}.md-summary-heading .md-symbol{font-size:20px;}
+.md-energy-item>strong{white-space:normal;overflow-wrap:anywhere;}.md-summary-heading button{overflow-wrap:anywhere;}.md-highlights{align-items:start;}
+.md-summary-page[data-md-page-id="highlights"] .md-highlights{padding:3px 1px 1px;gap:3px 16px}
+.md-summary-page[data-md-page-id="highlights"] .md-target{min-height:31px}
+.md-record-menu .md-symbol{font-size:21px;}.md-pagination .md-symbol{font-size:19px;}.md-summary-heading .md-symbol{font-size:20px;}
 
 .md-records [data-collection=notes] .md-record-menu{color:#f7bb39!important;}.md-note-icon{width:20px;height:20px}.md-records [data-collection=biometrics] .md-record-menu{color:#61ce91!important;}
 
@@ -69,3 +72,4 @@
 .md-meal-icon .md-symbol{font-size:13px;line-height:1}
 
 .md-records tr:is([data-collection=notes],:has(.md-food-energy-unit,.water-row-energy)) td{padding-block:5px!important;height:54px}
+.md-records tr:not(:last-child):has(.md-food-energy-unit) td{height:55px}
