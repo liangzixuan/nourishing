@@ -9,7 +9,7 @@ export class MobileFastingRecurrence{
  constructor({form,language,onChange}){Object.assign(this,{form,language,onChange});}
  open(){
   this.menu?.close();const origin=this.form.querySelector('[data-repeat-picker]'),current=readRepeatFields(this.form),selected=repeatPreset(current,this.form.elements.start.value);
-  this.menu=new AnchoredMenu({origin,anchor:origin,label:origin.getAttribute('aria-label'),className:'dc-repeat-menu',items:repeatPresets.map(id=>({id,label:m(this.language,'preset.'+id),selected:id===selected})),onClose:()=>{this.menu=null;},onChoose:id=>{
+  this.menu=new AnchoredMenu({origin,anchor:origin.closest('.dc-row'),placement:'row-end',edgeInset:0,label:origin.getAttribute('aria-label'),className:'dc-repeat-menu dc-repeat-presets',items:repeatPresets.map(id=>({id,label:m(this.language,'preset.'+id),selected:id===selected})),onClose:()=>{this.menu=null;},onChoose:id=>{
    if(id==='custom'){this.openCustom(current);return;}
    writeRepeatFields(this.form,{...presetRule(id,this.form.elements.start.value),untilDate:id==='once'?null:current.untilDate},this.language);this.onChange();
   }});

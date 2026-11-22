@@ -58,7 +58,22 @@ export function mountFasting({page,headerRoot,onBack,onChange=async()=>{},initia
  function closeDelete(){if(deleteMutation?.busy)return;deleteMutation?.dispose();deleteMutation=null;deletion?.close();deletion=null;}
  function deleteRecords(ids){if(!ids.length||ids.length>100){status(dc('fastSelection'));return;}deletion=new MobileFastingDeleteDialog({language:uiLanguage(),count:ids.length,onCancel:closeDelete,onConfirm:()=>deleteMutation.run('fasting.deleteMany',{ids})});deleteMutation=fastingMutation({revision:()=>data.revision,context:()=>data,host:deletion.element,onSaved:async()=>{deleteMutation?.dispose();deletion?.close();deletion=null;deleteMutation=null;selected.clear();await changed();},onReload:async()=>{deleteMutation?.dispose();deletion?.close();deletion=null;deleteMutation=null;await reload();}});}
  function closeQuick(){if(quickMutation?.busy)return;quickWheel?.dispose();quickWheel=null;quickMutation?.dispose();quickMutation=null;quick?.close();quick?.remove();quick=null;}
- function quickDialog(title,markup,cls='dc-confirm',headerAction=''){closeQuick();quick=document.createElement('dialog');quick.className='dc-overlay '+cls+' fasting-quick';quick.innerHTML=`<header class="dc-dialog-header"><button class="dc-button dc-icon" type="button" data-close-fast aria-label="${t('common.close')}">${symbol('close')}</button><h2>${e(title)}</h2>${headerAction||'<span></span>'}</header><div class="dc-dialog-body">${markup}</div>`;const dismiss=()=>{if(quickMutation?.busy)return;closeQuick();onActionClose?.();};quick.querySelector('[data-close-fast]').onclick=dismiss;quick.addEventListener('cancel',event=>{event.preventDefault();dismiss();});quick.addEventListener('click',event=>{if(event.target===quick){const r=quick.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dismiss();}});document.body.append(quick);quick.showModal();return quick;}
+ function quickDialog(title,markup,cls='dc-confirm',headerAction=''){
+  closeQuick();
+  const dialog=document.createElement('dialog');
+  quick=dialog;dialog.className='dc-overlay '+cls+' fasting-quick';dialog.setAttribute('aria-label',title);
+  const closeButton=headerAction?'':`<button class="dc-button dc-icon" type="button" data-close-fast aria-label="${t('common.close')}">${symbol('close')}</button>`;
+  dialog.innerHTML=`<header class="dc-dialog-header">${closeButton}<h2>${e(title)}</h2>${headerAction||'<span></span>'}</header><div class="dc-dialog-body">${markup}</div>`;
+  const dismiss=()=>{if(quickMutation?.busy)return;closeQuick();onActionClose?.();};
+  dialog.querySelector('[data-close-fast]')?.addEventListener('click',dismiss);
+  dialog.addEventListener('cancel',event=>{event.preventDefault();dismiss();});
+  dialog.addEventListener('click',event=>{
+   if(event.target!==dialog)return;
+   const r=dialog.getBoundingClientRect();
+   if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dismiss();
+  });
+  document.body.append(dialog);dialog.showModal();return dialog;
+ }
  function bindQuick(type,payload){const dialog=quick;quickMutation=fastingMutation({revision:()=>data.revision,context:()=>data,host:dialog.querySelector('.dc-dialog-body'),onSaved:async()=>{closeQuick();await changed();},onReload:async()=>{quickMutation?.dispose();quickMutation=null;closeQuick();await reload();}});dialog.querySelector('[data-confirm-fast]').onclick=()=>quickMutation.run(type,typeof payload==='function'?payload():payload);}
  function openQuick(){
   if(data.active){confirmEnd();return;}
