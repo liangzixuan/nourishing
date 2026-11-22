@@ -176,7 +176,54 @@ test('Diary selection stays local through offline edits and rapid selection chan
   assert.deepEqual(fixture.state().entries,entriesBeforeDefinitions);
   const recipe=fixture.state().recipes.find(row=>row.name==='Rice batch');assert.equal(recipe.servings,2);assert.equal(recipe.instructions,'Stir.');assert.equal(recipe.ingredients[0].foodId,'rice');assert.equal(recipe.ingredients[0].amount,2);
   await page.locator('#settings-tab').click();await page.getByRole('searchbox',{name:'Search More'}).waitFor();assert.equal(await page.locator('[data-md-summary]').count(),0);await page.waitForFunction(()=>!Object.values(window.Chart?.instances??{}).length);assert.deepEqual(errors,[]);assert.deepEqual(await page.evaluate(()=>window.csp),[]);assert.equal(requests.filter(row=>row.operation==='nutrition').length,0);
-  await page.close();nutritionFailures=1;
+  await page.close();
+  page=await browser.newPage({viewport:{width:448,height:936},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}});
+  const held=Promise.withResolvers(),snapshotStarted=Promise.withResolvers(),coldReviews=[];
+  let coldReads=0;
+  await page.route('**/api/offline',async route=>{coldReads++;snapshotStarted.resolve();await held.promise;await route.continue();});
+  await page.route('**/api/diary/tools/review',async route=>{
+   coldReviews.push(route.request().postDataJSON().operation);
+   await route.fulfill({status:503,contentType:'application/json',body:'{"error":"The account is busy. Please try again."}'});
+  });
+  try{
+   await page.goto(base+'/diary');await page.locator('.md-diary').waitFor();await snapshotStarted.promise;
+   await page.getByRole('button',{name:'Diary actions',exact:true}).click();
+   await page.getByRole('button',{name:'Multi-Select',exact:true}).click();
+   await page.getByRole('checkbox',{name:'Select Rice',exact:true}).check();
+   await page.getByRole('button',{name:'Selected entry actions',exact:true}).click();
+   await page.getByRole('button',{name:'Create Recipe from Selection',exact:true}).click();
+   await page.locator('.diary-tools-sheet').waitFor();held.resolve();
+   await page.locator('.recipe-editor').waitFor();
+   assert.equal(coldReads,1);assert.deepEqual(coldReviews,[]);
+  }finally{held.resolve();}
+  await page.close();
+  for(const change of ['lock','switch']){
+   page=await browser.newPage({extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}});
+   const started=Promise.withResolvers(),release=Promise.withResolvers();
+   let fallbacks=0;
+   await page.route('**/owner-check',route=>route.fulfill({contentType:'text/html',body:'<title>Fixture</title>'}));
+   await page.route('**/api/offline',async route=>{started.resolve();await release.promise;await route.continue();});
+   await page.route('**/api/diary/tools/review',async route=>{fallbacks++;await route.abort();});
+   await page.goto(base+'/owner-check');
+   await page.evaluate(async()=>{await(await import('/device-cache.js')).initializeDeviceCache('fixture');});
+   const review=()=>page.evaluate(async date=>{
+    const {prepareLocalDiaryReview}=await import('/diary-preparation.js');
+    try{await prepareLocalDiaryReview({operation:'recipe',selection:{date,scope:'day'}},'fixture-revision');return 'returned';}
+    catch(error){return error.name;}
+   },date);
+   const pendingReview=review();
+   try{
+    await started.promise;
+    await page.evaluate(async change=>{
+     if(change==='lock')await(await import('/offline-store.js')).lockOfflineAccount();
+     else await(await import('/device-cache.js')).initializeDeviceCache('different-account');
+    },change);
+   }finally{release.resolve();}
+   assert.equal(await pendingReview,'AbortError');
+   if(change==='lock')assert.equal(await review(),'AbortError');
+   assert.equal(fallbacks,0);await page.close();
+  }
+  nutritionFailures=1;
   page=await browser.newPage({viewport:{width:412,height:915},colorScheme:'dark',extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}});page.setDefaultTimeout(10000);
   await page.route('**/api/offline',route=>route.fulfill({status:503,contentType:'application/json',body:'{"error":"Snapshot temporarily unavailable"}'}));
   await page.goto(base+'/diary');await page.locator('.md-diary').waitFor();await selectGroup();await ring(464);

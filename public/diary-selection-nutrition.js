@@ -1,32 +1,34 @@
-import {localWorkspaceView} from './local-engine.js';
+import {withDiaryReviewWorkspace} from './diary-preparation.js';
+import {captureDeviceOwner} from './device-cache.js';
+import {diarySelectionNutrition} from './local-diary-projection.js';
 import {remapWriteReferences} from './write-identities.js';
 import {request} from './diary-api.js';
 
 // Selection is a read, not a save prerequisite. Recompute from pending local
 // edits and recover transient network failures without asking the user to act.
 export function watchDiarySelection({selection,onChange}){
- const lifetime=new AbortController();let requestController,timer,serial=0,delay=1000;
+ const lifetime=new AbortController(),ticket=captureDeviceOwner(),retryDelays=[1000,2000,4000];
+ let requestController,timer,serial=0,retries=0;
  async function refresh(){
   if(lifetime.signal.aborted)return;
   const current=++serial;clearTimeout(timer);requestController?.abort();const reading=new AbortController();requestController=reading;
   try{
-   const local=await localWorkspaceView();if(current!==serial||lifetime.signal.aborted)return;let result;
-   if(local){
-    const {state,recordIds}=local;
-    const {diarySelectionNutrition}=await import('./local-diary-projection.js');
+   const result=await withDiaryReviewWorkspace(({state,recordIds})=>{
     const resolved=remapWriteReferences(structuredClone(selection),recordIds);
     // A row deleted while this view was opening no longer contributes.
     const currentSelection=resolved.scope==='selected'?{...resolved,records:resolved.records.filter(ref=>state[ref.collection]?.some(row=>row.id===ref.id&&row.date===resolved.date))}:resolved;
-    result=diarySelectionNutrition(state,currentSelection);
-   }else result=await request('/api/diary/tools/review',{operation:'nutrition',selection},reading.signal);
+    return diarySelectionNutrition(state,currentSelection);
+   },()=>request('/api/diary/tools/review',{operation:'nutrition',selection},reading.signal),{signal:reading.signal,ticket});
    if(current!==serial||lifetime.signal.aborted)return;
-   await onChange(result);delay=1000;
+   await onChange(result);retries=0;
   }catch(error){
    if(current!==serial||lifetime.signal.aborted||error.name==='AbortError')return;
-   if(navigator.onLine!==false){timer=setTimeout(refresh,delay);delay=Math.min(delay*2,30000);}
+   const transient=!error.status||[408,409,429].includes(error.status)||error.status>=500;
+   if(transient&&navigator.onLine!==false&&retries<retryDelays.length)timer=setTimeout(refresh,retryDelays[retries++]);
   }
  }
- for(const event of ['online','nourishing-local-changed','nourishing-data-changed'])window.addEventListener(event,refresh,{signal:lifetime.signal});
+ const changed=()=>{retries=0;void refresh();};
+ for(const event of ['online','nourishing-local-changed','nourishing-data-changed'])window.addEventListener(event,changed,{signal:lifetime.signal});
  void refresh();
  return {dispose(){lifetime.abort();serial++;requestController?.abort();clearTimeout(timer);}};
 }

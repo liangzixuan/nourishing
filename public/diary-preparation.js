@@ -1,6 +1,8 @@
-import {readWriteCopy} from './offline-store.js';
-import {offlineEffectiveState} from './offline-model.js';
-import {prepareDiaryReview,diaryReviewGuard,assertDiaryReviewGuard} from './local-diary-projection.js';
+import {currentPrivateResponseTicket} from './offline-store.js';
+import {captureDeviceOwner} from './device-cache.js';
+import {ensureDeviceSnapshot} from './device-sync.js';
+import {workspaceViewFromCopy} from './local-engine.js';
+import {prepareDiaryReview,diaryReviewGuard,assertDiaryReviewGuard,libraryCollectionView} from './local-diary-projection.js';
 import {remapWriteReferences,remapDiaryReviewIdentities} from './write-identities.js';
 import {request} from './diary-api.js';
 
@@ -9,12 +11,29 @@ export function remapDiaryReview(review,identities){
  remapDiaryReviewIdentities(review,identities);
  return review;
 }
-export async function prepareLocalDiaryReview(input,revision,{captured}={}){
- const copy=await readWriteCopy();
- if(!copy?.snapshot?.state||copy.locked)return request('/api/diary/tools/review',input);
- const state=offlineEffectiveState(copy),mapped=remapWriteReferences(structuredClone(input),copy.recordIds??{});
+// Wait for the same account snapshot that startup is already fetching. A missing
+// local copy can use the server; a changed account must abandon the old selection.
+export async function withDiaryReviewWorkspace(local,remote,{signal,ticket=captureDeviceOwner()}={}){
+ async function verify(){
+  if(signal?.aborted||ticket&&!await currentPrivateResponseTicket(ticket))throw new DOMException('Account changed or screen closed.','AbortError');
+ }
+ let copy;
+ if(ticket){
+  await verify();
+  try{copy=await ensureDeviceSnapshot({ownerId:ticket.ownerId});}
+  catch(error){if(error.name==='AbortError'||error.status===401)throw error;}
+ }
+ await verify();
+ const view=workspaceViewFromCopy(copy);
+ const result=view?await local(view):await remote();
+ await verify();
+ return result;
+}
+
+function reviewFromWorkspace({state,recordIds},input,revision,captured){
+ const mapped=remapWriteReferences(structuredClone(input),recordIds);
  if(captured){
-  const prior=remapDiaryReview(structuredClone(captured),copy.recordIds??{});
+  const prior=remapDiaryReview(structuredClone(captured),recordIds);
   delete prior.input.selection.revision;
   assertDiaryReviewGuard(prior.guard,diaryReviewGuard(state,prior.input));
   delete mapped.selection.revision;
@@ -24,6 +43,18 @@ export async function prepareLocalDiaryReview(input,revision,{captured}={}){
  if(result.selection){reviewed.selection={...result.selection};delete reviewed.selection.revision;}
  const localReview={input:reviewed,guard:diaryReviewGuard(state,reviewed)};
  return {...result,revision,localReview};
+}
+export function prepareLocalDiaryReview(input,revision,{captured}={}){
+ return withDiaryReviewWorkspace(
+  view=>reviewFromWorkspace(view,input,revision,captured),
+  ()=>request('/api/diary/tools/review',input),
+ );
+}
+export function prepareSelectionEditor(input,revision){
+ return withDiaryReviewWorkspace(
+  view=>[reviewFromWorkspace(view,input,revision),libraryCollectionView(view.state,view.revision)],
+  async()=>[await request('/api/diary/tools/review',input),await request('/api/library')],
+ );
 }
 // Resolve temporary identities only before the first send. An uncertain retry
 // must retain the exact prepared payload for receipt lookup and deduplication.

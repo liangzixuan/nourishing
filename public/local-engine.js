@@ -24,17 +24,18 @@ if (typeof window !== 'undefined') {
 }
 
 // Keep record aliases and projected state from the same account revision.
+export function workspaceViewFromCopy(copy) {
+  if (!copy?.snapshot?.state || copy.locked) return null;
+  const identity = JSON.stringify([copy.ownerId, copy.ticket.epoch, copy.revision]);
+  if (!cachedState || cachedIdentity !== identity) {
+    cachedState = offlineEffectiveState(copy);
+    cachedIdentity = identity;
+  }
+  return {state:cachedState,recordIds:copy.recordIds??{},revision:copy.snapshot.revision};
+}
 export async function localWorkspaceView() {
-  try {
-    const copy = await offlineCopy();
-    if (!copy?.snapshot?.state || copy.locked) return null;
-    const identity = JSON.stringify([copy.ownerId, copy.ticket.epoch, copy.revision]);
-    if (!cachedState || cachedIdentity !== identity) {
-      cachedState = offlineEffectiveState(copy);
-      cachedIdentity = identity;
-    }
-    return {state:cachedState,recordIds:copy.recordIds??{},revision:copy.snapshot.revision};
-  } catch { return null; }
+  try { return workspaceViewFromCopy(await offlineCopy()); }
+  catch { return null; }
 }
 export async function localWorkspaceState() {
   return (await localWorkspaceView())?.state??null;

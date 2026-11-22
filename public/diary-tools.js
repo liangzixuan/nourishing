@@ -1,8 +1,8 @@
 import {mountRecipeEditor} from './recipe-editor.js';
 import {mountMealEditor} from './composite-editor.js';
-import {localWorkspaceState,localLibraryView} from './local-engine.js';
+import {localWorkspaceState} from './local-engine.js';
 import {createDisplayView,projectLocalDiary} from './local-diary-projection.js';
-import {prepareLocalDiaryReview} from './diary-preparation.js';
+import {prepareLocalDiaryReview,prepareSelectionEditor} from './diary-preparation.js';
 import {request,queueCommand} from './diary-api.js';
 import {mealActionText as mealText} from './meal-action-messages.js';
 import {escape as e} from './html.js';
@@ -51,7 +51,7 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
   button.onclick=async()=>{button.disabled=true;try{await save('records.delete',{selection:source,confirmed:true},revision);}catch(error){if(status.isConnected){status.textContent=error.message;button.disabled=false;}}};
  }
  async function reusable(source,kind,title=t('diaryActions.selection.'+kind)){
-  const result=await busy(title,()=>Promise.all([prepare({operation:kind,selection:source}),localLibraryView().then(view=>view??request('/api/library'))]));
+  const result=await busy(title,()=>prepareSelectionEditor({operation:kind,selection:source},diary().revision));
   if(!result)return;
   const [selection,data]=result,mount=kind==='recipe'?mountRecipeEditor:mountMealEditor;
   const common={data,date,show,close,content,openEntry,onSaved:()=>{reset();render();void onChange();}};

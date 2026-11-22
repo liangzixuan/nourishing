@@ -3,6 +3,11 @@ import {activateOfflineAccount,resumePrivateResponses,resumeOfflinePrivateRespon
 const state=(globalThis[Symbol.for('nourishing.deviceCache')]??={verified:null,initialization:0});
 const miss=()=>({value:undefined,savedAt:null,ticket:null});
 const same=(a,b)=>!!a&&!!b&&a.ownerId===b.ownerId&&a.epoch===b.epoch;
+// Keep the initiating account identity even if its durable cache is locked while a screen is open.
+export function captureDeviceOwner(){
+ const current=state.verified;
+ return current?{ownerId:current.ownerId,epoch:current.epoch}:null;
+}
 function allowed(path){
  // This exact key contains only the Account renderer's display projection.
  // The authentication endpoint and all credential/recovery reads stay blocked.
