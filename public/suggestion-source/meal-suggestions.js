@@ -64,7 +64,7 @@ export class MealSuggestionsPanel{
   async load(){
     this.mobile?.showResults();
     this.controller?.abort();const controller=new AbortController();this.controller=controller;const version=++this.version;this.result=null;this.error(this.host.preferenceUnknown?this.m('unknownOutcome'):'');this.root.querySelector('[data-meal-status]').textContent=this.m('loading');this.root.querySelector('[data-meal-results]').innerHTML='';
-    try{const data=await this.request('/api/insights/meals/suggest',{method:'POST',signal:controller.signal,body:JSON.stringify({date:this.date,filters:this.host.filters,omit:this.host.omit,offset:this.host.offset,limit:4})});if(this.disposed||version!==this.version)return;this.result=data;this.renderResults();}
+    try{const data=await this.request('/api/insights/meals/suggest',{method:'POST',signal:controller.signal,body:JSON.stringify({date:this.date,filters:this.host.filters,omit:this.host.omit,offset:this.host.offset,limit:this.mobile?5:4})});if(this.disposed||version!==this.version)return;this.result=data;this.renderResults();}
     catch(error){if(!this.disposed&&version===this.version&&error.name!=='AbortError'){this.root.querySelector('[data-meal-status]').textContent=this.m('loadFailed');this.error(this.errorText(error));this.mobile?.loadFailed();}}
   }
   renderResults(){if(this.mobile)return this.mobile.renderResults();const m=this.m,format=this.format;const r=this.result;if(!r)return;this.root.querySelector('[data-meal-status]').textContent=m('results',{total:format(r.total),filtered:format(r.coverage.filteredOut),excluded:format(r.coverage.alwaysExcluded),unavailable:format(r.coverage.unavailable.length)});
