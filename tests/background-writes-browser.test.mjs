@@ -656,7 +656,10 @@ test('fasting history, starts and stops persist from the visible offline control
   const pending=()=>page.evaluate(async()=>(await(await import('/offline-store.js')).readWriteCopy()).pending);
   await mount();await open('history');await action('past-fast');await editor.locator('[name=label]').fill('Lunch');await save();
   const lunch=page.locator('[data-fast-history-row]').filter({hasText:'Lunch'});await lunch.locator('[data-discover=history-edit]').click();await editor.locator('[name=label]').fill('Updated lunch');await save();
-  await mount('new');await quick.locator('input').check();assert.equal(await quick.locator('select').isDisabled(),true);await confirm();
+  await mount('new');await quick.getByRole('switch').check();
+  const durationWheel=quick.locator('[data-duration-wheel]');
+  assert.equal(await durationWheel.getAttribute('aria-disabled'),'true');
+  assert.ok(await durationWheel.evaluate(node=>node.inert));await confirm();
   await page.clock.setFixedTime(new Date(noon));await mount('end');await confirm();await open('history');
   assert.equal(await page.locator('[data-fast-history-row]').count(),3);
   await page.route('**/api/fasting?**',route=>route.abort());
