@@ -172,10 +172,11 @@
       "source": "public/discover.js",
       "target": "public/dashboard-source/dashboard-charts.js",
       "sourceSha256": "6ffc164dd2504087c9240ccbc21ca74bdb72871925c71220718ab47be5d72665",
-      "sha256": "c09ddda99b4eceec694d8d2ccc224cf9d1e1192f93c92eade22ca7da88dc65ab",
+      "sha256": "b73fcb47ea311cfd70e6368dc30451d760496130bc09ddbcf84b3d8b7b2a1465",
       "transforms": [
         "CRLF to LF",
-        "Extract original drawCharts method; explicit imports; font scale reads root computed size"
+        "Extract original drawCharts method; explicit imports; font scale reads root computed size",
+        "Keep the category axis formatter for localized Energy dates"
       ]
     },
     {
