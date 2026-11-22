@@ -10,7 +10,8 @@ export class MobileRecipeServings{
   this.instructions=document.createElement('p');this.instructions.dataset.mrsInstructions='';root.querySelector('h3').after(this.instructions);
   const toggle=document.createElement('label');toggle.className='mrs-toggle';toggle.innerHTML=`${e(this.m('advancedServings'))}<input type="checkbox" data-mrs-advanced role="switch" ${editor.rows.length?'checked':''}>`;this.instructions.after(toggle);this.toggle=toggle.querySelector('input');
   this.table=document.createElement('section');this.table.className='mrs-table';this.table.innerHTML=`<div class="mrs-tabs" role="group" aria-label="${e(this.m('servingBasis'))}">${['batch','weight','volume'].map(mode=>`<button type="button" data-mrs-mode="${mode}">${e(this.m(mode+'Based'))}</button>`).join('')}</div><div class="mrs-columns"><span data-mrs-count>#</span><span>${e(this.m('servingName'))}</span><span data-mrs-caption></span><span></span></div><div class="mrs-builtins" data-mrs-builtins></div><div class="mrs-base"><span data-mrs-count>1</span><div data-mrs-name></div><div data-mrs-amount></div><span></span></div><p data-mrs-error role="alert" hidden></p>`;
-  toggle.after(this.table);
+  const page=document.createElement('div');page.className='mrs-page';
+  root.prepend(page);page.append(root.querySelector('[data-mce-name]'),root.querySelector('h3'),this.instructions,toggle,this.table);
   const builtins=this.table.querySelector('[data-mrs-builtins]');
   const fixedRow=`<div class="mrs-fixed"><span data-mrs-count>1</span><span data-mrs-label></span><span data-mrs-value></span><button type="button" data-mce-help="servings" aria-label="${e(this.m('servingHelp'))}"><span aria-hidden="true">?</span></button></div>`;
   builtins.innerHTML=fixedRow.repeat(2);

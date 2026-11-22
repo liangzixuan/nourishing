@@ -32,9 +32,11 @@ export class FoodNutritionView{
   const legend=macros.map(id=>{const component=id==='carbs'?'carbohydrate':id,pct=canPartition?' ('+num(allocation.values[component]/allocation.total*100,0)+'%)':'';return `<div class="mf-${id}"><span>${e(label(id)+pct)}</span> · <strong>${num(value(id))}${partial(id)?'*':''} g</strong></div>`;}).join('');
   const groups=new Map(),hidden=new Set(nutrition.nutrientDisplay.hidden);
   const highlights=showHighlights?(nutrition.diaryDisplay?.highlights??[]):[];
-  const highlighted=highlights.length?section('highlights',m('highlights'),`<div class="mf-highlights">${highlights.map(row=>
+  const split=Math.ceil(highlights.length/2);
+  const highlightColumn=rows=>`<div class="mf-highlight-column">${rows.map(row=>
    `<div data-mf-highlight="${e(row.id)}">${targetContent(row,nutrientDisplayName(row,this.language),row.value,row.target,row.status==='partial')}</div>`
-  ).join('')}</div>`):'';
+  ).join('')}</div>`;
+  const highlighted=highlights.length?section('highlights',m('highlights'),`<div class="mf-highlights">${highlightColumn(highlights.slice(0,split))}${highlightColumn(highlights.slice(split))}</div>`):'';
   for(const row of this.catalog){if(['calories',...macros].includes(row.id)||hidden.has(row.id))continue;const group=row.category;if(!groups.has(group))groups.set(group,[]);groups.get(group).push(row);}
   this.target.innerHTML=section('energy',m('energy'),`<div class="mf-energy"><div class="mf-ring"><canvas aria-label="${e(m('energy'))}" role="img"></canvas><div><strong data-mf-energy>${num(energy,0)}</strong><span>${e(this.unit)}</span></div></div><div class="mf-legend">${legend}</div></div>`)+section('macros',m('macros'),['calories',...macros].map(progress).join(''))+highlighted+[...groups].map(([group,rows])=>section(group,nutrientGroupName(group,this.language),rows.map(row=>progress(row.id)).join(''))).join('')+`<small class="mf-missing">${e(m('missing'))}</small>`;
   const Chart=await chartLibrary();if(generation!==this.generation||!isCurrent())return;
