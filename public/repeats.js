@@ -5,6 +5,7 @@ import {icon} from './repeat-source/icons.js';
 import {request,command,queueCommand} from './diary-api.js';
 import {localLibraryItem} from './local-engine.js';
 import {escape as e} from './html.js';
+import {openBarcode} from './barcode.js';
 import {mountFoodPicker} from './food-picker.js';
 import {mountFoodEntry} from './food-entry.js';
 import {quantityDescription} from './suggestion-source/quantity-description.js';
@@ -75,10 +76,20 @@ export function mountRepeats({page, show, close, header, content, date, headerRo
   root.addEventListener('click',click,{signal:events.signal});headerRoot?.addEventListener('click',click,{signal:events.signal});
   function chooseItem(restore) {
     open(`<h2 id="sheet-title" hidden>${e(fc("repeatItem"))}</h2><div class="repeat-picker"></div>`);
-    pickerCleanup = mountFoodPicker(content.querySelector('.repeat-picker'), {restore, onClose: close, onPick: (kind, id) => {
-      const search = pickerCleanup.snapshot();
-      void editItem(undefined, {[kind + 'Id']: id}, search);
-    }});
+    pickerCleanup = mountFoodPicker(content.querySelector('.repeat-picker'), {
+      restore,
+      onClose: close,
+      onBarcode: scanItem,
+      onPick: (kind, id) => editItem(undefined, {[kind + 'Id']: id}, pickerCleanup.snapshot()),
+    });
+  }
+  function scanItem(search) {
+    pickerCleanup = openBarcode({
+      show: open, close, header, content, date, groups: data.groups, onChange,
+      returnToPicker: () => chooseItem(search),
+      onSelect: (food, {date: startDate, ...selection}) =>
+        editItem(undefined, {foodId: food.id, startDate, ...selection}),
+    });
   }
   async function editItem(existing, draft, search) {
     const value = draft ?? existing;

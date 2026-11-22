@@ -11,11 +11,22 @@ import {escape as e} from './html.js';
 import {quantityFields,quantityValue} from './quantity.js';
 const num=value=>Number.isFinite(value)?value.toLocaleString(uiLanguage(),{maximumFractionDigits:1}):'—';
 
-export function openBarcode({mode='camera',show,close,header,content,date,groups,group,onChange,revision,onSelect,onMissing}){
+export function openBarcode({mode='camera',show,close,header,content,date,groups,group,onChange,onSelect,returnToPicker,onMissing=returnToPicker}){
  show('<div class="barcode-flow"></div>');const root=content.querySelector('.barcode-flow');let scanner,controller,serial=0,disposed=false,timer;
- const dispose=()=>{if(disposed)return;disposed=true;serial++;clearTimeout(timer);controller?.abort();scanner?.dispose();observer.disconnect();};
- root.addEventListener('click',event=>{if(event.target.closest('[data-barcode-back]'))close();});
+ const backEvents=new AbortController();
+ const leave=returnToPicker??close;
+ const dispose=()=>{if(disposed)return;disposed=true;backEvents.abort();serial++;clearTimeout(timer);controller?.abort();scanner?.dispose();observer.disconnect();};
+ root.addEventListener('click',event=>{if(event.target.closest('[data-barcode-back]'))leave();});
  const observer=new MutationObserver(()=>{if(!root.isConnected)dispose();});observer.observe(content,{childList:true});
+ if(returnToPicker){
+  const back=event=>{
+   if(!root.isConnected||!root.closest('dialog')?.open)return;
+   event.preventDefault();event.stopImmediatePropagation();
+   if(!scanner?.back())returnToPicker();
+  };
+  root.closest('dialog')?.addEventListener('cancel',back,{capture:true,signal:backEvents.signal});
+  window.addEventListener('nourishing-back',back,{signal:backEvents.signal});
+ }
  function view(html){serial++;controller?.abort();scanner?.dispose();scanner=null;clearTimeout(timer);root.innerHTML=html;content.closest('dialog').scrollTop=0;}
  async function lookup(code,scan,signal){
   const {ticket}=await readDeviceCache('/api/diary');
@@ -28,7 +39,7 @@ export function openBarcode({mode='camera',show,close,header,content,date,groups
    await onMissing();
   }
  }
- function camera(){view('<div class="barcode-camera-root"></div>');scanner=new BarcodeScanner({root:root.firstElementChild,fullscreen:true,language:uiLanguage(),onClose:close,onCode:lookup});}
+ function camera(){view('<div class="barcode-camera-root"></div>');scanner=new BarcodeScanner({root:root.firstElementChild,fullscreen:true,language:uiLanguage(),onClose:leave,onCode:lookup});}
  function search(){
   view(header(fc('brandedFoods'))+`<form class="branded-search-form"><input type="search" aria-label="${e(fc("productBrand"))}" placeholder="${e(fc("productBrand"))}" required minlength="2" maxlength="200"><button>${e(t("barcode.lookupShort"))}</button></form><p class="sheet-message" role="status"></p><ul class="search-results"></ul><button type="button" class="more-results" hidden>${e(fc("showMore"))}</button><p class="barcode-source-link">Open Food Facts · ODbL</p>`);
   const form=root.querySelector('form'),status=root.querySelector('[role=status]'),list=root.querySelector('ul'),more=root.querySelector('.more-results');let query='',next;
@@ -40,7 +51,8 @@ export function openBarcode({mode='camera',show,close,header,content,date,groups
   list.onclick=async event=>{const button=event.target.closest('[data-barcode]');if(!button)return;button.disabled=true;status.textContent=fc("loadingProduct");controller?.abort();controller=new AbortController();try{await lookup(button.dataset.barcode,null,controller.signal);}catch(error){if(!disposed&&status.isConnected&&error.name!=='AbortError'){status.textContent=error.message;button.disabled=false;}}};
  }
  function review(result,ticket){
-  view(header(t("diary.food")));const food=result.resource,now=new Date(),time=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'),selected=groups.includes(group)?group:groups.includes('Uncategorized')?'Uncategorized':groups[0];
+  const title=header(t("diary.food"));
+  view(returnToPicker?title.replace('data-close','data-barcode-back'):title);const food=result.resource,now=new Date(),time=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'),selected=groups.includes(group)?group:groups.includes('Uncategorized')?'Uncategorized':groups[0];
   root.insertAdjacentHTML('beforeend',`<section class="barcode-review"><h3>${e(food.name)}</h3><p class="barcode-source-link">${e(food.barcode)} · <a href="https://world.openfoodfacts.org/product/${encodeURIComponent(food.barcode)}" target="_blank" rel="noopener noreferrer">Open Food Facts</a> · ODbL<br>${e(fc("checkPackage"))}</p><form class="entry-form">${quantityFields(result.options)}<label class="field-row"><span>${e(t("mobileFood.date"))}</span><input name="date" type="date" value="${e(date())}" required></label><label class="field-row"><span>${e(t("mobileFood.group"))}</span><select name="group">${groups.map(g=>`<option ${g===selected?'selected':''}>${e(g)}</option>`).join('')}</select></label><label class="field-row"><span>${e(t("foodLog.time"))}</span><input name="time" type="time" value="${time}" required></label><div class="nutrition-preview" aria-live="polite"></div><p class="sheet-message" role="status"></p><footer class="entry-actions"><button type="button" data-save-food class="danger">${e(fc("saveMyFoods"))}</button><button class="primary">${onSelect?fc("selectFood"):t("mobileFood.add")}</button></footer></form></section>`);
   const form=root.querySelector('form'),status=root.querySelector('[role=status]'),preview=root.querySelector('.nutrition-preview');let previewId=0;
   const payload=()=>{const values=Object.fromEntries(new FormData(form));return {reviewToken:result.reviewToken,date:values.date,time:values.time,group:values.group,...quantityValue(form)};};
@@ -53,20 +65,21 @@ export function openBarcode({mode='camera',show,close,header,content,date,groups
    const input={reviewToken,...entry,...(saveFoodOnly?{saveOnly:true}:{})};
    saving=true;form.querySelectorAll('button').forEach(button=>button.disabled=true);status.textContent='';
    try{
+    const source=saveOnly?null:parseReferencedQuantity({foods:[food]},{...entry,foodId:food.id}).source;
     if(ticket){
      let barcodeEntry;
-     if(!saveOnly){
+     if(!saveFoodOnly){
       const state=await localWorkspaceState();
       if(state){assertDiaryDaysEditable(state,[entry.date]);requiredRecordGroup(entry.group,state.settings.groups);}
-      const {source}=parseReferencedQuantity({foods:[food]},{...entry,foodId:food.id});
       barcodeEntry={...source,kind:'food',name:food.name,date:entry.date,time:entry.time,group:entry.group};
      }
-     await queueCommand(result.revision,'barcode.log',input,{path:'/api/barcode/save',ticket,projection:{barcodeFood:food,...(!saveFoodOnly?{barcodeEntry}:{})}});
+     await queueCommand(result.revision,'barcode.log',input,{path:'/api/barcode/save',ticket,projection:{barcodeFood:food,...(barcodeEntry?{barcodeEntry}:{})}});
     }else await command(result.revision,'barcode.log',input);
     if(disposed)return;
     await onChange();
+    if(disposed)return;
     if(onSelect&&!saveOnly)await onSelect({...food,kind:'foods'},entry);
-    else close();
+    else leave();
    }catch(error){if(!disposed)status.textContent=error.message;}
    finally{saving=false;form.querySelectorAll('button').forEach(button=>button.disabled=false);}
   }

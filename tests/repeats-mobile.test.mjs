@@ -10,6 +10,7 @@ import {readFileSync,readdirSync,mkdirSync,mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {chromium} from 'playwright-core';
+import {lookupBarcode,previewBarcode} from '../server/barcode.mjs';
 import {favoriteView} from '../server/library-extras.mjs';
 import {initialState,previewDiaryItem,act} from '../server/domain/workspace.mjs';
 import {createWorkspaceStore} from '../server/workspace-store.mjs';
@@ -34,12 +35,17 @@ test('Repeat list localizes search, count and schedule order',async()=>{
 });
 test('source Repeat list/editor preserve schedules, reviewed apply, retries and dismissal',async()=>{
  const date='2026-11-16',seed=initialState();seed.foods.push({id:'oats',name:'Fixture oats',grams:100,serving:'100 g',nutrients:{calories:200,protein:10}});act(seed,'repeat.save',{foodId:'oats',quantity:50,unit:'g',group:'Breakfast',time:'08:00',startDate:date,days:[1],enabled:true});
- const fixture=diaryStoreFixture(seed),store=createWorkspaceStore(fixture.db,'fixture'),state=()=>fixture.state(),context={owner:'fixture',asOf:date+'T18:00:00Z',timeZone:'UTC'},attempts=[];let handler,base,loseReply=false,rejectApply=false;
+ const fixture=diaryStoreFixture(seed),store=createWorkspaceStore(fixture.db,'fixture'),state=()=>fixture.state(),context={owner:'fixture',reviewSecret:'synthetic-repeat-barcode-key-over-32-bytes',asOf:date+'T18:00:00Z',timeZone:'UTC'},attempts=[];let handler,base,loseReply=false,rejectApply=false;
  const assets=new Map(packagedAssets);function visit(dir,prefix=''){for(const entry of readdirSync(dir,{withFileTypes:true})){if(entry.isDirectory())visit(dir+'/'+entry.name,prefix+'/'+entry.name);else assets.set(prefix+'/'+entry.name,{body:readFileSync(dir+'/'+entry.name),type:entry.name.endsWith('.css')?'text/css':/\.m?js$/.test(entry.name)?'text/javascript':entry.name.endsWith('.svg')?'image/svg+xml':'application/octet-stream'});}}visit('public');
  assets.set('/',{type:'text/html',body:'<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/diary.css"><link rel="stylesheet" href="/mobile-theme.css"><link rel="stylesheet" href="/app-shell.css"><link rel="stylesheet" href="/more.css"><link rel="stylesheet" href="/diary-summary.css"><link rel="stylesheet" href="/diary-bundle.css"><link rel="stylesheet" href="/food-search-source/mobile-food-search.css"><link rel="stylesheet" href="/profile-settings.css"></head><body class="discover-mobile dark"><div class="app-shell"><header class="app-header topbar"></header><main id="page"></main></div><dialog id="sheet"><div id="sheet-content"></div></dialog><script type="module" src="/fixture.js"></script></body></html>'});
  assets.set('/fixture.js',{type:'text/javascript',body:`import {mountMore} from '/more.js';import {initializeDeviceCache} from '/device-cache.js';import {onBackgroundWriteStatus} from '/background-writes.js';await initializeDeviceCache('fixture');onBackgroundWriteStatus(status=>{if(status.retry){window.backgroundRetry=status.retry;window.backgroundError=status.error?.message;}});const content=document.querySelector('#sheet-content'),sheet=document.querySelector('#sheet');window.csp=[];document.addEventListener('securitypolicyviolation',event=>window.csp.push(event.violatedDirective));const close=()=>{sheet.close();content.replaceChildren()};window.more=mountMore({page:document.querySelector('#page'),headerRoot:document.querySelector('.app-header'),date:()=>${JSON.stringify(date)},content,header:title=>'<header><h1>'+title+'</h1><button type=button data-close aria-label=Close>×</button></header>',show:html=>{content.innerHTML=html;if(!sheet.open)sheet.showModal()},close,onChange:()=>{}});content.addEventListener('click',event=>{if(event.target.closest('[data-close]'))close()});sheet.addEventListener('cancel',event=>{event.preventDefault();close()});`});
  const server=createServer(async(req,res)=>{const result=await handler(new Request(base+req.url,{method:req.method,headers:req.headers,...(req.method==='GET'?{}:{body:req,duplex:'half'})}));res.writeHead(result.status,Object.fromEntries(result.headers));res.end(Buffer.from(await result.arrayBuffer()));});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));base='http://127.0.0.1:'+server.address().port;
- handler=createWebHandler({config:{origin:base},assets,service:{current:async()=>({id:'fixture'}),readDiary:async()=>({revision:digest(state())}),offlineSnapshot:async()=>offlineSnapshot(state(),{ownerId:'fixture',generation:'repeat-fixture'}),favorites:async()=>favoriteView(state()),previewDiary:async(_,payload)=>({...previewDiaryItem(state(),payload),energy:{unit:'kcal'}}),foodSearch:async(_,input)=>searchCloudFoods(state(),createInsightCatalog([]),input),repeats:async(_,day)=>repeatView(state(),day),libraryItem:async(_,kind,id)=>libraryItem(state(),kind,state()[kind+'s'].find(row=>row.id===id)),workspaceCommand:async(_,input)=>{attempts.push(input);if(rejectApply&&input.type==='repeat.apply'){rejectApply=false;input={...input,payload:{...input.payload,items:input.payload.items.map(row=>({...row,fingerprint:'a'.repeat(64)}))}};}const result=await store.command(input,async()=>null,context);if(loseReply){loseReply=false;throw {code:503,publicMessage:'Connection interrupted'};}return result;}}});
+ handler=createWebHandler({config:{origin:base},assets,service:{current:async()=>({id:'fixture'}),readDiary:async()=>({revision:digest(state())}),offlineSnapshot:async()=>offlineSnapshot(state(),{ownerId:'fixture',generation:'repeat-fixture'}),favorites:async()=>favoriteView(state()),previewDiary:async(_,payload)=>({...previewDiaryItem(state(),payload),energy:{unit:'kcal'}}),foodSearch:async(_,input)=>searchCloudFoods(state(),createInsightCatalog([]),input),barcodeLookup:(_,input)=>lookupBarcode(state(),input,{...context,fetchImpl:async()=>input.code==='4006381333931'
+  ?Response.json({product:{code:input.code,product_name:'Sample cereal',nutrition:{aggregated_set:{per:'100g',preparation:'as_sold',nutrients:{'energy-kcal':{value:100,unit:'kcal',source:'packaging'}}}}}})
+  :new Response(null,{status:404})}),
+  barcodePreview:(_,input)=>previewBarcode(state(),input,context),
+  barcodeSave:(_,body,_signal,delivery)=>store.command(body,async()=>null,{...context,...delivery}),
+  repeats:async(_,day)=>repeatView(state(),day),libraryItem:async(_,kind,id)=>libraryItem(state(),kind,state()[kind+'s'].find(row=>row.id===id)),workspaceCommand:async(_,input)=>{attempts.push(input);if(rejectApply&&input.type==='repeat.apply'){rejectApply=false;input={...input,payload:{...input.payload,items:input.payload.items.map(row=>({...row,fingerprint:'a'.repeat(64)}))}};}const result=await store.command(input,async()=>null,context);if(loseReply){loseReply=false;throw {code:503,publicMessage:'Connection interrupted'};}return result;}}});
  const profile=mkdtempSync(join(tmpdir(),'nourishing-repeat-')),errors=[];
  let browser,page;
  const startBrowser=async(disconnected=false)=>{
@@ -110,5 +116,65 @@ test('source Repeat list/editor preserve schedules, reviewed apply, retries and 
   await store.command({revision:repeatView(state(),date).revision,requestId:crypto.randomUUID(),type:'day.complete',payload:{date,completed:true}},async()=>null,context);
   await page.evaluate(async()=>{await (await import('/device-cache.js')).invalidateDeviceCachePaths(path=>path.startsWith('/api/repeats'));});
   await page.getByRole('button',{name:'Back',exact:true}).click();await page.getByRole('button',{name:'Repeat Items',exact:true}).click();await page.getByRole('button',{name:'Day completed',exact:true}).waitFor();assert.equal(await page.getByRole('button',{name:'Day completed',exact:true}).isDisabled(),true);await page.getByRole('button',{name:'Back',exact:true}).click();await page.getByRole('heading',{name:'More',exact:true}).waitFor();assert.equal(await page.locator('.mr-action-menu').count(),0);assert.deepEqual(errors,[]);assert.deepEqual(await page.evaluate(()=>window.csp),[]);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await scanRepeatOnCompletedDay({page,state,date,flush,capture});
  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));rmSync(profile,{recursive:true,force:true,maxRetries:4,retryDelay:150});}
 });
+
+async function scanRepeatOnCompletedDay({page, state, date, flush, capture}) {
+ const before = state();
+ await page.evaluate(async () => {
+  const {readWriteCopy, saveOfflineSnapshot} = await import('/offline-store.js');
+  const snapshot = await (await fetch('/api/offline')).json();
+  await saveOfflineSnapshot(snapshot, (await readWriteCopy()).ticket);
+ });
+ await page.getByRole('button',{name:'Repeat Items',exact:true}).click();
+ await page.getByRole('button',{name:'Add Repeat Item',exact:true}).click();
+ const search = page.locator('.mfs-search input'), scan = page.locator('[data-mfs=scan]');
+ await search.fill('oats');
+ assert.equal(await scan.isVisible(),true,'Scan Food is visible in the Repeat Items picker');
+ await capture('194-scan');
+ await scan.click();await page.locator('[data-barcode-action=close]').click();
+ assert.equal(await search.inputValue(),'oats');
+ const enter = async code => {
+  await scan.click();
+  await page.locator('[data-barcode-action=manual]').click();
+  await page.locator('[data-barcode-manual] input').fill(code);
+  await page.locator('[data-barcode-manual] input').press('Enter');
+ };
+ await enter('0000000000000');
+ await search.waitFor();assert.equal(await search.inputValue(),'oats');
+ await enter('4006381333931');
+ await page.locator('.barcode-review').waitFor();
+ await page.keyboard.press('Escape');
+ await search.waitFor();assert.equal(await search.inputValue(),'oats');
+ await enter('4006381333931');
+ const review=page.locator('.barcode-review');
+ await review.locator('[name=unit]').selectOption('g');
+ await review.locator('[name=amount]').fill('75');
+ await review.locator('[name=time]').fill('13:32');
+ await review.locator('[name=group]').selectOption('Lunch');
+ await page.route('**/api/**',route=>route.abort('internetdisconnected'));
+ await review.locator('form .primary').click();
+ const schedule=page.locator('.mr-form');await schedule.waitFor();
+ assert.equal(await schedule.locator('[name=unit]').inputValue(),'g');
+ assert.equal(await schedule.locator('[name=amount]').inputValue(),'75');
+ assert.equal(await schedule.locator('[name=startDate]').inputValue(),date);
+ assert.equal(await schedule.locator('[name=group]').inputValue(),'Lunch');
+ assert.equal(await schedule.locator('[name=time]').inputValue(),'13:32');
+ await schedule.getByRole('checkbox',{name:'Friday',exact:true}).check();
+ await schedule.getByRole('button',{name:'Save',exact:true}).click();
+ await schedule.waitFor({state:'detached'});
+ const pending=await page.evaluate(async()=>(await (await import('/offline-store.js')).readWriteCopy()).pending);
+ assert.deepEqual(pending.map(row=>row.command.type),['barcode.log','repeat.save']);
+ assert.equal(pending[0].command.payload.saveOnly,true);
+ assert.deepEqual(state().foods,before.foods);assert.deepEqual(state().repeats,before.repeats);
+ await page.reload();await page.getByRole('button',{name:'Repeat Items',exact:true}).click();
+ await page.locator('[data-mr-item]').filter({hasText:'Sample cereal'}).waitFor();
+ await page.unroute('**/api/**');await flush();await settled(()=>state().repeats.length===before.repeats.length+1);
+ const after=state(),food=after.foods.find(item=>item.name==='Sample cereal');
+ assert.ok(food);assert.equal(after.foods.length,before.foods.length+1);
+ const saved=after.repeats.filter(item=>item.foodId===food.id);
+ assert.equal(saved.length,1);assert.equal(saved[0].quantity,75);assert.equal(saved[0].unit,'g');
+ assert.deepEqual(saved[0].days,[5]);assert.equal(saved[0].group,'Lunch');assert.equal(saved[0].time,'13:32');
+ assert.deepEqual(after.entries,before.entries);assert.ok(after.settings.completedDays.includes(date));
+}

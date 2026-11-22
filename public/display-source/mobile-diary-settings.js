@@ -17,4 +17,10 @@ export function mobileDiarySettings({settings:s,row,toggle,groupsOpen}){
   <details class="mds-group mds-groups" data-display-groups ${groupsOpen?'open':''}><summary>${e(t('mobileDisplay.groups'))}</summary>${slots}</details>`;
 
 }
-export function mobileQuickAddSettings({settings:s,row}){return `<section class="mds-group">${s.groups.map(group=>row('quickAdd:'+group,group,t('shortcut.'+(s.diaryQuickAdd.shortcuts.find(item=>item.group===group)?.action??'food')))).join('')}</section>`;}
+export function mobileQuickAddSettings({settings:s,row}){
+ const groups=s.groups.map(group=>{
+  const action=s.diaryQuickAdd.shortcuts.find(item=>item.group===group)?.action??'food';
+  return row('quickAdd:'+group,group,action==='all'?coreText('display.allShortcuts'):t('shortcut.'+action));
+ });
+ return `<section class="mds-group mds-quick-add">${groups.join('')}</section>`;
+}

@@ -4,6 +4,8 @@
 .mfs-content{padding-bottom:env(safe-area-inset-bottom);text-align:left;}
 .mfs-header{position:sticky;top:0;z-index:3;background:var(--paper);border-radius:0 0 16px 16px;padding:14px 10px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .mfs-header button,.mfs-order button{background:none;border:0;color:inherit;padding:4px;min-width:32px;min-height:40px;display:flex;align-items:center;justify-content:center;gap:5px;font:inherit;}
+.mfs-header:has([data-mfs=scan]:not([hidden])){padding-right:0;}
+.mfs-header [data-mfs=scan]{width:48px;min-height:48px;}
 .mfs-header svg,.mfs-order svg,.mfs-drawer svg{width:25px;height:25px;flex-shrink:0;}
 .mfs-search{display:flex;align-items:center;gap:8px;flex:1;min-width:0;background:var(--pale);border-radius:30px;padding:5px 8px;}
 .mfs-search>svg{width:21px;height:21px;}

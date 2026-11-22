@@ -1,0 +1,28 @@
+.settings-compact-dialog:is(.profile-editor,.mds-dialog) {
+  box-sizing:border-box;
+  width:min(280px,calc(100% - 32px));
+  padding:16px;
+  border-radius:10px;
+}
+.settings-compact-dialog:is(.profile-editor,.mds-dialog) h2 {
+  margin:0 0 16px;
+  font:700 calc(20rem / 18)/1.15 Karla,Lato,sans-serif;
+}
+.settings-compact-dialog:is(.profile-editor,.mds-dialog) footer {
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:0 25px;
+  margin:0;
+  padding:0 16px 0 0;
+}
+.settings-compact-dialog:is(.profile-editor,.mds-dialog) footer button {
+  min-height:36px;
+  min-width:64px;
+  padding:4px 8px;
+  font:700 calc(14rem / 18)/1.25 Karla,Lato,sans-serif;
+  letter-spacing:.04em;
+  color:var(--green);
+}
+.settings-compact-dialog:is(.profile-editor,.mds-dialog) footer button:first-child {min-width:71px}

@@ -7,6 +7,7 @@ import {queueCommand} from './diary-api.js';
 import {readDeviceCache} from './device-cache.js';
 import {ensureDeviceSnapshot} from './device-sync.js';
 import {changeScoreDisplay} from './local-diary-projection.js';
+import {appendShellNavigation} from './app-shell.js';
 import {bottomNavigation} from './dashboard-source/discover-ui.js';
 import {formatMessage} from './diary-summary-source/message-format.js';
 import {scoreName,mobileScoreOrder} from './diary-summary-source/score-labels.js';
@@ -49,6 +50,7 @@ export function openDiarySummaryAction({action,id,diary,date=diary.date,show,clo
   show(`<section class="ds-dialog ds-energy"><header class="sheet-header"><button type="button" data-close aria-label="${e(t('mobileDisplay.back'))}">‹</button><h2 id="sheet-title">${e(coreText('diary.energy'))}</h2><button type="button" data-ds-targets aria-label="${e(coreText('diary.editTargets'))}"><img alt="" src="/record-source/biometric-icons/cog-outline.svg"></button></header>
    ${button(e(coreText('diary.dailyReport')),'data-ds-report')}${card('consumed',intake,energy.consumed,consumedRows)}${card('expenditure',spent,energy.expenditure,expenseRows)}<div data-budget>${budget(mode)}</div>
    <fieldset class="ds-energy-mode"><legend>${e(coreText('diary.energyDisplay'))}</legend><p>${e(t('energySummary.arithmetic'))}</p>${[['remaining',target],['balance',balance]].map(([id,label])=>button(e(label),`data-mode="${id}" aria-pressed="${mode===id}"`)).join('')}</fieldset><p class="md-chart-error" role="status"></p></section>`);
+  appendShellNavigation(content,original=>{close();original.click();});
   const root=content.querySelector('.ds-energy'),rings=new DiaryEnergyRings(root);
   const draw=()=>void rings.draw(diary.summary);
   root.querySelector('[data-ds-targets]').onclick=()=>onTargets?onTargets(date):close();

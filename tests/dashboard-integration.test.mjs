@@ -29,6 +29,14 @@ test('dashboard exposes saved health widgets, opens details and follows diary da
   const page=await browser.newPage({viewport:{width:412,height:915}});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',error=>errors.push(error.message));page.on('response',response=>{if(response.status()>=400&&!response.url().endsWith('favicon.ico'))errors.push(response.status()+' '+response.url());});
   await page.goto(`http://127.0.0.1:${server.address().port}`);try{await page.locator('[data-health-card=glucose]').waitFor();}catch(error){throw Error(JSON.stringify({errors,body:await page.locator('body').innerText()}),{cause:error});}
   await page.locator('[data-discover=streak-stats]').click();await page.getByRole('heading',{name:'All-Time Stats',exact:true}).last().waitFor();
+  const badges=await page.locator('.dc-stats dt [aria-hidden=true]').evaluateAll(nodes=>nodes.map(node=>{
+   const {width,height}=node.getBoundingClientRect();
+   return [width,height,getComputedStyle(node).backgroundColor];
+  }));
+  assert.deepEqual(badges,[
+   [32,32,'rgb(235, 202, 193)'],[32,32,'rgb(198, 231, 236)'],
+   [32,32,'rgb(245, 207, 232)'],[32,32,'rgb(204, 232, 214)'],
+  ]);
   assert.deepEqual(await page.locator('.dc-stats dd').allTextContents(),['0','0','1','0']);await page.locator('.dc-stats summary').click();await page.locator('.dc-stats details[open]').waitFor();
   const statsNav=page.locator('#sheet nav');
   assert.equal(await statsNav.getByRole('button',{name:'Diary'}).count(),1);

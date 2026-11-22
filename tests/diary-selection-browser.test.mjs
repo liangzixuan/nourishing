@@ -81,7 +81,12 @@ test('Diary selection stays local through offline edits and rapid selection chan
   assert.equal(sheetLayout.icons.length,6);assert.ok(sheetLayout.icons.every(([alt,x])=>alt===''&&x===sheetLayout.icons[0][1]));
   assert.equal(new Set(sheetLayout.labels).size,1);assert.ok(sheetLayout.last<=sheetLayout.nav+1);
   assert.equal(await page.locator('.diary-menu-navigation [aria-current=page]').getAttribute('data-discover'),'shell-diary');
-  await page.keyboard.press('Escape');
+  await page.getByRole('button',{name:'Delete',exact:true}).click();
+  const selectedDelete=page.locator('.diary-delete-confirm[data-scope=selected]');
+  await selectedDelete.getByRole('heading',{name:'Delete Entries?',exact:true}).waitFor();
+  assert.equal(Math.round((await selectedDelete.boundingBox()).width),368);
+  assert.match(await selectedDelete.locator('p').first().textContent(),/^Are you sure you want to delete these [0-9]+ entries\?$/);
+  await selectedDelete.getByRole('button',{name:'Cancel',exact:true}).click();
   for(const name of ['Note','Walk'])await page.getByRole('checkbox',{name:'Select '+name,exact:true}).uncheck();
   await page.getByRole('button',{name:'Selected entry actions',exact:true}).click();
   await page.getByRole('button',{name:'Create Recipe from Selection',exact:true}).click();

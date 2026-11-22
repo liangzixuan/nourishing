@@ -18,6 +18,13 @@ const CLIENT_MAX_EDGE = 1280;
 const CLIENT_SKIP_BYTES = 300 * 1024;
 const CLIENT_JPEG_QUALITY = 0.8;
 const num = value => Number.isFinite(value) ? value.toLocaleString(uiLanguage(), {maximumFractionDigits: 1}) : '—';
+const measuredGrams=value=>Number.isFinite(value)&&value>0;
+const replacementQuantity=(estimate,grams)=>measuredGrams(estimate?.grams)&&measuredGrams(grams)?{quantity:estimate.grams,unit:'g'}:{amount:1};
+function replacementLabel(quantity,grams){
+ const weight=value=>value.toLocaleString(uiLanguage(),{maximumSignificantDigits:17})+' g';
+ if(quantity.unit==='g')return weight(quantity.quantity);
+ return fc('oneServing')+(measuredGrams(grams)?' – '+weight(grams):'');
+}
 const quantityLabel = row => `${num(row.quantity ?? row.amount ?? 1)} ${row.unit === 'portion' ? row.portionLabel ?? foodQuantityUnit('portions') : foodQuantityUnit(row.unit ?? 'servings')}${row.unit!=='g'&&Number.isFinite(row.preview?.nutrition.entries?.[0]?.grams)?' · '+num(row.preview.nutrition.entries[0].grams)+' g':''}`;
 const fileData = file => new Promise((resolve, reject) => {const reader = new FileReader();reader.onload = () => resolve(reader.result);reader.onerror = () => reject(Error(fc("photoOpenFailed")));reader.readAsDataURL(file);});
 
@@ -88,7 +95,7 @@ export function mountPhotoLog({show, close, header, content, date, groups, initi
   }
   function makeRow(suggestion, candidate) {
     const estimate = suggestion.portionEstimate;
-    const quantity = Number.isFinite(candidate?.grams) && candidate.grams > 0 && estimate ? {quantity: estimate.grams, unit: 'g'} : {amount: 1};
+    const quantity = replacementQuantity(estimate,candidate?.grams);
     const preview = suggestion.preview && candidate?.ref.id === suggestion.selection?.id ? suggestion.preview : null;
     return {name: candidate?.name ?? suggestion.description, foodId: candidate?.ref.id ?? null, ...quantity, ...(preview ? {preview} : {}), ...(suggestion.observationIndex !== undefined ? {observationIndex: suggestion.observationIndex} : {}), ...(suggestion.additionIndex !== undefined ? {additionIndex: suggestion.additionIndex} : {}), estimate, suggestion};
   }
@@ -111,13 +118,17 @@ export function mountPhotoLog({show, close, header, content, date, groups, initi
   function swapFood(origin, index, row, optional = false) {
     const candidates = (row.suggestion?.candidates ?? []).filter(candidate => candidate.ref?.kind === 'food');
     if (!candidates.length) return chooseFood(index, row, optional);
+    const choices=candidates.map(candidate=>{
+      const known=itemCache.get(candidate.ref.id);
+      const grams=known?known.resource.grams:candidate.grams;
+      const quantity=replacementQuantity(row.estimate,grams);
+      return {id:candidate.ref.id,name:candidate.name,quantity,description:replacementLabel(quantity,grams)};
+    });
     swapMenu?.close();
     swapMenu = new AnchoredMenu({
-      origin, anchor: origin, label: fc('replaceName', {name: row.name}), className: 'photo-swap',
-      items: [...candidates.map((candidate, position) => ({
-        id: String(position), label: [candidate.name, candidate.serving].filter(Boolean).join(' · ')
-      })), {id: 'search', label: fc('searchMore')}],
-      onChoose: id => id === 'search' ? chooseFood(index, row, optional) : editQuantity(index, candidates[Number(id)].ref.id, row, optional),
+      origin, modal:true, x:innerWidth-8, y:origin.getBoundingClientRect().top, label:fc('replaceName',{name:row.name}), heading:fc('swapFoodFor'), className:'photo-swap',
+      items: [...choices.map((choice, position)=>({id:String(position),label:choice.name,description:choice.description})), {id: 'search', label: fc('searchMore')}],
+      onChoose: id => id === 'search' ? chooseFood(index, row, optional) : editQuantity(index, choices[Number(id)].id, row, optional, choices[Number(id)].quantity),
       onClose: () => { swapMenu = undefined; }
     });
   }
@@ -232,7 +243,7 @@ export function mountPhotoLog({show, close, header, content, date, groups, initi
   }
   async function getItem(id){if(itemCache.has(id))return itemCache.get(id);if(!itemLoads.has(id))itemLoads.set(id,(async()=>{const item=(await localLibraryItem({kind:'food',id}))??await request('/api/library/item?'+new URLSearchParams({kind:'food',id}));if(!disposed)itemCache.set(id,item);return item;})().finally(()=>itemLoads.delete(id)));return itemLoads.get(id);}
   function closePortion(){portionDialog?.close();portionDialog?.remove();portionDialog=null;}
-  async function editQuantity(index, replacementId = null, row = rows[index] ?? {}, optional=false) {
+  async function editQuantity(index, replacementId = null, row = rows[index] ?? {}, optional=false, suggestedQuantity) {
     const replacing=replacementId!==null;
     if(body.querySelector('.photo-food-picker'))review();
     closePortion();const dialog=document.createElement('dialog');portionDialog=dialog;dialog.className='photo-portion-sheet';dialog.setAttribute('aria-label',row.name??t('mobileFood.amount'));
@@ -243,7 +254,7 @@ export function mountPhotoLog({show, close, header, content, date, groups, initi
     document.body.append(dialog);dialog.showModal();
     try {
       const item=await getItem(replacementId??row.foodId);if(!alive()||portionDialog!==dialog)return;
-      const preferred=replacing&&row.estimate&&item.options.some(([id])=>id==='g')?{quantity:row.estimate.grams,unit:'g'}:replacing?{amount:1}:row;
+      const preferred=suggestedQuantity??(replacing?replacementQuantity(row.estimate,item.resource.grams):row);
       dialog.innerHTML=`<form class="entry-form"><header><h3>${e(item.resource.name)}</h3><span data-photo-favorite>${favoriteButton('food',item.resource.id,false)}</span><button type="button" data-cancel aria-label="${e(t('common.close'))}">×</button></header>${quantityFields(item.options,preferred,t('mobileFood.serving'))}<details class="photo-nutrition-summary" open></details><p role="status" class="sheet-message"></p><footer class="entry-actions"><button type="button" data-cancel>${e(t('common.cancel'))}</button><button class="primary" type="submit">${e(t('common.save'))}</button></footer></form>`;
       const form=dialog.querySelector('form'),status=form.querySelector('[role=status]'),submit=form.querySelector('[type=submit]');form.elements.amount.min='0.000001';
       const favoriteHost=form.querySelector('[data-photo-favorite]');let favorites;favoriteHost.querySelector('button').disabled=true;

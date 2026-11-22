@@ -50,7 +50,11 @@ test('Diary group actions update mixed records locally and reconcile canonical c
   await riceRow.locator('.md-swipe-options').click();await page.locator('.diary-tools-menu').waitFor();await dismiss();
   await swipe(riceRow,-110);assert.equal(await riceRow.locator('.md-swipe-delete').isVisible(),true,'Left swipe reveals delete');
   await page.screenshot({path:'.local/diary-group/swipe-delete.png'});
-  await riceRow.locator('.md-swipe-delete').click();await page.locator('[data-confirm]').waitFor();await page.getByRole('button',{name:'Cancel',exact:true}).click();await page.locator('#sheet').waitFor({state:'hidden'});assert.equal(fixture.state().entries.filter(r=>r.date===date&&r.foodId==='rice').length,1);
+  await riceRow.locator('.md-swipe-delete').click();
+  const singleDelete=page.locator('.diary-delete-confirm[data-single]');
+  await singleDelete.getByRole('heading',{name:'Delete entry?',exact:true}).waitFor();
+  assert.equal(Math.round((await singleDelete.boundingBox()).width),336);
+  await singleDelete.getByRole('button',{name:'Cancel',exact:true}).click();await page.locator('#sheet').waitFor({state:'hidden'});assert.equal(fixture.state().entries.filter(r=>r.date===date&&r.foodId==='rice').length,1);
   await swipe(riceRow,8,-90);assert.equal(await riceRow.locator('.md-swipe-options').isVisible(),false,'Vertical scrolling must not reveal actions');
   await swipe(riceRow,90,0,'touchCancel');assert.equal(await riceRow.locator('.md-swipe-options').isVisible(),false,'Interrupted touch closes the action');
   await page.locator('#add-food').click();await page.getByRole('button',{name:'Add Note',exact:true}).click();

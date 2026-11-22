@@ -46,7 +46,7 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
   const title=coreText(day?'tools.deleteDayTitle':count===1?'tools.deleteEntry':'tools.deleteEntries');
   const prompt=coreText(day?'tools.deleteDayConfirm':count===1?'tools.deleteOneConfirm':'tools.deleteConfirm',{count});
   const action=day?coreText('tools.deleteAll'):t('mobileRepeat.delete');
-  show(`<section class="diary-delete-confirm" data-scope="${e(source.scope)}"><h2 id="sheet-title">${e(title)}</h2><p>${e(prompt)}</p><p role="status"></p><footer><button type="button" data-close>${e(t('common.cancel'))}</button><button type="button" data-confirm>${e(action)}</button></footer></section>`);
+  show(`<section class="diary-delete-confirm" data-scope="${e(source.scope)}" ${!day&&count===1?'data-single':''}><h2 id="sheet-title">${e(title)}</h2><p>${e(prompt)}</p><p role="status"></p><footer><button type="button" data-close>${e(t('common.cancel'))}</button><button type="button" data-confirm>${e(action)}</button></footer></section>`);
   const button=content.querySelector('[data-confirm]'),status=content.querySelector('[role=status]');
   button.onclick=async()=>{button.disabled=true;try{await save('records.delete',{selection:source,confirmed:true},revision);}catch(error){if(status.isConnected){status.textContent=error.message;button.disabled=false;}}};
  }

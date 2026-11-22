@@ -1,4 +1,5 @@
 @import url('/fasting-source/mobile-datetime-picker.css');
+@import url('/more-source/compact-settings-dialog.css');
 .profile-summary{display:grid;gap:6px;margin:16px;padding:18px;border-radius:16px;background:var(--paper)}.profile-summary strong{font-size:1.4rem}.profile-summary span{color:var(--muted);font-size:.85rem}.profile-menu button{display:flex;justify-content:space-between;gap:12px;width:100%;padding:20px 18px;border:0;border-bottom:1px solid var(--line);background:var(--paper);text-align:left}.profile-menu button span{color:var(--muted)}.profile-form .field-row{gap:12px}.profile-form .field-row select,.profile-form .field-row input:not([type=checkbox]){width:54%;min-width:0;max-width:54%}.profile-form input[type=checkbox]{width:24px;height:24px;accent-color:var(--green)}.profile-form .entry-actions{position:sticky;bottom:0;background:var(--paper);z-index:1}.profile-form [data-back]{border:0;background:none}.profile-nutrients{margin:16px 0}.profile-nutrients summary{padding:18px;font-weight:650;cursor:pointer}.profile-nutrients summary span{color:var(--muted);margin-left:12px}.profile-form [hidden]{display:none!important}
 
 .profile-page{padding:16px 0;font-family:Lato,Arial,sans-serif}.profile-card{overflow:hidden;border-radius:12px;background:var(--paper)}.profile-row{display:flex;align-items:center;gap:12px;width:100%;min-height:54px;margin:0;padding:16px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;text-align:left}.profile-row:last-child{border:0}.profile-row strong{font-family:Karla,Lato,Arial,sans-serif;font-size:calc(16rem / 18);font-weight:700}.profile-value{margin-left:auto;text-align:right;white-space:nowrap}.profile-value small{display:block;font-size:calc(13rem / 18);color:var(--muted);margin-top:3px}.profile-chevron{font-size:30px;line-height:20px;font-family:Arial,sans-serif}.profile-options{width:44px;height:44px;border:0;background:transparent;color:var(--ink);font-size:26px}.profile-source-note{padding:0 16px;color:var(--muted);font-size:calc(14rem / 18)}.profile-retry{display:block;margin:20px auto}@media(max-width:360px){.profile-row{gap:8px;padding:14px 12px}.profile-row strong{font-size:calc(14rem / 18)}.profile-value{font-size:calc(14rem / 18)}}
@@ -22,4 +23,40 @@
 
 .profile-wheels-2{grid-template-columns:1fr 1fr;gap:20px}.profile-editor [hidden]{display:none!important}
 
-.profile-editor form{display:block}.profile-editor[data-profile-editor=weight] .profile-wheels{height:96px}.profile-editor[data-profile-editor=weight] .profile-wheels::before{top:32px}.profile-editor[data-profile-editor=weight] [role=listbox]{padding-block:32px}
+.profile-editor form{display:block}
+.profile-editor[data-profile-editor=age] .profile-wheels {
+  --wheel-height:36px;--wheel-padding:57px;height:150px;
+  grid-template-columns:minmax(0,47fr) minmax(0,16fr) minmax(0,30fr);
+}
+.profile-editor[data-profile-editor=weight] .profile-wheels {
+  --wheel-height:max(25px,calc(20rem / 18));--wheel-padding:16px;height:calc(var(--wheel-height) + 32px);
+}
+.profile-editor.settings-compact-dialog .profile-wheels::before {
+  inset:var(--wheel-padding) 8px auto;height:var(--wheel-height);
+}
+.profile-editor.settings-compact-dialog [role=listbox] {
+  padding-block:var(--wheel-padding);
+  mask-image:linear-gradient(transparent,#000 8%,#000 92%,transparent);
+}
+.profile-editor[data-profile-editor=weight] [aria-selected=true]+[role=option] {transform:translateY(-4px) scale(.9)}
+.profile-editor[data-profile-editor=weight] [role=option]:has(+[aria-selected=true]) {transform:translateY(4px) scale(.9)}
+.profile-editor.settings-compact-dialog [role=option] {
+  height:var(--wheel-height);min-height:var(--wheel-height);
+  font-size:calc(17rem / 18);
+}
+.profile-editor[data-profile-editor=weight] .profile-number {
+  box-sizing:border-box;
+  width:158px;max-width:100%;min-height:44px;
+  margin:16px auto 8px;padding:4px 8px;gap:2px;
+  border:1px solid var(--muted);border-radius:4px;
+  font:400 calc(14rem / 18)/1.35 Lato,sans-serif;
+}
+.profile-editor[data-profile-editor=weight] .profile-number:focus-within {outline:2px solid var(--green)}
+.profile-editor[data-profile-editor=weight] .profile-number input {
+  appearance:textfield;width:7ch;height:32px;min-height:0;min-width:2ch;max-width:78%;
+  padding:0;border:0;box-shadow:none;outline:0;text-align:right;font:inherit;
+}
+.profile-editor[data-profile-editor=weight] input::-webkit-inner-spin-button {appearance:none}
+@supports (field-sizing:content) {
+  .profile-editor[data-profile-editor=weight] .profile-number input {field-sizing:content;width:auto}
+}

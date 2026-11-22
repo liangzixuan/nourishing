@@ -809,13 +809,12 @@ async function search(restore = null, {applied, selected} = {}) {
 
 function searchBarcode(mode, snapshot) {
   const returnToSearch = () => search(snapshot);
-  const barcodeHeader = title => header(title).replace('data-close', 'data-barcode-back');
   pickerCleanup = openBarcode({
     mode,
     show,
-    close: returnToSearch,
-    onMissing: returnToSearch,
-    header: barcodeHeader,
+    close,
+    returnToPicker: returnToSearch,
+    header,
     content,
     date: () => date,
     groups: diary.groups,

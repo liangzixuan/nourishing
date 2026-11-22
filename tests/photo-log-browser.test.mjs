@@ -87,7 +87,19 @@ test('photo recognition flows into compact macros, editable amounts and discard-
   // Cancelling a suggested addition must not leave an unmatched row blocking save.
   await page.locator('[data-addition]').click();await page.locator('[data-back]').click();assert.equal(await page.locator('[data-save]').isEnabled(),true);assert.equal(await page.locator('.photo-food-row').count(),1);
   await page.locator('[data-addition]').click();await page.locator('.mfs-result').click();await page.getByRole('spinbutton',{name:'Amount',exact:true}).fill('25');await page.getByRole('button',{name:'Cancel',exact:true}).click();assert.equal(await page.locator('[data-save]').isEnabled(),true);assert.equal(await page.locator('.photo-food-row').count(),1);
-  await page.locator('[data-replace="0"]').click();await page.getByRole('menuitem',{name:'Fixture rice'}).click();await page.getByRole('button',{name:'Cancel',exact:true}).click();
+  const replace=page.locator('[data-replace="0"]'),swap=page.locator('.photo-swap');
+  await page.setViewportSize({width:448,height:936});await replace.click();
+  assert.equal(await swap.locator('.menu-heading').innerText(),'SWAP FOOD FOR:');
+  assert.equal(await swap.locator('[data-menu-command="0"] span').textContent(),'100 g');
+  const swapBounds=await swap.boundingBox();assert.equal(Math.round(swapBounds.width),280);assert.equal(Math.round(swapBounds.x),160);
+  await page.keyboard.press('End');assert.equal(await swap.locator('[data-menu-command=search]').evaluate(button=>button===document.activeElement),true);
+  await page.keyboard.press('Escape');assert.equal(await replace.evaluate(button=>button===document.activeElement),true);
+  await replace.click();await page.getByRole('menuitem',{name:/Fixture rice/}).click();
+  assert.equal(await page.getByRole('spinbutton',{name:'Amount',exact:true}).inputValue(),'100');
+  assert.equal(await page.getByRole('combobox',{name:'Serving Size',exact:true}).inputValue(),'g');
+  await page.getByRole('button',{name:'Cancel',exact:true}).click();
+  await page.setViewportSize({width:320,height:710});await replace.click();
+  await page.mouse.click(2,5);await swap.waitFor({state:'detached'});await page.setViewportSize({width:412,height:915});
   await page.locator('[data-replace="0"]').click();await page.screenshot({path:'.local/photo-swap.png'});await page.getByRole('menuitem',{name:'Search for more'}).click();await page.locator('.mfs-result').click();await page.getByRole('button',{name:'Cancel',exact:true}).click();assert.equal(await page.locator('[data-save]').isEnabled(),true);assert.match(await page.locator('[data-quantity="0"]').textContent(),/50/);
   await page.locator('[data-addition]').click();await page.locator('.mfs-result').click();await page.getByRole('button',{name:'Save',exact:true}).click();assert.equal(await page.locator('[data-save]').isEnabled(),true);assert.equal(await page.locator('.photo-food-row').count(),2);assert.equal(await page.locator('[data-addition]').count(),0);
   await netAmount.filter({hasText:'15.4 g'}).waitFor();
@@ -122,7 +134,7 @@ test('photo recognition flows into compact macros, editable amounts and discard-
   await page.evaluate(()=>window.optimistic=true);await page.locator('#open').click();await upload();await page.locator('[data-quantity]').click();await page.locator('.photo-portion-sheet [name=unit]').selectOption('portion:cup');await page.getByRole('spinbutton',{name:'Amount',exact:true}).fill('2');await page.locator('.photo-portion-sheet').getByText('600 kcal',{exact:true}).waitFor();await page.getByRole('button',{name:'Save',exact:true}).click();await page.getByRole('button',{name:'Add to diary',exact:true}).click();await page.locator('#sheet').waitFor({state:'hidden'});const optimistic=await page.evaluate(()=>window.optimisticSaved);assert.equal(optimistic.payload.rows[0].portionId,'cup');assert.equal(optimistic.rows[0].portionId,'cup');assert.deepEqual(optimistic.rows[0].food,state.foods[0]);assert.equal(optimistic.rows[0].preview.nutrition.totals.calories,600);
   await page.locator('#open').click();await upload();await page.locator('[data-save]:not(:disabled)').waitFor();await page.getByRole('button',{name:'Add to diary',exact:true}).click();await page.locator('#sheet').waitFor({state:'hidden'});const untouched=await page.evaluate(()=>window.optimisticSaved);assert.deepEqual(untouched.rows[0].food,state.foods[0]);assert.equal(untouched.rows[0].preview.nutrition.totals.calories,200);assert.equal(previews,0);assert.deepEqual(errors,[]);
   const observed=analysis.suggestions[0],optional=analysis.suggestions[1];
-  analysis.suggestions=[...Array.from({length:16},(_,observationIndex)=>({...observed,observationIndex})),optional];
+  analysis.suggestions=[...Array.from({length:16},(_,observationIndex)=>({...observed,observationIndex,...(observationIndex===15?{portionEstimate:undefined}:{})})),optional];
   await page.locator('#open').click();await upload();
   const thumb=page.locator('.photo-thumb'),add=page.locator('[data-addition]');
   await thumb.waitFor();
@@ -140,6 +152,12 @@ test('photo recognition flows into compact macros, editable amounts and discard-
   await add.click();await page.locator('[data-undo-addition]').waitFor();await pinned();
   await thumb.locator('[data-gallery]').click();await page.locator('.photo-action-menu').waitFor();
   await page.keyboard.press('Escape');await page.locator('.photo-action-menu').waitFor({state:'detached'});await pinned();
+  await page.locator('[data-replace="15"]').click();
+  assert.equal(await swap.locator('[data-menu-command="0"] span').textContent(),'1 serving – 100 g');
+  await swap.locator('[data-menu-command="0"]').click();
+  assert.equal(await page.locator('.photo-portion-sheet [name=amount]').inputValue(),'1');
+  assert.equal(await page.locator('.photo-portion-sheet [name=unit]').inputValue(),'servings');
+  await page.locator('.photo-portion-sheet [data-cancel]').first().click();
   await page.locator('[data-quantity="15"]').click();await page.locator('.photo-portion-sheet [data-cancel]').first().click();
   await page.locator('.photo-portion-sheet').waitFor({state:'detached'});await pinned();
  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

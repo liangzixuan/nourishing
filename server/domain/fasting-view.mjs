@@ -13,7 +13,7 @@ export function captureFastingTiming(state,asOf){
   const start=Date.parse(fast.start),goalHours=fast.goalHours;
   if(typeof fast.start!=='string'||!Number.isFinite(start)||(goalHours!==null&&(!Number.isFinite(goalHours)||goalHours<=0)))throw Object.assign(Error('The active fast needs a valid recorded start and goal.'),{status:400});
   const label=fastingRecordLabel(fast);
-  const active={start:fast.start,goalHours,...(label?{label}:{})},elapsedSeconds=(Date.parse(asOf)-start)/1000;
+  const active={id:fast.id,start:fast.start,goalHours,...(label?{label}:{})},elapsedSeconds=(Date.parse(asOf)-start)/1000;
   if(elapsedSeconds<0)return {status:'future-start',active,elapsedSeconds:null,remainingSeconds:null,progressPercent:null};
   return {status:'active',active,elapsedSeconds,remainingSeconds:goalHours===null?null:Math.max(0,goalHours*3600-elapsedSeconds),progressPercent:goalHours===null?null:elapsedSeconds/(goalHours*3600)*100};
 }

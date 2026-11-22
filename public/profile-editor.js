@@ -10,10 +10,11 @@ import {projectProfileEdit} from './profile-local.js';
 const labels={en:{birthday:'Birthday',month:'Month',day:'Day',year:'Year',kg:'Kilograms',lb:'Pounds'},fr:{birthday:'Date de naissance',month:'Mois',day:'Jour',year:'Année',kg:'Kilogrammes',lb:'Livres'},de:{birthday:'Geburtstag',month:'Monat',day:'Tag',year:'Jahr',kg:'Kilogramm',lb:'Pfund'},'pt-BR':{birthday:'Data de nascimento',month:'Mês',day:'Dia',year:'Ano',kg:'Quilogramas',lb:'Libras'}};
 const unitFactors={weight:{kg:1,lb:.45359237,lbs:.45359237,st:6.35029318},height:{cm:1,in:2.54,m:100,ft:30.48},bodyFat:{'%':1}};
 const pad=n=>String(n).padStart(2,'0');
+const weightSuffix=unit=>unit==='lb'?'lbs':unit;
 /** A Profile field owns one compact dialog and one idempotent save. */
 export function openProfileEditor({kind,data,date,onSaved,onClose}){
  const language=uiLanguage(),l=labels[language]??labels.en,focus=document.activeElement;
- const dialog=document.createElement('dialog');dialog.className='profile-editor';dialog.dataset.profileEditor=kind;
+ const dialog=document.createElement('dialog');dialog.className='profile-editor';if(kind==='age'||kind==='weight')dialog.classList.add('settings-compact-dialog');dialog.dataset.profileEditor=kind;
  const title=kind==='age'?l.birthday:kind==='sex'?dc('sex'):t('measurementCatalog.metric.'+({weight:'weight',height:'height',bodyFat:'body-fat'}[kind]));
  dialog.setAttribute('aria-label',title);dialog.innerHTML=`<form><h2 tabindex="-1" autofocus>${e(title)}</h2><div class="profile-editor-fields"></div><p role="status" aria-live="polite"></p><footer><button type="button" data-profile-cancel>${e(t('common.cancel'))}</button><button type="submit">${e(t('common.save'))}</button></footer></form>`;
  const form=dialog.querySelector('form'),fields=dialog.querySelector('.profile-editor-fields'),status=dialog.querySelector('[role=status]');
@@ -26,7 +27,9 @@ export function openProfileEditor({kind,data,date,onSaved,onClose}){
   fields.innerHTML=wheelMarkup(['month','day','year']);
  }else if(kind==='sex'){fields.innerHTML=wheelMarkup(['sex']);}
  else{const measurement=data.profile.measurements[kind];unit=measurement.unit??(kind==='weight'?'kg':kind==='height'?'cm':'%');value=measurement.value;
-  fields.innerHTML=(kind==='height'?wheelMarkup(['height','unit']):kind==='bodyFat'?'':wheelMarkup(['unit']))+`<div class="profile-number" ${kind==='height'?'hidden':''}><input name="value" type="number" inputmode="decimal" step="any" required min="${kind==='bodyFat'?0:.000001}" ${kind==='bodyFat'?'max="100"':''} aria-label="${e(title)}" value="${value??''}"><span data-profile-unit>${e(unit)}</span></div>`;
+  const displayed=kind==='weight'&&Number.isInteger(value)?value.toFixed(1):value??'';
+  const numberTag=kind==='weight'?'label':'div';
+  fields.innerHTML=(kind==='height'?wheelMarkup(['height','unit']):kind==='bodyFat'?'':wheelMarkup(['unit']))+`<${numberTag} class="profile-number" ${kind==='height'?'hidden':''}><input name="value" type="number" inputmode="decimal" step="any" required min="${kind==='bodyFat'?0:.000001}" ${kind==='bodyFat'?'max="100"':''} aria-label="${e(title)}" value="${displayed}"><span data-profile-unit>${e(kind==='weight'?weightSuffix(unit):unit)}</span></${numberTag}>`;
  }
  document.body.append(dialog);dialog.showModal();
  if(kind==='age'){
@@ -39,10 +42,10 @@ export function openProfileEditor({kind,data,date,onSaved,onClose}){
   const year=Number(date.slice(0,4));wheel('year',[...Array.from({length:year},(_,i)=>({value:i+1,label:String(i+1)})),blank],parts.year,l.year,v=>{parts.year=v;refreshDays();});ready();
  }else if(kind==='sex')wheel('sex',[{value:'',label:t('threshold.target.notSet')},{value:'male',label:dc('male')},{value:'female',label:dc('female')}],data.profile.demographics.sex??'',dc('sex'));
  else if(kind!=='bodyFat'){
-  const units=kind==='weight'?['kg','lb']:['cm','in'];if(!units.includes(unit))units.unshift(unit);
+  const units=kind==='weight'?[unit==='lbs'?'lbs':'lb','kg']:['cm','in'];if(!units.includes(unit))units.unshift(unit);
   const heights=()=>{const current=form.elements.value.value,limit=unit==='cm'?300:unit==='in'?120:unit==='m'?3:10;const items=Array.from({length:limit},(_,i)=>({value:String(i+1),label:String(i+1)}));if(current&&!items.some(x=>x.value===current))items.push({value:current,label:Number(current).toLocaleString(language,{maximumFractionDigits:1})});items.sort((a,b)=>Number(a.value)-Number(b.value));return [{value:'',label:t('threshold.target.notSet')},...items];};
   if(kind==='height')wheel('height',heights(),form.elements.value.value,title,v=>{form.elements.value.value=v;});
-  wheel('unit',units.map(u=>({value:u,label:l[u]??u})),unit,t('mobileBiometric.unit'),next=>{const input=form.elements.value;if(input.value!==''){const converted=Number(input.value)*unitFactors[kind][unit]/unitFactors[kind][next];input.value=String(Number(converted.toFixed(6)));}unit=next;dialog.querySelector('[data-profile-unit]').textContent=unit;if(kind==='height')wheels.height.setItems(heights(),form.elements.value.value);});
+  wheel('unit',units.map(u=>({value:u,label:l[u==='lbs'?'lb':u]??u})),unit,t('mobileBiometric.unit'),next=>{const input=form.elements.value;if(input.value!==''){const converted=Number(input.value)*unitFactors[kind][unit]/unitFactors[kind][next];input.value=String(Number(converted.toFixed(6)));}unit=next;dialog.querySelector('[data-profile-unit]').textContent=kind==='weight'?weightSuffix(unit):unit;if(kind==='height')wheels.height.setItems(heights(),form.elements.value.value);});
  }
  function close(){if(closed||busy)return;closed=true;for(const item of Object.values(wheels))item.dispose();dialog.close();dialog.remove();if(focus?.isConnected)focus.focus({preventScroll:true});onClose?.();}
  dialog.addEventListener('cancel',event=>{event.preventDefault();close();});

@@ -1,3 +1,4 @@
+@import url('/more-source/compact-settings-dialog.css');
 .mds-group{background:var(--paper);color:var(--ink);border-radius:12px;overflow:hidden;margin-bottom:16px;}.mds-row{display:flex;align-items:center;gap:12px;min-height:54px;padding:14px 16px;width:100%;margin:0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;color:inherit;text-align:left;font:400 1rem/1.35 Lato,Arial,sans-serif;cursor:pointer;}.mds-row:last-child{border:0;}.mds-row strong{font:700 1rem/1.3 Karla,Lato,sans-serif;letter-spacing:.015em;flex:1;min-width:0;overflow-wrap:anywhere;}.mds-value{max-width:52%;min-width:0;overflow-wrap:anywhere;text-align:right;}.mds-row img{width:20px;height:20px;flex:none;filter:var(--mobile-icon-filter);}.mds-row .dc-switch{flex:none;width:52px;height:28px;margin:0;}.mds-row:focus-visible{outline:2px solid var(--green);outline-offset:-3px;}.mds-status:empty{display:none;}.mds-status{padding:0 16px;font-size:.9rem;overflow-wrap:anywhere;}.mds-font{padding:22px 16px;}.mds-font label{display:block;margin-bottom:28px;}.mds-font input{width:100%;accent-color:var(--accent);}.mds-font-limits{display:flex;justify-content:space-between;margin:16px 0 28px;}.mds-font button{border:0;background:var(--accent);color:var(--mobile-on-accent);padding:10px 24px;border-radius:24px;font:700 1rem Karla,Lato,sans-serif;min-height:44px;}.mds-dialog{box-sizing:border-box;background:var(--paper);color:var(--ink);border:0;border-radius:24px;width:calc(100% - 48px);max-width:480px;max-height:calc(100dvh - 48px);padding:22px 24px;color-scheme:inherit;}.mds-dialog::backdrop{background:#0009;}.mds-dialog form{display:flex;flex-direction:column;max-height:calc(100dvh - 92px);margin:0;}.mds-dialog h2{font:700 1.15rem/1.3 Karla,Lato,sans-serif;margin:0 0 16px;overflow-wrap:anywhere;}.mds-choices{overflow:auto;min-height:0;}.mds-choices label{display:flex;align-items:center;gap:16px;min-height:48px;padding:8px 0;font:400 1rem/1.35 Lato,Arial,sans-serif;cursor:pointer;}.mds-choices label span{min-width:0;overflow-wrap:anywhere;}.mds-choices input{width:22px;height:22px;flex:none;accent-color:var(--ink);margin:0;}.mds-dialog [role=status]:empty{display:none;}.mds-dialog [role=status]{overflow-wrap:anywhere;}.mds-dialog footer{display:flex;justify-content:flex-end;gap:20px;padding-top:16px;flex:none;}.mds-dialog footer button{border:0;background:none;color:var(--accent);font:700 1rem/1.2 Karla,Lato,sans-serif;text-transform:uppercase;padding:8px;min-height:44px;}.mds-dialog footer button:disabled{opacity:.5;}
 
 .mds-section-title{text-align:center;font:700 1.05rem/1.3 Karla,Lato,sans-serif;margin:20px 16px;}.mds-groups>summary{padding:16px;cursor:pointer;font:700 1rem/1.3 Karla,Lato,sans-serif;min-height:54px;}.mds-meals-help{margin:8px 16px;color:var(--ink);font:400 1rem/1.4 Lato,sans-serif}
@@ -13,3 +14,19 @@
 .mds-choice-list .mds-row[aria-pressed=true]{min-height:57px}
 .mds-check{margin-inline-start:auto;color:var(--green);font-size:1.2rem}
 .mds-additional summary{cursor:pointer}
+
+.mds-quick-add .mds-row {min-height:57px;gap:4px;font-size:calc(14rem / 18)}
+.mds-quick-add .mds-row:last-child {min-height:56px}
+.mds-quick-add .mds-row strong {font-size:calc(16rem / 18)}
+.mds-theme-dialog .mds-choices label {gap:16px;padding:8px 16px;font-size:calc(14rem / 18)}
+.mds-theme-dialog .mds-choices input {
+  appearance:none;
+  width:18px;height:18px;padding:0;
+  border:2px solid var(--accent);border-radius:50%;
+  background:transparent;
+}
+.mds-theme-dialog .mds-choices input:checked {
+  background:var(--accent);
+  box-shadow:inset 0 0 0 3px var(--paper);
+}
+@media (forced-colors:active) {.mds-theme-dialog .mds-choices input {appearance:auto}}

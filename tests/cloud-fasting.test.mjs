@@ -64,3 +64,18 @@ test('daylight-saving gaps are rejected and preference patches retain unrelated 
   const view = fastingView(state, context);assert.deepEqual(view.settings, {enabled: true, showDashboard: false, showDiary: false, askToStopFast: true, timerDirection: 'down'});assert.deepEqual(state.settings.targets, targets);
   assert.throws(() => run(state, 'fasting.settings', {enabled: 'false'}), {code: 400});
 });
+
+test('active timestamp edits keep the record running and reject a changed or completed occurrence',()=>{
+ const state=initialState();
+ run(state,'fast.start',{goalHours:16,start:'2026-11-14T13:00:17Z'});
+ const active=state.fasts[0],id=active.id,activeStart=active.start;
+ assert.equal(fastingView(state,context).timing.active.id,id);
+ run(state,'fast.update',{id,activeStart,goalHours:17.5});
+ assert.deepEqual(state.fasts[0],{...active,goalHours:17.5});
+ run(state,'fast.update',{id,activeStart,start:'2026-11-14T12:00:17Z'});
+ assert.equal(state.fasts[0].goalHours,17.5);assert.equal(state.fasts[0].end,null);
+ assert.throws(()=>run(state,'fast.update',{id,activeStart,goalHours:2}),{code:409});
+ run(state,'fast.end',{id});const stopped=structuredClone(state.fasts);
+ assert.throws(()=>run(state,'fast.update',{id,activeStart:stopped[0].start,goalHours:2}),{code:409});
+ assert.deepEqual(state.fasts,stopped);
+});

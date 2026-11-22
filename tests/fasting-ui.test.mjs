@@ -44,8 +44,16 @@ test('source fasting settings, schedule/date/repeat, history and retry through n
  await page.locator('[data-discover=edit-schedule]').first().click();bad=true;await page.locator('.fasting-editor [type=submit]').click();await page.getByText('Choose another name',{exact:true}).waitFor();assert.equal(await page.locator('.fasting-editor [name=label]').isDisabled(),false);await page.locator('.fasting-editor [name=label]').fill('Reviewed');conflict=true;await page.locator('.fasting-editor [type=submit]').click();await page.getByText('Fasts changed',{exact:true}).waitFor();await page.getByRole('button',{name:'Reload latest',exact:true}).click();await page.locator('.fasting-editor [name=label]').waitFor();await page.waitForFunction(()=>document.querySelector('.fasting-editor [name=label]')?.disabled===false);assert.equal(await page.locator('.fasting-editor [name=label]').inputValue(),'Renamed');await page.keyboard.press('Escape');
  await page.locator('[data-fast-section=history] summary').click();await page.locator('[data-discover=history-edit]').click();await page.locator('.fasting-editor [name=hours]').fill('18');await page.locator('[data-repeat-picker]').click();await page.locator('[data-menu-command=daily]').click();await page.locator('.fasting-editor [type=submit]').click();await page.locator('.fasting-editor').waitFor({state:'detached'});assert.equal(state.fasts[0].goalHours,20);assert.equal(Date.parse(state.fasts[0].end)-Date.parse(state.fasts[0].start),18*3600000);assert.equal(state.fasts[0].repeat.recurrence,'daily');assert.equal(state.fastingPlan.schedules.length,1);
  await page.locator('[data-discover=history-edit]').click();await page.getByLabel('Notes',{exact:true}).fill('Retain on cancel');await page.locator('[data-delete-fast]').click();await page.locator('[data-fast-delete=cancel]').click();assert.equal(await page.getByLabel('Notes',{exact:true}).inputValue(),'Retain on cancel');await page.keyboard.press('Escape');assert.equal(state.fasts[0].note??'','');
- await page.locator('[data-fh-list-all]').check();await page.locator('[data-fh-list-delete-selected]').click();await page.locator('[data-fast-delete=confirm]').click();await page.locator('[data-fast-delete-confirm]').waitFor({state:'detached'});await page.waitForFunction(()=>!document.querySelector('[data-fast-history-row]'));assert.equal(state.fasts.length,0);
- await page.locator('[data-fasting-back]').click();await page.locator('[data-discover=new-fast]').waitFor();await page.locator('[data-discover=new-fast]').click();await page.locator('.fasting-quick [data-confirm-fast]').click();await page.locator('.fasting-quick').waitFor({state:'detached'});assert.equal(state.fasts.length,1);assert.equal(state.fasts[0].start,clock.now.toISOString());
+ await page.locator('[data-fh-list-all]').check();await page.locator('[data-fh-list-delete-selected]').click();
+ assert.equal(await page.locator('[data-fast-delete-confirm] h2').textContent(),'Delete Fast(s)');
+ assert.equal(await page.locator('[data-fast-delete-confirm] p').first().textContent(),'Are you sure you want to delete this fast?');
+ await page.locator('[data-fast-delete=confirm]').click();await page.locator('[data-fast-delete-confirm]').waitFor({state:'detached'});await page.waitForFunction(()=>!document.querySelector('[data-fast-history-row]'));assert.equal(state.fasts.length,0);
+ await page.locator('[data-fasting-back]').click();await page.locator('[data-discover=new-fast]').waitFor();await page.locator('[data-discover=new-fast]').click();
+ const quickWheel=page.locator('[data-duration-wheel]');await quickWheel.press('ArrowDown');
+ await page.locator('.fasting-quick [role=switch]').check();assert.equal(await quickWheel.evaluate(el=>el.inert),true);
+ await page.locator('.fasting-quick [data-confirm-fast]').click();await page.locator('.fasting-quick').waitFor({state:'detached'});assert.equal(state.fasts.length,1);assert.equal(state.fasts[0].start,clock.now.toISOString());
+ assert.equal(state.fasts[0].goalHours,null);await page.locator('[data-discover=edit-fast-start]').waitFor();
+ assert.equal(await page.locator('[data-discover=edit-fast-goal]').count(),0);assert.equal(await page.locator('[data-fast-progress]').count(),0);
  await page.locator('[data-discover=end-fast]').click();await page.locator('.fasting-quick [data-confirm-fast]').click();await page.locator('.fasting-quick').waitFor({state:'detached'});assert.equal(state.fasts[0].end,clock.now.toISOString());
  await page.locator('[data-discover=fasting]').first().click();
  // Start Now consumes the selected scheduled occurrence, using server time.
@@ -73,7 +81,19 @@ test('source fasting settings, schedule/date/repeat, history and retry through n
  assert.equal(await timer.isEnabled(),true);assert.equal(writes.length,beforeWrites+1);
  // Stopping a scheduled fast preserves the occurrence name even after deleting its schedule.
  clock.now=new Date('2026-11-14T18:00:59Z');clock.asOf=clock.now.toISOString();
+ await page.clock.setFixedTime(new Date(+clock.now+20*3600000));
  await page.locator('[data-fasting-back]').click();
+ const occurrenceStart=state.fasts.find(row=>row.scheduled).start,goalButton=page.locator('[data-discover=edit-fast-goal]'),count=writes.length;
+ await page.locator('[data-discover=edit-fast-start]').click();await page.locator('[data-time-wheel=minute]').press('ArrowUp');await page.keyboard.press('Escape');
+ assert.equal(writes.length,count);
+ assert.match(await page.locator('[data-fast-clock]').innerText(),/remaining/);
+ assert.equal(await page.locator('[data-fast-progress]').evaluate(el=>el.value),100,'The visual goal meter caps elapsed time without stopping the fast');
+ await goalButton.click();await page.locator('[data-time-wheel=minute]').press('ArrowDown');await page.locator('[data-time-apply]').click();
+ await page.locator('[data-datetime-picker]').waitFor({state:'detached'});
+ assert.equal(writes.at(-1).type,'fast.update');assert.deepEqual(Object.keys(writes.at(-1).payload).sort(),['activeStart','goalHours','id']);
+ assert.equal(state.fasts.find(row=>row.scheduled).end,null);
+ assert.equal(state.fasts.find(row=>row.scheduled).start,occurrenceStart);
+ assert.ok(Math.abs(state.fasts.find(row=>row.scheduled).goalHours-19-1/60)<1e-9);
  await page.locator('[data-discover=end-fast]').click();
  await page.locator('.fasting-quick [data-confirm-fast]').click();
  await page.locator('.fasting-quick').waitFor({state:'detached'});

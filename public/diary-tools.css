@@ -21,16 +21,16 @@
 .diary-menu-sheet:has(+ .diary-menu-navigation){padding:0 16px}
 .diary-menu-sheet:has(+ .diary-menu-navigation) button{min-height:56px;padding:10px 0;font:700 calc(15rem / 18)/1.4 Karla,Lato,sans-serif}
 
-#sheet:has(.diary-delete-confirm){inset:0;margin:auto;width:min(86vw,400px);height:fit-content;min-height:0;max-height:90dvh;border:0;border-radius:10px;background:var(--paper)}
-.diary-delete-confirm{padding:16px}.diary-delete-confirm h2{font-size:1.1rem;margin:0}.diary-delete-confirm p{font-size:.9rem;margin:14px 0}.diary-delete-confirm [role=status]:empty{display:none}
-.diary-delete-confirm footer{display:flex;justify-content:flex-end;gap:12px}.diary-delete-confirm button{min-height:44px;border:0;background:none;color:var(--green);font-weight:700;text-transform:uppercase}.diary-delete-confirm button[data-confirm]{color:var(--orange,#f5793b)}
-
-#sheet:has(.diary-delete-confirm[data-scope=day]) {
-  width: min(368px, calc(100% - 32px));
-  border-radius: 8px;
-}
-#sheet:has(.diary-delete-confirm[data-scope=day])::backdrop {backdrop-filter:none}
-.diary-delete-confirm[data-scope=day] h2 {font:700 calc(20rem / 18)/1.15 Karla,sans-serif}
-.diary-delete-confirm[data-scope=day] p {margin:16px 0 0;font:400 calc(14rem / 18)/1.36 Lato,sans-serif}
-.diary-delete-confirm[data-scope=day] footer {gap:8px}
-.diary-delete-confirm[data-scope=day] button {min-height:36px;padding:0 12px;font:700 calc(14rem / 18)/1.2 Karla,sans-serif;letter-spacing:.04em}
+#sheet:has(.diary-delete-confirm){inset:0;margin:auto;width:min(368px,calc(100% - 32px));height:fit-content;min-height:0;max-height:90dvh;border:0;border-radius:8px;background:var(--paper)}
+#sheet:has(.diary-delete-confirm[data-single]){width:min(336px,calc(100% - 32px))}
+#sheet:has(.diary-delete-confirm)::backdrop{backdrop-filter:none}
+.diary-delete-confirm{padding:16px}
+.diary-delete-confirm h2{margin:0;font:700 calc(20rem / 18)/1.15 Karla,sans-serif}
+.diary-delete-confirm p{margin:16px 0 0;font:400 calc(14rem / 18)/1.36 Lato,sans-serif}
+.diary-delete-confirm [role=status]:empty{display:none}
+.diary-delete-confirm footer{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:25px;padding-inline:16px}
+.diary-delete-confirm button{min-height:36px;padding:0 6px;border:0;background:none;color:var(--green);font:700 calc(14rem / 18)/1.2 Karla,sans-serif;letter-spacing:.04em;text-transform:uppercase}
+.diary-delete-confirm button[data-close]{min-width:71px}
+.diary-delete-confirm button[data-confirm]{min-width:66px;color:var(--orange,#f5793b)}
+.diary-delete-confirm[data-scope=day] footer{gap:8px;padding:0}
+.diary-delete-confirm[data-scope=day] button{min-width:0;padding:0 12px}

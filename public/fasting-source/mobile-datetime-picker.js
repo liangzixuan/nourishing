@@ -16,8 +16,8 @@ export class WheelColumn{
  setItems(items,value){this.items=items;this.index=Math.max(0,items.findIndex(item=>item.value===value));this.root.innerHTML=items.map((item,index)=>`<div role="option" id="time-wheel-${this.key}-${index}" data-wheel-index="${index}" data-wheel-value="${e(item.value)}">${e(item.label)}</div>`).join('');this.align();this.paint();}
  height(){return parseFloat(getComputedStyle(this.root.firstElementChild).height)||32;}
  align(){if(!this.disposed)this.root.scrollTop=this.index*this.height();}
- read(){const index=Math.max(0,Math.min(this.items.length-1,Math.round(this.root.scrollTop/this.height())));if(index!==this.index){this.index=index;this.paint();this.onChange(this.items[index].value);}return this.items[this.index].value;}
- select(index){this.index=Math.max(0,Math.min(this.items.length-1,index));this.align();this.paint();this.onChange(this.items[this.index].value);clearTimeout(this.timer);this.onSettled?.();}
+ read(){const index=Math.max(0,Math.min(this.items.length-1,Math.round(this.root.scrollTop/this.height())));if(index!==this.index){this.index=index;this.paint();this.onChange?.(this.items[index].value);}return this.items[this.index].value;}
+ select(index){this.index=Math.max(0,Math.min(this.items.length-1,index));this.align();this.paint();this.onChange?.(this.items[this.index].value);clearTimeout(this.timer);this.onSettled?.();}
  paint(){this.root.setAttribute('aria-activedescendant',`time-wheel-${this.key}-${this.index}`);[...this.root.children].forEach((node,index)=>{node.setAttribute('aria-selected',String(index===this.index));node.dataset.distance=Math.min(3,Math.abs(index-this.index));});}
  dispose(){this.disposed=true;clearTimeout(this.timer);this.resize.disconnect();}
 }
@@ -31,8 +31,8 @@ export function refreshDateTimeFields(form,language='en'){
 }
 
 export class MobileDateTimePicker{
- constructor({value,title,language='en',timeZone=Intl.DateTimeFormat().resolvedOptions().timeZone,onChoose,onClose}){
-  Object.assign(this,{language,timeZone,onChoose,onClose});this.original=value||Temporal.Now.plainDateTimeISO(timeZone).toString({smallestUnit:'minute'});this.parts=dateTimeParts(this.original);this.focus=document.activeElement;this.today=Temporal.Now.plainDateISO(timeZone).toString();this.text=key=>formatMessage(language,'dateTimePicker.'+key);
+ constructor({value,title,language='en',timeZone=Intl.DateTimeFormat().resolvedOptions().timeZone,onChoose,onSubmit,onClose,canDismiss}){
+  Object.assign(this,{language,timeZone,onChoose,onSubmit,onClose,canDismiss});this.original=value||Temporal.Now.plainDateTimeISO(timeZone).toString({smallestUnit:'minute'});this.parts=dateTimeParts(this.original);this.focus=document.activeElement;this.today=Temporal.Now.plainDateISO(timeZone).toString();this.text=key=>formatMessage(language,'dateTimePicker.'+key);
   this.dialog=document.createElement('dialog');this.dialog.className='mdtp-dialog';this.dialog.dataset.datetimePicker='';this.dialog.setAttribute('aria-label',title);
   this.dialog.innerHTML=`<header><h2>${e(title)}</h2><button type="button" data-time-close aria-label="${e(this.text('close'))}">${symbol('close')}</button></header><div class="mdtp-wheels"><div data-wheel-column="date"></div><div data-wheel-column="hour"></div><div data-wheel-column="minute"></div><div data-wheel-column="period"></div></div><p role="alert" hidden></p><button type="button" class="dc-button dc-pill" data-time-apply>${e(this.text('save'))}</button>`;
   this.dialog.addEventListener('cancel',event=>{event.preventDefault();this.close();});this.dialog.addEventListener('click',event=>{if(event.target.closest('[data-time-close]'))this.close();if(event.target.closest('[data-time-apply]'))this.apply();if(event.target===this.dialog){const r=this.dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)this.close();}});
@@ -44,7 +44,7 @@ export class MobileDateTimePicker{
  recenterDates(){const column=this.columns.date;if(column.index>=7&&column.index<column.items.length-7)return;const dates=this.dates();if(dates[0].value!==column.items[0].value)column.setItems(dates,this.parts.date);}
  apply(){
   if(this.closed)return;for(const [key,column]of Object.entries(this.columns))this.parts[key]=column.read();
-  try{const value=pickerValue(this.parts,this.original,this.timeZone);this.close();this.onChoose(value);}catch(error){if(this.closed)throw error;const alert=this.dialog.querySelector('[role=alert]');alert.textContent=error.code==='clock-gap'?this.text('clockGap'):this.text('invalid');alert.hidden=false;}
+  try{const value=pickerValue(this.parts,this.original,this.timeZone);if(this.onSubmit){this.onSubmit(value);return;}this.close();this.onChoose(value);}catch(error){if(this.closed)throw error;const alert=this.dialog.querySelector('[role=alert]');alert.textContent=error.code==='clock-gap'?this.text('clockGap'):this.text('invalid');alert.hidden=false;}
  }
- close(){if(this.closed)return;this.closed=true;for(const column of Object.values(this.columns??{}))column.dispose();this.dialog.close();this.dialog.remove();if(this.focus?.isConnected)this.focus.focus({preventScroll:true});this.onClose?.();}
+ close(force=false){if(this.closed||!force&&this.canDismiss?.()===false)return;this.closed=true;for(const column of Object.values(this.columns??{}))column.dispose();this.dialog.close();this.dialog.remove();if(this.focus?.isConnected)this.focus.focus({preventScroll:true});this.onClose?.();}
 }

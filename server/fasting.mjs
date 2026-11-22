@@ -13,7 +13,7 @@ const fail = (message, code = 400) => {throw Object.assign(Error(message), {code
 const scheduleFields = ['id', 'revision', 'label', 'startDate', 'time', 'recurrence', 'interval', 'custom', 'days', 'untilDate', 'goalHours', 'enabled', 'note', 'recordedAt'];
 export const fastingCommandFields = Object.freeze({
   'fast.start': ['start', 'goalHours', 'note', 'label'], 'fast.record': ['start', 'end', 'goalHours', 'note', 'label'],
-  'fast.end': ['id', 'end'], 'fast.update': ['id', 'start', 'end', 'goalHours', 'note', 'label', 'repeat', 'durationHours'], 'fast.delete': ['id'],
+  'fast.end': ['id', 'end'], 'fast.update': ['id', 'start', 'end', 'goalHours', 'note', 'label', 'repeat', 'durationHours', 'activeStart'], 'fast.delete': ['id'],
   'fasting.deleteMany': ['ids'], 'fasting.schedule.save': scheduleFields,
   'fasting.schedule.delete': ['id', 'revision'], 'fasting.schedule.startNow': ['id', 'revision', 'start', 'recordedAt'],
   'fasting.settings': ['enabled', 'showDashboard', 'showDiary', 'askToStopFast', 'timerDirection']
@@ -106,6 +106,11 @@ export function applyFastingCommand(state, {type, payload, requestId}, context) 
       result = {deletedIds: payload.ids};
     } else {
       const input = {...payload};
+      if (Object.hasOwn(input, 'activeStart')) {
+        const original = candidate.fasts.find(row => row.id === input.id);
+        if (!original || original.end !== null || original.start !== input.activeStart) fail('The active fast changed. Reopen it before editing its time.', 409);
+        delete input.activeStart;
+      }
       for (const key of ['start', 'end']) if (Object.hasOwn(input, key)) input[key] = recordedInstant(input[key], timeZone);
       if (Object.hasOwn(input, 'durationHours')) {
         const original = candidate.fasts.find(row => row.id === input.id), hours = input.durationHours;delete input.durationHours;
