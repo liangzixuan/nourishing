@@ -1,3 +1,4 @@
+import {reviewTimeAtSave} from './review-clock.js';
 import {projectFastingResponse} from './fasting-source/device.js';
 import {remapWriteReferences,writeReceiptIdentities,remapDiaryReviewIdentities} from './write-identities.js';
 import {applyWriteToState,projectSavedDefinition} from './write-projection.js';
@@ -43,7 +44,8 @@ export async function persistBackgroundWrite(expected,{path,body,projection={}})
    if(!next.snapshot?.state)throw offlineFailure('copyChanged');
    projection.diarySettings=prepareDiaryDisplayCommand(offlineEffectiveState(next),body).payload;
   }
-  const createdAt=new Date();
+ const signedReview=path==='/api/photos/save'||path==='/api/barcode/save';
+ const createdAt=new Date(signedReview?reviewTimeAtSave():Date.now());
   if(path==='/api/photos/save')checkLocalReviewSave('photo.log',body,active.ownerId,createdAt.getTime());
   if(path==='/api/barcode/save')checkLocalReviewSave('barcode.log',body.payload,active.ownerId,createdAt.getTime());
   const row={command:{ownerId:active.ownerId,generation:next.snapshot?.identity.generation??null,operationId:body.requestId,type:body.type??(path==='/api/snapshots/save'?'snapshot.add':path==='/api/note-photos/save'?'note.photo.save':'photo.log'),payload:body.payload??body},transport:{path,body:structuredClone(body)},preview:{},projection:structuredClone(projection),status:'pending',error:null,createdAt:createdAt.toISOString()};

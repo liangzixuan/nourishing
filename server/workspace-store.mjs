@@ -57,13 +57,20 @@ function resolveDispatchDate(context = {}) {
   return new Date(context.now ?? Date.now());
 }
 
-function formatCommandResult(revision, saved) {
+function formatCommandResult(revision, saved, capturedFoods) {
+  let records = saved?.records;
+  if (capturedFoods.length) {
+    // Library saves already return their dependency graph. Keep its ordering.
+    const returnedFoods = records?.foods ?? [];
+    const included = new Set(returnedFoods.map(food => food.id));
+    records = {...records, foods: [...returnedFoods, ...capturedFoods.filter(food => !included.has(food.id))]};
+  }
   return {
     ok: true,
     revision,
     ...(saved?.fastingChange ? {fastingChange: saved.fastingChange} : {}),
     ...(saved?.fastingSchedule ? {fastingSchedule: saved.fastingSchedule} : {}),
-    ...(saved?.records ? {records:saved.records} : {}),
+    ...(records ? {records} : {}),
     ...(saved?.counts ? {counts: saved.counts} : {}),
     ...(saved?.entryIds ? {entryIds: saved.entryIds} : {}),
     ...(saved?.photoId ? {photoId: saved.photoId} : {}),
@@ -230,12 +237,15 @@ export function createWorkspaceStore(db, owner) {
         context.beforeApply?.();
         const loggingBefore = beginCloudLogging(state, input.type);
         const calendar = loggingBefore ? await loggingCalendar(db, owner, context) : null;
+        // Catalog rows are materialized before the command records its own changes.
+        const priorFoodCount = state.foods.length;
         const action = captureActionFoods(state, {type: input.type, payload: input.payload}, catalogFoods);
+        const capturedFoods = state.foods.slice(priorFoodCount);
         const commandContext = CATALOG_CONTEXT_TYPES.has(input.type) ? {...context, owner, catalogFoods} : context;
         const saved = applyWorkspaceCommand(state, action, {...commandContext, requestId:input.requestId});
         finishCloudLogging(state, loggingBefore, input.type, calendar);
         const packed = packWorkspace(state, owner, head.generation);
-        const result = formatCommandResult(packed.head.digest, saved);
+        const result = formatCommandResult(packed.head.digest, saved, capturedFoods);
         await Promise.all([
           persistPacked(packed, state, before, head, transactionId, context),
           context.stageMedia ? context.stageMedia({transactionId, generation: head.generation}) : null,

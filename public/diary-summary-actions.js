@@ -1,3 +1,4 @@
+import {diaryEnergyBudget} from './diary-summary-source/energy-budget.js';
 import {uiLanguage,t} from './app-language.js';
 import {dc} from './discover-cloud-messages.js';
 import {coreText} from './core-cloud-messages.js';
@@ -42,11 +43,11 @@ export function openDiarySummaryAction({action,id,diary,date=diary.date,show,clo
   const card=(kind,title,value,rows)=>`<article class="ds-energy-card" data-card="${kind}"><header><h3>${e(title)}</h3><div class="ds-energy-ring"><canvas data-md-ring="${kind}" aria-hidden="true"></canvas><strong>${known(value)?number(displayValue(value,'kcal',unit)):'—'}</strong><small>${known(value)?e(unit):e(unknown)}</small></div></header><dl>${rows}</dl></article>`;
   const budgetRow=(label,value)=>`<div class="ds-budget-row"><dt>${e(label)}</dt><dd>${e(amount(value))}</dd></div>`;
   const budget=mode=>{
-   const isBalance=mode==='balance',value=energy[mode],title=isBalance&&known(value)&&value!==0?coreText(value>0?'diary.energyDeficit':'diary.energySurplus'):isBalance?balance:t('mobileDiary.remaining');
-   const shown=isBalance&&known(value)?Math.abs(value):value;
-   return card(mode,title,shown,budgetRow(isBalance?spent:target,isBalance?energy.expenditure:energy.target)+budgetRow(intake,known(energy.consumed)?-energy.consumed:null)+budgetRow(title,shown));
+   const {label,value}=diaryEnergyBudget(energy,mode);
+   const isBalance=mode==='balance';
+   return card(mode,label,value,budgetRow(isBalance?spent:target,isBalance?energy.expenditure:energy.target)+budgetRow(intake,known(energy.consumed)?-energy.consumed:null)+budgetRow(label,value));
   };
-  let mode=energy.display==='balance'?'balance':'remaining';
+  let mode=diaryEnergyBudget(energy).mode;
   show(`<section class="ds-dialog ds-energy"><header class="sheet-header"><button type="button" data-close aria-label="${e(t('mobileDisplay.back'))}">‹</button><h2 id="sheet-title">${e(coreText('diary.energy'))}</h2><button type="button" data-ds-targets aria-label="${e(coreText('diary.editTargets'))}"><img alt="" src="/record-source/biometric-icons/cog-outline.svg"></button></header>
    ${button(e(coreText('diary.dailyReport')),'data-ds-report')}${card('consumed',intake,energy.consumed,consumedRows)}${card('expenditure',spent,energy.expenditure,expenseRows)}<div data-budget>${budget(mode)}</div>
    <fieldset class="ds-energy-mode"><legend>${e(coreText('diary.energyDisplay'))}</legend><p>${e(t('energySummary.arithmetic'))}</p>${[['remaining',target],['balance',balance]].map(([id,label])=>button(e(label),`data-mode="${id}" aria-pressed="${mode===id}"`)).join('')}</fieldset><p class="md-chart-error" role="status"></p></section>`);

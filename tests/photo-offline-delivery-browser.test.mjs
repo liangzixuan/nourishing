@@ -80,6 +80,8 @@ test('Photo Log saves an eligible review offline, restarts, and replays one cano
  try{
   browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});
   const page=await browser.newPage({extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}});
+  // The review is issued by the server. The device clock can be ahead of it.
+  await page.clock.install({time:new Date(Date.now()+45*60000)});
   page.setDefaultTimeout(6000);await page.goto(base);await page.waitForFunction(()=>window.ready);
   async function prepare(){
    await page.locator('#open').click();

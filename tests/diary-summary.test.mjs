@@ -22,6 +22,46 @@ test('selected energy uses the same full-day target and expenditure for its rema
  const energy=read();assert.equal(energy.consumed,200);assert.equal(energy.remaining,1800);assert.equal(energy.balance,1650);
  delete state.settings.energyPolicy;assert.equal(read().balance,null);
 });
+async function checkDiaryBudgets(page){
+ const cases=[
+  {mode:'balance',intake:0,unit:'kcal',heading:'Balance',label:'Deficit',value:'1,850',detail:'1,850',chart:[0,1850]},
+  {mode:'balance',intake:2000,unit:'kJ',heading:'Balance',label:'Surplus',value:'628',detail:'627.6',chart:[2000,0]},
+  {mode:'balance',intake:1850,unit:'kcal',heading:'Balance',label:'Balance',value:'0',detail:'0',chart:[1850,0]},
+  {mode:'balance',intake:100,unknown:true,unit:'kJ',heading:'Balance',label:'Balance',value:'\u2014',detail:'\u2014',chart:[1]},
+  {mode:'remaining',intake:2100,unit:'kJ',heading:'Target',label:'Remaining',value:'-418',detail:'-418.4',chart:[2100,0]},
+ ];
+ for(const {mode,intake,unit,unknown,heading,label,value,detail,chart} of cases){
+  const state=initialState();
+  state.settings.energyUnit=unit;
+  state.settings.energyPolicy={version:1,resting:{mode:'custom',kcal:1600},baseline:{mode:'custom',kcal:250},activity:unknown?{mode:'health-connect',zone:'UTC'}:{mode:'manual'},thermicEffect:false,target:{mode:'fixed',includeAboveBaseline:false},display:mode};
+  if(intake)act(state,'entry.add',{date,amount:1,name:'Fixture food',nutrients:{calories:intake}});
+  await page.evaluate(async diary=>{
+   const {diarySummaryMarkup,mountDiarySummary}=await import('/diary-summary.js');
+   const {openDiarySummaryAction}=await import('/diary-summary-actions.js');
+   window.disposeDetail?.();window.mounted.dispose();
+   const root=document.querySelector('main'),sheet=window.sheet;
+   root.innerHTML=diarySummaryMarkup(diary);
+   window.mounted=mountDiarySummary({root,diary,onAction:({action})=>{
+    window.disposeDetail=openDiarySummaryAction({action,diary,content:sheet,show:html=>sheet.innerHTML=html});
+   }});
+  },view(state));
+  const budget=page.locator('.md-energy-item').last();
+  assert.equal(await page.locator('[data-md-page-id=energy] [data-action="edit-day-targets"]').textContent(),heading);
+  assert.equal(await budget.getAttribute('data-kind'),mode);
+  assert.equal(await budget.locator('canvas').getAttribute('data-md-ring'),mode);
+  assert.equal(await budget.locator('canvas').getAttribute('aria-label'),label);
+  assert.equal(await budget.locator('.md-ring strong').textContent(),value);
+  assert.equal(await budget.locator('small').textContent(),unit);
+  await budget.click();
+  const card=page.locator('aside [data-budget] .ds-energy-card');
+  assert.equal(await card.getAttribute('data-card'),mode);
+  assert.equal(await card.locator('h3').textContent(),label);
+  assert.equal(await card.locator('.ds-energy-ring strong').textContent(),detail);
+  await page.waitForFunction(()=>['main .md-energy-item:last-child canvas','aside [data-budget] canvas'].every(selector=>window.Chart.getChart(document.querySelector(selector))));
+  const slices=await page.evaluate(()=>['main .md-energy-item:last-child canvas','aside [data-budget] canvas'].map(selector=>window.Chart.getChart(document.querySelector(selector)).data.datasets[0].data));
+  assert.deepEqual(slices,[chart,chart]);
+ }
+}
 test('summary settings persist through canonical validators and reject stale or invalid choices',()=>{
  const state=initialState(),base=view(state).presentation.scoreDisplay;
  applyWorkspaceCommand(state,{type:'scoreDisplay.change',payload:{base,change:{kind:'replace',index:0,scoreId:'protein'}}});
@@ -76,5 +116,6 @@ test('source diary carousel, rings, water, actions and disposal work on a phone 
   const count=await page.evaluate(()=>{window.mounted.dispose();return window.actions.length;});assert.equal(await page.evaluate(()=>Object.keys(window.Chart.instances).length),0);await page.getByRole('button',{name:'Target',exact:true}).click();assert.equal(await page.evaluate(()=>window.actions.length),count);assert.deepEqual(errors,[]);
   await page.evaluate(async()=>{const {openDiarySummaryAction}=await import('/diary-summary-actions.js');const sheet=document.createElement('aside');document.body.append(sheet);window.sheet=sheet;window.reports=[];window.openSummary=(action,id)=>openDiarySummaryAction({action,id,diary:window.diary,show:html=>sheet.innerHTML=html,close:()=>sheet.replaceChildren(),header:title=>`<h2>${title}</h2>`,content:sheet,onReport:date=>window.reports.push(date)});});
   await page.evaluate(()=>window.openSummary('score-details','overall'));assert.match(await page.locator('aside').textContent(),/All Targets: 0%/);await page.getByRole('button',{name:'View Daily Report'}).click();assert.deepEqual(await page.evaluate(()=>window.reports),[date]);assert.deepEqual(errors,[]);assert.deepEqual(await page.evaluate(()=>window.cspViolations),[]);
+  await checkDiaryBudgets(page);assert.deepEqual(errors,[]);
  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
 });

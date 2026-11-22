@@ -31,3 +31,42 @@ test('offline receipt readers decode compressed normal and lost-ack replies with
  const receipt=[...fixture.table('command_receipts').values()][0];assert.deepEqual({...decodeCommandReceipt(receipt.result),replayed:true},result);
  receipt.result=JSON.stringify({...result,replayed:false});assert.deepEqual(await store.offlineCommand(command),result);
 });
+
+test('a replayed suggestion receipt includes newly captured foods exactly once',async()=>{
+ const state=initialState();
+ const custom=act(state,'food.save',{name:'Saved barley',serving:'100 g',grams:100,nutrients:{protein:4}});
+ const fixture=diaryStoreFixture(state,'fixture'),store=createWorkspaceStore(fixture.db,'fixture');
+ const beans={id:'usda:fixture-1:17',name:'Fixture beans',readOnly:true,sample:false,serving:'100 g',grams:100,
+  nutrients:{calories:130,protein:7},source:{name:'USDA fixture',datasetId:'fixture-1',fdcId:17}};
+ const rice={...beans,id:'usda:fixture-1:26',name:'Fixture rice',source:{...beans.source,fdcId:26}};
+ const catalog=new Map([['catalog:beans',beans],[rice.id,rice]]);
+ const input={type:'meal.log',requestId:randomUUID(),revision:digest(state),payload:{
+  date:'2026-11-20',time:'12:00',group:'Lunch',rows:[
+   {foodId:'catalog:beans',quantity:150,unit:'g'},{foodId:rice.id,amount:1},
+   {foodId:'catalog:beans',quantity:20,unit:'g'},{foodId:custom.id,amount:1}
+  ]
+ }};
+ const readCatalog=async id=>catalog.get(id);
+ const result=await store.command(input,readCatalog);
+ const replay=await store.command(input,readCatalog);
+ assert.deepEqual(replay,result);
+ assert.equal(fixture.table('command_receipts').size,1);
+ const canonical=fixture.state();
+ assert.deepEqual(replay.records.foods,canonical.foods.filter(food=>food.id!==custom.id));
+ assert.deepEqual(replay.records.entries.map(entry=>entry.foodId),[beans.id,rice.id,beans.id,custom.id]);
+ assert.deepEqual(replay.records.entries,canonical.entries);
+});
+
+test('a library receipt includes a newly captured ingredient only once in its recipe graph',async()=>{
+ const fixture=diaryStoreFixture(initialState(),'fixture'),store=createWorkspaceStore(fixture.db,'fixture');
+ const food={id:'usda:fixture:1',name:'Fixture rice',readOnly:true,sample:false,grams:100,serving:'100 g',
+  nutrients:{calories:130},source:{name:'USDA fixture',datasetId:'fixture',fdcId:1}};
+ const input={type:'recipe.save',requestId:randomUUID(),revision:digest(fixture.state()),payload:{
+  name:'Rice bowl',servings:1,ingredients:[{foodId:'catalog:rice',quantity:50,unit:'g'}]
+ }};
+ const result=await store.command(input,async()=>food);
+ assert.deepEqual(result.records.foods,fixture.state().foods);
+ assert.deepEqual(result.records.recipes,fixture.state().recipes);
+ assert.equal(result.records.foods.length,1);
+ assert.equal(result.records.recipes[0].ingredients[0].foodId,food.id);
+});

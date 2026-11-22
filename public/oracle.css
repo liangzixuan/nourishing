@@ -1,7 +1,7 @@
 @import url('./oracle-source/mobile-oracle.css');
 @import url('./food-entry-source/mobile-food-entry.css');
 #sheet.oracle-sheet,dialog.oracle-food-detail{width:100%;max-width:700px;height:100dvh;max-height:100dvh;margin:0 auto;padding:0;border:0;border-radius:0;background:var(--bg);color:var(--ink);font:400 1rem/1.4 Lato,Arial,sans-serif;overflow:auto;overscroll-behavior:contain}
-.oracle-sheet #sheet-content{padding:0}.oracle-heading{position:sticky;top:0;z-index:8;padding:14px 8px;background:var(--paper);border-radius:0 0 16px 16px}.oracle-body>[role=alert]{padding:16px;color:var(--red)}
+.oracle-sheet #sheet-content{padding:0}.oracle-heading{position:sticky;top:0;z-index:8;padding:0;background:var(--paper);border-radius:0 0 16px 16px}.oracle-body>[role=alert]{padding:16px;color:var(--red)}
 .oracle-food-detail::backdrop{background:#0008}.oracle-food-detail .mf-footer{position:fixed;bottom:0;width:100%;max-width:700px;left:50%;transform:translateX(-50%)}
 .mo-category-search{padding:16px 16px 0}.mo-category-list{margin-top:12px}.mo-category-search input,.mo-food-query input,.mo-select-menu input{min-width:0;width:100%;font:inherit;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px}
 .mo-select-menu input{position:sticky;top:0;width:calc(100% - 16px);margin:0 8px 8px}.mo-food-query{display:flex;gap:8px;margin:0;padding:0 12px 12px}.mo-food-query button{font:inherit;border:0;border-radius:8px;padding:8px 14px;background:var(--paper);color:var(--ink)}
@@ -10,15 +10,24 @@
 .oracle-sheet .oracle-body{padding-bottom:var(--dc-nav-space,70px)}
 .oracle-sheet [data-oracle-nav]{position:fixed;max-width:700px}
 
-.mo-home .mo-intro{margin:0 0 20px;line-height:1.4}
-.mo-row input[role=switch]{appearance:none;box-sizing:border-box;display:inline-flex;align-items:center;flex:0 0 40px;width:40px;height:24px;padding:2px;margin:0;border:1px solid var(--muted);border-radius:20px;background:var(--pale);color:var(--ink);cursor:pointer}
-.mo-row input[role=switch]::before{content:"";width:18px;height:18px;border-radius:50%;background:currentColor}
-.mo-row input[role=switch]:checked{justify-content:flex-end;background:var(--green);border-color:var(--green);color:#102224}
-@media(forced-colors:active){.mo-row input[role=switch]{appearance:auto}}
+.mo-home .mo-intro{margin:0;padding:16px 16px 0;font-size:.8rem;line-height:1.33}
+.mo-row input[role=switch]{appearance:none;box-sizing:border-box;display:inline-flex;align-items:center;flex:0 0 56px;width:56px;height:28px;padding:3px;margin:0;border:0;border-radius:20px;background:#9da0ad;color:#fafbff;cursor:pointer}
+.mo-row input[role=switch]::before{content:"";width:22px;height:22px;border-radius:50%;background:currentColor}
+.mo-row input[role=switch]:checked{justify-content:flex-end;background:#ff6733}
+@media(forced-colors:active){.mo-row input[role=switch]{appearance:auto}.mo-row input[role=switch]::before{content:none}}
 
 .mo-results td>[data-mo-food]{display:inline-grid;place-items:center;width:32px;min-height:32px;vertical-align:middle;color:var(--muted)}
 .mo-results [data-mo-food] svg{width:17px;height:17px}
-.mo-home .mo-intro{padding:12px 16px 0}
+.mo-home>h2{margin:0;padding:16px 12px;font-size:1rem}
+.mo-home .mo-row{min-height:56px;padding:6px 16px}
+.mo-home label.mo-row{min-height:60px}
+.mo-home .mo-row strong,.mo-home .mo-category-button strong{font-size:.85rem}
+.mo-home .mo-row>.mo-picker{font-size:.8rem}
+.mo-home [data-mo-search]{width:min(calc(100% - 32px),267px);min-height:35px;margin:16px auto;padding:6px 16px;font-size:.875rem}
+.mo-home .mo-category-button{grid-template-columns:minmax(0,1fr) auto;align-items:center;min-height:56px}
+.mo-category-button small{grid-column:1}
+.mo-category-button small:empty{display:none}
+.mo-category-button::after{content:"";grid-column:2;grid-row:1;width:8px;height:8px;border:solid currentColor;border-width:2px 2px 0 0;transform:rotate(45deg);margin-right:6px}
 .mo-results th,.mo-results td{padding:8px 6px;font-size:.875rem}
 .mo-results th:first-child{width:12%}
 .mo-results th:nth-child(2){width:40%}

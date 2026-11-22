@@ -35,6 +35,8 @@ import {openDiaryShare} from './diary-sharing.js';
 import {openFoodInsights} from './food-insights.js';
 import {mountPhotoLog} from './photo-log.js';
 import {mountRecordEditor} from './records.js';
+import {biometricCatalogDefinition} from './offline-source/server/biometric-library.mjs';
+import {biometricCatalogLabel} from './record-source/biometric-catalog-language.js';
 import {mountRepeats} from './repeats.js';
 import {mobileDiaryHeader, mobileDiaryGroups, mobileDiaryRecord, diarySymbol} from './diary-view.js';
 import {escape as e} from './html.js';
@@ -286,6 +288,7 @@ function formatEntryMeta(row, time, walkingEffort) {
   return e([time, detail].filter(Boolean).join(' · '));
 }
 
+const heartRateDefinition=biometricCatalogDefinition('heart-rate');
 function renderDiaryRow(collection, row) {
   const swipeOptions={swipe:!diaryTools.selection(),canDelete:!diary.completed,labels:{actions:coreText('diary.actions'),remove:t('mobileRepeat.delete')}};
   const time = diary.presentation?.settings?.showTimestamp === false ? '' : row.time;
@@ -308,16 +311,19 @@ function renderDiaryRow(collection, row) {
   }
   const isNote = collection === 'notes';
   const waterAmount=isNote?null:waterRecordAmount(diary,row);
-  const waterTime=waterAmount&&time?new Date(`2000-01-01T${time}Z`).toLocaleTimeString(uiLanguage(),{hour:'numeric',minute:'2-digit',timeZone:'UTC'}).toLocaleLowerCase(uiLanguage()):'';
+  const heartRate=!isNote&&row.type===heartRateDefinition.type;
+  const metricName=heartRate?biometricCatalogLabel({selection:{kind:'catalog',id:heartRateDefinition.id},label:heartRateDefinition.label},uiLanguage()):row.type;
+  const displayTime=!isNote&&time?new Date(`2000-01-01T${time}Z`).toLocaleTimeString(uiLanguage(),{hour:'numeric',minute:'2-digit',timeZone:'UTC'}).toLocaleLowerCase(uiLanguage()):'';
+  const timestamp=displayTime?`<span class="md-record-time" aria-hidden="true"></span>${e(displayTime)}`:'';
   const thumb = isNote ? notePhotoThumbnail(row) : '';
   return mobileDiaryRecord({
     ...swipeOptions,
     id: row.id,
     collection,
-    name: isNote ? row.text : waterAmount?waterText('water'):row.type,
-    meta: waterAmount?`${waterTime?`<span class="water-time" aria-hidden="true"></span>${e(waterTime)} - `:''}${e(waterAmount)}`:e(time),
-    amount: isNote ? '' : waterAmount?`<span class="water-row-energy">${(0).toLocaleString(uiLanguage(),{minimumFractionDigits:1})}<small>${e(diary.energyUnit??'kcal')}</small></span>`:`${num(row.value, 20)} ${e(row.unit)}`,
-    icon: waterAmount?'<img class="water-row-icon" src="/record-source/biometric-icons/water.svg" alt="">':diarySymbol(isNote ? 'description' : 'monitor_heart'),
+    name: isNote ? row.text : waterAmount?waterText('water'):metricName,
+    meta: isNote?e(time):waterAmount?[timestamp,e(waterAmount)].filter(Boolean).join(' - '):timestamp,
+    amount: isNote?'':waterAmount?`<span class="water-row-energy">${(0).toLocaleString(uiLanguage(),{minimumFractionDigits:1})}<small>${e(diary.energyUnit??'kcal')}</small></span>`:`<span class="md-biometric-amount">${num(row.value,20)}<small>${e(row.unit)}</small></span>`,
+    icon: waterAmount?'<img class="water-row-icon" src="/record-source/biometric-icons/water.svg" alt="">':heartRate?'<span class="md-heart-rate-icon" aria-hidden="true"></span>':diarySymbol(isNote?'description':'monitor_heart'),
     selectBox: diaryTools.selectBox(collection, row),
     action: isNote ? 'edit-note' : 'edit-biometric',
     extra: thumb

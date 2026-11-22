@@ -1,4 +1,5 @@
 const rows={
+ exampleMeal:['Weekday breakfast','Petit-déjeuner de semaine','Frühstück unter der Woche','Café da manhã durante a semana'],
  mealTip:['Diary tip','Conseil pour le journal','Tagebuch-Tipp','Dica do diário'],
  mealTipText:['Swipe right on a meal in the Diary to adjust its ingredients or split it into separate entries.','Dans le journal, balayez un repas vers la droite pour ajuster ses ingrédients ou le diviser en entrées distinctes.','Wische auf einer Mahlzeit im Tagebuch nach rechts, um die Zutaten anzupassen oder einzeln einzutragen.','No diário, deslize a refeição para a direita para ajustar os ingredientes ou dividi-la em registros separados.'],
  dismissTip:['Dismiss tip','Masquer le conseil','Tipp schließen','Dispensar dica'],

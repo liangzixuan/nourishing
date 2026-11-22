@@ -1,3 +1,4 @@
+import {observeReviewTime} from './review-clock.js';
 import {lockCurrentOffline} from './offline-session.js';
 import {requestErrorMessage} from './request-error.js';
 import {coreText} from './core-cloud-messages.js';
@@ -60,6 +61,7 @@ async function invalidateForWrite(ticket,path,body,{preserveCache=false}={}){
 async function network(path,body,signal,{reviewSavedAt}={}){
  const captured=(await readDeviceCache('/api/diary').catch(()=>({}))).ticket;
  let response;try{response=await fetch(path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',signal,headers:body?{'Content-Type':'application/json',...(reviewSavedAt===undefined?{}:{'X-Nourishing-Review-Saved-At':reviewSavedAt})}:{},...(body?{body:JSON.stringify(body)}:{})});}catch(error){if(error.name==='AbortError')throw error;throw Error(coreText('request.unavailable'),{cause:error});}
+ if(response.ok)observeReviewTime(response.headers.get('X-Nourishing-Review-Time'));
  if(response.status===401){
   const current=(await readDeviceCache('/api/diary').catch(()=>({}))).ticket;
   if(captured&&(!current||captured.ownerId!==current.ownerId||captured.epoch!==current.epoch))throw new DOMException('Account changed.','AbortError');

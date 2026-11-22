@@ -59,6 +59,8 @@ test('prepared barcode foods and entries survive offline save, restart and lost 
  try{
   browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});
   const page=await browser.newPage({extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}});page.setDefaultTimeout(5000);
+  // The review is issued by the server. The device clock can be behind it.
+  await page.clock.install({time:new Date(Date.now()-1*60000)});
   await page.route('**/api/**',route=>blocked?route.abort():route.continue());
   await page.goto(base);await page.locator('[data-ready=true]').waitFor();
   const lookup=async opener=>{await page.locator(opener).click();await page.getByRole('searchbox').fill('cereal');await page.locator('.branded-search-form button').click();await page.locator('[data-barcode]').click();await page.locator('.barcode-review h3').waitFor();};

@@ -7,7 +7,7 @@ import {scoreName} from './diary-summary-source/score-labels.js';
 import {watchDiarySelection} from './diary-selection-nutrition.js';
 import {waterWidgetMarkup} from './water.js';
 
-const labels=()=>({energy:coreText('diary.energy'),target:t('mobileDiary.target'),consumed:t('mobileDiary.consumed'),expenditure:t('mobileDiary.expenditure'),remaining:t('mobileDiary.remaining'),macros:coreText('diary.macros'),highlights:coreText('diary.highlights'),scores:t('mobileScoreSettings.title'),summary:coreText('diary.daily'),report:coreText('diary.allNutrients'),selected:t('mobileNutrientDetail.selection'),previous:coreText('diary.previousSummary'),next:coreText('diary.nextSummary')});
+const labels=()=>({energy:coreText('diary.energy'),consumed:t('mobileDiary.consumed'),expenditure:t('mobileDiary.expenditure'),remaining:t('mobileDiary.remaining'),macros:coreText('diary.macros'),highlights:coreText('diary.highlights'),scores:t('mobileScoreSettings.title'),summary:coreText('diary.daily'),report:coreText('diary.allNutrients'),selected:t('mobileNutrientDetail.selection'),previous:coreText('diary.previousSummary'),next:coreText('diary.nextSummary')});
 const icons=Object.fromEntries(Object.entries({check:'check_circle',back:'chevron_left',chevron:'chevron_right',plus:'add',more:'more_vert'}).map(([key,name])=>[key,diarySymbol(name)]));
 const nutrientName=row=>nutrientDisplayName(row,uiLanguage());
 let macroMode=null;

@@ -1,4 +1,5 @@
 const rows={
+ selectedDayIntro:['Use these filters to find meal suggestions for your targets on the selected day.','Ces filtres permettent de trouver des repas adaptés à vos objectifs pour le jour sélectionné.','Mit diesen Filtern findest du Mahlzeiten passend zu deinen Zielen für den ausgewählten Tag.','Use estes filtros para encontrar refeições adequadas às suas metas no dia selecionado.'],
  estimatedMacros:['Estimated Macro Targets','Objectifs macro estimés','Geschätzte Makronährstoffziele','Metas estimadas de macronutrientes'],
  undo:['Undo','Annuler','Rückgängig','Desfazer'],
  itemDeleted:['Meal item deleted.','Aliment supprimé du repas.','Zutat aus Mahlzeit entfernt.','Item removido da refeição.'],

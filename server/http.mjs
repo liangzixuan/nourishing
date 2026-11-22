@@ -924,6 +924,9 @@ export function createWebHandler({config, service, serviceForRequest, assets = n
     headers.set('Content-Security-Policy', CSP_HEADER);
     const json = (status, value) => {
       headers.set('Content-Type', 'application/json; charset=utf-8');
+      if (status === 200 && typeof value?.reviewToken === 'string') {
+        headers.set('X-Nourishing-Review-Time', String(Date.now()));
+      }
       return new Response(JSON.stringify(value), {status, headers});
     };
 

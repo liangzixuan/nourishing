@@ -1,3 +1,4 @@
+import {diaryEnergyBudget} from './energy-budget.js';
 import {formatMessage} from './message-format.js';
 import {escape as e} from '../html.js';
 import {DiaryEnergyRings} from './energy-rings.js';
@@ -31,7 +32,10 @@ export function mobileDiaryRecord({id,collection,name,meta,amount,icon,selectBox
 export function mobileDiarySummary({summary,facts,settings,unit,language,labels,icons,macroMode,scores,nutrientName,scoreName}){
  const pages=[],energy=summary.energy??{},selected=facts?.scope==='selection';
  const ring=(id,label,value)=>button(`<span class="md-ring"><canvas data-md-ring="${id}" role="img" aria-label="${e(label)}"></canvas><span><strong>${number(displayValue(value,'kcal',unit),language,0)}</strong><small>${e(unit)}</small></span></span><strong>${e(label)}</strong>`,'mobile-diary-energy',`class="md-energy-item" data-kind="${id}"`);
- if(settings.showEnergy!==false)pages.push({id:'energy',title:labels.energy,body:`<div class="md-summary-heading">${button(e(labels.energy)+icons.chevron,'mobile-diary-energy')} ${button(e(labels.target),'edit-day-targets')}</div><div class="md-energy-rings">${ring('consumed',labels.consumed,energy.consumed)}${ring('expenditure',labels.expenditure,energy.expenditure)}${ring('remaining',labels.remaining,energy.remaining)}</div>`});
+ if(settings.showEnergy!==false){
+  const budget=diaryEnergyBudget(energy);
+  pages.push({id:'energy',title:labels.energy,body:`<div class="md-summary-heading">${button(e(labels.energy)+icons.chevron,'mobile-diary-energy')} ${button(e(budget.heading),'edit-day-targets')}</div><div class="md-energy-rings">${ring('consumed',labels.consumed,energy.consumed)}${ring('expenditure',labels.expenditure,energy.expenditure)}${ring(budget.mode,budget.label,budget.value)}</div>`});
+ }
  const targetRow=(row,kind)=>{
   const value=macroMode==='remaining'&&kind==='macros'?row.remaining:row.value,amount=displayValue(value,row.unit,unit),target=displayValue(row.target,row.unit,unit),empty=row.coverage?.total===0;
   const shown=Number.isFinite(amount)?amount:empty&&row.active?kind==='macros'&&macroMode==='remaining'?target:0:null,pct=Number.isFinite(shown)&&target>0?shown/target*100:null;
