@@ -16,7 +16,7 @@ import {createWebHandler} from '../server/http.mjs';
 import {barcodeAssets} from '../scripts/package-barcode-assets.mjs';
 
 test('Diary group actions update mixed records locally and reconcile canonical copies and reusable foods',async()=>{
- const seed=initialState();seed.settings.groups.unshift('Uncategorized');
+ const seed=initialState();
  const date=new Date().toLocaleDateString('en-CA'),previous=new Date(date+'T12:00:00Z');previous.setUTCDate(previous.getUTCDate()-1);const yesterday=previous.toISOString().slice(0,10);
  seed.foods=[{id:'rice',name:'Rice',grams:100,nutrients:{calories:100}},{id:'apple',name:'Apple',grams:100,nutrients:{calories:50}}];
  act(seed,'entry.add',{date,group:'Lunch',foodId:'rice',amount:1,time:'12:00'});act(seed,'note.add',{date,group:'Lunch',text:'Lunch note',time:'14:00'});act(seed,'water.add',{date,group:'Lunch',amount:250});seed.biometrics[0].time='10:00';

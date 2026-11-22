@@ -22,7 +22,10 @@ import {createWebHandler} from '../server/http.mjs';
 import {diaryStoreFixture} from './fixtures/diary-store.mjs';
 
 test('Display source controls change the production Diary and persist with cancel, retry and revision safety',async()=>{
- const date=new Date().toLocaleDateString('en-CA'),seed=initialState();seed.foods=[{id:'rice',name:'Display fixture rice',grams:100,nutrients:{calories:100,protein:5,aceticAcid:0.4,thiamin:0.2}}];act(seed,'entry.add',{foodId:'rice',date,time:'12:34',group:'Lunch',amount:1});
+ const date=new Date().toLocaleDateString('en-CA'),seed=initialState();
+ // This saved account uses Breakfast and Lunch in the first two editable slots.
+ seed.settings.groups=['Breakfast','Lunch','Dinner','Snacks'];
+ seed.foods=[{id:'rice',name:'Display fixture rice',grams:100,nutrients:{calories:100,protein:5,aceticAcid:0.4,thiamin:0.2}}];act(seed,'entry.add',{foodId:'rice',date,time:'12:34',group:'Lunch',amount:1});
  seed.foods.push({id:'zero',name:'Measured zero',grams:100,nutrients:{protein:0}},{id:'unknown',name:'Unknown protein',grams:100,nutrients:{calories:40}});
  for(const foodId of ['zero','unknown'])act(seed,'entry.add',{foodId,date,group:'Breakfast',amount:1});
  seed.recipes.push({id:'partial',name:'Partial recipe',servings:1,ingredients:[{foodId:'rice',amount:1},{foodId:'unknown',amount:1}]});act(seed,'entry.add',{recipeId:'partial',date,group:'Breakfast',amount:1});act(seed,'exercise.add',{date,group:'Breakfast',name:'Fixture walk',duration:20,calories:80});

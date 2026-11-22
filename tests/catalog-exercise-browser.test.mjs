@@ -27,7 +27,7 @@ test('Diary estimates with each account’s cold options cache and reopens a pen
  const accounts=new Map();
  for(const owner of ['profile','measurement']){
   const seed=initialState();
-  seed.settings.groups.unshift('Uncategorized');
+
   seed.profile.weight=66;
   if(owner==='profile')seed.settings.energyUnit='kJ';
   if(owner==='measurement'){

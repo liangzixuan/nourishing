@@ -13,7 +13,7 @@ import {libraryItem} from '../server/library-view.mjs';
 import {applyWorkspaceCommand} from '../server/workspace-commands.mjs';
 
 test('mobile text review edits unresolved amounts, retries once and cleans up browser dictation',async()=>{
- const state=initialState();state.foods=[];state.settings.groups.unshift('Uncategorized');act(state,'food.save',{name:'Rice, cooked',serving:'100 g',grams:100,nutrients:{calories:130}});
+ const state=initialState();state.foods=[];act(state,'food.save',{name:'Rice, cooked',serving:'100 g',grams:100,nutrients:{calories:130}});
  const catalog={get:()=>null,projectInsights:()=>[]},receipts=new Map(),commands=[];let parseCount=0,loseNext=true,browser;
  const bootstrap=`import {mountTextLog} from '/text-log.js';const content=document.querySelector('#sheet-content');let mounted;const close=()=>content.replaceChildren();document.querySelector('#open').onclick=()=>{mounted?.dispose();mounted=mountTextLog({show:html=>content.innerHTML=html,close,header:title=>'<header class="sheet-header"><h2>'+title+'</h2></header>',content,date:()=> '2026-11-15',groups:['Uncategorized','Lunch'],initialGroup:window.initialGroup});window.textLog=mounted;};document.querySelector('#close').onclick=close;`;
  const publicRoot=resolve('public'),server=createServer(async(req,res)=>{try{

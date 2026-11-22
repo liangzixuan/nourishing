@@ -18,7 +18,7 @@ import {createWebHandler} from '../server/http.mjs';
 import {barcodeAssets} from '../scripts/package-barcode-assets.mjs';
 
 test('Water controls save locally, survive restart and lost replies, and preserve independent targets and hidden logs',async()=>{
- const seed=initialState();seed.settings.groups.unshift('Uncategorized');
+ const seed=initialState();
  const date=new Date().toLocaleDateString('en-CA'),fixture=diaryStoreFixture(seed),store=createWorkspaceStore(fixture.db,'fixture'),repository=createDataRepository(fixture.db,'fixture'),clock={now:new Date(),timeZone:'UTC'};
  let base,handler,browser,page,hold=null,release,lose=false;
  const service={current:async()=>({id:'fixture',email:'fixture@example.com',name:'Fixture'}),offlineSnapshot:()=>store.offlineSnapshot(),readDiary:(_,day)=>repository.diary(day,clock),recordOptions:(_,day)=>recordOptions(fixture.state(),day),recordView:(_,input)=>recordView(fixture.state(),input),display:async()=>displayView(fixture.state()),nutrientTargets:async(_,day)=>nutrientTargetsView(fixture.state(),day),workspaceCommand:async(_,input)=>{if(hold)await hold;const result=await store.command(input);if(lose){lose=false;throw {code:503,publicMessage:'Reply interrupted'};}return result;}};

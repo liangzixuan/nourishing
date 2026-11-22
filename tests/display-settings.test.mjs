@@ -47,7 +47,7 @@ test('group slots preserve gaps, existing assignments and accounts with more tha
  const change=(slot,from,name,enabled)=>store.command({requestId:crypto.randomUUID(),revision:displayView(fixture.state()).revision,type:'group.editSlot',payload:{slot,from,name,enabled}});
  const slots=()=>diaryGroupSlots(fixture.state().settings);
  await change(8,null,'Evening',true);await change(6,null,'Afternoon',false);
- assert.deepEqual(slots(),['Breakfast','Lunch','Dinner','Snacks',null,'Afternoon',null,'Evening']);
+ assert.deepEqual(slots(),['Uncategorized','Breakfast','Lunch','Dinner','Snacks','Afternoon',null,'Evening']);
  assert.deepEqual(fixture.state().settings.diaryGroups.hiddenGroups,['Afternoon']);
  await assert.rejects(change(6,null,'Stale',true),error=>(error.code??error.status)===409);
  await assert.rejects(change(6,'Afternoon','Lunch',true),error=>(error.code??error.status)===409);

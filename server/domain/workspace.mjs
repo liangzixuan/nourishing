@@ -120,7 +120,7 @@ export function initialState({demo=false}={}) {
   return {
     version: 1, sampleData: demo,
     profile: { name: 'My workspace', age: 30, height: 170, weight: 70, activity: 'moderate', goal: 'Maintain', units: 'metric' },
-    settings: { targets: {...initialWorkspaceTargets}, macroSchedule: {}, groups: ['Breakfast','Lunch','Dinner','Snacks'], customBiometrics: [], theme: 'dark', showEnergy: true, completedDays: [], scoreSelection: [], reminders: [] },
+    settings: { targets: {...initialWorkspaceTargets}, macroSchedule: {}, groups: ['Uncategorized','Breakfast','Lunch','Dinner','Snacks'], customBiometrics: [], theme: 'dark', showEnergy: true, completedDays: [], scoreSelection: [], reminders: [] },
     foods, recipes: [], meals: [],
     entries: foods.slice(0,3).map((food,i) => ({id:randomUUID(),date,foodId:food.id,name:food.name,amount:i===0?1:0.5,group:'Breakfast',time:'08:00',kind:'food'})),
     biometrics: demo ? [{id:randomUUID(),date,type:'Weight',value:70,unit:'kg',time:'07:30'}] : [],

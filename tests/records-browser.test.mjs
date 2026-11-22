@@ -13,7 +13,7 @@ import {diaryStoreFixture} from './fixtures/diary-store.mjs';
 import {createWebHandler} from '../server/http.mjs';
 
 test('source record editors navigate, preserve canonical values and recover save receipts under production CSP',async()=>{
- const date='2026-11-16',seed=initialState();seed.profile.weight=80;seed.settings.energyUnit='kJ';seed.settings.groups.unshift('Uncategorized');
+ const date='2026-11-16',seed=initialState();seed.profile.weight=80;seed.settings.energyUnit='kJ';
  seed.biometrics.push({id:'linked',date,type:'weight',unit:'kg',value:68,source:{kind:'import'}});act(seed,'biometric.add',{date:'2026-11-15',type:'weight',unit:'kg',value:69});act(seed,'day.complete',{date:'2026-11-15',completed:true});
  const fixture=diaryStoreFixture(seed),state=()=>fixture.state(),store=createWorkspaceStore(fixture.db,'fixture'),attempts=[];let lose=false,reject=0,holdOptions=null,unknownWeight=false;
  const assets=new Map();function visit(dir,prefix=''){for(const entry of readdirSync(dir,{withFileTypes:true})){if(entry.isDirectory())visit(dir+'/'+entry.name,prefix+'/'+entry.name);else assets.set(prefix+'/'+entry.name,{body:readFileSync(dir+'/'+entry.name),type:entry.name.endsWith('.css')?'text/css':/\.m?js$/.test(entry.name)?'text/javascript':entry.name.endsWith('.svg')?'image/svg+xml':entry.name.endsWith('.png')?'image/png':'application/octet-stream'});}}visit('public');for(const asset of await barcodeAssets())assets.set('/'+asset.path,asset);

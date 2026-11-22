@@ -64,6 +64,53 @@ test('failed operation-row removal is recoverable only after its settled marker 
  const f=accountFixture(),life=createAccountLifecycle({db:f.db});await life.initialize('owner');const op=await life.enter('owner','finished');f.failDeleteRow=true;await life.settle(op);assert.equal(f.table('account_operations').get(op.id).state,'settled');assert.equal((await life.pending('owner')).active,0);assert.equal(f.table('account_operations').size,0);
 });
 
+test('an interrupted settlement can finish without replaying the account operation', async () => {
+ const f=accountFixture(), life=createAccountLifecycle({db:f.db});
+ await life.initialize('owner');
+ const get=f.db.getRow, update=f.db.updateRow;
+ let workCalls=0, ownershipReadFailed=false, writeReplyLost=false, markerWrites=0;
+ f.db.getRow=async input=>{
+  if(workCalls && input.tableId==='account_operations' && !ownershipReadFailed){
+   ownershipReadFailed=true;
+   throw new TypeError('fetch failed');
+  }
+  return get(input);
+ };
+ f.db.updateRow=async input=>{
+  const row=await update(input);
+  if(input.tableId==='account_operations' && input.data.state==='settled'){
+   markerWrites++;
+   if(!writeReplyLost){writeReplyLost=true;throw Object.assign(Error('Lost marker reply'),{code:503});}
+  }
+  return row;
+ };
+ const result=await life.run('owner','offlineSnapshot',async()=>{workCalls++;return 'snapshot';});
+ assert.equal(result,'snapshot');
+ assert.equal(workCalls,1);
+ assert.equal(ownershipReadFailed,true);
+ assert.equal(writeReplyLost,true);
+ assert.equal(markerWrites,1);
+ await life.claim('owner','job');
+ assert.deepEqual(await life.pending('owner'),{active:0,uncertain:0,more:false});
+});
+
+test('an unconfirmed settlement retains the owned operation for deletion to drain', async () => {
+ const f=accountFixture(), life=createAccountLifecycle({db:f.db});
+ await life.initialize('owner');
+ const update=f.db.updateRow;
+ let attempts=0;
+ f.db.updateRow=input=>{
+  if(input.tableId==='account_operations'){
+   attempts++;
+   throw Object.assign(Error('Service unavailable'),{code:503});
+  }
+  return update(input);
+ };
+ await assert.rejects(life.run('owner','offlineSnapshot',async()=>true),{code:503});
+ assert.equal(attempts,3);
+ assert.equal((await life.pending('owner')).active,1);
+});
+
 test('Appwrite terminal commit conflicts retry without requiring a second rollback',async()=>{
  const f=accountFixture(),life=createAccountLifecycle({db:f.db});await life.initialize('owner');
  const update=f.db.updateTransaction;let rejected,commits=0;

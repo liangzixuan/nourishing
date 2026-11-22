@@ -6,7 +6,7 @@ import {diaryToolsPresentation,diaryToolsReview,applyDiaryToolsCommand} from '..
 
 const date='2026-11-16';
 function fixture(){
- const state=initialState();state.settings.groups.unshift('Uncategorized');const food=act(state,'food.save',{name:'Rice',serving:'bowl',grams:100,nutrients:{calories:100}});
+ const state=initialState();const food=act(state,'food.save',{name:'Rice',serving:'bowl',grams:100,nutrients:{calories:100}});
  for(const time of ['18:00','08:00','08:00',''])act(state,'entry.add',{foodId:food.id,date,group:'Lunch',time,amount:1});
  act(state,'note.add',{date,group:'Lunch',time:'23:00',text:'Lunch note'});
  act(state,'biometric.add',{date,group:'Lunch',time:'01:00',type:'weight',value:70,unit:'kg'});

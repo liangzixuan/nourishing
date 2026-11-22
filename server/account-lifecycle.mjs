@@ -55,10 +55,23 @@ export function createAccountLifecycle({db,database='nourishing',now=()=>Date.no
  }
  async function owned(operation){const row=await optional(()=>db.getRow(args('account_operations',operation.id)));if(row&&row.ownerId!==operation.owner)fail('Operation ownership differs.',503);return row;}
  async function settle(operation){
-  if(!await owned(operation))return;
-  // A settled marker is proof the callback ended. If row deletion fails, the worker can finish it.
-  await db.updateRow({...args('account_operations',operation.id),data:{state:'settled',reason:''}});
-  await db.deleteRow(args('account_operations',operation.id)).catch(error=>{if(error.code!==404)return;});
+  const rowArgs=args('account_operations',operation.id);
+  for(let attempt=0;;attempt++){
+   try{
+    const row=await owned(operation);
+    if(!row)return;
+    // A lost update reply can leave a durable marker for the deletion worker.
+    if(row.state!=='settled')await optional(()=>db.updateRow({...rowArgs,data:{state:'settled',reason:''}}));
+    break;
+   }catch(error){
+    const transient=error instanceof TypeError && error.message==='fetch failed' ||
+     error.code===408 || error.code===429 || error.code>=500 && error.code<600;
+    if(!transient || error.publicMessage || attempt>=2)throw error;
+    await delay(100*2**attempt);
+   }
+  }
+  // If removal fails the worker can use the settled marker to finish cleanup.
+  await db.deleteRow(rowArgs).catch(()=>{});
  }
  async function hold(operation,reason='mutation_outcome_unknown'){
   if(!await owned(operation))fail('Operation ownership is missing.',503);

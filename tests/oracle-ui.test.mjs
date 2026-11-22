@@ -25,7 +25,7 @@ test('Oracle source flow through real Foods and Diary under production CSP',asyn
   {id:'rice',name:'Rice',serving:'100 g',grams:100,nutrients:{calories:50,protein:4,potassium:20},categoryId:'CEREAL_GRAINS_AND_PASTA'},
   {id:'zero',name:'Known zero',serving:'100 g',grams:100,nutrients:{calories:0,protein:0}},
   {id:'missing',name:'Unknown protein',serving:'100 g',grams:100,nutrients:{calories:100}}
- ];state.settings.groups.push('Uncategorized');
+ ];
  const catalog=createInsightCatalog([]),writes=[],reads=[],receipts=new Map();let origin,handler,browser,failRank=false,conflictRank=false,conflictSave=false,loseSave=false,heldContext,failContext=false;
  const fail=(code,message)=>{throw Object.assign(Error(message),{code,publicMessage:message});};
  const diary=day=>{const summary=calculateSummary(state,day);return diaryToolsPresentation(state,{date:day,revision:digest(state),theme:'dark',groups:state.settings.groups,completed:false,entries:state.entries.filter(r=>r.date===day).map(row=>({...row,facts:entryFacts(state,row)})),biometrics:[],notes:[],summary,presentation:diarySummaryPresentation(state,summary)});};
