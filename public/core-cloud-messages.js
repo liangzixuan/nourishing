@@ -76,7 +76,7 @@ const rows={
  'add.edit':['EDIT MENU','MODIFIER LE MENU','MENÜ BEARBEITEN','EDITAR MENU'],
  'add.done':['DONE','TERMINÉ','FERTIG','CONCLUÍDO'],
  'add.dismissHint':['Dismiss instructions','Masquer les instructions','Hinweis ausblenden','Ocultar instruções'],
- 'add.hint':['Hold to reorder · Tap an icon for color','Maintenez pour déplacer · Touchez une icône pour sa couleur','Zum Verschieben gedrückt halten · Für Farbe auf das Symbol tippen','Segure para reordenar · Toque no ícone para mudar a cor'],
+ 'add.hint':['Tap icon to change the background color.\nTap and hold to reorder actions.','Touchez une icône pour changer la couleur de fond.\nMaintenez le doigt pour réorganiser les actions.','Tippe auf ein Symbol, um die Hintergrundfarbe zu ändern.\nHalte es gedrückt, um die Aktionen neu anzuordnen.','Toque no ícone para mudar a cor de fundo.\nToque e segure para reordenar as ações.'],
  'add.swap':['SWAP TOP & BOTTOM SECTIONS','INVERSER LES SECTIONS','OBERE UND UNTERE BEREICHE TAUSCHEN','INVERTER SEÇÕES'],
  'add.colorFor':['Color for {{name}}','Couleur : {{name}}','Farbe für {{name}}','Cor de {{name}}'],
  'add.hide':['Hide {{name}}','Masquer {{name}}','{{name}} ausblenden','Ocultar {{name}}'],

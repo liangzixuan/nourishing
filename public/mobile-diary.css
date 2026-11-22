@@ -1,7 +1,10 @@
 .discover-mobile.diary-mobile #page{padding:0 0 24px;}
 .discover-mobile.diary-mobile .topbar{padding:0 15px;border-radius:0;background:var(--paper);min-height:44px;z-index:20;margin-bottom:0;}
 .md-diary.diary-layout{display:block;}
-.md-date-bar{display:flex;align-items:center;justify-content:space-between;width:100%;height:44px;border-bottom:1px solid var(--line);}
+.discover-mobile.diary-mobile #diary-date:has(.md-date-bar){padding-inline:0}
+.md-date-bar{position:relative;display:flex;align-items:center;justify-content:space-between;width:100%;height:44px}
+.md-date-bar::after{content:"";position:absolute;bottom:0;inset-inline:16px;border-bottom:1px solid var(--line);pointer-events:none}
+.md-date-bar>.md-complete,.md-date-bar>[data-diary-menu]{width:48px}
 .md-date-bar button,.md-summary button,.md-group button,.md-water button{border:0;background:none;color:inherit;padding:0;cursor:pointer;font:inherit;}
 .md-date-bar button{display:flex;align-items:center;justify-content:center;min-width:40px;height:44px;}
 .md-date-bar svg{width:23px;height:23px;}.md-date-bar .md-complete{color:var(--green);}.md-complete.is-complete{background:#006565;border-radius:50%;height:38px;min-width:38px;}
