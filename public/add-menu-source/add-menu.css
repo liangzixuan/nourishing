@@ -1,5 +1,5 @@
 @font-face{font-family:'Nourishing Add Symbols';font-style:normal;font-weight:400;src:url('./add-menu-symbols.woff2')}
-.am-sheet .material-symbols-rounded{font-family:'Nourishing Add Symbols';font-weight:400;font-style:normal;font-feature-settings:'liga';font-size:24px;display:inline-block;white-space:nowrap;line-height:1;text-transform:none;letter-spacing:normal;direction:ltr}
+.am-sheet .material-symbols-rounded{font-family:'Nourishing Add Symbols';font-weight:400;font-style:normal;font-feature-settings:'liga';font-size:24px;display:inline-block;width:1em;height:1em;flex:none;overflow:hidden;white-space:nowrap;line-height:1;text-transform:none;letter-spacing:normal;direction:ltr}
 .am-sheet{position:fixed;inset:auto 0 0;margin:0 auto;width:100%;max-width:560px;max-height:94dvh;padding:0 0 max(24px,env(safe-area-inset-bottom));border:0;border-radius:16px 16px 0 0;background:#252839;color:#f4f4ff;font:calc(16rem / 18)/1.35 Lato,Arial,sans-serif;overflow:auto;color-scheme:dark}
 .am-sheet::backdrop{background:#03040bb3;backdrop-filter:none}
 .am-sheet header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 8px;position:sticky;top:0;background:#252839;z-index:2}

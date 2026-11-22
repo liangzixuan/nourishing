@@ -255,6 +255,40 @@ test('startup asset waterfall and bundle size stay within responsiveness budgets
   }
 });
 
+test('the narrow Add Menu keeps its width while the symbol font loads', async () => {
+  const fixture = await createFixture();
+  const {page} = fixture;
+  let releaseFont;
+  const hold = new Promise(resolve => { releaseFont = resolve; });
+  try {
+    await page.setViewportSize({width: 320, height: 650});
+    await page.route('**/add-menu-symbols.woff2*', async route => {
+      await hold;
+      await route.continue();
+    });
+    await page.goto(fixture.base + '/diary');
+    await page.locator('.md-diary').waitFor();
+    await Promise.all([
+      page.waitForRequest('**/add-menu-symbols.woff2*'),
+      page.locator('#add-food').click(),
+    ]);
+    const dialog = page.locator('.am-sheet');
+    await dialog.locator('[data-am=edit]').click();
+    const geometry = () => dialog.evaluate(node => ({
+      width: node.clientWidth,
+      content: node.scrollWidth,
+      loaded: document.fonts.check('24px "Nourishing Add Symbols"'),
+    }));
+    assert.deepEqual(await geometry(), {width: 320, content: 320, loaded: false});
+    releaseFont();
+    await page.evaluate(() => document.fonts.ready);
+    assert.deepEqual(await geometry(), {width: 320, content: 320, loaded: true});
+  } finally {
+    releaseFont();
+    await fixture.close();
+  }
+});
+
 test('core Diary, Photo Log, and More interactions respond instantly under 1500ms API latency', {timeout: 45000}, async () => {
   const f = await createFixture();
   try {
