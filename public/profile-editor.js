@@ -8,13 +8,26 @@ import {ensureDeviceSnapshot} from './device-sync.js';
 import {projectProfileEdit} from './profile-local.js';
 
 const labels={en:{birthday:'Birthday',month:'Month',day:'Day',year:'Year',kg:'Kilograms',lb:'Pounds'},fr:{birthday:'Date de naissance',month:'Mois',day:'Jour',year:'Année',kg:'Kilogrammes',lb:'Livres'},de:{birthday:'Geburtstag',month:'Monat',day:'Tag',year:'Jahr',kg:'Kilogramm',lb:'Pfund'},'pt-BR':{birthday:'Data de nascimento',month:'Mês',day:'Dia',year:'Ano',kg:'Quilogramas',lb:'Libras'}};
+const referenceNote={
+ en:'Nutrition reference tables use sex and life stage. If you are transitioning, your healthcare professional can help you choose a reference and set nutrient targets that fit your needs.',
+ fr:'Les apports nutritionnels de référence dépendent du sexe et du stade de vie. En cas de transition de genre, votre professionnel de santé peut vous aider à choisir une référence et à personnaliser vos objectifs.',
+ de:'Nährstoffreferenzwerte richten sich nach Geschlecht und Lebensphase. Wenn Sie sich in einer Transition befinden, können Sie gemeinsam mit Ihrer medizinischen Fachperson passende Referenzwerte und Ziele wählen.',
+ 'pt-BR':'As referências nutricionais consideram o sexo e a fase da vida. Se você estiver em transição de gênero, seu profissional de saúde pode ajudar a escolher uma referência e definir metas individuais.'
+};
+const profileChoice=d=>d.sex==='female'&&['pregnant','lactating'].includes(d.lifeStage)?d.lifeStage:d.sex??'';
+function choiceLabel(choice){
+ if(choice==='pregnant')return t('referencePanel.pregnant');
+ if(choice==='lactating')return dc('breastfeeding');
+ return choice?dc(choice):t('threshold.target.notSet');
+}
+export const profileSexLabel=d=>choiceLabel(profileChoice(d));
 const unitFactors={weight:{kg:1,lb:.45359237,lbs:.45359237,st:6.35029318},height:{cm:1,in:2.54,m:100,ft:30.48},bodyFat:{'%':1}};
 const pad=n=>String(n).padStart(2,'0');
 const weightSuffix=unit=>unit==='lb'?'lbs':unit;
 /** A Profile field owns one compact dialog and one idempotent save. */
 export function openProfileEditor({kind,data,date,onSaved,onClose}){
  const language=uiLanguage(),l=labels[language]??labels.en,focus=document.activeElement;
- const dialog=document.createElement('dialog');dialog.className='profile-editor';if(kind==='age'||kind==='weight')dialog.classList.add('settings-compact-dialog');dialog.dataset.profileEditor=kind;
+ const dialog=document.createElement('dialog');dialog.className='profile-editor';if(['age','weight','sex'].includes(kind))dialog.classList.add('settings-compact-dialog');dialog.dataset.profileEditor=kind;
  const title=kind==='age'?l.birthday:kind==='sex'?dc('sex'):t('measurementCatalog.metric.'+({weight:'weight',height:'height',bodyFat:'body-fat'}[kind]));
  dialog.setAttribute('aria-label',title);dialog.innerHTML=`<form><h2 tabindex="-1" autofocus>${e(title)}</h2><div class="profile-editor-fields"></div><p role="status" aria-live="polite"></p><footer><button type="button" data-profile-cancel>${e(t('common.cancel'))}</button><button type="submit">${e(t('common.save'))}</button></footer></form>`;
  const form=dialog.querySelector('form'),fields=dialog.querySelector('.profile-editor-fields'),status=dialog.querySelector('[role=status]');
@@ -25,7 +38,7 @@ export function openProfileEditor({kind,data,date,onSaved,onClose}){
  if(kind==='age'){
   const known=data.profile.demographics.birthDate;const initial=known??date;parts={year:known?Number(initial.slice(0,4)):'',month:known?Number(initial.slice(5,7)):'',day:known?Number(initial.slice(8,10)):''};
   fields.innerHTML=wheelMarkup(['month','day','year']);
- }else if(kind==='sex'){fields.innerHTML=wheelMarkup(['sex']);}
+ }else if(kind==='sex'){fields.innerHTML=wheelMarkup(['sex'])+`<p class="profile-reference-note">${e(referenceNote[language]??referenceNote.en)}</p>`;}
  else{const measurement=data.profile.measurements[kind];unit=measurement.unit??(kind==='weight'?'kg':kind==='height'?'cm':'%');value=measurement.value;
   const displayed=kind==='weight'&&Number.isInteger(value)?value.toFixed(1):value??'';
   const numberTag=kind==='weight'?'label':'div';
@@ -40,7 +53,12 @@ export function openProfileEditor({kind,data,date,onSaved,onClose}){
   wheel('month',[blank,...Array.from({length:12},(_,i)=>({value:i+1,label:new Intl.DateTimeFormat(language,{month:'long',timeZone:'UTC'}).format(new Date(Date.UTC(2000,i,1)))}))],parts.month,l.month,v=>{parts.month=v;refreshDays();});
   wheel('day',[blank,...days()],parts.day,l.day,v=>{parts.day=v;ready();});
   const year=Number(date.slice(0,4));wheel('year',[...Array.from({length:year},(_,i)=>({value:i+1,label:String(i+1)})),blank],parts.year,l.year,v=>{parts.year=v;refreshDays();});ready();
- }else if(kind==='sex')wheel('sex',[{value:'',label:t('threshold.target.notSet')},{value:'male',label:dc('male')},{value:'female',label:dc('female')}],data.profile.demographics.sex??'',dc('sex'));
+ }else if(kind==='sex'){
+  const selected=profileChoice(data.profile.demographics),choices=['male','female','pregnant','lactating'];
+  if(!selected)choices.unshift('');
+  const save=form.querySelector('[type=submit]');save.disabled=!selected;
+  wheel('sex',choices.map(value=>({value,label:choiceLabel(value)})),selected,dc('sex'),value=>{save.disabled=!value;});
+ }
  else if(kind!=='bodyFat'){
   const units=kind==='weight'?[unit==='lbs'?'lbs':'lb','kg']:['cm','in'];if(!units.includes(unit))units.unshift(unit);
   const heights=()=>{const current=form.elements.value.value,limit=unit==='cm'?300:unit==='in'?120:unit==='m'?3:10;const items=Array.from({length:limit},(_,i)=>({value:String(i+1),label:String(i+1)}));if(current&&!items.some(x=>x.value===current))items.push({value:current,label:Number(current).toLocaleString(language,{maximumFractionDigits:1})});items.sort((a,b)=>Number(a.value)-Number(b.value));return [{value:'',label:t('threshold.target.notSet')},...items];};

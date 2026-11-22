@@ -22,6 +22,24 @@ test('selected energy uses the same full-day target and expenditure for its rema
  const energy=read();assert.equal(energy.consumed,200);assert.equal(energy.remaining,1800);assert.equal(energy.balance,1650);
  delete state.settings.energyPolicy;assert.equal(read().balance,null);
 });
+async function checkDiaryHighlights(page){
+ const render=(language,rows)=>page.evaluate(async ({language,rows})=>{
+  const {mobileDiarySummary}=await import('/diary-summary-source/mobile-diary.js');
+  const markup=mobileDiarySummary({summary:{},facts:{diaryDisplay:{policy:{},highlights:rows}},settings:{showEnergy:false,showMacros:false,showScores:false},unit:'kcal',language,icons:{chevron:'',more:'',back:''},labels:{highlights:'Highlights',report:'Report',summary:'Summary',previous:'Previous',next:'Next'},nutrientName:row=>row.name});
+  const container=document.createElement('div');container.innerHTML=markup;
+  return [...container.querySelectorAll('.md-highlights button')].map(node=>node.getAttribute('aria-label'));
+ },{language,rows});
+ const row={id:'vitaminB12',name:'Vitamin B12',unit:'µg',target:2.4,active:true};
+ const empty={...row,value:0,status:'complete',coverage:{known:0,total:0,complete:true}};
+ const known={...row,value:1.16,coverage:{known:1,total:1,complete:true}};
+ assert.deepEqual(await render('en',[empty,known,{...known,value:0},{...known,status:'partial',coverage:{known:1,total:2,complete:false}},{...empty,value:null,status:'unknown',coverage:{known:0,total:1,complete:false}}]),[
+  'B12 (Cobalamin), No Data, 0%','B12 (Cobalamin), 1.2 of 2.4 µg, 48%','B12 (Cobalamin), 0.0 of 2.4 µg, 0%',
+  'B12 (Cobalamin), 1.2 of 2.4 µg, Partial Data, 48%','B12 (Cobalamin), No Data, —'
+ ]);
+ assert.deepEqual(await render('fr',[empty,known]),['B12 (cobalamine), Aucune donnée, 0%','B12 (cobalamine), 1,2 sur 2,4 µg, 48%']);
+ assert.deepEqual(await render('de',[empty]),['B12 (Cobalamin), Keine Daten, 0%']);
+ assert.deepEqual(await render('pt-BR',[empty]),['B12 (cobalamina), Sem dados, 0%']);
+}
 async function checkDiaryBudgets(page){
  const cases=[
   {mode:'balance',intake:0,unit:'kcal',heading:'Balance',label:'Deficit',value:'1,850',detail:'1,850',chart:[0,1850]},
@@ -116,6 +134,7 @@ test('source diary carousel, rings, water, actions and disposal work on a phone 
   const count=await page.evaluate(()=>{window.mounted.dispose();return window.actions.length;});assert.equal(await page.evaluate(()=>Object.keys(window.Chart.instances).length),0);await page.getByRole('button',{name:'Target',exact:true}).click();assert.equal(await page.evaluate(()=>window.actions.length),count);assert.deepEqual(errors,[]);
   await page.evaluate(async()=>{const {openDiarySummaryAction}=await import('/diary-summary-actions.js');const sheet=document.createElement('aside');document.body.append(sheet);window.sheet=sheet;window.reports=[];window.openSummary=(action,id)=>openDiarySummaryAction({action,id,diary:window.diary,show:html=>sheet.innerHTML=html,close:()=>sheet.replaceChildren(),header:title=>`<h2>${title}</h2>`,content:sheet,onReport:date=>window.reports.push(date)});});
   await page.evaluate(()=>window.openSummary('score-details','overall'));assert.match(await page.locator('aside').textContent(),/All Targets: 0%/);await page.getByRole('button',{name:'View Daily Report'}).click();assert.deepEqual(await page.evaluate(()=>window.reports),[date]);assert.deepEqual(errors,[]);assert.deepEqual(await page.evaluate(()=>window.cspViolations),[]);
+  await checkDiaryHighlights(page);
   await checkDiaryBudgets(page);assert.deepEqual(errors,[]);
  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
 });

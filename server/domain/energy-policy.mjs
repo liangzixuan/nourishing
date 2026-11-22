@@ -1,4 +1,5 @@
 import {date as calendarDate} from './calendar.mjs';
+import {maternalStage} from './profile-demographics.mjs';
 import {calendarAge} from './calendar-age.mjs';
 import {parseWeightGoal,projectWeightGoal} from './weight-goal.mjs';
 
@@ -97,7 +98,7 @@ export function energyBudget(consumed,target,expenditure){
 }
 
 /** Single energy arithmetic owner. Inputs are unrounded recorded day facts. */
-export function calculateEnergy({policy:input,date,consumed,configuredTarget,scheduledTarget={present:false,value:null},exerciseEntries=[],biometrics=[],foodTotals={},foodCoverage={},recordedWeightKg=undefined,recordedHeightCm=undefined}){
+export function calculateEnergy({policy:input,lifeStage=null,date,consumed,configuredTarget,scheduledTarget={present:false,value:null},exerciseEntries=[],biometrics=[],foodTotals={},foodCoverage={},recordedWeightKg=undefined,recordedHeightCm=undefined}){
   calendarDate(date);
   const policy=parseEnergyPolicy(input),reasons=[];
   if(!Array.isArray(exerciseEntries)||!Array.isArray(biometrics)||!scheduledTarget||typeof scheduledTarget.present!=='boolean')fail('Supply recorded exercise, biometrics and an explicit weekday-target presence.');
@@ -125,7 +126,10 @@ export function calculateEnergy({policy:input,date,consumed,configuredTarget,sch
     resting=null;
     reasons.push(mifflin&&(age.years===null||age.years<19)?'resting-outside-adult':recordedHeightCm!==undefined?'resting-body-unavailable':recordedWeightKg!==undefined?'resting-weight-unavailable':'resting-nonpositive');
   }
+  if(resting!==null&&mifflin&&policy.resting.sex==='female'&&maternalStage(lifeStage))resting+=300;
   const baseline=policy.baseline.mode==='custom'?policy.baseline.kcal:policy.baseline.factor===0?0:resting===null?null:nullable(resting*policy.baseline.factor);
+  // Activity uses the raw estimate. Daily BMR uses tenths of a kcal.
+  if(resting!==null&&mifflin)resting=Math.round(resting*10)/10;
   let adjustedBaseline=null,activity=null,device=null;
   if(policy.activity.mode==='manual'){
     const duration=sumKnown(exerciseEntries.map(row=>row?.duration));

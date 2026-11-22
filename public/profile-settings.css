@@ -60,3 +60,9 @@
 @supports (field-sizing:content) {
   .profile-editor[data-profile-editor=weight] .profile-number input {field-sizing:content;width:auto}
 }
+
+.profile-editor.settings-compact-dialog[data-profile-editor=sex] {width:min(368px,calc(100% - 32px));max-width:368px}
+.profile-editor[data-profile-editor=sex] form {min-height:280px;display:flex;flex-direction:column}
+.profile-editor.settings-compact-dialog[data-profile-editor=sex] footer {margin-top:auto}
+.profile-editor[data-profile-editor=sex] .profile-wheels {--wheel-height:25px;--wheel-padding:42px;height:109px;width:80%;margin-inline:auto}
+.profile-reference-note {margin:14px 0 8px;font-size:calc(13rem / 18);line-height:1.3}

@@ -1,4 +1,5 @@
 import Big from 'big.js';
+import {maternalStage} from './profile-demographics.mjs';
 import {MACRO_TARGET_VERSION,captureMacroGuidance} from './macro-guidance.mjs';
 
 // Public web artifact captured 2026-11-01; general programs, not Mercola variants.
@@ -48,7 +49,7 @@ export function parseMacroPolicy(value){
 
 /** The selected carbohydrate target has one identity; raw Total facts remain
  * separate when Net is selected. Explicit weekday grams always take precedence. */
-export function calculateMacroTargets({policy:input,energyTarget,carbohydrateTargetId,fixedTargets,weekdayTargets={},exerciseKcal=null,recordedLeanMassKg=undefined}){
+export function calculateMacroTargets({policy:input,lifeStage=null,energyTarget,carbohydrateTargetId,fixedTargets,weekdayTargets={},exerciseKcal=null,recordedLeanMassKg=undefined}){
   const policy=parseMacroPolicy(input),reasons=[];
   target(energyTarget,'Energy target');
   target(exerciseKcal,'Recorded exercise energy');
@@ -70,8 +71,9 @@ export function calculateMacroTargets({policy:input,energyTarget,carbohydrateTar
   }else if(policy?.mode==='keto'){
     const leanMass=recordedLeanMassKg===undefined?policy.leanBodyMassKg:target(recordedLeanMassKg,'Recorded lean mass');
     if(recordedLeanMassKg!==undefined)reasons.push(captureMacroGuidance('recordedLean'));
-    const protein=leanMass===null?null:decimal(leanMass).times(policy.proteinPerKg.toString()).plus(policy.proteinAddition);
-    const carbohydrate=policy.athleticBonus&&exerciseKcal===null?null:decimal(policy.carbohydrateGrams).plus(policy.athleticBonus?decimal(exerciseKcal).div(50):0);
+    const proteinAddition=maternalStage(lifeStage)?25:policy.proteinAddition;
+    const protein=leanMass===null?null:decimal(leanMass).times(policy.proteinPerKg.toString()).plus(proteinAddition).round(0,Decimal.roundHalfUp);
+    const carbohydrate=policy.athleticBonus&&exerciseKcal===null?null:decimal(policy.carbohydrateGrams).plus(policy.athleticBonus?decimal(exerciseKcal).div(50):0).round(0,Decimal.roundHalfUp);
     const finiteNumber=value=>{const amount=Number(value.toString());return Number.isFinite(amount)?amount:null;};
     derived.protein=protein===null?null:finiteNumber(protein);derived.carbohydrate=carbohydrate===null?null:finiteNumber(carbohydrate);derived.fat=null;
     if(protein!==null&&derived.protein===null)reasons.push(captureMacroGuidance('proteinRange'));
@@ -82,8 +84,7 @@ export function calculateMacroTargets({policy:input,energyTarget,carbohydrateTar
     else if(protein===null||carbohydrate===null)reasons.push(captureMacroGuidance('fatMacroMissing'));
     else{
       const remainder=decimal(energyTarget).minus(protein.times(4)).minus(carbohydrate.times(4));
-      if(remainder.lt(0))reasons.push(captureMacroGuidance('fatExceeded'));
-      else derived.fat=Number(remainder.div(9).toString());
+      derived.fat=remainder.lte(0)?0:Number(remainder.div(9).toString());
     }
     reasons.push(recordedLeanMassKg===undefined?captureMacroGuidance('ketoManual'):captureMacroGuidance('ketoRecorded'));
   }

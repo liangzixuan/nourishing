@@ -4,7 +4,7 @@ import {dc} from './discover-cloud-messages.js';
 import {uiLanguage,t} from './app-language.js';
 import {request} from './diary-api.js';
 import {escape as e} from './html.js';
-import {openProfileEditor} from './profile-editor.js';
+import {openProfileEditor,profileSexLabel} from './profile-editor.js';
 import {ensureDeviceSnapshot} from './device-sync.js';
 import {moreBackHeader} from './more-source/menu-view.js';
 
@@ -27,7 +27,7 @@ export function mountProfile({page,headerRoot,...ui}){
   const {demographics:d,measurements:m,bmi}=data.profile;
   const row=(id,label,value,extra='',editable=true)=>`<${editable?'button type="button"':'div'} class="profile-row" ${editable?'data-profile-row="'+id+'"':''}><strong>${label}</strong><span class="profile-value">${e(value)}${extra?'<small>'+e(extra)+'</small>':''}</span>${editable?'<span class="profile-chevron" aria-hidden="true">›</span>':''}</${editable?'button':'div'}>`;
   const value=kind=>m[kind].value===null?(m[kind].status==='unselected'?t('threshold.target.notSet'):m[kind].status==='empty'?dc('noReading'):t('health.unknown')):display(m[kind].value)+(m[kind].unit==='%'?'%':' '+m[kind].unit);
-  root.innerHTML='<div class="profile-card">'+row('age',t('printDocument.stored.age'),display(d.age))+row('sex',dc('sex'),d.sex===null?t('threshold.target.notSet'):d.sex==="male"?dc('male'):dc('female'))+row("weight",t('measurementCatalog.metric.weight'),value("weight"))+row("height",t('measurementCatalog.metric.height'),value("height"))+row('bmi',dc('bmi'),display(bmi),'',false)+row('bodyFat',t('measurementCatalog.metric.body-fat'),value('bodyFat'),m.bodyFat.date?dc('lastUpdated',{date:m.bodyFat.date}):'')+'</div>';
+  root.innerHTML='<div class="profile-card">'+row('age',t('printDocument.stored.age'),display(d.age))+row('sex',dc('sex'),profileSexLabel(d))+row("weight",t('measurementCatalog.metric.weight'),value("weight"))+row("height",t('measurementCatalog.metric.height'),value("height"))+row('bmi',dc('bmi'),display(bmi),'',false)+row('bodyFat',t('measurementCatalog.metric.body-fat'),value('bodyFat'),m.bodyFat.date?dc('lastUpdated',{date:m.bodyFat.date}):'')+'</div>';
  }
  root.addEventListener('click',event=>{if(event.target.closest('[data-profile-reload]'))return void load(true);const kind=event.target.closest('[data-profile-row]')?.dataset.profileRow;if(!kind||!data)return;editor?.dispose();editor=openProfileEditor({kind,data,date:date(),onSaved:changed,onClose:()=>{editor=null;}});},{signal:abort.signal});
  root.textContent=t('mobileNutrientDetail.loading');void load();return {back(){if(editor){editor.close();return true;}return false;},dispose(){disposed=true;abort.abort();editor?.dispose();}};

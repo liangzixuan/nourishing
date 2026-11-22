@@ -1,4 +1,4 @@
-import {parseProfileDemographics} from './profile-demographics.mjs';
+import {parseProfileDemographics,profileSexInputs} from './profile-demographics.mjs';
 import {date as calendarDate} from './calendar.mjs';
 import {parseEnergyPolicy,parseEnergyExpenditure} from './energy-policy.mjs';
 import {parseNutrientReferencePolicy} from './nutrient-references.mjs';
@@ -22,12 +22,13 @@ export function prepareProfileSettingsCommand(state,action){
  let patch;
  if(action.type==='profileSettings.demographic'){
   calendarDate(p.date);if(!['birthDate','sex'].includes(p.field))fail('Choose birthday or sex.');
-  const personal=parseProfileDemographics({...state.settings.profileDemographics,[p.field]:p.value});
+  const inputs=p.field==='sex'?profileSexInputs(p.value):{birthDate:p.value};
+  const personal=parseProfileDemographics({...state.settings.profileDemographics,...inputs});
   if(personal.birthDate&&personal.birthDate>p.date)fail('Birthday cannot be in the future.');
   patch={profileDemographics:personal};
   const energy=parseEnergyPolicy(state.settings.energyPolicy);
-  if(energy&&energy.resting.mode!=='custom'){const resting={...energy.resting,[p.field]:p.value};if(p.field==='birthDate'){resting.mode='mifflin-st-jeor-birthday';delete resting.age;}patch.energyPolicy=parseEnergyPolicy({...energy,resting});}
-  if(state.settings.nutrientReferences)patch.nutrientReferences=parseNutrientReferencePolicy({...state.settings.nutrientReferences,[p.field]:p.value});
+  if(energy&&energy.resting.mode!=='custom'){const resting={...energy.resting,[p.field]:inputs[p.field]};if(p.field==='birthDate'){resting.mode='mifflin-st-jeor-birthday';delete resting.age;}patch.energyPolicy=parseEnergyPolicy({...energy,resting});}
+  if(state.settings.nutrientReferences)patch.nutrientReferences=parseNutrientReferencePolicy({...state.settings.nutrientReferences,...inputs});
  }else if(action.type==='profileSettings.energy'){
   const previous=parseEnergyPolicy(state.settings.energyPolicy);
   const expenditure=parseEnergyExpenditure({resting:p.resting,baseline:p.baseline,activity:previous?.activity??{mode:'manual'},thermicEffect:previous?.thermicEffect??false});

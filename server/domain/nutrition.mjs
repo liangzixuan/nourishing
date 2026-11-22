@@ -22,6 +22,7 @@ import {resolveRecipeQuantity} from './recipe-quantity.mjs';
 import {resolveFoodQuantity,parseServingAmount} from './food-quantity.mjs';
 import {parseFoodClassification} from './food-classification.mjs';
 import {carbohydrateDefinition, carbohydrateLabel, NET_CARBOHYDRATE_TARGET_ID} from './carbohydrate-policy.mjs';
+import {profileLifeStage} from './profile-demographics.mjs';
 import {calculateEnergy} from './energy-policy.mjs';
 import {calculateMacroTargets} from './macro-policy.mjs';
 import {resolveMacroAssignment} from './macro-templates.mjs';
@@ -352,9 +353,10 @@ function calculateDay(state, date,policy=allFoodPolicy,records=null) {
 function dayTargets(state,day,consumed,{historical=false}={}){
   const {targets:baseline,weekdayTargets,carbohydrateTargetId,configuredEnergyTarget,fixedTargets,macroPolicy,energyPolicy,targetAssignment,recordedInputs}=day.targetSettings;
   const foodTotals=Object.fromEntries(nutrientIds.map(id=>[id,historical&&!day.complete&&day.energyFoodFacts.coverage[id].total===0?null:day.energyFoodFacts.values[id]]));
-  const calculatedEnergy=calculateEnergy({policy:energyPolicy,date:day.date,consumed,configuredTarget:configuredEnergyTarget,scheduledTarget:{present:own(weekdayTargets,'calories'),value:weekdayTargets.calories??null},exerciseEntries:day.exerciseEntries,biometrics:day.biometrics,foodTotals,foodCoverage:day.energyFoodFacts.coverage,recordedWeightKg:recordedInputs.recordedWeightKg,recordedHeightCm:recordedInputs.recordedHeightCm});
+  const lifeStage=profileLifeStage(state.settings);
+  const calculatedEnergy=calculateEnergy({policy:energyPolicy,lifeStage,date:day.date,consumed,configuredTarget:configuredEnergyTarget,scheduledTarget:{present:own(weekdayTargets,'calories'),value:weekdayTargets.calories??null},exerciseEntries:day.exerciseEntries,biometrics:day.biometrics,foodTotals,foodCoverage:day.energyFoodFacts.coverage,recordedWeightKg:recordedInputs.recordedWeightKg,recordedHeightCm:recordedInputs.recordedHeightCm});
   const energy={...calculatedEnergy,attributions:mergeSourceAttributions(day.attributions,energyPolicy?.thermicEffect?day.energyFoodFacts.attributions:[])};
-  const macroTargets={...calculateMacroTargets({policy:macroPolicy,energyTarget:energy.target,exerciseKcal:energy.exercise,carbohydrateTargetId,fixedTargets,weekdayTargets,recordedLeanMassKg:recordedInputs.recordedLeanMassKg}),attributions:mergeSourceAttributions(energyPolicy?.thermicEffect?day.energyFoodFacts.attributions:[])};
+  const macroTargets={...calculateMacroTargets({policy:macroPolicy,lifeStage,energyTarget:energy.target,exerciseKcal:energy.exercise,carbohydrateTargetId,fixedTargets,weekdayTargets,recordedLeanMassKg:recordedInputs.recordedLeanMassKg}),attributions:mergeSourceAttributions(energyPolicy?.thermicEffect?day.energyFoodFacts.attributions:[])};
   const targets={...baseline,calories:energy.target,protein:macroTargets.targets.protein,fat:macroTargets.targets.fat};
   if(carbohydrateTargetId==='carbs')targets.carbs=macroTargets.targets.carbohydrate;
   const carbohydrateTargets={total:targets.carbs,net:carbohydrateTargetId===NET_CARBOHYDRATE_TARGET_ID?macroTargets.targets.carbohydrate:day.targetSettings.inactiveNetTarget};

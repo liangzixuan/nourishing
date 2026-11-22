@@ -45,7 +45,7 @@ test('invalid and overbroad edits fail without changing state',()=>{
 });
 
 test('Profile summary uses explicit policies, exact series and canonical BMI, preserving unknown and zero',()=>{
- const state=initialState();assert.deepEqual(profileSettingsView(state,'2026-11-14').profile.demographics,{source:null,age:null,sex:null,birthDate:null});
+ const state=initialState();assert.deepEqual(profileSettingsView(state,'2026-11-14').profile.demographics,{source:null,age:null,sex:null,birthDate:null,lifeStage:null});
  assert.equal(profileSettingsView(state,'2026-11-14').profile.measurements.weight.value,null);
  run(state,'profileSettings.energy',energy());
  run(state,'profileSettings.body',{policy:{version:2,weightMetric:{kind:'biometric',type:'Morning mass',unit:'lb'},heightMetric:{kind:'biometric',type:'Height',unit:'in'},bodyFatMetric:{kind:'biometric',type:'Fat',unit:'%'},useForResting:false,useHeightForResting:false,useForKeto:false}});
@@ -56,7 +56,7 @@ test('Profile summary uses explicit policies, exact series and canonical BMI, pr
 
 test('Profile age and sex use reference policy only when no resting equation exists',()=>{
  const state=initialState(),view=profileSettingsView(state,'2026-11-14');run(state,'profileSettings.references',{policy:{version:1,referenceSet:view.referenceSet,birthDate:'1990-11-15',sex:'female',lifeStage:'standard',nutrients:['calcium']}});
- assert.deepEqual(profileSettingsView(state,'2026-11-14').profile.demographics,{source:'references',age:35,sex:'female',birthDate:'1990-11-15'});
+ assert.deepEqual(profileSettingsView(state,'2026-11-14').profile.demographics,{source:'references',age:35,sex:'female',birthDate:'1990-11-15',lifeStage:'standard'});
  run(state,'profileSettings.energy',energy());assert.equal(profileSettingsView(state,'2026-11-14').profile.demographics.sex,'male');assert.equal(state.settings.nutrientReferences.sex,'female');
 });
 
@@ -93,4 +93,21 @@ test('direct measurements atomically select their series, retain custom type and
  state.settings.bodyComposition.weightMetric.type='Morning mass';state.settings.bodyComposition.useForResting=true;
  save('weight',180,'lb');assert.equal(state.biometrics.at(-1).type,'Morning mass');assert.equal(state.settings.bodyComposition.weightMetric.unit,'lb');assert.equal(state.settings.bodyComposition.useForResting,true);
  const before=structuredClone(state);assert.throws(()=>save('height',0,'cm'),{status:400});assert.throws(()=>save('bodyFat',101,'%'),{status:400});assert.throws(()=>save('weight',1,'cm'),{status:400});assert.deepEqual(state,before);
+});
+
+test('changing the profile life stage updates the active population without changing custom targets',()=>{
+ const state=initialState(),date='2026-11-16';
+ run(state,'profileSettings.references',{policy:{version:1,referenceSet:profileSettingsView(state,date).referenceSet,birthDate:'1992-02-02',sex:'female',lifeStage:'lactating',nutrients:['iron','folate']}});
+ const targets=structuredClone(state.settings.targets);
+ for(const [value,sex,lifeStage,iron,folate] of [
+  ['male','male','standard',8,400],['pregnant','female','pregnant',27,600],
+  ['lactating','female','lactating',9,500],['female','female','standard',18,400]
+ ]){
+  applyProfileSettingsCommand(state,{type:'profileSettings.demographic',payload:{field:'sex',value,date}});
+  const result=profileSettingsView(state,date);
+  assert.equal(result.profile.demographics.sex,sex);
+  assert.equal(result.profile.demographics.lifeStage,lifeStage);
+  assert.deepEqual(result.referenceProjection.values,{iron,folate});
+  assert.deepEqual(state.settings.targets,targets);
+ }
 });

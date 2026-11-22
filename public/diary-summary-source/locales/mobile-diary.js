@@ -1,4 +1,11 @@
 const rows={
+ 'highlight.addedSugar':['Added Sugars','Sucres ajoutés','Zugesetzter Zucker','Açúcares adicionados'],
+ 'highlight.vitaminB12':['B12 (Cobalamin)','B12 (cobalamine)','B12 (Cobalamin)','B12 (cobalamina)'],
+ 'highlight.vitaminA':['Vitamin A','Vitamine A','Vitamin A','Vitamina A'],
+ 'highlight.folate':['Folate','Folates','Folat','Folato'],
+ 'highlight.noData':['No Data','Aucune donnée','Keine Daten','Sem dados'],
+ 'highlight.partial':['Partial Data','Données partielles','Unvollständige Daten','Dados parciais'],
+ 'highlight.amountOfTarget':['{{amount}} of {{target}} {{unit}}','{{amount}} sur {{target}} {{unit}}','{{amount}} von {{target}} {{unit}}','{{amount}} de {{target}} {{unit}}'],
  water:['Water','Eau','Wasser','Água'],
  carbs:['Total Carbs','Glucides totaux','Gesamtkohlenhydrate','Carboidratos totais'],
  netCarbohydrate:['Net Carbs','Glucides nets','Netto-Kohlenhydrate','Carboidratos líquidos'],
