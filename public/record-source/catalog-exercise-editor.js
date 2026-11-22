@@ -11,8 +11,16 @@ export class CatalogExerciseEditor{
   const form=this.form=dialog.querySelector('.me-form'),m=key=>message('exerciseBrowser.'+key);this.m=m;
   form.dataset.form='exercise-catalog';form.elements.name.closest('label').replaceWith(Object.assign(document.createElement('input'),{type:'hidden',name:'name',value:activity.description}));
   form.insertAdjacentHTML('afterbegin','<input type="hidden" name="code"><input type="hidden" name="weightKg"><input type="hidden" name="useEstimate" value="true">');
-  form.querySelector('.me-card').insertAdjacentHTML('afterbegin',`<button type="button" class="me-row mec-effort" data-mec-effort aria-haspopup="menu" aria-expanded="false"><strong>${e(m('effort'))}</strong><span class="me-value"><span data-mec-label></span>${symbol('arrow_drop_down')}</span></button><p class="mec-description" data-mec-description></p>`);
-  form.querySelector('.me-card').insertAdjacentHTML('beforeend',`<p class="mec-footnote" data-mec-weight></p><a class="mec-source" data-mec-source target="_blank" rel="noopener">${e(m('source'))}</a>`);
+  const walking=titleKey==='generalWalking',card=form.querySelector('.me-card');
+  form.classList.toggle('me-walking',walking);
+  if(walking&&form.elements.id.value)form.querySelector('.me-save').textContent=message('common.save');
+  const effort=`<strong>${e(m('effort'))}</strong><span class="me-value"><span data-mec-label></span>${symbol('arrow_drop_down')}</span>`;
+  const description='<span class="mec-description" data-mec-description></span>';
+  card.insertAdjacentHTML('afterbegin',`<button type="button" class="me-row mec-effort" data-mec-effort aria-haspopup="menu" aria-expanded="false">${effort}${walking?description:''}</button>${walking?'':'<p class="mec-description" data-mec-description></p>'}`);
+  const source=`<a class="mec-source" data-mec-source target="_blank" rel="noopener">${e(m('source'))}</a>`;
+  card.insertAdjacentHTML('beforeend',walking
+   ?`<details class="mec-details"><summary><span data-mec-weight></span>${symbol('arrow_drop_down')}</summary>${source}</details>`
+   :`<p class="mec-footnote" data-mec-weight></p>${source}`);
   form.querySelector('.me-save').insertAdjacentHTML('beforebegin',`<p role="status" data-mec-status></p><button type="button" class="mec-reset" data-mec-reset hidden>${e(m('useEstimate'))}</button><button type="button" class="mec-custom" data-mec-custom hidden>${e(m('customEntry'))}</button>`);
   this.base=new MobileExerciseEditor({dialog,message});
   form.addEventListener('input',event=>{if(event.target.name==='calories')this.manual=true;this.refresh()},{signal:this.abort.signal});
@@ -23,12 +31,19 @@ export class CatalogExerciseEditor{
  async loadWeight(){try{const weight=await this.api('/api/exercise-weight?date='+encodeURIComponent(this.form.elements.date.value),{signal:this.abort.signal});if(this.disposed)return;this.weight=weight;this.loaded=true}catch{if(this.disposed)return;this.failed=true;this.loaded=true}this.refresh()}
  refresh(){
   const f=this.form,a=this.activity,m=this.m;f.elements.code.value=a.code;f.elements.name.value=a.description;f.elements.useEstimate.value=String(!this.manual);
-  f.querySelector('[data-mec-label]').textContent=this.label(a);f.querySelector('[data-mec-description]').textContent=a.description;f.querySelector('[data-mec-source]').href=a.source;
-  const effort=f.querySelector('[data-mec-effort]');effort.hidden=this.choices.length<2;effort.disabled=this.choices.length<2;f.querySelector('[data-mec-description]').hidden=this.choices.length>1&&this.titleKey!=='generalWalking';effort.querySelector('svg')?.toggleAttribute('hidden',this.choices.length<2);
+  const effortKey=this.titleKey==='generalWalking'?this.efforts[a.code]:null;
+  const description=effortKey==='light'||effortKey==='moderate'?m(effortKey+'Description'):a.description;
+  f.querySelector('[data-mec-label]').textContent=this.label(a);f.querySelector('[data-mec-description]').textContent=description;f.querySelector('[data-mec-source]').href=a.source;
+  if(this.titleKey==='generalWalking'&&this.weight?.status!=='known')f.querySelector('[data-mec-weight]').textContent=m('source');
+  const effort=f.querySelector('[data-mec-effort]');effort.hidden=this.choices.length<2&&this.titleKey!=='generalWalking';effort.disabled=this.choices.length<2;f.querySelector('[data-mec-description]').hidden=this.choices.length>1&&this.titleKey!=='generalWalking';effort.querySelector('svg')?.toggleAttribute('hidden',this.choices.length<2);
   let status='',ready=false;
   if(a.conflict)status=m('sourceConflict');else if(this.failed)status=m('estimateUnavailable');else if(this.loaded&&this.weight?.status!=='known')status=m('weightMissing');
   if(this.weight?.status==='known'){
-   const kg=this.weight.kilograms;f.elements.weightKg.value=String(kg);f.querySelector('[data-mec-weight]').textContent=m(this.weight.source==='profile'?'weightProfile':'weightBiometric').replace('{{value}}',Number(kg.toFixed(2)).toString());
+   const kg=this.weight.kilograms;
+   const reading=this.weight.reading??{value:kg,unit:'kg'};
+   const weightMessage={profile:'weightProfile',biometric:'weightCurrent',recorded:'weightBiometric'}[this.weight.source];
+   f.elements.weightKg.value=String(kg);
+   f.querySelector('[data-mec-weight]').textContent=m(weightMessage).replace('{{value}}',String(Number(reading.value.toFixed(2)))).replace('{{unit}}',reading.unit);
    try{const estimate=estimateExercise(a,{minutes:Number(f.elements.duration.value),weightKg:kg});if(!this.manual)f.elements.calories.value=convertEnergy(estimate.netKcal,'kcal',f.dataset.energyUnit).toFixed(2);ready=this.manual||estimate.recordable}catch{if(!status&&f.elements.duration.validity.valid)status=m('estimateUnavailable')}
   }
   f.querySelector('[data-mec-status]').textContent=status;f.querySelector('[data-mec-reset]').hidden=!this.manual;f.querySelector('[data-mec-custom]').hidden=!status;this.base.update();f.querySelector('[type=submit]').disabled||=!ready||Boolean(status);

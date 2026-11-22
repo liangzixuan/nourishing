@@ -72,13 +72,14 @@ function decorateSavedExerciseForm(form, record) {
   const dateField = document.createElement('label');
   dateField.className = 'me-row';
   dateField.innerHTML = `<strong>${t('diaryCorrection.date')}</strong><input type="date" value="${e(record.date)}" data-record-date required>`;
-  form.querySelector('.me-card').append(dateField);
+  const walkingDetails=form.querySelector('.mec-details');
+  (walkingDetails??form.querySelector('.me-card')).append(dateField);
   dateField.querySelector('input').oninput = event => {
     form.elements.date.value = event.target.value;
   };
   if (!record.exerciseBasis) return;
   const basis = record.exerciseBasis;
-  form.insertAdjacentHTML(
+  (walkingDetails??form).insertAdjacentHTML(
     'beforeend',
     `<details class="record-source"><summary>${dc('originalEstimate')}</summary><p>${e(basis.minutes)} min · ${e(basis.weightKg)} kg · ${e(basis.estimatedKcal)} kcal</p><a href="${e(basis.source)}" target="_blank" rel="noreferrer">${e(basis.edition)}</a></details>`,
   );

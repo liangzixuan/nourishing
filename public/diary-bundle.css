@@ -309,6 +309,9 @@ body.discover-mobile .ml-sheet::backdrop{backdrop-filter:none;background:rgb(0 0
 .ml-delete footer button:disabled{opacity:.5;cursor:default}
 @media(max-width:360px){.library-review-dialog.ml-delete{width:calc(100% - 32px)}.ml-delete footer{gap:8px;padding:0}}
 
+.ml-tools [data-action=collection-sort]{display:inline-flex;align-items:center;gap:4px;font-size:.92rem}
+.ml-tools [data-action=collection-sort] svg{width:20px;height:20px;flex:none}
+
 /* /custom-food-source/mobile-food-editor.css */
 #sheet:has(.mobile-food-editor){width:100%;max-width:700px;height:100dvh;max-height:100dvh;margin:0 auto;padding:0;border:0;border-radius:0;background:var(--bg);color:var(--ink);overflow-y:auto;overscroll-behavior:contain;font-size:1rem;}
 .mobile-food-editor>.sheet-header{position:sticky;top:0;z-index:4;background:var(--paper);min-height:64px;padding:12px 16px;border:0;border-radius:0 0 16px 16px;display:flex;flex-direction:row-reverse;gap:12px;}
@@ -625,6 +628,93 @@ body.discover-mobile .anchored-menu.mr-action-menu{min-width:0;max-width:700px;w
 .mec-effort{border-bottom:0;min-height:54px;}.mec-effort span{min-width:0;overflow-wrap:anywhere;text-align:right;}.mec-description{margin:0;padding:0 16px 14px;border-bottom:1px solid var(--line);font-size:.9rem;line-height:1.4;overflow-wrap:anywhere;}.mec-footnote{padding:14px 16px;margin:0;border-top:1px solid var(--line);font-size:.9rem;line-height:1.4;}.mec-footnote a,.mec-reset,.mec-custom{color:var(--green);background:transparent;border:0;font:inherit;min-height:44px;padding:8px 16px;}.mec-effort-menu{background:var(--paper);color:var(--ink);font:inherit;max-width:min(440px,calc(100vw - 16px));border:0;}.mec-effort-menu button{white-space:normal;min-height:48px;overflow-wrap:anywhere;}.mec-effort-menu button[aria-checked=true]{font-weight:700;}.mec-effort-menu button:focus-visible{background:var(--pale);outline:2px solid var(--green);}.me-form [data-mec-status]:empty{display:none;}.me-form [data-mec-status]{margin:14px 16px;color:var(--mobile-danger);font-size:.9rem;}
 
 .mec-source{display:inline-block;margin:0 16px 12px;color:var(--green);font-size:.85rem;min-height:24px;}
+
+/* General Walking uses a single card for the estimate and its inputs. */
+.record-surface:has(.me-walking) .dialog-head {
+  min-height:56px;
+  grid-template-columns:44px minmax(0,1fr) 44px;
+  padding:6px;
+}
+.record-surface:has(.me-walking) .dialog-head h2 {font-size:20px;line-height:24px}
+.record-surface:has(.me-walking) .dialog-head>button {font-size:26px;line-height:1}
+.me-walking .me-card {border-radius:10px}
+.me-walking .me-row {
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  min-height:52px;
+  gap:8px;
+  padding:3px 16px;
+  font-size:14px;
+  line-height:20px;
+}
+.me-walking .me-row strong,.me-walking .me-row>label {
+  font-family:Karla,Lato,sans-serif;
+  font-size:16px;
+  line-height:20px;
+}
+.me-walking .mec-effort {
+  padding:20px 16px 16px;
+  border-bottom:1px solid var(--line);
+  row-gap:8px;
+}
+.me-walking .mec-effort:disabled {opacity:1}
+.me-walking .mec-effort .mec-description {
+  grid-column:1/-1;
+  padding:0;
+  border:0;
+  font-size:13px;
+  line-height:16px;
+  text-align:left;
+}
+.me-walking .me-row:has([data-me-time-toggle]) {min-height:60px}
+.me-walking .me-row[data-me-group] {min-height:56px}
+.me-walking .me-value {gap:12px}
+.me-walking .me-value:has([data-mec-label],[data-me-group-label]) {gap:6px}
+.me-walking .me-value .dc-symbol-svg,.me-walking .mec-details>summary svg {
+  flex:none;width:16px;height:16px;opacity:.75;
+}
+.me-walking .me-value .dc-symbol-svg path,.me-walking .mec-details>summary svg path {
+  d:path('M5 9h14l-7 8z');fill:currentColor;stroke:none;
+}
+.me-walking .me-row input[type=checkbox] {width:20px;height:20px}
+#sheet .me-walking .me-row input[type=time] {
+  position:relative;
+  flex:0 1 72px;
+  min-width:0;
+  padding:0 4px;
+  border-block:8px solid transparent;
+  background-clip:padding-box;
+  font:400 13px/18px Lato,sans-serif;
+  line-height:18px;
+}
+#sheet .me-walking .me-row input[type=time]::-webkit-calendar-picker-indicator {
+  position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer;
+}
+.me-walking .mec-details>summary {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  min-height:48px;
+  padding:8px 16px;
+  font-size:13px;
+  line-height:16px;
+  cursor:pointer;
+  list-style:none;
+}
+.me-walking .mec-details>summary::-webkit-details-marker {display:none}
+.me-walking .mec-details[open]>summary svg {transform:rotate(180deg)}
+.me-walking .mec-source {display:inline-flex;align-items:center;min-height:44px;margin-block:0}
+.me-walking .mec-details .me-row {border-top:1px solid var(--line)}
+.me-walking .me-save {
+  width:61.5%;
+  min-height:44px;
+  padding:5px 12px;
+  border-block:4px solid transparent;
+  background-clip:padding-box;
+  margin-top:26px;
+  font:700 14px/20px Karla,Lato,sans-serif;
+  letter-spacing:.06em;
+}
 
 
 /* The exercise hierarchy uses three square tiles per row on a phone. */
@@ -1353,6 +1443,16 @@ html[data-nourishing-native] [data-nourishing-health-connect]{display:inline-fle
 
 .mobile-report-nutrient-dialog .mrnd-close{width:24px;height:24px;filter:var(--mobile-icon-filter)}
 
+.mobile-report-nutrient-dialog.mrnd-reference>.dc-dialog-header{margin-bottom:0;padding-inline:6px}
+.mrnd-reference .mnd-card,.mrnd-reference .mnd-section{font-size:calc(14.5rem / 18);line-height:1.35}
+.mrnd-reference .mnd-card h3,.mrnd-reference .mnd-toggle{font-size:calc(15rem / 18)}
+.mrnd-reference .mnd-card [data-mrnd-help]{display:grid;place-items:center;min-width:32px;min-height:32px;padding:0;margin:-6px 0}
+.mrnd-reference .mnd-card [data-mrnd-help] img{width:16px;height:16px}.mrnd-reference .mrnd-explanation{margin:0}
+.mrnd-single-gauge{position:relative;margin:18px 0 12px;padding-bottom:14px;font-size:calc(12rem / 18)}.mrnd-single-gauge svg{display:block;overflow:visible}
+.mrnd-single-gauge span:last-child{position:absolute;bottom:0;left:85%;transform:translateX(-50%)}.mrnd-single-gauge>span:first-of-type{position:absolute;bottom:0;left:0}
+.mrnd-reference .mnd-values{margin:12px 0 0;padding:6px 12px;font-size:inherit}.mrnd-reference .mnd-values>div{margin:6px 0}
+.mrnd-reference .mnd-toggle{margin-top:12px;min-height:44px}.mrnd-reference [data-mrnd-error]:empty{display:none}
+
 /* /report-mobile.css */
 .discover-home .app-shell:has(.nutrition-report-mobile){height:100dvh;min-height:0;}
 .discover-home .app-shell:has(.nutrition-report-mobile)>.app-header{flex:none;margin-bottom:0;}
@@ -1469,6 +1569,13 @@ html[data-nourishing-native] [data-nourishing-health-connect]{display:inline-fle
 .mf-header{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:10px;min-height:60px;padding:10px 14px;background:var(--paper);border-radius:0 0 14px 14px;}
 .mf-header h2{font-size:1.13rem;line-height:1.25;flex:1;margin:0;min-width:0;font-weight:700;}
 .mf-header button,.mf-header summary{background:none;border:0;padding:4px;color:var(--ink);min-height:40px;min-width:30px;display:grid;place-items:center;}
+/* Equal outside tracks center the favorite glyph and title as one group. */
+.mf-header.mf-entry-header{display:grid;grid-template-columns:minmax(44px,1fr) 44px minmax(0,max-content) minmax(44px,1fr);gap:4px;padding:8px}
+.mf-entry-header>button{justify-self:start}
+.mf-entry-header>.mf-menu{justify-self:end}
+.mf-entry-header>.mf-favorite button{width:44px;justify-items:end;padding-inline:0 2px}
+.mf-entry-header>button,.mf-entry-header>.mf-favorite button,.mf-entry-header>.mf-menu>summary{min-width:44px;min-height:44px}
+.mf-entry-header h2{padding-inline-end:20px;text-align:center;overflow-wrap:anywhere}
 .mf-header svg{width:23px;height:23px;}
 .mf-favorite button{color:#ffb600;}
 .mf-favorite button[aria-pressed=true] svg{fill:#ffb600;}

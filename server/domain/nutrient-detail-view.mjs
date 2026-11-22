@@ -1,6 +1,6 @@
 import {date as calendarDate} from './calendar.mjs';
 import {createDiaryContributionsView} from './diary-display-view.mjs';
-import {createNutrientTargetsView} from './nutrient-target-view.mjs';
+import {createNutrientTargetsView,nutrientTargetControl} from './nutrient-target-view.mjs';
 import {calculateSelectionNutrition} from './nutrition.mjs';
 import {createNutrientContributions} from './diary-display.mjs';
 import {nutrientDisplayOptions} from './nutrient-display.mjs';
@@ -13,6 +13,6 @@ export function createNutrientDetailView(state,input){
  const {date,nutrient,entryIds}=input;calendarDate(date);if(!ids.has(nutrient))fail('Choose a known nutrient.');
  const selected=entryIds===null?null:calculateSelectionNutrition(state,date,entryIds);
  const contributions=selected?createNutrientContributions(selected,nutrient):createDiaryContributionsView(state,date,nutrient);
- const targets=createNutrientTargetsView(state,date),controls=targets.groups.flatMap(group=>group.nutrients).find(row=>row.id===nutrient);
+ const targets=createNutrientTargetsView(state,date),controls=nutrientTargetControl(targets,nutrient);
  return {version:1,date,energyUnit:targets.energyUnit,selection:selected?.selectedEntryIds??null,contributions,controls};
 }

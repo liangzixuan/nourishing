@@ -1,3 +1,4 @@
+import {weightKilogramsPerUnit} from './weight-units.mjs';
 import {walkingEfforts,walkingPreset} from './general-walking.mjs';
 import {estimateExercise} from './exercise-estimate.mjs';
 import {parseExerciseFields} from './diary-record-fields.mjs';
@@ -40,7 +41,9 @@ export function savedExerciseSettings(record){
  const activity={code:selection.code,description:selection.description,met:selection.met,source:basis.source,edition:basis.edition};
  const estimate=estimateExercise(activity,{weightKg:basis.weightKg,minutes:record.duration});
  const useEstimate=(selection.useEstimate??(basis.enteredKcal===basis.estimatedKcal))&&record.caloriesBurned===estimate.netKcal;
- return {activity,useEstimate,efforts:walkingChoices(basis,selection.generalWalking),weight:{status:'known',kilograms:basis.weightKg,source:'recorded'}};
+ const unit=basis.weightUnit??'kg';
+ const reading={value:basis.weightKg/Number(weightKilogramsPerUnit[unit]),unit};
+ return {activity,useEstimate,efforts:walkingChoices(basis,selection.generalWalking),weight:{status:'known',kilograms:basis.weightKg,source:'recorded',reading}};
 }
 
 export function correctedCatalogExercise(record,changes,groups,chosen){
@@ -71,5 +74,5 @@ export function catalogExerciseRecord(state,input,activity){
  if(!activity||activity.code!==input.code)fail('Choose a matching catalogue exercise.');
  activity=walkingPreset(input.code)??activity;
  const calculation=estimateExercise(activity,{minutes:input.duration,weightKg:weight.kilograms}),calories=input.useEstimate?calculation.netKcal:input.calories;
- return {...parseExerciseFields({date:input.date,time:input.time,group:input.group,name:activity.description,duration:input.duration,calories,exerciseBasis:{version:1,edition:calculation.source.edition,code:activity.code,description:activity.description,met:activity.met,weightKg:weight.kilograms,weightSource:weight.source,minutes:input.duration,estimatedKcal:calculation.netKcal,enteredKcal:calories,source:activity.source,date:input.date}},state.settings.groups),exerciseSelection:exerciseSelection(activity,input.useEstimate,input.generalWalking)};
+ return {...parseExerciseFields({date:input.date,time:input.time,group:input.group,name:activity.description,duration:input.duration,calories,exerciseBasis:{version:1,edition:calculation.source.edition,code:activity.code,description:activity.description,met:activity.met,weightKg:weight.kilograms,weightSource:weight.source,...(weight.reading?{weightUnit:weight.reading.unit}:{}),minutes:input.duration,estimatedKcal:calculation.netKcal,enteredKcal:calories,source:activity.source,date:input.date}},state.settings.groups),exerciseSelection:exerciseSelection(activity,input.useEstimate,input.generalWalking)};
 }

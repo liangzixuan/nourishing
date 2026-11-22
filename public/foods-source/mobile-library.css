@@ -40,3 +40,6 @@ body.discover-mobile .ml-sheet::backdrop{backdrop-filter:none;background:rgb(0 0
 .ml-delete footer [data-confirm-delete]{color:var(--mobile-accent-text)}
 .ml-delete footer button:disabled{opacity:.5;cursor:default}
 @media(max-width:360px){.library-review-dialog.ml-delete{width:calc(100% - 32px)}.ml-delete footer{gap:8px;padding:0}}
+
+.ml-tools [data-action=collection-sort]{display:inline-flex;align-items:center;gap:4px;font-size:.92rem}
+.ml-tools [data-action=collection-sort] svg{width:20px;height:20px;flex:none}

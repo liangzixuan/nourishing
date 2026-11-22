@@ -14,7 +14,7 @@ import {digest} from '../server/data-codec.mjs';
 
 test('source food entry preserves canonical preview/add/edit/favorites and error recovery',async()=>{
  const state=initialState(),date='2026-11-16',commands=[],previews=[];let failPreview=false,failSave=false,origin,handler;
- state.foods.push({id:'food',name:'Rice <script>bad()</script>',serving:'100 g',grams:100,nutrients:{calories:200,protein:4},portions:[{id:'bowl:large',label:'Large bowl',grams:150}],source:{name:'Fixture source',attribution:'Fixture source credit'}},{id:'unknown',name:'Unknown food',serving:'1 serving',nutrients:{}});
+ state.foods.push({id:'food',name:'Rice<script>x</script>',serving:'100 g',grams:100,nutrients:{calories:200,protein:4},portions:[{id:'bowl:large',label:'Large bowl',grams:150}],source:{name:'Fixture source',attribution:'Fixture source credit'}},{id:'unknown',name:'LongUnbrokenFoodName'.repeat(6),serving:'1 serving',nutrients:{}});
  const food=()=>state.foods[0];
  const service={current:async()=>({id:'fixture'}),favorites:async()=>favoriteView(state),libraryItem:async(_,kind,id,entryId)=>libraryItem(state,kind,state[kind+'s'].find(row=>row.id===id),state.entries.find(row=>row.id===entryId)),previewDiary:async(_,payload)=>{previews.push(payload);if(failPreview){failPreview=false;throw Object.assign(Error('Preview unavailable'),{code:503,publicMessage:'Preview unavailable'});}const result=previewDiaryItem(state,payload);return {...result,energy:{value:result.nutrition.totals.calories,unit:'kcal'}};},workspaceCommand:async(_,input)=>{if(failSave){failSave=false;throw Object.assign(Error('Save unavailable'),{code:503,publicMessage:'Save unavailable'});}assert.equal(input.revision,digest(state));commands.push(input);applyWorkspaceCommand(state,{type:input.type,payload:input.payload});return {revision:digest(state)};}};
  const html='<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/mobile-theme.css"><link rel="stylesheet" href="/diary.css"><link rel="stylesheet" href="/food-entry-source/mobile-food-entry.css"><body class="discover-mobile dark"><button id="open">Open</button><dialog id="sheet"><div id="sheet-content"></div></dialog><script type="module" src="/fixture.js"></script>';
@@ -25,6 +25,16 @@ test('source food entry preserves canonical preview/add/edit/favorites and error
  try{
   browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915}}),errors=[];page.setDefaultTimeout(15000);page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{if(message.text().includes('Content Security Policy'))errors.push(message.text());});await page.goto(origin);await page.getByRole('button',{name:'Open',exact:true}).click();
   const energy=()=>page.locator('[data-mf-energy]');await energy().filter({hasText:'200'}).waitFor();assert.equal(await page.locator('.mf-form script').count(),0);assert.ok(await page.locator('[data-mf-section]').count()>5);assert.equal(await page.getByLabel('Include timestamp').isChecked(),false);
+  const headerBoxes=()=>page.locator('.mf-entry-header').evaluate(header=>{
+    const box=selector=>header.querySelector(selector).getBoundingClientRect().toJSON();
+    const text=selector=>{const range=document.createRange();range.selectNodeContents(header.querySelector(selector));return range.getBoundingClientRect().toJSON();};
+    return {title:text('h2'),star:text('.mf-favorite button'),close:box(':scope>button'),favorite:box('.mf-favorite button'),menu:box('.mf-menu summary'),viewport:innerWidth};
+  });
+  await page.setViewportSize({width:448,height:997});
+  await page.evaluate(()=>document.fonts.ready);
+  const short=await headerBoxes();
+  assert.ok(Math.abs((short.star.left+short.title.right)/2-short.viewport/2)<2,JSON.stringify(short));
+  for(const hit of [short.close,short.favorite,short.menu])assert.ok(hit.width>=44 && hit.height>=44);
   await page.getByLabel('Amount',{exact:true}).fill('2');await page.getByLabel('Serving',{exact:true}).selectOption('portion:bowl:large');await energy().filter({hasText:'600'}).waitFor();assert.deepEqual({...previews.at(-1)}, {date,group:'Lunch',time:'',foodId:'food',quantity:2,unit:'portion',portionId:'bowl:large'});
   await page.getByLabel('Include timestamp').check();await page.getByLabel('Timestamp',{exact:true}).fill('09:30');await page.getByLabel('Group',{exact:true}).selectOption('Dinner');
   await page.getByRole('button',{name:'Fixture source',exact:true}).click();await page.getByText('Fixture source credit',{exact:true}).waitFor();
@@ -36,7 +46,11 @@ test('source food entry preserves canonical preview/add/edit/favorites and error
   await page.evaluate(entry=>window.openFood('food',entry),state.entries[0]);await energy().filter({hasText:'300'}).waitFor();await page.getByLabel('Amount',{exact:true}).fill('2');await page.getByRole('button',{name:'Save Changes',exact:true}).click();await page.locator('#sheet').waitFor({state:'hidden'});assert.equal(state.entries[0].quantity,2);
   await page.evaluate(entry=>window.openFood('food',entry),state.entries[0]);await energy().filter({hasText:'600'}).waitFor();mkdirSync('.local',{recursive:true});await page.screenshot({path:'.local/food-entry-restored.png'});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   await page.locator('.mf-menu>summary').click();await page.getByRole('button',{name:'Delete Entry',exact:true}).click();await page.locator('#sheet').waitFor({state:'hidden'});assert.equal(state.entries.length,0);
-  await page.evaluate(()=>window.openFood('unknown'));await energy().filter({hasText:'—'}).waitFor();assert.match(await page.locator('[data-mf-nutrient=protein]').textContent(),/—/);await page.keyboard.press('Escape');await page.locator('#sheet').waitFor({state:'hidden'});assert.equal(await page.evaluate(()=>Object.keys(window.Chart?.instances??{}).length),0);
+  await page.setViewportSize({width:320,height:710});await page.evaluate(()=>window.openFood('unknown'));await energy().filter({hasText:'—'}).waitFor();
+  const narrow=await headerBoxes();
+  assert.ok(narrow.title.height>short.title.height && narrow.close.right<=narrow.favorite.left && narrow.favorite.right<=narrow.title.left && narrow.title.right<=narrow.menu.left);
+  assert.equal(await page.locator('.mf-entry-header').evaluate(el=>el.scrollWidth<=el.clientWidth),true);
+  await page.setViewportSize({width:412,height:915});assert.match(await page.locator('[data-mf-nutrient=protein]').textContent(),/—/);await page.keyboard.press('Escape');await page.locator('#sheet').waitFor({state:'hidden'});assert.equal(await page.evaluate(()=>Object.keys(window.Chart?.instances??{}).length),0);
   act(state,'recipe.save',{name:'Rice recipe',servings:2,ingredients:[{foodId:'food',amount:2}]});act(state,'entry.add',{date,group:'Lunch',recipeId:state.recipes[0].id,amount:1});
   await page.evaluate(value=>window.openFood(value.id,value.entry,'recipe'),{id:state.recipes[0].id,entry:state.entries[0]});await energy().filter({hasText:'200'}).waitFor();await page.locator('.mf-menu>summary').click();await page.getByRole('button',{name:'Adjust Ingredients',exact:true}).click();assert.equal(await page.evaluate(()=>window.adjusted),true);await page.getByRole('button',{name:'Close',exact:true}).first().click();
   const beforeDraft=state.entries.length,beforeCommands=commands.length;

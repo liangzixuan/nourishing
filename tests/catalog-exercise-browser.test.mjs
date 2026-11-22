@@ -31,8 +31,8 @@ test('Diary estimates with each account’s cold options cache and reopens a pen
   seed.profile.weight=66;
   if(owner==='profile')seed.settings.energyUnit='kJ';
   if(owner==='measurement'){
-   seed.settings.bodyComposition={version:2,weightMetric:{kind:'biometric',type:'Weight',unit:'kg'},bodyFatMetric:null,heightMetric:null,useForResting:false,useHeightForResting:false,useForKeto:false};
-   seed.biometrics.push({id:'measured-weight',date:day,type:'Weight',unit:'kg',value:165*0.45359237});
+   seed.settings.bodyComposition={version:2,weightMetric:{kind:'biometric',type:'Weight',unit:'lbs'},bodyFatMetric:null,heightMetric:null,useForResting:false,useHeightForResting:false,useForKeto:false};
+   seed.biometrics.push({id:'measured-weight',date:day,type:'Weight',unit:'lbs',value:165});
   }
   const fixture=diaryStoreFixture(seed,owner);
   accounts.set(owner,{fixture,store:createWorkspaceStore(fixture.db,owner),repository:createDataRepository(fixture.db,owner)});
@@ -106,7 +106,8 @@ test('Diary estimates with each account’s cold options cache and reopens a pen
   assert.equal(attempts.length,0);
   await page.reload();await snapshotReady();await walk();
   assert.equal(Number(await page.locator('[name=weightKg]').inputValue()),165*0.45359237);
-  assert.match(await page.locator('[data-mec-weight]').innerText(),/74.84/);
+  assert.match(await page.locator('[data-mec-weight]').innerText(),/165 lbs/);
+  assert.equal(await page.locator('[data-mec-description]').innerText(),'Requires some effort but not enough to speed up breathing.');
   assert.equal(await page.locator('[name=calories]').inputValue(),'26.19');
   assert.equal(optionsReads,0);
 
@@ -116,6 +117,7 @@ test('Diary estimates with each account’s cold options cache and reopens a pen
   assert.match(await row.innerText(),/-26\.2\s*kcal/);
   await edit();await page.getByRole('button',{name:/Effort Level.*Light/}).click();
   await page.getByRole('menuitemradio',{name:'Moderate',exact:true}).click();
+  assert.equal(await page.locator('[data-mec-description]').innerText(),'Requires moderate effort. Speeds up heart rate and breathing but does not leave you out of breath.');
   await page.locator('[name=duration]').fill('15');
   for(const [effort,ten,fifteen] of [['Hard','91.68','137.52'],['Very Hard','117.88','176.82']]){
    await page.locator('[data-mec-effort]').click();
@@ -143,7 +145,16 @@ test('Diary estimates with each account’s cold options cache and reopens a pen
   await edit();
   assert.equal(await page.locator('[name=duration]').inputValue(),'15');
   assert.equal(await page.locator('[data-mec-label]').innerText(),'Moderate');
+  assert.match(await page.locator('[data-mec-weight]').innerText(),/165 lbs/);
   assert.equal(await page.locator('[name=calories]').inputValue(),'74.66');
+  const details=page.locator('.me-walking .mec-details');
+  await details.locator('summary').first().click();
+  assert.ok(await details.locator('[data-mec-source]').isVisible());
+  assert.equal(await details.locator('[data-record-date]').inputValue(),day);
+  await details.locator('.record-source summary').click();
+  assert.match(await details.locator('.record-source p').innerText(),/10 min/);
+  await details.locator('summary').first().click();
+  assert.equal(await page.locator('.me-save').textContent(),'Save');
   await page.unroute('**/api/workspace/command');
   await waitForOutboxIdle(page,()=>active().fixture.state().entries[0]?.duration===15);
   const [entry]=active().fixture.state().entries;
@@ -158,6 +169,7 @@ test('Diary estimates with each account’s cold options cache and reopens a pen
   assert.equal(entry.exerciseSelection.useEstimate,true);
   assert.equal(Number(entry.caloriesBurned.toFixed(2)),estimated);
   assert.equal(entry.exerciseBasis.weightSource,'biometric');
+  assert.equal(entry.exerciseBasis.weightUnit,'lbs');
   // This editor opened against the queued ID, and the server acknowledged it while open.
   await page.locator('[name=calories]').fill('77');await page.locator('[name=duration]').fill('20');await save();
   await waitForOutboxIdle(page,()=>active().fixture.state().entries[0]?.duration===20);

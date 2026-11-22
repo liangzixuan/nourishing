@@ -75,7 +75,7 @@ export async function request(path,body,signal,options){
  }
  // Read-only POST operations never invalidate saved screens or store their
  // transient review tokens. A lost mutation reply still invalidates affected views.
- const changes=body&&!/\/(?:analyze|prepare|preview|edit-preview|ingredient-preview|template-preview|parse|answer|search|lookup|resolve|suggestions|oracle|review|export|inspect|test|verification)$/.test(path);
+ const changes=body&&path!=='/api/nutrition-report/nutrient'&&path!=='/api/nutrient-detail'&&!/\/(?:analyze|prepare|preview|edit-preview|ingredient-preview|template-preview|parse|answer|search|lookup|resolve|suggestions|oracle|review|export|inspect|test|verification)$/.test(path);
  const ticket=changes?(await readDeviceCache('/api/diary').catch(()=>({}))).ticket:null;
  if(ticket)await invalidateForWrite(ticket,path,body,options);
  try{return await network(path,body,signal,options);}finally{

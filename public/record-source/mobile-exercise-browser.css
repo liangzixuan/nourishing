@@ -3,6 +3,93 @@
 
 .mec-source{display:inline-block;margin:0 16px 12px;color:var(--green);font-size:.85rem;min-height:24px;}
 
+/* General Walking uses a single card for the estimate and its inputs. */
+.record-surface:has(.me-walking) .dialog-head {
+  min-height:56px;
+  grid-template-columns:44px minmax(0,1fr) 44px;
+  padding:6px;
+}
+.record-surface:has(.me-walking) .dialog-head h2 {font-size:20px;line-height:24px}
+.record-surface:has(.me-walking) .dialog-head>button {font-size:26px;line-height:1}
+.me-walking .me-card {border-radius:10px}
+.me-walking .me-row {
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  min-height:52px;
+  gap:8px;
+  padding:3px 16px;
+  font-size:14px;
+  line-height:20px;
+}
+.me-walking .me-row strong,.me-walking .me-row>label {
+  font-family:Karla,Lato,sans-serif;
+  font-size:16px;
+  line-height:20px;
+}
+.me-walking .mec-effort {
+  padding:20px 16px 16px;
+  border-bottom:1px solid var(--line);
+  row-gap:8px;
+}
+.me-walking .mec-effort:disabled {opacity:1}
+.me-walking .mec-effort .mec-description {
+  grid-column:1/-1;
+  padding:0;
+  border:0;
+  font-size:13px;
+  line-height:16px;
+  text-align:left;
+}
+.me-walking .me-row:has([data-me-time-toggle]) {min-height:60px}
+.me-walking .me-row[data-me-group] {min-height:56px}
+.me-walking .me-value {gap:12px}
+.me-walking .me-value:has([data-mec-label],[data-me-group-label]) {gap:6px}
+.me-walking .me-value .dc-symbol-svg,.me-walking .mec-details>summary svg {
+  flex:none;width:16px;height:16px;opacity:.75;
+}
+.me-walking .me-value .dc-symbol-svg path,.me-walking .mec-details>summary svg path {
+  d:path('M5 9h14l-7 8z');fill:currentColor;stroke:none;
+}
+.me-walking .me-row input[type=checkbox] {width:20px;height:20px}
+#sheet .me-walking .me-row input[type=time] {
+  position:relative;
+  flex:0 1 72px;
+  min-width:0;
+  padding:0 4px;
+  border-block:8px solid transparent;
+  background-clip:padding-box;
+  font:400 13px/18px Lato,sans-serif;
+  line-height:18px;
+}
+#sheet .me-walking .me-row input[type=time]::-webkit-calendar-picker-indicator {
+  position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer;
+}
+.me-walking .mec-details>summary {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  min-height:48px;
+  padding:8px 16px;
+  font-size:13px;
+  line-height:16px;
+  cursor:pointer;
+  list-style:none;
+}
+.me-walking .mec-details>summary::-webkit-details-marker {display:none}
+.me-walking .mec-details[open]>summary svg {transform:rotate(180deg)}
+.me-walking .mec-source {display:inline-flex;align-items:center;min-height:44px;margin-block:0}
+.me-walking .mec-details .me-row {border-top:1px solid var(--line)}
+.me-walking .me-save {
+  width:61.5%;
+  min-height:44px;
+  padding:5px 12px;
+  border-block:4px solid transparent;
+  background-clip:padding-box;
+  margin-top:26px;
+  font:700 14px/20px Karla,Lato,sans-serif;
+  letter-spacing:.06em;
+}
+
 
 /* The exercise hierarchy uses three square tiles per row on a phone. */
 .exercise-browser .mcb-grid {

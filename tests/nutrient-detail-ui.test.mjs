@@ -10,6 +10,7 @@ import {chromium} from 'playwright-core';
 import {createWebHandler} from '../server/http.mjs';
 import {initialState,act} from '../server/domain/workspace.mjs';
 import {reportView} from '../server/nutrition-views.mjs';
+import {NUTRIENT_REFERENCE_SET} from '../server/domain/nutrient-references.mjs';
 import {nutrientDetail,reportNutrientDetail} from '../server/nutrient-detail.mjs';
 
 test('mobile nutrient sheets use canonical report filters, account units and source rows under production CSP',async()=>{
@@ -44,6 +45,15 @@ test('mobile nutrient sheets use canonical report filters, account units and sou
   assert.equal(await page.locator('[data-mrnd-average]').textContent(),'75 mg');assert.equal(await page.locator('[data-mrnd-target]').textContent(),'90 mg');assert.equal(await page.locator('[data-mrnd-chart]').count(),1);assert.equal(await page.getByRole('heading',{name:'Function',exact:true}).count(),1);assert.equal(await page.locator('.mnd-education-source').count(),1);assert.equal(await page.locator('.mobile-report-nutrient-dialog input').count(),0);
   await page.screenshot({path:'.local/report-vitamin-source-restored.png'});await page.setViewportSize({width:320,height:720});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.waitForFunction(()=>{const node=document.querySelector('.mobile-report-nutrient-dialog');return node.scrollWidth<=node.clientWidth;});await page.keyboard.press('Escape');await page.waitForFunction(()=>Object.keys(window.Chart?.instances??{}).length===2);
   let release;const held=new Promise(resolve=>{release=resolve;});await page.route('**/api/nutrition-report/nutrient',async route=>{await held;await route.continue().catch(()=>{});},{times:1});await vitamin.click();await page.getByRole('button',{name:'Close nutrient details',exact:true}).click();release();await page.waitForTimeout(100);assert.equal(await page.locator('[data-mobile-report=nutrient]').count(),0);assert.equal(await page.locator('[data-mrnd-ready]').count(),0);
+  state.settings.nutrientReferences={version:1,referenceSet:NUTRIENT_REFERENCE_SET,birthDate:'1980-01-01',sex:'female',lifeStage:'standard',nutrients:['thiamin']};
+  state.foods[0].nutrients.thiamin=0;
+  await expandCategory('thiamin');await page.locator('[data-mobile-category] [data-report-nutrient=thiamin]').click();
+  const b1=page.locator('[data-mrnd-ready][data-nutrient=thiamin]');await b1.waitFor();
+  assert.equal(await b1.locator('[data-mrnd-average]').textContent(),'0 mg');
+  assert.equal(await b1.locator('[data-mrnd-daily]').textContent(),'1.1 mg');
+  assert.equal(await b1.locator('[data-mrnd-marker]').getAttribute('x'),'0%');
+  assert.equal(await b1.getByRole('switch',{name:'Use Custom Targets instead of DRIs'}).isChecked(),false);
+  await page.keyboard.press('Escape');
   state.entries[0].amount=100;await page.getByRole('button',{name:'More options',exact:true}).click();await page.getByRole('button',{name:'Refresh',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('[data-report-action=refresh]').disabled);await page.keyboard.press('Escape');assert.match(await remaining.locator('.report-energy-center strong').textContent(),/^-/);assert.equal(await remaining.locator('svg circle').count(),1);assert.deepEqual(errors,[]);
   writeFileSync('.local/nutrient-detail-ui.json',JSON.stringify({status:'passed',checks:['production CSP','account kJ report and day units','canonical applied filters','source daily-average contributors','partial and unknown amounts','escaped source names','source attribution','entry callback identity','report target chart and education','help Escape preserves parent','malformed capture rejection and retry','closing pending detail ignores late response','Remaining unknown and negative values','close destroys range chart','320px responsive layout','no overflow or console errors']},null,2));
  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

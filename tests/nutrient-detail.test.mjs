@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {initialState,act} from '../server/domain/workspace.mjs';
 import {createNutrientDetailView} from '../server/domain/nutrient-detail-view.mjs';
 import {createReportNutrientDetail} from '../server/domain/report-nutrient-detail.mjs';
+import {NUTRIENT_REFERENCE_SET} from '../server/domain/nutrient-references.mjs';
 import {nutrientDetail,reportNutrientDetail} from '../server/nutrient-detail.mjs';
 import {reportView} from '../server/nutrition-views.mjs';
 const date='2026-11-14',clock={now:new Date('2026-11-15T02:00:00Z'),timeZone:'America/Chicago'};
@@ -31,4 +32,14 @@ test('net carbohydrate details use the source definition and preserve unknown ex
  const state=initialState();state.settings.carbohydratePolicy={mode:'net',netExcluded:['fiber']};state.foods.push({id:'known',name:'Known',serving:'1 serving',nutrients:{carbs:20,fiber:5}},{id:'partial',name:'Unknown fiber',serving:'1 serving',nutrients:{carbs:10}});for(const foodId of ['known','partial'])act(state,'entry.add',{date,foodId,amount:1});
  const input={date,nutrient:'netCarbohydrate',entryIds:null},day=nutrientDetail(state,input);assert.deepEqual(day.contributions,createNutrientDetailView(state,input).contributions);assert.equal(day.contributions.target.value,15);assert.equal(day.contributions.target.status,'partial');assert.equal(day.contributions.entries[1].value,null);
  const report=reportNutrientDetail(state,{nutrient:'netCarbohydrate',options:{...options,from:date}},clock);assert.equal(report.detail.summary.mean,15);assert.equal(report.detail.unknownSources,1);
+});
+
+test('report detail resolves B1 target controls at range end independently of measured intake',()=>{
+ const state=initialState(),input={nutrient:'thiamin',options};
+ state.settings.nutrientReferences={version:1,referenceSet:NUTRIENT_REFERENCE_SET,birthDate:'1980-01-01',sex:'female',lifeStage:'standard',nutrients:['thiamin']};
+ const {detail}=reportNutrientDetail(state,input,clock);
+ assert.equal(detail.targetDate,options.to);
+ assert.deepEqual(detail.controls,nutrientDetail(state,{date:detail.targetDate,nutrient:input.nutrient,entryIds:null}).controls);
+ assert.equal(detail.controls.dailyTarget.reference.kind,'RDA');assert.equal(detail.controls.dailyTarget.effective,1.1);
+ assert.equal(detail.summary.mean,null);assert.equal(detail.summary.meanTarget,null);assert.equal(detail.controls.maximum.effective,null);
 });

@@ -45,6 +45,10 @@ export function createNutrientTargetsView(state,date){
  return {version:1,date,energyUnit:parseEnergyUnit(settings.energyUnit??'kcal'),groups,highlighted:[...display.highlighted],showHighlights:display.showHighlights};
 }
 
+export function nutrientTargetControl(view,id){
+ return view.groups.flatMap(group=>group.nutrients).find(row=>row.id===id);
+}
+
 export function createTargetView(state,date){
  const editors=nutrientTargetEditors(state,date),summary=calculateSummary(state,date),modes=parseNutrientTargetModes(state.settings.nutrientTargetModes).nutrients;
  return {date,theme:state.settings.theme??'dark',nutrients:nutrientDisplayOptions.map(row=>({...row,dailyTarget:(row.id==='netCarbohydrate'?summary.carbohydrates.net.target:summary.targets[row.id])??null,maximum:summary.nutrientDisplay.thresholds[row.id]?.maximum??null,visible:!summary.nutrientDisplay.hidden.includes(row.id),editor:editors.get(row.id)??null,maximumEditor:modes[row.id]?.maximum==='reference'?'references':null}))};

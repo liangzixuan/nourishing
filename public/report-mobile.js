@@ -5,7 +5,7 @@ import {balanceDisplayName} from './report-source/public/nutrient-balance-view.j
 import {uiLanguage,t} from './app-language.js';
 import {ReportEnergyChart,energyChartMarkup} from './report-mobile-source/report-energy-chart.js';
 import {MobileReportNutrientDetail,validateReportNutrientDetail} from './report-mobile-source/mobile-report-nutrient-detail.js';
-import {request} from './diary-api.js';
+import {reportNutrientSession} from './report-nutrient-session.js';
 import {pushBackHandler} from './back-history.js';
 import {mobileNutrientName} from './mobile-nutrient-groups.js';
 import {nutrientDisplayName} from './report-source/public/nutrient-language.js';
@@ -51,7 +51,7 @@ export function mountMobileReport({root,value,onApply,onPrint,rangeSelection={}}
   return node;
  }
  function openNutrient(button){
-  if(disposed||busy)return;const expected=capture,selected=structuredClone(options());
+  if(disposed||busy)return;let expected=capture;const selected=structuredClone(options());
   const nutrient=button.dataset.reportNutrient,section=button.closest('[data-report-section]').dataset.reportSection;
   const row=nutrient==='netCarbohydrate'?capture.report.carbohydrates.net.summary:capture.report.nutrients.find(row=>row.id===nutrient);if(!row)return;
   const node=dialog(mobileNutrientName(row,uiLanguage()),'nutrient','');node.classList.add('mobile-report-nutrient-dialog');
@@ -59,11 +59,11 @@ export function mountMobileReport({root,value,onApply,onPrint,rangeSelection={}}
   node.restoreFocus=()=>root.querySelector('[data-report-section="'+CSS.escape(section)+'"] [data-report-nutrient="'+CSS.escape(nutrient)+'"]')?.focus({preventScroll:true});
   node.querySelector('[data-report-action=back]').setAttribute('aria-label',dc('closeNutrient'));
   node.reportDetail=new MobileReportNutrientDetail({dialog:node,nutrient,options:selected,unit:capture.energyUnit,language:uiLanguage(),
-   request:(path,init)=>request(path,JSON.parse(init.body),init.signal),accept:bundle=>{
+   session:reportNutrientSession({options:selected,nutrient},capture),accept:bundle=>{
     if(disposed||busy||capture!==expected||!node.isConnected)return null;
     if(bundle?.version!==1||Object.keys(selected).some(key=>bundle.report?.options?.[key]!==selected[key]))throw Error(dc('reportChanged'));
     const detail=validateReportNutrientDetail(bundle.detail,bundle.report,nutrient),opened=[...root.querySelectorAll('[data-mobile-category][open]')].map(el=>el.dataset.mobileCategory),scroll=root.querySelector('.mobile-report-body').scrollTop;
-    capture={...capture,report:bundle.report,energyUnit:bundle.energyUnit??capture.energyUnit};node.reportDetail.unit=capture.energyUnit;render();for(const category of opened){const group=[...root.querySelectorAll('[data-mobile-category]')].find(el=>el.dataset.mobileCategory===category);if(group)group.open=true;}root.querySelector('.mobile-report-body').scrollTop=scroll;
+    capture={...capture,report:bundle.report,energyUnit:bundle.energyUnit??capture.energyUnit};expected=capture;node.reportDetail.unit=capture.energyUnit;render();for(const category of opened){const group=[...root.querySelectorAll('[data-mobile-category]')].find(el=>el.dataset.mobileCategory===category);if(group)group.open=true;}root.querySelector('.mobile-report-body').scrollTop=scroll;
     return {report:bundle.report,detail};
    },help:html=>dialog(t('mobileNutrientDetail.help'),'nutrient-help',html).classList.add('mobile-report-nutrient-help')});
  }

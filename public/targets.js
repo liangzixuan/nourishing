@@ -9,10 +9,11 @@ import {mountRecordEditor} from './records.js';
 import {MobileWeightGoal} from './weight-goal-source/mobile-weight-goal.js';
 import {MobileEnergyExpenditure} from './expenditure-source/mobile-energy-expenditure.js';
 import {escape as e} from './html.js';
-import {request,queueCommand} from './diary-api.js';
+import {request} from './diary-api.js';
 import {localWorkspaceView} from './local-engine.js';
 import {readDeviceCache} from './device-cache.js';
-import {createNutrientTargetsView,projectDiaryBulkWrite,projectLocalDiary} from './local-diary-projection.js';
+import {createNutrientTargetsView,projectLocalDiary} from './local-diary-projection.js';
+import {saveNutrientTarget} from './nutrient-target-command.js';
 import {MobileNutrientTargets} from './targets-source/mobile-nutrient-targets.js';
 import {AnchoredMenu} from './targets-source/anchored-menu.js';
 import {formatMessage} from './targets-source/message-format.js';
@@ -79,7 +80,7 @@ export function mountTargets({page,headerRoot,date,show,close,header,content,onC
    const owner=readDeviceCache('/api/diary').then(cached=>cached.ticket);let revision;
    child=new MobileNutrientTargets({root:root.querySelector('#mobile-nutrient-targets-root'),header:headerRoot,date:day(),language:uiLanguage(),onNavigate:open,initialNutrient,
     request:async(path,options)=>{const local=await localWorkspaceView();if(local){revision=local.revision;return {revision,...createNutrientTargetsView(local.state,day())};}const value=await request(path,undefined,options?.signal);revision=value.revision;return value;},
-    save:async(type,payload)=>{const ticket=await owner;if(!ticket)throw Error(formatMessage(uiLanguage(),'mobileNutrientTargets.reopen'));const local=await localWorkspaceView();if(local)projectDiaryBulkWrite(structuredClone(local.state),{type,payload});return queueCommand(revision,type,payload,{ticket});}});return;
+    save:(type,payload)=>saveNutrientTarget(owner,revision,type,payload)});return;
   }
   if(id==='scores'||id==='diary'){void summary(id==='scores'?'choose-scores':'configure-diary-display');return;}
   if(id==='references'||id==='body'){void openProfileSettings({...ui,initialScreen:id});return;}

@@ -6,7 +6,7 @@ import {readFileSync} from 'node:fs';
 import {chromium} from 'playwright-core';
 import {initialState,previewDiaryItem} from '../server/domain/workspace.mjs';
 import {libraryItem} from '../server/library-view.mjs';
-import {photoMacros,photoNutritionSummary} from '../public/photo-nutrition.js';
+import {photoMacros,photoNutritionSummary,previewPhotoFood} from '../public/photo-nutrition.js';
 
 test('photo summary keeps unknown macros unknown and formats account energy units',()=>{
  const known={energy:{value:418.4,unit:'kJ'},nutrition:{totals:{protein:10,carbs:20,fat:2}}};
@@ -17,8 +17,37 @@ test('photo summary keeps unknown macros unknown and formats account energy unit
  assert.equal(photoNutritionSummary([]),'');
 });
 
+test('photo portions and the review use complete net measurements under the saved definition',()=>{
+ const state=initialState();
+ state.settings.carbohydratePolicy={mode:'total',netExcluded:['fiber','sugarAlcohol']};
+ const food={id:'oats',name:'Oats',serving:'100 g',grams:100,portions:[{id:'cup',label:'cup',grams:150}],nutrients:{calories:200,protein:8,carbs:34,fiber:7,sugarAlcohol:2,fat:3}};
+ state.foods=[food];
+ const preview=quantity=>previewPhotoFood(libraryItem(state,'food',food),quantity);
+ const one=preview({amount:1}),half=preview({quantity:50,unit:'g'}),cup=preview({quantity:1,unit:'portion',portionId:'cup'});
+ assert.deepEqual([one,half,cup].map(row=>row.nutrition.carbohydrates.net.value),[25,12.5,37.5]);
+ assert.equal(cup.nutrition.entries[0].grams,150);
+ assert.match(photoMacros(one),/34 g Carbs/);
+ assert.match(photoNutritionSummary([one,half]),/Net Carbs<\/dt><dd>37.5 g<\/dd><dd class="photo-macro-percent">62.9%/);
+ assert.match(photoNutritionSummary([one],'total'),/Carbs<\/dt><dd>34 g/);
+ const unknown=rows=>{
+  const html=photoNutritionSummary(rows);
+  assert.match(html,/Net Carbs<\/dt><dd>— g/);
+  assert.doesNotMatch(html,/stroke-dasharray/);
+ };
+ delete food.nutrients.sugarAlcohol;
+ unknown([one,preview({amount:1})]);
+ unknown([{...one,nutrition:{...one.nutrition,carbohydrates:{net:{value:25,coverage:{complete:false}}}}}]);
+ delete state.settings.carbohydratePolicy;
+ unknown([preview({amount:1})]);
+ state.settings.carbohydratePolicy={mode:'net',netExcluded:[]};
+ assert.equal(preview({amount:1}).nutrition.carbohydrates.net.value,34);
+ food.nutrients.carbs=0;
+ assert.match(photoNutritionSummary([preview({amount:1})]),/Net Carbs<\/dt><dd>0 g<\/dd><dd class="photo-macro-percent">0%/);
+});
+
 test('photo recognition flows into compact macros, editable amounts and discard-on-close',async()=>{
- const state=initialState(),day='2026-11-16';state.settings.groups=['Uncategorized','Lunch'];state.foods=[{id:'rice',name:'Fixture rice',serving:'100 g',grams:100,portions:[{id:'cup',label:'cup',grams:150}],nutrients:{calories:200,protein:10,carbs:30,fat:4}}];
+ const state=initialState(),day='2026-11-16';state.settings.groups=['Uncategorized','Lunch'];state.foods=[{id:'rice',name:'Fixture rice',serving:'100 g',grams:100,portions:[{id:'cup',label:'cup',grams:150}],nutrients:{calories:200,protein:10,carbs:30,fiber:6,sugarAlcohol:2,fat:4}}];
+ state.settings.carbohydratePolicy={mode:'net',netExcluded:['fiber','sugarAlcohol']};
  const image='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
  let previews=0,analyses=0,failPreview=false;
  const analysis={photo:{id:'a'.repeat(64),dataUrl:image},reviewToken:'fixture',suggestions:[{kind:'observation',description:'Rice',observationIndex:0,portionEstimate:{grams:100},selection:{id:'rice',kind:'food'},candidates:[{ref:{id:'rice',kind:'food'},name:'Fixture rice',grams:100}]}]};
@@ -48,6 +77,8 @@ test('photo recognition flows into compact macros, editable amounts and discard-
   await page.goto(`http://127.0.0.1:${server.address().port}`);await page.locator('#open').click();
   const upload=()=>page.locator('[data-photo-gallery]').setInputFiles({name:'meal.png',mimeType:'image/png',buffer:Buffer.from(image.split(',')[1],'base64')});
   await upload();await page.locator('.photo-macros').filter({hasText:'200 kcal'}).waitFor().catch(async error=>{console.log(JSON.stringify({errors,body:await page.locator('body').innerText(),previews}));throw error;});assert.equal(analyses,1);assert.equal(previews,0);assert.equal(await page.getByLabel('Group',{exact:true}).inputValue(),'Uncategorized');
+  const netAmount=page.locator('.photo-log-body .photo-energy dl div').filter({hasText:'Net Carbs'}).locator('dd').first();
+  await netAmount.filter({hasText:'22 g'}).waitFor();assert.match(await page.locator('[data-macros]').innerText(),/30 g Carbs/);
   await page.locator('.photo-food-main strong').first().click();assert.equal(await page.locator('.photo-thumb').isVisible(),true);await page.getByRole('spinbutton',{name:'Amount',exact:true}).fill('50');await page.locator('.photo-portion-sheet').getByText('100 kcal',{exact:true}).first().waitFor();assert.equal(previews,0);assert.equal(await page.getByRole('combobox',{name:'Serving Size',exact:true}).count(),1);await page.locator('.photo-portion-sheet [data-favorite-id]').click();await page.locator('.photo-portion-sheet [data-favorite-id][aria-pressed=true]').waitFor();assert.match(await page.locator('.photo-macro-percent').first().innerText(),/%/);await page.screenshot({path:'.local/photo-portion-sheet.png'});await page.getByRole('button',{name:'Save',exact:true}).click();await page.locator('.photo-macros').filter({hasText:'100 kcal'}).waitFor();assert.equal(previews,0);
   await page.locator('[data-macros]').first().click();await page.getByRole('button',{name:'Cancel',exact:true}).click();await page.locator('.photo-macros').filter({hasText:'100 kcal'}).waitFor();assert.equal(previews,0,'unchanged reviewed amount reuses preview');
   await page.locator('[data-quantity]').click({position:{x:5,y:5}});await page.getByRole('spinbutton',{name:'Amount',exact:true}).fill('');assert.equal(await page.getByRole('button',{name:'Save',exact:true}).isEnabled(),false);await page.mouse.click(10,10);assert.equal(await page.locator('[data-save]').isEnabled(),true);
@@ -59,8 +90,10 @@ test('photo recognition flows into compact macros, editable amounts and discard-
   await page.locator('[data-replace="0"]').click();await page.getByRole('menuitem',{name:'Fixture rice'}).click();await page.getByRole('button',{name:'Cancel',exact:true}).click();
   await page.locator('[data-replace="0"]').click();await page.screenshot({path:'.local/photo-swap.png'});await page.getByRole('menuitem',{name:'Search for more'}).click();await page.locator('.mfs-result').click();await page.getByRole('button',{name:'Cancel',exact:true}).click();assert.equal(await page.locator('[data-save]').isEnabled(),true);assert.match(await page.locator('[data-quantity="0"]').textContent(),/50/);
   await page.locator('[data-addition]').click();await page.locator('.mfs-result').click();await page.getByRole('button',{name:'Save',exact:true}).click();assert.equal(await page.locator('[data-save]').isEnabled(),true);assert.equal(await page.locator('.photo-food-row').count(),2);assert.equal(await page.locator('[data-addition]').count(),0);
+  await netAmount.filter({hasText:'15.4 g'}).waitFor();
   await page.locator('.photo-log-body .photo-nutrition-summary summary').click();
   await page.screenshot({path:'.local/photo-suggestion-undo.png'});await page.locator('[data-undo-addition]').click();
+  await netAmount.filter({hasText:'11 g'}).waitFor({state:'attached'});
   assert.equal(await page.locator('.photo-food-row').count(),1);assert.equal(await page.locator('[data-optional-quantity]').count(),1);
   await page.locator('[data-addition]').click();assert.equal(await page.locator('.photo-food-row').count(),2);assert.equal(await page.locator('.photo-log-body .photo-nutrition-summary').evaluate(node=>node.open),false);
   await page.locator('[data-dismiss-addition]').click();assert.equal(await page.locator('[data-undo-addition]').count(),0);

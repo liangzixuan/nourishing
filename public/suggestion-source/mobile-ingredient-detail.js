@@ -41,7 +41,7 @@ export class MobileIngredientDetail{
    const count=Object.values(result.nutrition.totals).filter(Number.isFinite).length,field=this.root.querySelector('[data-quantity-value]'),serving=this.root.querySelector('[data-quantity-unit]')?.selectedOptions[0]?.textContent||this.message('servings');
    this.root.querySelector('[data-mci-count]').textContent=formatMessage(this.language,'mobileFood.count',{count});
    this.root.querySelector('[data-mci-basis]').textContent=formatMessage(this.language,'mobileFood.per',{amount:new Intl.NumberFormat(this.language,{maximumFractionDigits:3}).format(Number(field.value)),serving})+(Number.isFinite(result.row?.grams)?' · '+new Intl.NumberFormat(this.language,{maximumFractionDigits:2}).format(result.row.grams)+' g':'');
-   if(this.compact){const calories=result.nutrition.totals.calories;this.root.querySelector('[data-mci-summary]').innerHTML=photoNutritionSummary([{nutrition:result.nutrition,energy:{value:Number.isFinite(calories)?convertEnergy(calories,'kcal',this.energyUnit):null,unit:this.energyUnit}}]);}
+   if(this.compact){const calories=result.nutrition.totals.calories;this.root.querySelector('[data-mci-summary]').innerHTML=photoNutritionSummary([{nutrition:result.nutrition,energy:{value:Number.isFinite(calories)?convertEnergy(calories,'kcal',this.energyUnit):null,unit:this.energyUnit}}],'total');}
    await this.view.render(result.nutrition,{open:this.open,isCurrent:()=>this.current(generation),showHighlights:true});
    if(this.current(generation)){this.reviewed=structuredClone(quantity);this.reviewedResult=result;this.ready=true;this.button.disabled=false;}
   }catch(error){if(this.current(generation))this.error(error);}

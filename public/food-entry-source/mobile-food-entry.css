@@ -6,6 +6,13 @@
 .mf-header{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:10px;min-height:60px;padding:10px 14px;background:var(--paper);border-radius:0 0 14px 14px;}
 .mf-header h2{font-size:1.13rem;line-height:1.25;flex:1;margin:0;min-width:0;font-weight:700;}
 .mf-header button,.mf-header summary{background:none;border:0;padding:4px;color:var(--ink);min-height:40px;min-width:30px;display:grid;place-items:center;}
+/* Equal outside tracks center the favorite glyph and title as one group. */
+.mf-header.mf-entry-header{display:grid;grid-template-columns:minmax(44px,1fr) 44px minmax(0,max-content) minmax(44px,1fr);gap:4px;padding:8px}
+.mf-entry-header>button{justify-self:start}
+.mf-entry-header>.mf-menu{justify-self:end}
+.mf-entry-header>.mf-favorite button{width:44px;justify-items:end;padding-inline:0 2px}
+.mf-entry-header>button,.mf-entry-header>.mf-favorite button,.mf-entry-header>.mf-menu>summary{min-width:44px;min-height:44px}
+.mf-entry-header h2{padding-inline-end:20px;text-align:center;overflow-wrap:anywhere}
 .mf-header svg{width:23px;height:23px;}
 .mf-favorite button{color:#ffb600;}
 .mf-favorite button[aria-pressed=true] svg{fill:#ffb600;}

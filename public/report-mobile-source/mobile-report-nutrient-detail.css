@@ -3,3 +3,13 @@
 [data-mobile-nutrient]>button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;border:0;background:none;color:var(--ink);font:inherit;text-align:left;min-height:48px;padding:12px 0}[data-mobile-nutrient]>button span{min-width:0;overflow-wrap:anywhere}[data-mobile-nutrient]>button strong{flex:none}
 
 .mobile-report-nutrient-dialog .mrnd-close{width:24px;height:24px;filter:var(--mobile-icon-filter)}
+
+.mobile-report-nutrient-dialog.mrnd-reference>.dc-dialog-header{margin-bottom:0;padding-inline:6px}
+.mrnd-reference .mnd-card,.mrnd-reference .mnd-section{font-size:calc(14.5rem / 18);line-height:1.35}
+.mrnd-reference .mnd-card h3,.mrnd-reference .mnd-toggle{font-size:calc(15rem / 18)}
+.mrnd-reference .mnd-card [data-mrnd-help]{display:grid;place-items:center;min-width:32px;min-height:32px;padding:0;margin:-6px 0}
+.mrnd-reference .mnd-card [data-mrnd-help] img{width:16px;height:16px}.mrnd-reference .mrnd-explanation{margin:0}
+.mrnd-single-gauge{position:relative;margin:18px 0 12px;padding-bottom:14px;font-size:calc(12rem / 18)}.mrnd-single-gauge svg{display:block;overflow:visible}
+.mrnd-single-gauge span:last-child{position:absolute;bottom:0;left:85%;transform:translateX(-50%)}.mrnd-single-gauge>span:first-of-type{position:absolute;bottom:0;left:0}
+.mrnd-reference .mnd-values{margin:12px 0 0;padding:6px 12px;font-size:inherit}.mrnd-reference .mnd-values>div{margin:6px 0}
+.mrnd-reference .mnd-toggle{margin-top:12px;min-height:44px}.mrnd-reference [data-mrnd-error]:empty{display:none}

@@ -1,4 +1,5 @@
 import {createNutritionReportCapture} from './nutrition-report.mjs';
+import {createNutrientTargetsView,nutrientTargetControl} from './nutrient-target-view.mjs';
 import {nutrientDisplayOptions} from './nutrient-display.mjs';
 const ids=new Set(nutrientDisplayOptions.map(row=>row.id)),known=value=>typeof value==='number'&&Number.isFinite(value);
 const fail=message=>{throw Object.assign(Error(message),{status:400})};
@@ -12,5 +13,6 @@ export function createReportNutrientDetail(state,input,clock){
  const sources=days.flatMap(day=>day.contributions.entries.filter(entry=>entry.kind==='water'||entry.coverage.total>0).map(entry=>({...entry,date:day.date}))),measured=sources.filter(entry=>known(entry.value));
  measured.sort((a,b)=>b.value-a.value||a.date.localeCompare(b.date)||(a.id??'').localeCompare(b.id??''));
  const entries=measured.slice(0,10).map(entry=>({...entry,mean:denominator?entry.value/denominator:null,percentOfTarget:targetTotal>0?entry.value/targetTotal*100:null}));
- return {version:1,report,detail:{version:1,nutrient:input.nutrient,summary,denominator,total,targetTotal,measuredSources:measured.length,unknownSources:sources.length-measured.length,omittedSources:Math.max(0,measured.length-10),entries}};
+ const targetDate=report.options.to,controls=nutrientTargetControl(createNutrientTargetsView(state,targetDate),input.nutrient);
+ return {version:1,report,detail:{version:1,nutrient:input.nutrient,targetDate,controls,summary,denominator,total,targetTotal,measuredSources:measured.length,unknownSources:sources.length-measured.length,omittedSources:Math.max(0,measured.length-10),entries}};
 }
