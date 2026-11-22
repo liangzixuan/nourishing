@@ -66,23 +66,28 @@ export function openEntryAdjustment({kind,date,id,show,close,header,content,onSa
   const unit=item.unit==='portion'?(row?.options?.find(option=>option[0]==='portion:'+item.portionId)?.[1]??row?.portions?.find(portion=>portion.id===item.portionId)?.label??foodQuantityUnit('portion')):foodQuantityUnit(item.unit??'servings');
   return (item.quantity??item.amount)+' '+unit;
  }
- function ingredientRows(){
+ function removeIngredient(index){
+  draft.items.splice(index,1);
+  rows.splice(index,1);
+  editor();
+ }
+ function ingredientRows(unavailableIndex){
   return draft.items.map((item,index)=>{
    const row=rows[index],label=row?.name??fc('ingredient');
    const controls=`<button type="button" class="icon-button" data-replace="${index}" aria-label="${e(fc('replaceIngredientNumber',{number:index+1}))}">↻</button><button type="button" class="icon-button" data-remove="${index}" aria-label="${e(fc('removeIngredient',{number:index+1}))}">×</button>`;
    const meal=kind==='meal';
    const ingredientIcon=diaryFoodIcon(item.recipeId?'recipe':'food');
-   return `<li><button type="button" data-edit="${index}">${meal?ingredientIcon:''}<strong>${e(label)}</strong><small>${e(itemLabel(item,row))}</small>${meal?'<span data-item-energy></span>':''}</button>${meal?`<details class="adjustment-item-actions"><summary aria-label="${e(t('mobileFood.options')+' · '+label)}">⋮</summary>${controls}</details>`:controls}</li>`;
+   return `<li><button type="button" data-edit="${index}">${meal?ingredientIcon:''}<strong>${e(label)}</strong><small>${e(itemLabel(item,row))}</small>${meal?'<span data-item-energy></span>':''}</button>${!meal||index===unavailableIndex?controls:''}</li>`;
   }).join('');
  }
- function editor(){
+ function editor(unavailableIndex){
   pickerCleanup?.();pickerCleanup=null;serial++;clearTimeout(timer);
   const meal=kind==='meal',title=meal?mealActionText('adjust'):fc('adjustIngredientsLower');
   const addLabel=meal?t('recipeEditor.addItem'):fc('addIngredientLower');
   const saveLabel=meal?t('mobileFood.save'):t('progress.saveChanges');
   const heading=meal?`<div class="adjustment-meal-name">${diaryFoodIcon('meal')}<strong>${e(view.name)}</strong><span data-total-energy></span></div>`:`<p class="adjustment-scope">${e(fc('entryOnly'))}</p>`;
   const addButton=`<button type="button" class="more-results" data-add>${e(addLabel)}</button>`;
-  show(`${header(title)}<form class="entry-form entry-adjustment ${meal?'meal-adjustment':''}">${heading}<ul class="adjustment-items">${ingredientRows()}</ul>${meal?'':addButton+basisFields()+'<div class="nutrition-preview" aria-live="polite"></div>'}<p class="sheet-message" role="status"></p><footer class="entry-actions">${meal?addButton:`<button type="button" data-back>${e(t('mobileFoodEditor.back'))}</button>`}<button type="submit" class="primary" disabled>${e(saveLabel)}</button></footer></form>`);
+  show(`${header(title)}<form class="entry-form entry-adjustment ${meal?'meal-adjustment':''}">${heading}<ul class="adjustment-items">${ingredientRows(unavailableIndex)}</ul>${meal?'':addButton+basisFields()+'<div class="nutrition-preview" aria-live="polite"></div>'}<p class="sheet-message" role="status"></p><footer class="entry-actions">${meal?addButton:`<button type="button" data-back>${e(t('mobileFoodEditor.back'))}</button>`}<button type="submit" class="primary" disabled>${e(saveLabel)}</button></footer></form>`);
   const form=content.querySelector('form'),save=form.querySelector('[type=submit]');let ready=false;
   const preview=()=>{
    ready=false;save.disabled=true;clearTimeout(timer);const token=++serial,summary=form.querySelector('.nutrition-preview');
@@ -104,7 +109,7 @@ export function openEntryAdjustment({kind,date,id,show,close,header,content,onSa
   form.oninput=()=>{readBasis(form);preview();};
   if(!meal)form.querySelector('[data-back]').onclick=()=>{dispose();onBack?onBack():close();};
   form.querySelector('[data-add]').onclick=()=>{readBasis(form);pick();};
-  form.querySelector('ul').onclick=event=>{const remove=event.target.closest('[data-remove]'),edit=event.target.closest('[data-edit]'),replace=event.target.closest('[data-replace]');readBasis(form);if(remove){const index=Number(remove.dataset.remove);draft.items.splice(index,1);rows.splice(index,1);editor();}else if(edit){const index=Number(edit.dataset.edit);quantity(index,rows[index]);}else if(replace)pick(Number(replace.dataset.replace));};
+  form.querySelector('ul').onclick=event=>{const remove=event.target.closest('[data-remove]'),edit=event.target.closest('[data-edit]'),replace=event.target.closest('[data-replace]');readBasis(form);if(remove){removeIngredient(Number(remove.dataset.remove));}else if(edit){const index=Number(edit.dataset.edit);quantity(index,rows[index]);}else if(replace)pick(Number(replace.dataset.replace));};
   form.onsubmit=async event=>{event.preventDefault();if(!ready)return;readBasis(form);form.querySelectorAll('button,input,select').forEach(element=>element.disabled=true);status(form,'');
    try{
     const ticket=await owner,account=kind==='meal'?await readWriteCopy():null;
@@ -122,6 +127,7 @@ export function openEntryAdjustment({kind,date,id,show,close,header,content,onSa
  }
  function reloadButton(form){if(form.querySelector('[data-reload]'))return;const button=document.createElement('button');button.type='button';button.className='more-results';button.dataset.reload='';button.textContent=fc("reloadLatest");button.onclick=load;form.querySelector('[role=status]').append(button);}
  function pick(index){
+  pickerCleanup?.();pickerCleanup=null;
   serial++;clearTimeout(timer);show(`${header(index===undefined?fc("addIngredientLower"):fc("replaceIngredient"))}<div class="adjustment-picker"></div><button type="button" class="more-results" data-back>${e(t("mobileFoodEditor.back"))}</button>`);
   content.querySelector('[data-back]').onclick=editor;
   pickerCleanup=mountFoodPicker(content.querySelector('.adjustment-picker'),{allowMeals:false,excludeRecipe:kind==='recipe'?view.recipeId:null,onPick:async(pickedKind,pickedId)=>{
@@ -132,14 +138,18 @@ export function openEntryAdjustment({kind,date,id,show,close,header,content,onSa
  }
  async function quantity(index,row,replaced=false){
   const token=++serial;clearTimeout(timer);
-  if(!row.options||kind==='meal'&&!row.item){show(header(row.name)+`<p class="empty">${e(t("mobileNutrientDetail.loading"))}</p>`);const loading=content.querySelector('.empty');try{const result=await localLibraryItem({kind:row.kind,id:row.id})??await request('/api/library/item?'+new URLSearchParams({kind:row.kind,id:row.id}));if(!current()||token!==serial||!loading.isConnected)return;row={...row,options:result.options,item:result};}catch(error){if(loading.isConnected){editor();status(content.querySelector('form'),error.message);}return;}}
+  if(!row.options||kind==='meal'&&!row.item){show(header(row.name)+`<p class="empty">${e(t("mobileNutrientDetail.loading"))}</p>`);const loading=content.querySelector('.empty');try{const result=await localLibraryItem({kind:row.kind,id:row.id})??await request('/api/library/item?'+new URLSearchParams({kind:row.kind,id:row.id}));if(!current()||token!==serial||!loading.isConnected)return;row={...row,options:result.options,item:result};}catch(error){if(loading.isConnected){editor(index);status(content.querySelector('form'),error.message);}return;}}
   const item=replaced?{}:draft.items[index];
   const apply=value=>{
    if(index===undefined){draft.items.push(value);rows.push(row);}else{draft.items[index]=value;rows[index]=row;}
    editor();
   };
   if(kind==='meal'){
-   pickerCleanup=mountFoodEntry({item:row.item,quantity:item,date,group:view.group,groups:[view.group],revision:()=>revision,show,close:editor,content,
+   const menuActions=index===undefined||replaced?[]:[
+    {label:fc('replaceIngredientNumber',{number:index+1}),select:()=>pick(index)},
+    {label:fc('removeIngredient',{number:index+1}),select:()=>removeIngredient(index)},
+   ];
+   pickerCleanup=mountFoodEntry({menuActions,item:row.item,quantity:item,date,group:view.group,groups:[view.group],revision:()=>revision,show,close:editor,content,
     ingredientOnly:true,submitLabel:t('mobileFood.save'),onBack:editor,onChange:async()=>{},
     onApply:({date,time,group,...value})=>apply(value)});
    return;

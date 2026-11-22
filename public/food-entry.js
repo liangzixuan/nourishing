@@ -16,7 +16,7 @@ const icons={close:svg('<path d="m6 6 12 12M18 6 6 18"/>'),more:svg('<circle cx=
  * onChange refreshes revision/account views; onBack returns to picker; onAdjust opens recipe/meal adjustment;
  * onConflict reloads latest diary/editor. All callbacks may be async. No item mutation occurs before Save.
  */
-export function mountFoodEntry({item,entry,quantity,date,group,groups,revision,show,close,content,onChange,onOptimisticCommand,onBack,onAdjust,onConflict,draft,onApply,submitLabel,onCopy,viewState,ingredientOnly=false}){
+export function mountFoodEntry({item,entry,quantity,date,group,groups,revision,show,close,content,onChange,onOptimisticCommand,onBack,onAdjust,onConflict,draft,onApply,submitLabel,onCopy,viewState,ingredientOnly=false,menuActions=[]}){
  const {resource:food,options,kind}=item,source=food.source?.name??(kind==='food'?t("libraryView.customFood"):kind==='recipe'?t("recipeEditor.recipe"):fc("meal"));
  const details=[food.source?.attribution,food.source?.description,food.notes].filter(value=>typeof value==='string'&&value.trim()).map(value=>`<p>${e(value)}</p>`).join('')||`<p>${e(source)}</p>`;
  const portions=new Map((kind==='food'?food.portions??[]:[]).map(portion=>['portion:'+portion.id,portion]));
@@ -51,6 +51,13 @@ export function mountFoodEntry({item,entry,quantity,date,group,groups,revision,s
  const status=document.createElement('p');status.className='mf-status';status.setAttribute('role','status');form.querySelector('.mf-footer').before(status);
  if(entry){menu.querySelector('.mf-menu-items').insertAdjacentHTML('beforeend',(onAdjust&&['recipe','meal'].includes(kind)?`<button type="button" data-adjust>${e(fc("adjustIngredients"))}</button>`:'')+`<button type="button" data-delete>${e(fc("deleteEntry"))}</button>`);}
  let disposed=false,busy=false,timer,serial=0,pending,favorites;const events=new AbortController(),signal=events.signal,sections=new Map(viewState?.sections??[]);let restoreScroll=viewState?.scrollTop;
+ for(const action of menuActions){
+  const button=document.createElement('button');
+  button.type='button';
+  button.textContent=action.label;
+  button.addEventListener('click',()=>{closeMenu();action.select();},{signal});
+  menu.querySelector('.mf-menu-items').append(button);
+ }
  const nutrition=new FoodNutritionView({target:preview,language:uiLanguage(),unit:item.energyUnit??'kcal',catalog:item.nutrients??[]});
  const alive=()=>!disposed&&form.isConnected;
  const payload=()=>{const v=Object.fromEntries(new FormData(form));return {date:v.date,group:v.group,time:form.querySelector('[data-mf-timestamp]').checked?v.time:'',...(entry?{id:entry.id}:{[kind+'Id']:food.id}),...quantityValue(form)};};

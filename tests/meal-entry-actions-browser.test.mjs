@@ -61,6 +61,15 @@ test('saved meal actions distinguish original, copy and occurrence; local adjust
   await adjust.locator('[data-total-energy]').filter({hasText:'600.0 kcal'}).waitFor();
   assert.equal(await row.locator('[data-item-energy]').textContent(),'600.0 kcal');
   assert.match(await adjust.innerText(),/Saved lunch/);
+  const firstIngredient=adjust.locator('li').first();
+  assert.equal(await firstIngredient.locator('button,summary').count(),1);
+  await row.click();
+  await detail.locator('.mf-menu summary').click();
+  await detail.getByRole('button',{name:'Remove ingredient 1'}).waitFor();
+  await detail.getByRole('button',{name:'Replace ingredient 1'}).click();
+  await page.locator('.adjustment-picker').waitFor();
+  await page.keyboard.press('Escape');
+  await row.waitFor();
   await row.click();await amount.fill('0.2');await page.keyboard.press('Escape');
   await row.waitFor();assert.match(await row.innerText(),/2 Bowl/);
   await row.click();await detail.locator('[data-mf-energy]').filter({hasText:'600'}).waitFor();
