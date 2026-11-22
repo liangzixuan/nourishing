@@ -1,5 +1,5 @@
 import {digest} from './data-codec.mjs';
-import {isActiveLibraryItem} from './domain/library-status.mjs';
+import {favoriteItems} from './domain/library-list.mjs';
 
 export const libraryExtrasCommandFields={
  'favorite.set':['kind','id','enabled'],
@@ -9,8 +9,7 @@ function fields(input,allowed){if(!input||typeof input!=='object'||Array.isArray
 function favorite(input){fields(input,libraryExtrasCommandFields['favorite.set']);if(!['food','recipe','meal'].includes(input.kind)||typeof input.id!=='string'||!input.id||input.id.length>1000||typeof input.enabled!=='boolean')fail('Choose a food, recipe or meal.');return input;}
 
 export function favoriteView(state){
- const items=(state.settings.favorites??[]).flatMap(ref=>{const item=state[ref.kind+'s']?.find(row=>row.id===ref.id);return item&&isActiveLibraryItem(item)?[{id:item.id,kind:ref.kind,name:item.name,serving:item.serving??null,favorite:true}]:[];});
- return {revision:digest(state),items};
+ return {revision:digest(state),items:favoriteItems(state)};
 }
 
 export function prepareLibraryExtrasCommand(state,action){

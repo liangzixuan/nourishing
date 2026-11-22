@@ -81,6 +81,7 @@ import {catalog,entryFacts,isExerciseEntry,calculateSummary,calculateSelectionNu
 import {seedFoods} from './seed-foods.mjs';
 import {canonicalFoodQuantityEntry,parseVolume,resolveFoodQuantity,parseServingAmount} from './food-quantity.mjs';
 import {parseFoodClassification,foodWithoutClassification} from './food-classification.mjs';
+import {updateFavoriteList} from './library-list.mjs';
 import {parseLibraryStatus,withoutLibraryStatus,isActiveLibraryItem} from './library-status.mjs';
 import {applyLibraryRetirement} from './library-retirement.mjs';
 import {parseFoodTaxonomy} from './food-taxonomy.mjs';
@@ -632,8 +633,8 @@ export function act(s,type,p={},context={}) {
     case 'meal.save': return saveCompositeLibraryDraft(s,'meal',p,context);
     case 'favorite.set': {
       if(typeof p.enabled!=='boolean')fail('Favorite enabled must be true or false.');
-      const ref=favoriteReference(s,{kind:p.kind,id:p.id}),favorites=favoriteReferences(s,s.settings.favorites??[]),matches=item=>item.kind===ref.kind&&item.id===ref.id;
-      if(p.enabled){if(!favorites.some(matches))favorites.push(ref);s.settings.favorites=favorites;}else s.settings.favorites=favorites.filter(item=>!matches(item));break;
+      const ref=favoriteReference(s,{kind:p.kind,id:p.id}),favorites=favoriteReferences(s,s.settings.favorites??[]);
+      s.settings.favorites=updateFavoriteList(favorites,ref,p.enabled);break;
     }
     case 'library.retirement':applyLibraryRetirement(s,p);break;
     case 'food.delete':case 'recipe.delete':case 'meal.delete': {

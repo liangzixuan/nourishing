@@ -89,7 +89,7 @@ export async function acknowledgeBackgroundWrite(expected,id,result){
    };
   }
   // Keep already-open diary screens current while the canonical refresh runs.
-  const definition=['chart.save','chart.delete','fasting.schedule.save'].includes(row.command.type);
+  const definition=['chart.save','chart.delete','fasting.schedule.save','favorite.set'].includes(row.command.type);
   if(copy.snapshot?.state||definition||result.fastingChange){
    const read=responses.getAll();read.onsuccess=()=>{
     for(const cached of read.result){

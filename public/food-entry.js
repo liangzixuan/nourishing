@@ -6,7 +6,7 @@ import {request,command} from './diary-api.js';
 import {localPreviewDiaryItem} from './local-engine.js';
 import {quantityFields,quantityValue} from './quantity.js';
 import {quantityUnit} from './report-source/server/quantity-units.mjs';
-import {favoriteButton,setFavorite} from './library-extras.js';
+import {favoriteButton,readFavorites,setFavorite} from './library-extras.js';
 import {escape as e} from './html.js';
 const svg=path=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
 const icons={close:svg('<path d="m6 6 12 12M18 6 6 18"/>'),more:svg('<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>'),star:svg('<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z"/>'),date:svg('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 11h18"/>')};
@@ -37,8 +37,8 @@ export function mountFoodEntry({item,entry,quantity,date,group,groups,revision,s
  const payload=()=>{const v=Object.fromEntries(new FormData(form));return {date:v.date,group:v.group,time:form.querySelector('[data-mf-timestamp]').checked?v.time:'',...(entry?{id:entry.id}:{[kind+'Id']:food.id}),...quantityValue(form)};};
  function closeMenu(){menu.open=false;for(const el of form.querySelectorAll('[inert]'))el.inert=false;menu.querySelector('summary').focus();}
  function renderFavorite(){const host=form.querySelector('.mf-favorite');host.innerHTML=favoriteButton(kind,food.id,favorites.items.some(row=>row.id===food.id&&row.kind===kind));form.querySelector('[data-mf-favorite] span').textContent=host.querySelector('button').getAttribute('aria-label');}
- async function loadFavorites(){favorites=await request('/api/library/favorites',null,signal);if(alive())renderFavorite();}
- async function favorite(){if(busy||!favorites)return;busy=true;status.textContent='';form.querySelectorAll('button').forEach(button=>button.disabled=true);try{await setFavorite({kind,id:food.id,enabled:!favorites.items.some(row=>row.id===food.id&&row.kind===kind),revision:favorites.revision});await onChange();if(alive())await loadFavorites();}catch(error){if(alive()){status.textContent=error.message;await loadFavorites().catch(()=>{});}}finally{busy=false;if(alive())form.querySelectorAll('button').forEach(button=>button.disabled=false);}}
+ async function loadFavorites(){favorites=await readFavorites(signal);if(alive())renderFavorite();}
+ async function favorite(){if(busy||!favorites)return;busy=true;status.textContent='';form.querySelectorAll('button').forEach(button=>button.disabled=true);try{await setFavorite({kind,id:food.id,enabled:!favorites.items.some(row=>row.id===food.id&&row.kind===kind),revision:favorites.revision,ticket:favorites.ticket,resource:food});await onChange();if(alive())await loadFavorites();}catch(error){if(alive()){status.textContent=error.message;await loadFavorites().catch(()=>{});}}finally{busy=false;if(alive())form.querySelectorAll('button').forEach(button=>button.disabled=false);}}
  function schedule(delay=180){clearTimeout(timer);pending?.abort();const id=++serial;preview.setAttribute('aria-busy','true');timer=setTimeout(()=>update(id),delay);}
  function describeBasis(facts){
   const option=form.elements.unit.selectedOptions[0],unit=ingredientOnly?quantityUnit(option.value):null;

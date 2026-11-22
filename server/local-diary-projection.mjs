@@ -9,7 +9,7 @@ export {createReportNutrientDetail} from './domain/report-nutrient-detail.mjs';
 export {createNutrientTargetsView} from './domain/nutrient-target-view.mjs';
 export {usesNutrientTargets,projectNutrientTargetResponse} from './domain/nutrient-target-responses.mjs';
 export {copiedDiaryRecords} from './domain/diary-record-copy.mjs';
-export {libraryItems} from './domain/library-list.mjs';
+export {libraryItems,favoriteItems,updateFavoriteList} from './domain/library-list.mjs';
 
 /** Replay already-prepared bulk commands over the retained account baseline.
  * Server validation remains authoritative; projection must also work after an

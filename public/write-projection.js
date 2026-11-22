@@ -1,4 +1,4 @@
-import {applyFastingChange,prepareDiaryRecordUpdate,storeChartDefinition} from './local-diary-projection.js';
+import {updateFavoriteList,applyFastingChange,prepareDiaryRecordUpdate,storeChartDefinition} from './local-diary-projection.js';
 // Serializable local effects for acknowledged and pending background commands.
 import {removeLibraryItem,applyProfileSettingsProjection,projectDiaryBulkWrite,copiedDiaryRecords} from './local-diary-projection.js';
 import {diaryGroupSlots,editDiaryGroupSlot,renameDiaryGroup} from './local-group-rename.js';
@@ -39,6 +39,7 @@ export function applyWriteToState(state,row,result){
   for(const {collection,record} of copiedDiaryRecords(records,p.destination,(collection,index)=>`${row.command.operationId}-${collection}-${index}`))replace(collection,{...record,_pending:!result});
  }
  for(const food of row.projection?.foods??[])if(!(state.foods??[]).some(item=>item.id===food.id))replace('foods',structuredClone(food));
+ if(type==='favorite.set')state.settings.favorites=updateFavoriteList(state.settings.favorites??[],{kind:p.kind,id:p.id},p.enabled);
  if(type.startsWith('profileSettings.')){const record=applyProfileSettingsProjection(state,row.command,id);if(record)record._pending=!result;}
  if(type==='entry.add'&&!result?.records?.entries){
   if(p.mealId&&state.settings.alwaysExpandMeals===true){
@@ -112,6 +113,11 @@ export function applyWriteToState(state,row,result){
 // Apply one saved definition to every cached view that contains its collection.
 export function projectSavedDefinition(path,view,row,receipt){
  const {type,payload}=row.command;
+ if(type==='favorite.set'&&path==='/api/library/favorites'&&view?.items){
+  const ref={kind:payload.kind,id:payload.id};
+  const item=row.projection.favoriteItem;
+  if(!payload.enabled||item)return {...view,items:updateFavoriteList(view.items,item??ref,payload.enabled)};
+ }
  if(type==='fasting.schedule.save'&&!row.projection?.fastingChange&&/^\/api\/fasting(?:\?|$)/.test(path)&&view?.schedules){
   const schedule=receipt?.fastingSchedule??{...payload,timeZone:row.projection.scheduleZone,revision:payload.revision+1,nextStart:null,_pending:true};
   return {...view,schedules:withRecord(view.schedules,schedule)};
