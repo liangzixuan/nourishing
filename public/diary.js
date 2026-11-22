@@ -14,7 +14,7 @@ import {coreText} from './core-cloud-messages.js';
 import {applyFontPreferences} from './font-presentation.js';
 import {MobileDiaryCalendar} from './snapshot-source/mobile-diary-calendar.js';
 import {diaryEntryAmount, diaryGroupSubtotal} from './diary-table-presentation.js';
-import {mountTargetsSheet} from './targets.js';
+import {mountTargets,mountTargetsSheet} from './targets.js';
 import {mountFoodCopy} from './food-copy.js';
 import {mountFoodEntry} from './food-entry.js';
 import {AddMenu} from './add-menu-source/add-menu.js';
@@ -67,7 +67,7 @@ const svg = path =>
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
 
 const icons = {
-  check: svg('<path d="m5 12 4 4L19 6"/>'),
+  check: svg('<circle cx="12" cy="12" r="9"/><path d="m7.5 12 3 3 6-6"/>'),
   back: svg('<path d="m15 5-7 7 7 7"/>'),
   chevron: svg('<path d="m9 5 7 7-7 7"/>'),
   more: svg('<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>'),
@@ -282,7 +282,7 @@ function selectTab(id) {
   shell.select(id);
 }
 
-let diaryFastingAction;
+let diaryFastingAction, diaryTargets;
 function leaveView() {
   if (requestedDiaryDate) {
     loadId++;
@@ -290,6 +290,7 @@ function leaveView() {
     page.setAttribute('aria-busy','false');
   }
   diaryFastingAction?.dispose();diaryFastingAction=null;
+  diaryTargets?.dispose();diaryTargets=null;
   waterPanel?.dispose();waterPanel=null;waterMenu?.close(false);waterMenu=null;waterAmount?.close();waterAmount=null;
   diaryCalendar?.close();
   diaryTools.reset();
@@ -674,9 +675,15 @@ function navigate(next, initialTab = 'dashboard', reportDate) {
   if (!tabBackHandle) {
     tabBackHandle = pushBackHandler(() => {
       if (view === 'diary') return;
+      if (diaryTargets?.back()) return 'keep';
       tabBackHandle = null;
       navigate('diary');
     });
+  }
+  if(next==='nutrient-targets'){
+    selectTab('diary-tab');dateBar.hidden=true;headerRoot.hidden=false;
+    diaryTargets=mountTargets({...common,rootScreen:'nutrients',onExit:()=>navigate('diary')});
+    return;
   }
   if(next==='water'){
     selectTab('diary-tab');dateBar.hidden=true;headerRoot.hidden=false;
@@ -729,7 +736,7 @@ const SUMMARY_ACTIONS = {
   'edit-day-targets': () => {
     pickerCleanup = mountTargetsSheet({date: () => date, show, close, header, content, onChange: load, initialScreen: 'day'});
   },
-  'all-nutrients': () => navigate('discover', 'report', date),
+  'nutrient-targets': () => navigate('nutrient-targets'),
   water: async input => {
     const targetDate = date;
     const entryTime = new Date().toTimeString().slice(0, 5);
@@ -748,6 +755,7 @@ const SUMMARY_ACTIONS = {
       nutrient: input.id,
       date,
       entryIds: summaryPanel?.context()?.entryIds ?? null,
+      onReport: day => { close(); navigate('discover', 'report', day); },
       show,
       header,
       content,

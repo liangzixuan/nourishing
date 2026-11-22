@@ -27,7 +27,7 @@ const tools=['diary','display','references','limits','body','weekday','guided'];
 const m=key=>formatMessage(uiLanguage(),'mobileTargets.'+key);
 
 /** Source Targets navigation; account commands and calculations stay server owned. */
-export function mountTargets({page,headerRoot,date,show,close,header,content,onChange=async()=>{},onExit,initialScreen='home',initialNutrient=null}){
+export function mountTargets({page,headerRoot,date,show,close,header,content,onChange=async()=>{},onExit,rootScreen='home',initialScreen=rootScreen,initialNutrient=null}){
  const root=document.createElement('section');root.className='targets-page';page.replaceChildren(root);
  const events=new AbortController();let child=null,menu=null,disposed=false,screen='home',operation=0;
  let returnToMacros=null;
@@ -92,7 +92,7 @@ export function mountTargets({page,headerRoot,date,show,close,header,content,onC
   if(id==='references'||id==='body'){void openProfileSettings({...ui,initialScreen:id});return;}
   if(id==='weekday')void openTargetPolicies(ui);
  }
- function back(){if(menu){menu.close();return true;}if(child?.back?.())return true;if(returnToMacros){open('macros',returnToMacros);return true;}if(screen!=='home'){home();return true;}return false;}
+ function back(){if(menu){menu.close();return true;}if(child?.back?.())return true;if(returnToMacros){open('macros',returnToMacros);return true;}if(screen===rootScreen)return false;if(rootScreen==='home')home();else open(rootScreen);return true;}
  headerRoot.addEventListener('click',event=>{
   if(event.target.closest('[data-mt-back]')){if(!back())onExit();}
   else if(event.target.closest('[data-mt-menu]')){

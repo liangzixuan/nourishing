@@ -34,6 +34,17 @@ test('Diary group actions update mixed records locally and reconcile canonical c
   const dismiss=async()=>{await page.keyboard.press('Escape');await page.locator('#sheet').waitFor({state:'hidden'});};
   const localState=()=>page.evaluate(async()=>await(await import('/local-engine.js')).localWorkspaceState());
   const localUntil=async predicate=>{for(let i=0;i<100;i++){if(predicate(await localState()))return;await new Promise(r=>setTimeout(r,50));}assert.fail('Local group change did not appear');};
+  const highlights=page.locator('[data-md-page-id=highlights]');
+  await page.locator('[data-md-dot="'+await highlights.getAttribute('data-md-page')+'"]').click();
+  const highlightHeading=highlights.locator('.md-summary-heading button');
+  assert.equal(await highlightHeading.count(),1);
+  await highlightHeading.click();
+  await page.locator('[data-mnt-ready] .mnt-highlights summary').waitFor();
+  await page.locator('[data-mnt-edit-highlights]').click();
+  await page.locator('#sheet select[name=highlight-0]').waitFor();
+  await dismiss();
+  await page.locator('[data-mt-back]').click();
+  await highlights.waitFor();
   const breakfast=page.locator('[data-md-group="Breakfast"]');
   await breakfast.locator('summary strong').click();
   assert.equal(await breakfast.evaluate(node=>node.open),false,'Selecting an empty group must not expand it');

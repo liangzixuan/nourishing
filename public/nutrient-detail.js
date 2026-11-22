@@ -7,7 +7,7 @@ import {nutrientDisplayName} from './report-source/public/nutrient-language.js';
 
 const number=(value,language)=>Number.isFinite(value)?value.toLocaleString(language,{maximumFractionDigits:1}):'—';
 /** A read-only sheet for either a day/selection or an explicitly filtered report. */
-export function openNutrientDetail({nutrient,date,entryIds=null,options,show,header,content,onSource}){
+export function openNutrientDetail({nutrient,date,entryIds=null,options,show,header,content,onSource,onReport}){
  const report=options!==undefined,input=report?{nutrient,options}:{date,nutrient,entryIds},controller=new AbortController();
  show(`${header(coreText('nutrient.title'))}<section class="nutrient-detail" aria-busy="true"><p class="empty" role="status">${e(coreText('loading'))}</p></section>`);
  const root=content.querySelector('.nutrient-detail');
@@ -27,6 +27,11 @@ export function openNutrientDetail({nutrient,date,entryIds=null,options,show,hea
     const tag=onSource&&row.id?'button':'div',amount=report?row.mean:row.value,percent=report?row.percentOfTarget:Number.isFinite(row.value)&&target>0?row.value/target*100:null,partial=row.coverage&&row.coverage.total>row.coverage.known;
     return `<${tag} ${tag==='button'?`type="button" data-source="${index}"`:''} class="nutrient-detail-source"><span><strong>${e(row.name)}</strong><small>${e(report?row.date:[row.time,row.group].filter(Boolean).join(' · '))}${partial?' · '+e(text('partial')):''}</small></span><span><b>${e(format(amount))}</b>${Number.isFinite(percent)?`<small>${e(text('percent',{amount:number(percent,language)}))}</small>`:amount===null?`<small>${e(text('noData'))}</small>`:''}</span></${tag}>`;
    }).join(''):`<p class="empty">${e(text('empty'))}</p>`}</div>${report&&(value.detail.unknownSources||value.detail.omittedSources)?`<p class="nutrient-detail-note">${[value.detail.unknownSources?text('unknownSources',{count:value.detail.unknownSources}):'',value.detail.omittedSources?text('moreSources',{count:value.detail.omittedSources}):''].filter(Boolean).map(e).join(' · ')}</p>`:''}${attributions.length?`<details class="nutrient-detail-credit"><summary>${e(message('foods'))}</summary>${attributions.map(text=>`<p>${e(text)}</p>`).join('')}</details>`:''}`;
+   if(onReport){
+    const link=document.createElement('button');
+    link.type='button';link.className='more-results';link.textContent=t('mobileScoreDetail.report',{},language);
+    link.onclick=()=>onReport(value.date);root.append(link);
+   }
    root.querySelectorAll('[data-source]').forEach(button=>button.onclick=()=>{const row=entries[Number(button.dataset.source)];onSource({id:row.id,date:report?row.date:value.date});});
   }catch(error){if(root.isConnected&&error.name!=='AbortError'){root.innerHTML=`<p class="sheet-message" role="status">${e(error.message)}</p><button type="button" class="more-results" data-retry>${e(coreText('retry'))}</button>`;root.querySelector('[data-retry]').onclick=load;}}
   finally{if(root.isConnected)root.setAttribute('aria-busy','false');}

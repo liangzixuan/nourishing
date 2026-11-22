@@ -7,7 +7,7 @@ import {scoreName} from './diary-summary-source/score-labels.js';
 import {watchDiarySelection} from './diary-selection-nutrition.js';
 import {waterWidgetMarkup} from './water.js';
 
-const labels=()=>({energy:coreText('diary.energy'),consumed:t('mobileDiary.consumed'),expenditure:t('mobileDiary.expenditure'),remaining:t('mobileDiary.remaining'),macros:coreText('diary.macros'),highlights:coreText('diary.highlights'),scores:t('mobileScoreSettings.title'),summary:coreText('diary.daily'),report:coreText('diary.allNutrients'),selected:t('mobileNutrientDetail.selection'),previous:coreText('diary.previousSummary'),next:coreText('diary.nextSummary')});
+const labels=()=>({energy:coreText('diary.energy'),consumed:t('mobileDiary.consumed'),expenditure:t('mobileDiary.expenditure'),remaining:t('mobileDiary.remaining'),macros:coreText('diary.macros'),highlights:coreText('diary.highlights'),scores:t('mobileScoreSettings.title'),summary:coreText('diary.daily'),selected:t('mobileNutrientDetail.selection'),previous:coreText('diary.previousSummary'),next:coreText('diary.nextSummary')});
 const icons=Object.fromEntries(Object.entries({check:'check_circle',back:'chevron_left',chevron:'chevron_right',plus:'add',more:'more_vert'}).map(([key,name])=>[key,diarySymbol(name)]));
 const nutrientName=row=>nutrientDisplayName(row,uiLanguage());
 let macroMode=null;
@@ -32,7 +32,7 @@ export function mountDiarySummary({root,diary,onAction,selection,onGroupSelect})
  let disposed=false,facts=diary.summary,chartSummary=diary.summary,ready=!selection?.records.length;
  const panel=new MobileDiary({root,header,summary:diary.summary,context:()=>{},onDatePicker:()=>{},onGroupSelect});
  const selected=ready?null:watchDiarySelection({selection,onChange:result=>{if(disposed)return;facts=result.facts;chartSummary=result.chartSummary;ready=true;panel.update(summaryMarkup(diary,facts,chartSummary),chartSummary);}});
- const actions=new Set(['mobile-diary-energy','edit-day-targets','nutrient-contributors','configure-diary-display','all-nutrients','choose-scores','score-details','open-fasting','water','water-custom','water-menu','water-remove','water-hint-close','water-settings','water-target']);
+ const actions=new Set(['mobile-diary-energy','edit-day-targets','nutrient-contributors','nutrient-targets','choose-scores','score-details','open-fasting','water','water-custom','water-menu','water-remove','water-hint-close','water-settings','water-target']);
  root.addEventListener('toggle',event=>{if(event.target.matches('.md-water'))waterExpanded=event.target.open;},{capture:true,signal:controller.signal});
  root.addEventListener('click',event=>{
   const button=event.target.closest('[data-action]');if(!button)return;
