@@ -28,14 +28,31 @@ export class MobileDiaryCalendar {
  }
  render(){
   if(this.legendDialog)return;const t=this.text;
-  const start=new Date(this.month+'-01T12:00:00Z'),end=new Date(start);end.setUTCMonth(end.getUTCMonth()+1);end.setUTCDate(0);const projection=this.showDiaryMarkers&&this.projection?.month===this.month?this.projection:null,markers=projection?.markers??{},selected=new Date(this.selected+'T12:00:00Z'),format=(d,options)=>d.toLocaleDateString(this.language,{timeZone:'UTC',...options});
-  this.dialog.innerHTML=`<header><span>${e(format(selected,{year:'numeric'}))}</span><h2>${e(format(selected,{weekday:'short',month:'short',day:'numeric'}))}</h2></header><div class="mdc-month"><button type="button" data-mdc-month="-1" aria-label="${e(t('previousMonth'))}">${icon('chevron-left')}</button><label><span>${e(format(start,{month:'long',year:'numeric'}))}</span><input type="month" data-mdc-jump value="${this.month}" aria-label="${e(t('month'))}"></label><button type="button" data-mdc-month="1" aria-label="${e(t('nextMonth'))}">${icon('chevron-right')}</button></div><div class="mdc-days"><div class="mdc-weekdays">${Array.from({length:7},(_,i)=>`<span>${e(format(new Date(Date.UTC(2026,10,1+i)),{weekday:'narrow'}))}</span>`).join('')}</div><div class="mdc-grid">${'<span></span>'.repeat(start.getUTCDay())}${Array.from({length:end.getUTCDate()},(_,i)=>{const day=this.month+'-'+String(i+1).padStart(2,'0'),kinds=markers[day]??[],complete=projection?.completedDays.includes(day),logged=projection?.loggedDays?.includes(day)??kinds.some(kind=>kind!=='fast'),today=projection?.calendar.today===day;const states=[...(today?['today']:[]),...(complete?['complete']:logged?['logged']:[])];const labels=[day,...states.map(key=>t('state.'+key)),...kinds.map(kind=>t('kind.'+kind))];return `<button type="button" data-mdc-date="${day}" aria-pressed="${day===this.selected}" aria-label="${e(labels.join(', '))}" ${today?'aria-current="date"':''} class="${states.map(key=>'is-'+key).join(' ')}"><span>${i+1}</span><small>${kinds.map(calendarMarker).join('')}</small></button>`}).join('')}</div></div>${this.showDiaryMarkers?`<p class="mdc-status" role="status">${this.loading?'Loading…':this.error?e(this.error)+' <button type="button" data-mdc-retry>Try again</button>':''}</p>`:''}<footer>${this.showDiaryMarkers?`<button type="button" data-mdc-legend>${e(t('legend'))}</button>`:''}<span></span><button type="button" data-mdc-cancel>${e(t('cancel'))}</button><button type="button" data-mdc-apply>${e(t('ok'))}</button></footer>`;
+  const start=new Date(this.month+'-01T12:00:00Z'),end=new Date(start);end.setUTCMonth(end.getUTCMonth()+1);end.setUTCDate(0);const selected=new Date(this.selected+'T12:00:00Z'),format=(d,options)=>d.toLocaleDateString(this.language,{timeZone:'UTC',...options});
+  this.dialog.innerHTML=`<header><span>${e(format(selected,{year:'numeric'}))}</span><h2>${e(format(selected,{weekday:'short',month:'short',day:'numeric'}))}</h2></header><div class="mdc-month"><button type="button" data-mdc-month="-1" aria-label="${e(t('previousMonth'))}">${icon('chevron-left')}</button><label><span>${e(format(start,{month:'long',year:'numeric'}))}</span><input type="month" data-mdc-jump value="${this.month}" aria-label="${e(t('month'))}"></label><button type="button" data-mdc-month="1" aria-label="${e(t('nextMonth'))}">${icon('chevron-right')}</button></div><div class="mdc-days"><div class="mdc-weekdays">${Array.from({length:7},(_,i)=>`<span>${e(format(new Date(Date.UTC(2026,10,1+i)),{weekday:'narrow'}))}</span>`).join('')}</div><div class="mdc-grid">${'<span></span>'.repeat(start.getUTCDay())}${Array.from({length:end.getUTCDate()},(_,i)=>{const day=this.month+'-'+String(i+1).padStart(2,'0');return `<button type="button" data-mdc-date="${day}" aria-pressed="${day===this.selected}" aria-label="${day}"><span>${i+1}</span><small></small></button>`}).join('')}</div></div>${this.showDiaryMarkers?`<p class="mdc-status" role="status"></p>`:''}<footer>${this.showDiaryMarkers?`<button type="button" data-mdc-legend>${e(t('legend'))}</button>`:''}<span></span><button type="button" data-mdc-cancel>${e(t('cancel'))}</button><button type="button" data-mdc-apply>${e(t('ok'))}</button></footer>`;
+  this.updateMarkers();
+ }
+ updateMarkers(){
+  const status=this.dialog.querySelector('.mdc-status');if(!status)return;
+  status.innerHTML=this.loading?'Loading…':this.error?e(this.error)+' <button type="button" data-mdc-retry>Try again</button>':'';
+  const projection=this.projection;
+  if(projection?.month!==this.month)return;
+  for(const button of this.dialog.querySelectorAll('[data-mdc-date]')){
+   const day=button.dataset.mdcDate,kinds=projection.markers?.[day]??[];
+   const complete=projection.completedDays.includes(day),logged=projection.loggedDays?.includes(day)??kinds.some(kind=>kind!=='fast');
+   const today=projection.calendar.today===day;
+   const states=[...(today?['today']:[]),...(complete?['complete']:logged?['logged']:[])];
+   button.className=states.map(key=>'is-'+key).join(' ');
+   button.setAttribute('aria-label',[day,...states.map(key=>this.text('state.'+key)),...kinds.map(kind=>this.text('kind.'+kind))].join(', '));
+   if(today)button.setAttribute('aria-current','date');else button.removeAttribute('aria-current');
+   button.querySelector('small').innerHTML=kinds.map(calendarMarker).join('');
+  }
  }
  async refreshMonth(){
-  if(!this.showDiaryMarkers||this.closed)return;this.fetchAbort?.abort();const abort=new AbortController();this.fetchAbort=abort;const month=this.month;this.loading=true;this.error=null;this.render();
+  if(!this.showDiaryMarkers||this.closed)return;this.fetchAbort?.abort();const abort=new AbortController();this.fetchAbort=abort;const month=this.month;this.loading=true;this.error=null;this.updateMarkers();
   try{const projection=await this.loadMonth(month,abort.signal);if(this.closed||this.fetchAbort!==abort)return;this.projection=projection;}
   catch(error){if(this.closed||this.fetchAbort!==abort)return;this.error=error.message;}
-  finally{if(!this.closed&&this.fetchAbort===abort){this.loading=false;this.render();}}
+  finally{if(!this.closed&&this.fetchAbort===abort){this.loading=false;this.updateMarkers();}}
  }
  back(){if(this.legendDialog){this.closeLegend();return true}this.close();return true}
  close(){if(this.closed)return;this.closed=true;this.fetchAbort?.abort();this.backHandle?.release();this.legendDialog?.close();this.dialog.close();this.dialog.remove();if(this.focus?.isConnected)this.focus.focus({preventScroll:true});this.onClose?.()}

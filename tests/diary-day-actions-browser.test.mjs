@@ -67,6 +67,18 @@ test('Diary day actions use the chosen calendar date and preserve other days',as
    const p=await networkOnly.newPage();p.setDefaultTimeout(10000);await p.clock.setFixedTime(new Date(day+'T12:00:00Z'));
    await p.goto(origin+'/diary');await chooseDiaryDate(p,older);
    await p.locator('[data-diary-record]').getByText(olderMarker,{exact:true}).waitFor();
+   let releaseMarkers;
+   const held=new Promise(resolve=>{releaseMarkers=resolve;});
+   await p.route('**/api/diary/calendar?month=2026-12',async route=>{await held;await route.continue();});
+   await p.locator('[data-md-calendar]').click();
+   await p.locator('[data-mdc-month="1"]').click();
+   const selected=p.locator('[data-mdc-date="2026-12-17"]');
+   await selected.click();
+   assert.ok(await selected.evaluate(el=>el===document.activeElement));
+   releaseMarkers();
+   await p.locator('.mdc-status:empty').waitFor({state:'attached'});
+   assert.ok(await selected.evaluate(el=>el===document.activeElement),'a month response preserves the selected day’s keyboard focus');
+   await p.keyboard.press('Escape');
   }finally{await networkOnly.close();}
   const page=await browser.newPage({viewport:{width:412,height:915},colorScheme:'dark',extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}});
   page.setDefaultTimeout(8000);const errors=[];page.on('pageerror',e=>errors.push(e.message));

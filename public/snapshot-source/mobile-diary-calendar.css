@@ -29,3 +29,15 @@
 .mdc-grid .mdc-biometric::before{font-size:8px}
 .mdc-legend [data-mdc-back]{position:absolute;bottom:10px;right:12px;padding:8px;border:0;background:transparent;color:var(--green)}
 .mdc-legend [data-mdc-back]:not(:focus-visible){clip-path:inset(50%);width:1px;height:1px;padding:0}
+
+.mdc-dialog[open]:has([data-mdc-legend]){height:calc(100dvh - 48px)}
+.mdc-dialog:has([data-mdc-legend]) header{min-height:109px;padding-inline:16px}
+.mdc-dialog:has([data-mdc-legend]) h2{font-size:calc(32rem / 18);margin-top:0}
+.mdc-dialog:has([data-mdc-legend]) .mdc-month{padding-inline:8px}
+.mdc-dialog:has([data-mdc-legend]) .mdc-month button{display:grid;place-items:center;width:48px;min-height:48px;padding:0}
+.mdc-dialog:has([data-mdc-legend]) .mdc-days{padding:28px 0 0}
+.mdc-dialog:has([data-mdc-legend]) .mdc-weekdays{min-height:60px;padding-bottom:32px}
+.mdc-dialog:has([data-mdc-legend]) .mdc-grid button{font-size:min(calc(14rem / 18),9cqi)}
+.mdc-dialog:has([data-mdc-legend]) footer{gap:0;padding:8px 8px 8px 16px}
+.mdc-dialog:has([data-mdc-legend]) footer button{min-width:64px;min-height:48px;padding:8px 16px}
+.mdc-dialog:has([data-mdc-legend]) footer [data-mdc-cancel]{min-width:80px;text-transform:none}

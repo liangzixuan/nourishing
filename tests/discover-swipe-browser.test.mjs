@@ -125,6 +125,12 @@ test('Discover touch swipes navigate bounded tabs while preserving scrolling, co
   await page.evaluate(()=>{window.nativeTransition=document.startViewTransition;document.startViewTransition=undefined;});
   await page.locator('[data-tab=report]').click();await page.locator('.mobile-report-toolbar').waitFor();await tab('report');
   await page.evaluate(()=>{document.startViewTransition=window.nativeTransition;delete window.nativeTransition;});
+  await page.setViewportSize({width:320,height:700});
+  await page.evaluate(async()=>{(await import('/font-presentation.js')).applyFontPreferences({fontScale:1.5});});
+  await page.locator('[data-tab=snapshots]').click();await tab('snapshots');await page.locator('.ms-root').waitFor();
+  const selected=await page.locator('.dc-tabs [aria-current=page]').boundingBox();
+  assert.ok(selected.x>=-1&&selected.x+selected.width<=321,'the selected tab stays visible after the header remounts');
+
   await page.locator('[data-tab=charts]').click();await page.locator('[data-manage]').waitFor();
   await page.evaluate(()=>window.panel.dispose());await swipe();await tab('charts');
   assert.equal(await page.evaluate(()=>document.getAnimations().filter(a=>a.effect?.pseudoElement?.includes('discover-content')).length),0);assert.deepEqual(errors,[]);
