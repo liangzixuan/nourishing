@@ -7,15 +7,19 @@ import {mountFoodPicker} from './food-picker.js';
 import {MobileIngredientDetail} from './suggestion-source/mobile-ingredient-detail.js';
 import {escape as e} from './html.js';
 
+export function formatCompositeGrams(grams){
+ return Number.isFinite(grams)?grams.toLocaleString(uiLanguage(),{minimumFractionDigits:1,maximumFractionDigits:1})+'g':null;
+}
+
 export function ingredientRow(kind,row,view,index,count,ordering){
  const recipe=kind==='recipe',number=index+1;
  const name=view?.name??fc(recipe?'ingredient':'mealItem');
  const unit=row.unit==='portion'?view?.options?.find(([id])=>id==='portion:'+row.portionId)?.[1]??foodQuantityUnit('portion'):foodQuantityUnit(row.unit??'servings');
- const grams=Number.isFinite(view?.grams)?' - '+new Intl.NumberFormat(uiLanguage(),{minimumFractionDigits:1,maximumFractionDigits:1}).format(view.grams)+'g':'';
+ const grams=formatCompositeGrams(view?.grams);
  const source=view?.options?(view.source?.name??(row.recipeId?t('recipeEditor.recipe'):t('mobileSearch.food'))):'';
  const move=(direction,key,symbol,disabled)=>`<button type="button" data-${kind}-move="${index}" data-direction="${direction}" aria-label="${e(fc(key,{number}))}" ${disabled?'disabled':''}>${symbol}</button>`;
  return `<div class="composite-item-row">
-  <button type="button" data-${kind}-item="${index}" data-mci-edit><span class="mci-item-name">${e(name)}</span><span class="mci-item-quantity">${e(row.quantity??row.amount)} ${e(unit)}${e(grams)}</span><span class="mci-item-source">${e(source)}</span></button>
+  <button type="button" data-${kind}-item="${index}" data-mci-edit><span class="mci-item-name">${e(name)}</span><span class="mci-item-quantity">${e(row.quantity??row.amount)} ${e(unit)}${grams?' - '+e(grams):''}</span><span class="mci-item-source">${e(source)}</span></button>
   <button type="button" data-${kind}-remove="${index}" data-composite-remove aria-label="${e(fc(recipe?'removeIngredient':'removeItem',{number}))}">×</button>
   ${ordering?`<div class="composite-reorder">${move(-1,recipe?'moveIngredientUp':'moveItemUp','↑',index===0)}${move(1,recipe?'moveIngredientDown':'moveItemDown','↓',index===count-1)}</div>`:''}</div>`;
 }
