@@ -172,7 +172,7 @@
       "source": "public/discover.js",
       "target": "public/dashboard-source/dashboard-charts.js",
       "sourceSha256": "6ffc164dd2504087c9240ccbc21ca74bdb72871925c71220718ab47be5d72665",
-      "sha256": "b73fcb47ea311cfd70e6368dc30451d760496130bc09ddbcf84b3d8b7b2a1465",
+      "sha256": "d391dadb9606ddb13249f48dab824b511d604229fb962abbb9b59f6dfa93d2f3",
       "transforms": [
         "CRLF to LF",
         "Extract original drawCharts method; explicit imports; font scale reads root computed size",
