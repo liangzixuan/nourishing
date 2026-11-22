@@ -96,6 +96,7 @@ let diaryCalendar = null;
 let view = 'diary';
 let library = null;
 let nutrition = null;
+let dashboardPosition;
 let more = null;
 let summaryPanel = null;
 let disposeRowSwipe = null;
@@ -712,7 +713,11 @@ function navigate(next, initialTab = 'dashboard', reportDate) {
     return;
   }
   selectTab('discover-tab');
+  if (dashboardPosition?.date !== date || dashboardPosition?.ownerId !== account?.id) {
+    dashboardPosition = {date, ownerId: account?.id, top: 0};
+  }
   nutrition = mountNutrition({
+    dashboardPosition,
     ...common,
     mode: 'discover',
     initialTab,

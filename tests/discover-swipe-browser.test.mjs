@@ -58,8 +58,14 @@ test('Discover touch swipes navigate bounded tabs while preserving scrolling, co
   await tab('dashboard');await swipe({dx:160});await tab('dashboard');
   assert.equal(await swipe({dx:3,dy:180}),false);await tab('dashboard');
   await swipe({dx:-25});await tab('dashboard');await swipe({multi:true});await tab('dashboard');await swipe({cancel:true});await tab('dashboard');
+  await page.locator('.cloud-dashboard').waitFor();
+  const dashboardTop=await page.evaluate(()=>{window.scrollTo(0,320);return window.scrollY;});
+  assert.ok(dashboardTop>0);
   await swipe({selector:'[data-discover=edit-report]'});await tab('charts');
   await page.locator('[data-tab=dashboard]').click();await tab('dashboard');
+  await page.locator('.cloud-dashboard').waitFor();
+  assert.equal(await page.evaluate(()=>window.scrollY),dashboardTop);
+  await page.evaluate(()=>window.scrollTo(0,0));
   await page.getByRole('button',{name:'Newsfeed',exact:true}).click();await page.locator('#sheet').getByText('Fixture News',{exact:true}).waitFor();await swipe();await tab('dashboard');await page.getByRole('button',{name:'Back',exact:true}).click();
   assert.equal(await swipe(),true);await tab('charts');await page.locator('[data-manage]').waitFor();
   const plot=page.locator('canvas').first();await plot.waitFor();await swipe({selector:'canvas'});await tab('report');
