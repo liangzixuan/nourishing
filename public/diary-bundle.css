@@ -682,6 +682,7 @@ body.discover-mobile .anchored-menu.mr-action-menu{min-width:0;max-width:700px;w
   min-width:0;
   padding:0 4px;
   border-block:8px solid transparent;
+  border-radius:9px / 15px;
   background-clip:padding-box;
   font:400 13px/18px Lato,sans-serif;
   line-height:18px;
