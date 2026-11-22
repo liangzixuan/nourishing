@@ -58,6 +58,10 @@ test('source Suggest Food: filters, impact, ingredient review, preferences and d
   await page.screenshot({path:'.local/suggestions-ui/removed.png'});await page.locator('[data-ms-dismiss]').click();
   await first.locator('[data-ms-page="0"]').first().click();
   assert.equal(await first.locator('.msc-macro-amount').count(),4);
+  const macroPercentages=await first.locator('.msc-stat summary strong').allTextContents();
+  assert.ok(macroPercentages.every(label=>/^(?:\d+|—)%\*?$/.test(label)));
+  assert.match(await first.locator('[data-ms-metric=fat] summary').innerText(),/Fat - \d+\.\d \/ \d+\.\d g/);
+
   await first.locator('.msc').scrollIntoViewIfNeeded();
   await page.screenshot({path:'.local/suggestions-ui/macros.png'});
   assert.equal(await page.locator('.ms-result').first().locator('[data-meal-action="review"]').textContent(),'Add to diary');assert.equal(await page.locator('.suggestion-review').count(),0);assert.deepEqual(state,before);
