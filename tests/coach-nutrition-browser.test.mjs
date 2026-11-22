@@ -33,7 +33,11 @@ test('Discover opens Coach and follows its selected date into Report and Suggest
  try{
   browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915}});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.goto(`http://127.0.0.1:${server.address().port}`);await page.locator('[data-discover=coach]').click();
-  await page.locator('[data-coach-preferences]').waitFor();await page.getByRole('button',{name:'Strength',exact:true}).click();
+  await page.locator('[data-coach-preferences]').waitFor();
+  const strength=page.getByRole('button',{name:'Strength',exact:true});
+  assert.ok((await strength.boundingBox()).height>=48,'Goal choices keep their full touch area');
+  assert.ok(await page.getByRole('textbox',{name:'Notes',exact:true}).getAttribute('placeholder'));
+  await strength.click();
   await page.locator('[data-coach-preferences] [type=submit]').click();assert.equal(await page.locator('[data-coach-ack] [type=submit]').isDisabled(),true);
   await page.locator('[data-coach-back]').click();assert.equal(await page.getByRole('button',{name:'Strength',exact:true}).getAttribute('aria-pressed'),'true');
   assert.equal(requests.includes('/api/coach/answer'),false);assert.equal(requests.includes('/api/workspace/command'),false);
