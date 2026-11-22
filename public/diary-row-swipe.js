@@ -5,7 +5,9 @@ export function bindDiaryRowSwipe(root){
  function paint(row,offset){
   row.style.setProperty('--md-swipe-offset',offset+'px');
   row.style.setProperty('--md-swipe-reveal',Math.abs(offset)+'px');
-  row.querySelector('.md-swipe-options').hidden=offset<=0;
+  const menu=row.querySelector('.md-swipe-options');
+  // Group menus keep a keyboard focus target when the touch action is closed.
+  if(!menu.hasAttribute('data-tool-group'))menu.hidden=offset<=0;
   const remove=row.querySelector('.md-swipe-delete');if(remove)remove.hidden=offset>=0;
  }
  function close(){if(opened){paint(opened,0);opened.classList.remove('is-swiping');opened=null;}}
@@ -16,6 +18,7 @@ export function bindDiaryRowSwipe(root){
   const row=event.target.closest('[data-md-swipable]');
   if(!row||!root.contains(row)){cancel();return;}
   if(event.target.closest('[data-md-swipe-action]'))return;
+  if(document.activeElement?.matches('.diary-group-tools'))document.activeElement.blur();
   const offset=row===opened?Number.parseFloat(row.style.getPropertyValue('--md-swipe-offset'))||0:0;
   close();paint(row,offset);opened=row;
   gesture={row,touchStart:event.pointerType==='touch'?event.timeStamp:null,id:event.pointerId,x:event.clientX,y:event.clientY,offset,width:row.getBoundingClientRect().width*.2,horizontal:false};

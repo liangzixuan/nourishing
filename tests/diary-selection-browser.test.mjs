@@ -142,7 +142,7 @@ test('Diary selection stays local through offline edits and rapid selection chan
   await page.getByRole('button',{name:'Selected entry actions',exact:true}).click();await page.getByRole('button',{name:'Show Nutrition Summary',exact:true}).click();await page.locator('.meal-nutrition-summary [aria-busy=false]').waitFor();assert.equal(await page.locator('[data-mf-energy]').innerText(),'33');
   await page.context().setOffline(false);await waitForOutboxIdle(page,()=>fixture.state().entries.some(row=>row.foodId==='snack'));await page.waitForFunction(()=>document.querySelector('[data-mf-energy]')?.textContent==='33');assert.equal(await page.locator('[data-mf-energy]').innerText(),'33');await page.keyboard.press('Escape');
   await page.getByRole('button',{name:'Back',exact:true}).click();
-  await page.locator('[data-tool-group=Lunch]').click();await page.locator('[data-diary-tool=meal]').click();
+  await page.keyboard.press('Tab');await page.locator('[data-tool-group=Lunch]').focus();await page.keyboard.press('Enter');await page.locator('[data-diary-tool=meal]').click();
   await page.getByLabel('Meal Name',{exact:true}).fill('Group lunch');
   assert.equal(await page.locator('[data-meal-item]').count(),3);
   await page.locator('[data-mce-help]').click();await page.getByRole('dialog',{name:'User Manual'}).waitFor();await page.keyboard.press('Escape');

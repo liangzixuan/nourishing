@@ -130,6 +130,8 @@ const rows={
  'diary.reload':['Reload diary','Recharger le journal','Tagebuch neu laden','Recarregar diário'],
  'diary.changed':['Diary changed. Reload diary.','Le journal a changé. Rechargez-le.','Das Tagebuch wurde geändert. Bitte neu laden.','O diário mudou. Recarregue-o.'],
  'diary.groupActions':['{{group}} actions','Actions : {{group}}','Aktionen für {{group}}','Ações de {{group}}'],
+ 'diary.singleMeal':['meal','repas','Mahlzeit','refeição'],
+ 'diary.serving':['{{amount}} serving','{{amount}} portion','{{amount}} Portion','{{amount}} porção'],
  'diary.servings':['{{amount}} servings','{{amount}} portions','{{amount}} Portionen','{{amount}} porções'],
  'diary.portions':['portions','portions','Portionen','porções'],
  'diary.foodCreated':['Food created','Aliment créé','Lebensmittel erstellt','Alimento criado'],

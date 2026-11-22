@@ -36,3 +36,18 @@
 @media(max-width:360px){.md-pause-life{grid-template-columns:1fr;}.md-pause-brand{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;width:100%;}.md-pause-name span{font-size:min(1rem,10cqi);}.md-pause-name strong{font-size:min(1.5rem,14cqi);}.md-pause-brand .md-ring{max-width:120px;}.md-pause-brand .md-ring small{font-size:min(.7rem,6cqi);}}
 .md-group [data-md-select-group]{flex:1;text-align:left;min-height:32px;min-width:0}.md-group summary:has([data-md-select-group][aria-pressed=true]){box-shadow:inset 3px 0 var(--green);background:color-mix(in srgb,var(--green) 12%,var(--paper))}.md-group [data-md-fold-group]{min-width:32px;min-height:32px;align-items:center;justify-content:center}
 .md-records [data-md-swipable]>td,.md-records [data-md-swipable] .md-record,.md-records [data-md-swipable] .md-record-amount{touch-action:pan-y pinch-zoom}.md-records [data-md-swipable]>td{position:relative}.md-records [data-md-swipable] .md-record,.md-records [data-md-swipable] .md-record-amount{transform:translateX(var(--md-swipe-offset,0px));transition:transform .16s ease-out}.md-records .is-swiping .md-record,.md-records .is-swiping .md-record-amount{transition:none}.md-records .md-swipe-action{position:absolute;top:0;bottom:0;width:var(--md-swipe-reveal,0px);z-index:2;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:0}.md-records .md-swipe-options{left:0;background:#328d91;color:white}.md-records .md-swipe-delete{right:0;background:#ec3d00;color:white}.md-swipe-action img{width:23px;height:23px;filter:brightness(0) invert(1);flex:none}.md-swipe-action[hidden]{display:none!important}@media(prefers-reduced-motion:reduce){.md-records [data-md-swipable] .md-record,.md-records [data-md-swipable] .md-record-amount{transition:none}}
+
+.md-group>summary[data-md-swipable]{position:relative;touch-action:pan-y pinch-zoom}
+.md-group>summary[data-md-swipable]>:not(.diary-group-tools){transform:translateX(var(--md-swipe-offset,0px))}
+.md-group>summary>.diary-group-tools{
+ position:absolute;inset:0 auto 0 0;z-index:2;display:grid;place-items:center;
+ width:var(--md-swipe-reveal,0px);min-width:0;overflow:hidden;padding:0;border:0;border-radius:0;
+ background:#328d91;color:white;font-size:1.25rem;
+}
+.md-group>summary>.diary-group-tools:focus-visible{width:max(44px,20%);outline-offset:-3px}
+
+.md-record-amount .md-food-energy-unit{display:block;font:inherit}
+
+.diary-group-tools img{width:23px;height:23px;filter:brightness(0) invert(1)}
+.md-meal-icon{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#00a3a6;color:var(--paper)}
+.md-meal-icon .md-symbol{font-size:13px;line-height:1}

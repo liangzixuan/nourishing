@@ -309,6 +309,12 @@ function leaveView() {
   headerRoot.replaceChildren();
 }
 
+function diaryTimestamp(time) {
+  if (!time) return '';
+  const display = new Date(`2000-01-01T${time}Z`).toLocaleTimeString(uiLanguage(), {hour:'numeric', minute:'2-digit', timeZone:'UTC'});
+  return `<span class="md-record-time" aria-hidden="true"></span>${e(display.toLocaleLowerCase(uiLanguage()))}`;
+}
+
 function formatEntryMeta(row, time, walkingEffort) {
   let detail;
   if (walkingEffort) {
@@ -316,13 +322,16 @@ function formatEntryMeta(row, time, walkingEffort) {
     detail=`${duration} min - ${t('exerciseBrowser.'+walkingEffort)}`;
   } else if (row.kind === 'exercise') {
     detail = `${num(row.duration)} min`;
+  } else if (row.mealId && row.amount === 1) {
+    detail = coreText('diary.singleMeal');
   } else if (row.quantity !== undefined) {
     const unitLabel = row.unit === 'portion' ? row.facts?.portionLabel ?? coreText('diary.portions') : row.unit;
     detail = `${num(row.quantity)} ${unitLabel}`;
   } else {
-    detail = coreText('diary.servings', {amount: num(row.amount)});
+    detail = coreText(row.amount===1?'diary.serving':'diary.servings', {amount: num(row.amount)});
   }
-  return e([time, detail].filter(Boolean).join(' · '));
+  if (row.kind === 'exercise') return e([time, detail].filter(Boolean).join(' · '));
+  return [diaryTimestamp(time), e(detail)].filter(Boolean).join(' - ');
 }
 
 const heartRateDefinition=biometricCatalogDefinition('heart-rate');
@@ -341,7 +350,7 @@ function renderDiaryRow(collection, row) {
       name: walkingEffort?t('exerciseBrowser.generalWalking'):row.facts?.name ?? row.name,
       meta: formatEntryMeta(row, time, walkingEffort),
       amount: diaryEntryAmount(row, diary.summary.diaryTable, {energyUnit: diary.energyUnit, language: uiLanguage(),exerciseFractionDigits:walkingEffort?1:2}),
-      icon: diarySymbol(iconName),
+      icon: row.mealId ? `<span class="md-meal-icon">${diarySymbol(iconName)}</span>` : diarySymbol(iconName),
       selectBox: diaryTools.selectBox(collection, row),
       action: 'edit-entry',
     });
@@ -350,8 +359,7 @@ function renderDiaryRow(collection, row) {
   const waterAmount=isNote?null:waterRecordAmount(diary,row);
   const heartRate=!isNote&&row.type===heartRateDefinition.type;
   const metricName=heartRate?biometricCatalogLabel({selection:{kind:'catalog',id:heartRateDefinition.id},label:heartRateDefinition.label},uiLanguage()):row.type;
-  const displayTime=!isNote&&time?new Date(`2000-01-01T${time}Z`).toLocaleTimeString(uiLanguage(),{hour:'numeric',minute:'2-digit',timeZone:'UTC'}).toLocaleLowerCase(uiLanguage()):'';
-  const timestamp=displayTime?`<span class="md-record-time" aria-hidden="true"></span>${e(displayTime)}`:'';
+  const timestamp=isNote?'':diaryTimestamp(time);
   const thumb = isNote ? notePhotoThumbnail(row) : '';
   return mobileDiaryRecord({
     ...swipeOptions,
@@ -409,14 +417,15 @@ function render() {
     renderRow: ({collection, row}) => renderDiaryRow(collection, row),
     showGroups: display.showGroups,
     selectBox: g => diaryTools.groupBox(g),
-    subtotal: g =>
-      diaryGroupSubtotal(diary.summary.diaryTable, g, {energyUnit: diary.energyUnit, language: uiLanguage()}) +
-      `<button type="button" class="diary-group-tools" data-tool-group="${e(g)}" aria-label="${e(coreText('diary.groupActions', {group: g}))}">⋯</button>`,
+    subtotal: g => diaryGroupSubtotal(diary.summary.diaryTable, g, {energyUnit: diary.energyUnit, language: uiLanguage()}),
+    groupAction: g => `<button type="button" class="md-swipe-options diary-group-tools" data-md-swipe-action data-tool-group="${e(g)}" aria-label="${e(coreText('diary.groupActions', {group: g}))}"><img src="/snapshot-source/dots-vertical.svg" alt=""></button>`,
     icons,
     labels: {add: t('diary.addFood'),toggle:coreText('diary.toggleGroup')},
   });
 
+  const focusedGroup = page.contains(document.activeElement) ? document.activeElement.dataset.toolGroup : undefined;
   page.innerHTML = `${diaryCycleMarkup(diary.cycleDays)}${diarySummaryMarkup(displayedDiary, diaryTools.selection(), account?.id)}<div class="md-diary diary-layout">${groupMarkup}</div>`;
+  if (focusedGroup !== undefined) page.querySelector(`[data-tool-group="${CSS.escape(focusedGroup)}"]`)?.focus({preventScroll:true});
   disposeRowSwipe=bindDiaryRowSwipe(page);
   summaryPanel = mountDiarySummary({
     root: page,

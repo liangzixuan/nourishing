@@ -30,7 +30,7 @@ test('Diary group actions update mixed records locally and reconcile canonical c
  const server=createServer(async(req,res)=>{const response=await handler(new Request(base+req.url,{method:req.method,headers:req.headers,...(req.method==='GET'?{}:{body:req,duplex:'half'})}));res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));});await new Promise(r=>server.listen(0,'127.0.0.1',r));base='http://127.0.0.1:'+server.address().port;handler=createWebHandler({config:{origin:base},service,assets});
  try{
   browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});page=await browser.newPage({viewport:{width:412,height:915},colorScheme:'dark',extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}});page.setDefaultTimeout(10000);const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.goto(base+'/diary');await page.locator('.md-diary').waitFor();
-  const menu=async(group='Lunch')=>{await page.getByRole('button',{name:group+' actions',exact:true}).click();await page.locator('.diary-menu-sheet').waitFor();};
+  const menu=async(group='Lunch')=>{await page.getByRole('button',{name:group+' actions',exact:true}).press('Enter');await page.locator('.diary-menu-sheet').waitFor();};
   const dismiss=async()=>{await page.keyboard.press('Escape');await page.locator('#sheet').waitFor({state:'hidden'});};
   const localState=()=>page.evaluate(async()=>await(await import('/local-engine.js')).localWorkspaceState());
   const localUntil=async predicate=>{for(let i=0;i<100;i++){if(predicate(await localState()))return;await new Promise(r=>setTimeout(r,50));}assert.fail('Local group change did not appear');};
@@ -44,7 +44,20 @@ test('Diary group actions update mixed records locally and reconcile canonical c
   await breakfast.locator('[data-md-fold-group]').click();assert.equal(await breakfast.evaluate(node=>node.open),false);
   const touch=await page.context().newCDPSession(page);
   const swipe=async(row,dx,dy=0,finish='touchEnd')=>{await row.scrollIntoViewIfNeeded();const box=await row.boundingBox(),x=box.x+box.width/2,y=box.y+box.height/2;await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});for(let step=1;step<=5;step++)await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+dx*step/5,y:y+dy*step/5}]});await touch.send('Input.dispatchTouchEvent',{type:finish,touchPoints:[]});};
+  const heading=breakfast.locator('summary'),groupActions=heading.getByRole('button',{name:'Breakfast actions'});
+  assert.equal(await groupActions.isVisible(),false,'A resting group header has no action strip');
+  await swipe(heading,110);
+  await groupActions.click();await page.locator('.diary-menu-sheet').waitFor();await dismiss();
+  assert.equal(await breakfast.evaluate(node=>node.open),false);
+  await swipe(heading,-110);assert.equal(await groupActions.isVisible(),false);
+  await swipe(heading,6,-60);assert.equal(await groupActions.isVisible(),false);
+  await page.keyboard.press('Tab');await groupActions.focus();
+  assert.equal(await groupActions.isVisible(),true);
+  await page.keyboard.press('Enter');await page.locator('.diary-menu-sheet').waitFor();await dismiss();
   const riceRow=page.locator('[data-diary-record]').filter({hasText:'Rice'}).first();
+  assert.equal(await riceRow.locator('.food-meta').innerText(),'12:00 pm - 1 serving');
+  assert.equal(await riceRow.locator('.md-record-time').count(),1);
+  assert.deepEqual((await riceRow.locator('[data-diary-column=calories]').innerText()).trim().split(/\s+/),['100.0','kcal']);
   await swipe(riceRow,110);assert.equal(await riceRow.locator('.md-swipe-options').isVisible(),true,'Right swipe reveals options');
   mkdirSync('.local/diary-group',{recursive:true});await page.screenshot({path:'.local/diary-group/swipe-options.png'});
   await riceRow.locator('.md-swipe-options').click();await page.locator('.diary-tools-menu').waitFor();await dismiss();

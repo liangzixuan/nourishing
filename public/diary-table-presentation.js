@@ -20,12 +20,17 @@ function validateRow(row,language='en'){
   if((row.value===null)!==(row.status==='unknown')||(row.remaining===null)!==(row.remainingStatus==='unknown')||row.status==='complete'&&!c.complete||row.status==='partial'&&c.complete||row.remainingStatus==='exact'&&row.status!=='complete'||row.remainingStatus==='upper-bound'&&row.status!=='partial'||row.remaining!==null&&(row.value===null||row.target===null)||!row.active&&(row.value!==null||row.target!==null||row.remaining!==null))throw Error(message(language,'invalidStatus'));
   return row;
 }
-export function renderDiaryTableAmount(row,{label=false,energyUnit='kcal',language='en'}={}){
+export function renderDiaryTableAmount(row,{label=false,stackEnergy=false,energyUnit='kcal',language='en'}={}){
   validateRow(row,language);parseEnergyUnit(energyUnit);
   const recorded=diaryRecordedAmount(row);
   const value=row.active?recorded===null?'—':`${amount(displayValue(recorded,row.unit,energyUnit),language)} ${displayUnit(row.unit,energyUnit)}`:message(language,'inactive');
+  let reading=esc(value);
+  if(stackEnergy && row.id==='calories' && row.active && recorded!==null){
+    const energy=displayValue(recorded,row.unit,energyUnit).toLocaleString(language,{minimumFractionDigits:1,maximumFractionDigits:1});
+    reading=`${esc(energy)} <small class="md-food-energy-unit">${esc(displayUnit(row.unit,energyUnit))}</small>`;
+  }
   const detail=row.status==='partial'?message(language,'partial',row.coverage):!row.active?message(language,'enableNet'):'';
-  return `<span class="diary-table-amount" data-diary-column="${esc(row.id)}" data-value="${recorded??''}" data-status="${row.status}" data-unit="${esc(row.unit)}">${label?`<span>${esc(diaryAmountName(row,energyUnit,language,mobileNutrientName(row,language)))}: </span>`:''}<span>${esc(value)}</span>${detail?`<small>${esc(detail)}</small>`:''}</span>`;
+  return `<span class="diary-table-amount" data-diary-column="${esc(row.id)}" data-value="${recorded??''}" data-status="${row.status}" data-unit="${esc(row.unit)}">${label?`<span>${esc(diaryAmountName(row,energyUnit,language,mobileNutrientName(row,language)))}: </span>`:''}<span>${reading}</span>${detail?`<small>${esc(detail)}</small>`:''}</span>`;
 }
 /** Table cells consume canonical facts. The table policy never changes recorded intake. */
 export function diaryEntryAmount(entry,table,{energyUnit='kcal',language='en',exerciseFractionDigits=2}={}){
@@ -37,6 +42,6 @@ export function diaryEntryAmount(entry,table,{energyUnit='kcal',language='en',ex
   return `<span data-diary-column="calories">${esc(value)}<small class="diary-exercise-summary">${esc(coreText('burned',{},language))}</small></span>`;
  }
  const facts=entry.facts;
- return renderDiaryTableAmount(projectDiaryTarget({id,totals:facts.nutrients,targets:{},coverage:facts.coverage,complete:false,carbohydrate:facts.carbohydrate,carbohydrates:facts.carbohydrates}),{energyUnit,language});
+ return renderDiaryTableAmount(projectDiaryTarget({id,totals:facts.nutrients,targets:{},coverage:facts.coverage,complete:false,carbohydrate:facts.carbohydrate,carbohydrates:facts.carbohydrates}),{energyUnit,language,stackEnergy:true});
 }
 export function diaryGroupSubtotal(table,group,options){const rows=table?.groups.find(row=>row.name===group)?.rows??[];return rows.length?`<span class="md-group-subtotal" data-diary-group-subtotal="${esc(group)}">${rows.map(row=>renderDiaryTableAmount(row,{...options,label:true})).join('')}</span>`:'';}
