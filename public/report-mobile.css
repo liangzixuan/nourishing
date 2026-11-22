@@ -105,3 +105,13 @@
 .report-nutrient-groups [data-depth="1"]{margin-inline-start:16px}
 .report-nutrient-groups [data-depth="2"]{margin-inline-start:32px}
 .report-nutrient-groups [data-depth="3"]{margin-inline-start:48px}
+
+.report-energy-legend:has(.report-unlogged-macro){gap:0}
+.report-energy-legend>.report-unlogged-macro{display:flex;min-height:35px;padding:6px 0;gap:8px}
+.report-unlogged-macro i{flex:none}
+.report-unlogged-macro small{font-size:inherit}
+
+.report-budget-rows{grid-column:1/-1;margin:0}
+.report-budget-rows>div{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:35px;border-bottom:1px solid var(--line);font-size:calc(14rem / 18)}
+.report-budget-rows>div:last-child{border:0;font-weight:700}
+.report-budget-rows dd{margin:0}

@@ -2141,6 +2141,16 @@ html[data-nourishing-native] [data-nourishing-health-connect]{display:inline-fle
 .report-nutrient-groups [data-depth="2"]{margin-inline-start:32px}
 .report-nutrient-groups [data-depth="3"]{margin-inline-start:48px}
 
+.report-energy-legend:has(.report-unlogged-macro){gap:0}
+.report-energy-legend>.report-unlogged-macro{display:flex;min-height:35px;padding:6px 0;gap:8px}
+.report-unlogged-macro i{flex:none}
+.report-unlogged-macro small{font-size:inherit}
+
+.report-budget-rows{grid-column:1/-1;margin:0}
+.report-budget-rows>div{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:35px;border-bottom:1px solid var(--line);font-size:calc(14rem / 18)}
+.report-budget-rows>div:last-child{border:0;font-weight:700}
+.report-budget-rows dd{margin:0}
+
 /* /food-entry-source/mobile-food-entry.css */
 #sheet.mf-detail{width:100%;max-width:700px;height:100dvh;max-height:100dvh;margin:0 auto;border:0;border-radius:0;padding:0;background:var(--bg);color:var(--ink);overflow-y:auto;overscroll-behavior:contain;font-size:1rem;}
 #sheet.mf-detail>.dialog-head{display:none;}

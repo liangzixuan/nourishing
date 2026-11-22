@@ -1,3 +1,4 @@
+import {diaryEnergyBudget} from './diary-summary-source/energy-budget.js';
 import {dc} from './discover-cloud-messages.js';
 import {reportTargetSections,reportNutrientGroups,reportAdditionalNutrients,reportBalanceSection,reportBalanceDetail,reportScoreDetail} from './report-mobile-source/report-sections.js';
 import {scoreDisplayName} from './report-source/public/score-language.js';
@@ -13,8 +14,23 @@ import {carbohydrateDisplayLabel} from './report-source/public/carbohydrate-desc
 import {escape as e,symbol,bottomNavigation,ranges,rangeLabel,resolveRange} from './dashboard-source/discover-ui.js';
 import {displayValue,displayUnit} from './dashboard-source/energy-display.js';
 const number=value=>Number.isFinite(value)?value.toLocaleString(uiLanguage(),{maximumFractionDigits:1}):"—";
-const day=value=>new Date(value+'T12:00:00Z').toLocaleDateString(uiLanguage(),{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'});
-const rangeText=options=>`${day(options.from)} – ${day(options.to)}`;
+function reportPeriod({from,to}){
+ const dates=new Intl.DateTimeFormat(uiLanguage(),{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'});
+ return t('mobileReport.dailyRange',{range:dates.formatRange(new Date(from+'T12:00:00Z'),new Date(to+'T12:00:00Z'))});
+}
+function energyBudgetCard(capture){
+ const {report,energyUnit:unit}=capture;
+ const means=Object.fromEntries(report.energy.summary.map(row=>[row.id,row.mean]));
+ const {mode,label,value}=diaryEnergyBudget(means,capture.display?.energyBudget);
+ const base=mode==='balance'?'expenditure':'target';
+ // Both components must cover the same days as the reported difference.
+ const days=report.energy.days.filter(day=>Number.isFinite(day.energy[mode]));
+ const average=id=>days.length?days.reduce((sum,day)=>sum+day.energy[id],0)/days.length:null;
+ const consumed=average('consumed');
+ const amount=kcal=>Number.isFinite(kcal)?number(displayValue(kcal,'kcal',unit))+' '+unit:'—';
+ const rows=[[t(base==='target'?'mobileDiary.target':'mobileDiary.expenditure'),average(base)],[t('mobileDiary.consumed'),consumed>0?-consumed:consumed],[label,value]];
+ return `<section class="dc-card report-energy-chart report-remaining" data-report-energy-kind="${mode}"><div class="report-energy-heading"><h2>${e(label)}</h2></div><div class="report-energy-ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46"/></svg><div class="report-energy-center"><strong>${number(displayValue(value,'kcal',unit))}</strong>${Number.isFinite(value)?`<span>${e(unit)}</span>`:''}</div></div><dl class="report-budget-rows">${rows.map(([name,reading])=>`<div><dt>${e(name)}</dt><dd>${e(amount(reading))}</dd></div>`).join('')}</dl></section>`;
+}
 const action=(label,id,extra='')=>`<button type="button" class="dc-button" data-report-action="${id}" ${extra}>${label}</button>`;
 
 // Adapt the original MobileNutritionReport markup to the authenticated cloud capture.
@@ -27,7 +43,7 @@ export function mountMobileReport({root,value,onApply,onPrint,rangeSelection={}}
   const {report,energyUnit:unit}=capture;
   const macros=[report.nutrients.find(row=>row.id==="protein"),{...report.carbohydrate.summary,name:carbohydrateDisplayLabel(report.carbohydrate.definition,uiLanguage())},report.nutrients.find(row=>row.id==="fat")].filter(Boolean);
   const macroDetails=`<div class="report-macro-details"><h3>${t('settings.macroLabel')}</h3><div class="mobile-report-macro-list">${macros.map(row=>`<div data-mobile-macro="${e(row.id)}"><span>${e(nutrientDisplayName(row,uiLanguage()))}</span><strong>${number(row.mean)}${row.mean===null?'':' '+e(row.unit)}</strong></div>`).join('')}</div></div>`;
-  root.innerHTML=`<div class="mobile-report-toolbar">${action(`<span>${e(t('reportNutrientDetail.average'))}: ${e(rangeText(options()))}</span>${symbol('chevron_right')}`,'dates')}<p role="status"></p></div><div class="mobile-report-body"><div class="mobile-report-overview">${report.energy.summary.filter(row=>['consumed','expenditure','remaining'].includes(row.id)).map(row=>row.id==='consumed'?energyChartMarkup(report.energy,unit,'consumed',macroDetails,uiLanguage()):row.id==='expenditure'?energyChartMarkup(report.energy,unit,'expenditure','',uiLanguage()):`<section class="dc-card report-energy-chart report-remaining" data-report-energy-kind="remaining"><div class="report-energy-heading"><h2>${t('energyReport.remaining')}</h2></div><div class="report-energy-ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46"/></svg><div class="report-energy-center"><strong>${number(displayValue(row.mean,'kcal',unit))}</strong>${row.mean===null?'':`<span>${e(unit)}</span>`}</div></div></section>`).join('')}</div>`+reportTargetSections(capture,expanded)+reportNutrientGroups(capture,expanded)+reportBalanceSection(capture,expanded)+reportAdditionalNutrients(capture,expanded)+action(e(t('mobileReport.more')),'options')+'</div>';
+  root.innerHTML=`<div class="mobile-report-toolbar">${action(`<span>${e(reportPeriod(options()))}</span>${symbol('chevron_right')}`,'dates')}<p role="status"></p></div><div class="mobile-report-body"><div class="mobile-report-overview">${report.energy.summary.filter(row=>['consumed','expenditure','remaining'].includes(row.id)).map(row=>row.id==='consumed'?energyChartMarkup(report.energy,unit,'consumed',macroDetails,uiLanguage()):row.id==='expenditure'?energyChartMarkup(report.energy,unit,'expenditure','',uiLanguage()):energyBudgetCard(capture)).join('')}</div>`+reportTargetSections(capture,expanded)+reportNutrientGroups(capture,expanded)+reportBalanceSection(capture,expanded)+reportAdditionalNutrients(capture,expanded)+action(e(t('mobileReport.more')),'options')+'</div>';
   root.querySelector('[data-report-action=options]').onclick=openOptions;
   root.querySelector('[data-report-action=dates]').onclick=openDates;
   root.querySelectorAll('[data-report-nutrient]').forEach(button=>button.onclick=()=>openNutrient(button));

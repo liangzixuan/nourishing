@@ -86,6 +86,7 @@ test('Discover headers route Newsfeed and settings per tab; source Report render
   assert.equal(requests.length,0,'Dashboard does not load the full Report');
   await page.getByRole('button',{name:'Dashboard',exact:true}).click();assert.equal(requests.length,0);
   await page.getByRole('button',{name:'Charts',exact:true}).click();await page.locator('[data-manage]').waitFor();assert.equal(requests.length,0,'Charts does not load the full Report');
+  state.settings.energyPolicy={version:1,resting:{mode:'custom',kcal:1600},baseline:{mode:'multiplier',factor:.2},activity:{mode:'manual'},thermicEffect:false,target:{mode:'calculated',adjustmentKcal:0,includeAboveBaseline:true},display:'balance'};
   reportWait=new Promise(resolve=>releaseReport=resolve);const started=page.waitForRequest(r=>new URL(r.url()).pathname==='/api/nutrition-report');
   await page.getByRole('button',{name:'Report',exact:true}).click();await started;
   const cancelled=page.waitForEvent('requestfailed',{predicate:r=>new URL(r.url()).pathname==='/api/nutrition-report'});
@@ -93,6 +94,11 @@ test('Discover headers route Newsfeed and settings per tab; source Report render
   failNextReport=true;await page.getByRole('button',{name:'Report',exact:true}).click();await page.locator('[data-retry]').waitFor();await page.locator('[data-retry]').click();await page.locator('.mobile-report-toolbar').waitFor();assert.equal(requests.length,3);await page.waitForFunction(()=>Object.keys(window.Chart?.instances??{}).length===2);
   assert.equal(await page.locator('[data-report-energy-kind=consumed]').count(),1);assert.equal(await page.locator('[data-report-energy-kind=expenditure]').count(),1);assert.ok(await page.locator('[data-mobile-category]').count()>3);assert.equal(await page.locator('.report-filters').count(),0);
   assert.equal(await page.locator('[data-report-energy-kind=consumed] .report-energy-center strong').textContent(),'389');
+  const budget=page.locator('[data-report-energy-kind=balance]');
+  assert.equal(await budget.locator('h2').textContent(),'Deficit');
+  assert.deepEqual(await budget.locator('dd').allTextContents(),['1,920 kcal','-389 kcal','1,531 kcal']);
+  assert.match(await page.locator('[data-report-energy-kind=expenditure] [data-energy-slice=exercise]').innerText(),/0 kcal/);
+
   assert.equal(await page.locator('[data-report-section=macros] [data-report-nutrient]').count(),4);
   assert.equal(await page.locator('[data-report-section=highlights] [data-report-nutrient]').count(),8);
   assert.equal(await page.locator('[data-report-score]').count(),8);
@@ -184,6 +190,12 @@ test('Discover headers route Newsfeed and settings per tab; source Report render
   await start.fill('2026-11-01');await end.fill('2026-11-07');await choice(dates,'Apply').click();
   await dates.waitFor({state:'detached'});assert.equal(requests.at(-1).from,'2026-11-01');assert.equal(requests.at(-1).to,'2026-11-07');
   assert.equal(await settings.getByRole('alert',{includeHidden:true}).textContent(),'');
+  const reportRange=dateButton.locator('span').first();
+  assert.match(await reportRange.textContent(),/^Daily Average for Nov 1\s*[–-]\s*7, 2026$/);
+  const unlogged=page.locator('[data-report-energy-kind=consumed] .report-unlogged-macro');
+  assert.deepEqual(await unlogged.locator('b').allTextContents(),['Protein','Carbs','Fat']);
+  assert.deepEqual(await unlogged.locator('small').allTextContents(),Array(3).fill('Added when logged'));
+  assert.equal(await energy.textContent(),'—');
   await captureFilter('settings',settings);await openDates();
   assert.equal(await choice(dates,'Custom Range').getAttribute('aria-pressed'),'true');
   assert.equal(await start.inputValue(),'2026-11-01');assert.equal(await end.inputValue(),'2026-11-07');
