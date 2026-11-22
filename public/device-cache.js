@@ -37,6 +37,12 @@ export async function invalidateDeviceCachePaths(shouldDrop,ticket=state.verifie
  if(!state.verified||!same(state.verified,ticket))return null;const current=state.initialization,result=await invalidatePrivateResponsePaths(ticket,shouldDrop,options);
  if(current!==state.initialization||!same(state.verified,ticket))return null;if(result)state.verified=result;return result;
 }
+// Display reads remain valid across same-account cache invalidation.
+export async function hasCurrentDeviceOwner(owner){
+ if(!same(state.verified,owner))return false;
+ const current=await currentPrivateResponseTicket(owner);
+ return !!current&&same(state.verified,owner);
+}
 export async function hasCurrentDeviceCache(ticket){
  if(!state.verified||!same(state.verified,ticket))return false;const current=state.initialization,active=await currentPrivateResponseTicket(ticket);
  return current===state.initialization&&same(state.verified,ticket)&&!!active&&active.cacheRevision===ticket.cacheRevision;

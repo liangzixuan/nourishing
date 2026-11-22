@@ -10,8 +10,9 @@ function wait(promise,signal){
  if(!signal)return promise;if(signal.aborted)return Promise.reject(aborted());
  return new Promise((resolve,reject)=>{const cancel=()=>reject(aborted());signal.addEventListener('abort',cancel,{once:true});promise.then(resolve,reject).finally(()=>signal.removeEventListener('abort',cancel));});
 }
-export async function cachedRead(path,fetchValue,signal,{fresh=false,waitForRefresh=false,onRefresh,onCached}={}){
+export async function cachedRead(path,fetchValue,signal,{fresh=false,waitForRefresh=false,onRefresh,onCached,owner}={}){
  const cached=await readDeviceCache(path).catch(()=>({}));if(signal?.aborted)throw aborted();
+ if(owner&&(cached.ticket?.ownerId!==owner.ownerId||cached.ticket?.epoch!==owner.epoch))throw aborted();
  if(!cached.ticket)return fetchValue(signal);
  const key=JSON.stringify([cached.ticket,path]);
  const refresh=()=>{
@@ -29,7 +30,7 @@ export async function cachedRead(path,fetchValue,signal,{fresh=false,waitForRefr
   if(Date.now()-cached.savedAt>=FRESH_MS){
    if(waitForRefresh)return refresh();
    void refresh().then(value=>{
-    if(!signal?.aborted&&JSON.stringify(value)!==JSON.stringify(cached.value))onRefresh?.(value);
+    if(!signal?.aborted&&JSON.stringify(value)!==JSON.stringify(cached.value))return onRefresh?.(value);
    }).catch(()=>{});
   }
   onCached?.(cached);return cached.value;

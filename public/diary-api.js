@@ -3,7 +3,7 @@ import {lockCurrentOffline} from './offline-session.js';
 import {requestErrorMessage} from './request-error.js';
 import {coreText} from './core-cloud-messages.js';
 import {cacheableRead,cachedRead} from './device-requests.js';
-import {readDeviceCache,invalidateDeviceCache,invalidateDeviceCachePaths} from './device-cache.js';
+import {readDeviceCache,hasCurrentDeviceOwner,invalidateDeviceCache,invalidateDeviceCachePaths} from './device-cache.js';
 import {queueBackgroundWrite,overlayPendingResponse} from './background-writes.js';
 
 let pending=null;
@@ -72,8 +72,13 @@ async function network(path,body,signal,{reviewSavedAt}={}){
 export async function request(path,body,signal,options){
  if(!body&&cacheableRead(path)){
   const original=options?.onRefresh;let nutrientTargetRevision;
-  const value=await cachedRead(path,currentSignal=>network(path,body,currentSignal),signal,{...options,onCached:cached=>{nutrientTargetRevision=cached.nutrientTargetRevision;},...(original?{onRefresh:async next=>original(await overlayPendingResponse(path,next))}:{})});
-  return options?.canonical?value:overlayPendingResponse(path,value,nutrientTargetRevision);
+  const project=async(value,revision,canonical=false)=>{
+   const result=canonical?value:await overlayPendingResponse(path,value,revision);
+   if(options?.owner&&!await hasCurrentDeviceOwner(options.owner))throw new DOMException('Account changed.','AbortError');
+   return result;
+  };
+  const value=await cachedRead(path,currentSignal=>network(path,body,currentSignal),signal,{...options,onCached:cached=>{nutrientTargetRevision=cached.nutrientTargetRevision;},...(original?{onRefresh:async next=>original(await project(next))}:{})});
+  return project(value,nutrientTargetRevision,options?.canonical);
  }
  // Read-only POST operations never invalidate saved screens or store their
  // transient review tokens. A lost mutation reply still invalidates affected views.

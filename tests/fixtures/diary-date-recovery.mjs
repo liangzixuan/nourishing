@@ -38,7 +38,6 @@ export async function checkColdDateRecovery(page,{origin,from,to,marker,scenario
    await page.locator('[data-tab=foods]').waitFor();
   }
   if(scenario==='lock')await page.evaluate(async()=>{await(await import('/offline-store.js')).lockOfflineAccount();});
-  if(scenario==='switch')await page.evaluate(async()=>{await(await import('/device-cache.js')).initializeDeviceCache('different-account');});
   const response=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/offline');
   snapshotGate.resolve();const snapshot=await response;const snapshotStatus=snapshot.status();
   assert.equal(snapshotStatus,scenario==='unavailable'?503:200);

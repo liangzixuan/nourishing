@@ -220,6 +220,7 @@ async function load({reuseUnchanged = false, selectedDate} = {}) {
       if (retained) showDay(retained);
     }
     const result = await request('/api/diary?date=' + day, undefined, undefined, {
+      owner: ticket,
       onRefresh: next => {
         if (!current() || document.querySelector('dialog[open]')) return;
         showDay(next);

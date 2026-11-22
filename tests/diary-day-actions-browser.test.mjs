@@ -9,6 +9,7 @@ import {waitForOutboxIdle} from './fixtures/browser-outbox.mjs';
 import {diaryStoreFixture} from './fixtures/diary-store.mjs';
 import {barcodeAssets} from '../scripts/package-barcode-assets.mjs';
 import {chooseDiaryDate} from '../scripts/diary-test-navigation.mjs';
+import {checkSwitchedDateRead} from './fixtures/diary-switched-read.mjs';
 import {checkColdDateRecovery} from './fixtures/diary-date-recovery.mjs';
 import {initialState,act} from '../server/domain/workspace.mjs';
 import {createDataRepository} from '../server/data-repository.mjs';
@@ -27,6 +28,8 @@ test('Diary day actions use the chosen calendar date and preserve other days',as
  }
  for(const [foodId,time] of [['one','19:00'],['two','07:30']])act(seed,'entry.add',{foodId,date:day,group:'Lunch',amount:1,time});
  act(seed,'note.add',{date:previous,group:'Lunch',text:'Previous-day fixture'});
+ const older='2026-11-18',olderMarker='Older-day fixture';
+ act(seed,'note.add',{date:older,group:'Lunch',text:olderMarker});
  seed.settings.completedDays=[previous];
  const fixture=diaryStoreFixture(seed),store=createWorkspaceStore(fixture.db,'fixture'),repo=createDataRepository(fixture.db,'fixture');
  const service={current:async()=>({id:'fixture',email:'fixture@example.com'}),offlineSnapshot:()=>store.offlineSnapshot(),
@@ -48,15 +51,23 @@ test('Diary day actions use the chosen calendar date and preserve other days',as
  handler=createWebHandler({config:{origin},service,assets});
  try{
   browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});
-  for(const scenario of ['recover','newer','leave','switch','lock','unavailable']){
+  for(const scenario of ['recover','newer','leave','switch','switch-response','lock','unavailable']){
    const cold=await browser.newContext({timezoneId:'UTC',viewport:{width:448,height:907},serviceWorkers:'block',extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}});
    try{
     const p=await cold.newPage();
     await p.clock.setFixedTime(new Date(day+'T12:00:00Z'));p.setDefaultTimeout(10000);
-    await checkColdDateRecovery(p,{origin,from:day,to:previous,marker:'Previous-day fixture',scenario});
+    if(scenario.startsWith('switch'))await checkSwitchedDateRead(p,{origin,from:day,to:older,marker:olderMarker,ownerId:'fixture',source:scenario==='switch'?'snapshot':'canonical'});
+    else await checkColdDateRecovery(p,{origin,from:day,to:previous,marker:'Previous-day fixture',scenario});
    }catch(error){throw new Error('Cold date '+scenario+' failed',{cause:error});}
    finally{await cold.close();}
   }
+  const networkOnly=await browser.newContext({timezoneId:'UTC',serviceWorkers:'block',extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}});
+  try{
+   await networkOnly.addInitScript(()=>Object.defineProperty(window,'indexedDB',{value:undefined}));
+   const p=await networkOnly.newPage();p.setDefaultTimeout(10000);await p.clock.setFixedTime(new Date(day+'T12:00:00Z'));
+   await p.goto(origin+'/diary');await chooseDiaryDate(p,older);
+   await p.locator('[data-diary-record]').getByText(olderMarker,{exact:true}).waitFor();
+  }finally{await networkOnly.close();}
   const page=await browser.newPage({viewport:{width:412,height:915},colorScheme:'dark',extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}});
   page.setDefaultTimeout(8000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(origin+'/diary');await page.locator('.md-diary').waitFor();await chooseDiaryDate(page,day);

@@ -20,6 +20,44 @@ async function fixture(){
 }
 const reached=async gate=>{let timer;try{await Promise.race([gate.entered,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Expected network request did not reach its gate')),8000);})]);}finally{clearTimeout(timer);}};
 
+test('an initiating owner and epoch must still own a projected result before return or refresh',async()=>{
+ const f=await fixture(),{page}=f;
+ try{
+  // Pause only a completed local projection. HTTP, IndexedDB and auth remain real fixture operations.
+  await page.route('**/background-writes.js',route=>route.fulfill({contentType:'text/javascript',body:`
+   export * from './background-writes.js?real';
+   import {overlayPendingResponse as project} from './background-writes.js?real';
+   export async function overlayPendingResponse(path,value,revision){
+    const projected=await project(path,value,revision);
+    if(projected?.version===2&&window.projectionGate){window.projectionStarted=true;await projectionGate.promise;}
+    return projected;
+   }
+  `}));
+  await f.authenticate();
+  for(const refresh of [false,true]){
+   const path=refresh?'/api/charts':'/api/diary';
+   f.route(path,{version:1});await page.evaluate(async({path,refresh})=>{
+    await cache.initializeDeviceCache('alice');window.initiator=cache.captureDeviceOwner();
+    if(refresh){await api.request(path);const now=Date.now.bind(Date);Date.now=()=>now()+31000;}
+    window.projectionGate=Promise.withResolvers();window.projectionStarted=false;window.refreshValues=[];
+   },{path,refresh});
+   f.route(path,{version:2});
+   const result=page.evaluate(path=>api.request(path,undefined,undefined,{owner:initiator,onRefresh:v=>refreshValues.push(v)}).catch(error=>error.name),path);
+   if(refresh)assert.deepEqual(await result,{version:1});
+   await page.waitForFunction(()=>window.projectionStarted);
+   await page.evaluate(async refresh=>{
+    await cache.initializeDeviceCache('bob');
+    if(refresh)await cache.initializeDeviceCache('alice');
+    projectionGate.resolve();
+   },refresh);
+   if(!refresh)assert.equal(await result,'AbortError');
+   await page.evaluate(()=>new Promise(done=>setTimeout(done,0)));
+   assert.deepEqual(await page.evaluate(()=>refreshValues),[]);
+   assert.equal(await page.evaluate(async path=>(await cache.readDeviceCache(path)).value,path),undefined);
+  }
+ }finally{await f.close();}
+});
+
 test('real request cache needs authentication, returns persisted screens immediately and refreshes stale screens once',async()=>{
  const f=await fixture();try{const {page}=f;f.route('/api/diary',{version:1});await f.authenticate();assert.deepEqual(await page.evaluate(()=>api.request('/api/diary')),{version:1});
   const unused=f.hold('/api/diary',{version:2});assert.deepEqual(await page.evaluate(()=>api.request('/api/diary')),{version:1});assert.equal(f.requests.filter(r=>r.path==='/api/diary').length,1);
