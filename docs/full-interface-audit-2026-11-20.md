@@ -684,6 +684,14 @@ For 181–183, the matched local fixture rounds carbohydrates to 891 kcal. The r
 
 All 721 local tests passed against the release commit. CI passed 718 and skipped 3. The site and three functions reached ready. All 232 checked production assets, 907 offline paths and 246 startup paths matched the clean build. The disposable account was deleted. Release commit `5e2f464`. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/44992879073)
 
+### Production verification for 1.1.26
+
+Nourishing deployed `fdc4f93` to the site and all three functions. The clean build matched 246 live assets, 911 offline paths and 248 startup paths. The exact release commit passed 722 tests locally. CI passed 719 and skipped three. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/44997670454)
+
+On production, the Heart Rate and food editors saved changes that survived a fresh read. Food Search restored its previous sort. Walking opened from the Cardio grid. Deleting the last disabled repeat returned to the empty list and preserved its food definition. The activity picker and Height picker preserved the saved values on Cancel.
+
+Account opened its three edit dialogs and returned to its preferences. The lower Dashboard opened Log Weight, the weight range, Fasting and New Fast. Cancel and Back preserved the account state. Contact Us opened an addressed draft for the food-corrections mailbox. The test intercepted the email handoff. Support retains its manual and public issue tracker. The user chose to omit other missing About, Support and referral destinations.
+
 ### Findings from all 333 retained states
 
 The private `.local/full-parity/reference-review-1.1.15.json` has one comparison note per reference. The retained numbers run through 335 and omit 38 and 277. Each note points to the capture used and records visible differences or limits. The index includes state 335, the final empty test day. For reference 78 the test removed the last temporary food entry and returned to the empty Diary through Foods. The reference also shows an orange “Error loading food” banner. Its trigger remains unknown. Some comparisons use older releases. Recheck a difference against current code or a matching fixture before changing the app. The behavior index links 333 retained states to at least one named flow. Each link covers the actions named in its receipt. The additional links include existing biometric, Water, Recipe, Targets and calendar tests. A fresh local check swiped a saved meal, exploded its five ingredients, canceled their selected deletion, then confirmed it and verified the unrelated entry survived reload. These counts describe the index only. A recorded Cancel check, for example, leaves Save and Delete unverified unless the receipt also exercises them.

@@ -11,7 +11,7 @@ The remaining audit continues from the release recorded below. Screen-level comp
 - Repository: `C:/Users/zixua/Documents/REA/nourishing-cloud`
 - GitHub: `https://github.com/liangzixuan/nourishing`, branch `master`.
 - Production: `https://nourishing.app`, Appwrite site and database, public account registration.
-- Verified production release **1.1.25** at `5e2f4647b30d6d4fc21227072befe14db6919eb6`. All 721 local tests passed against the release commit. CI passed 718 and skipped 3. The site and three functions reached ready. All 232 checked production assets, 907 offline paths and 246 startup paths matched the clean build. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/44992879073)
+- Verified production release **1.1.26** at `fdc4f93637a24b9c25c7f27ddafff7872eacd113`. All 722 local tests passed. CI passed 719 and skipped three. The site and all three functions reached ready. The clean build matched 246 production assets, 911 offline paths and 248 startup paths. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/44997670454)
 - This is a PWA for Android and iOS. Health Connect and deliberately removed native integrations are excluded. Do not restart native APK work or use Azure.
 - Product wording must say Nourishing, not Cronometer. Reference filenames and historical evidence can retain Cronometer.
 - Preserve unrelated untracked `android/` and `docs/superpowers/`. Never stage them automatically.
