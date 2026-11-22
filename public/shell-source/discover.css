@@ -63,7 +63,7 @@ html[data-nourishing-native] [data-nourishing-health-connect]{display:inline-fle
 .brand-mark:has(.nourishing-app-icon){padding:0;background:transparent;}
 
 .dc-header-actions{display:flex;align-items:center;gap:2px;}.dc-header-actions .dc-symbol-svg{width:26px;height:26px;}
-.dc-dashboard-settings .dc-row{min-height:61px;}.dc-dashboard-settings .dc-unavailable{font:calc(13rem / 18) Lato,sans-serif;color:var(--muted);margin-left:auto;}.dc-switch:disabled{opacity:.5;cursor:default;}
+.dc-dashboard-settings .dc-row{min-height:61px;}.dc-switch:disabled{opacity:.5;cursor:default;}
 .dc-reset-streak h2{text-align:center;margin:26px 16px 18px;}.dc-reset-streak>p{padding:0 16px;margin:18px 0;line-height:1.4;}.dc-reset-streak .dc-row{background:var(--paper);margin-top:16px;min-height:66px;}
 .dc-streak-input{display:flex;gap:8px;align-items:center;}.dc-streak-input input{width:86px;min-height:34px;border:1px solid var(--line);background:transparent;text-align:right;padding:6px 10px;}
 .dc-current-streak{text-align:center;margin:10px 16px;font:700 calc(16rem / 18) Karla,Lato,sans-serif;}.dc-reset-streak .dc-pill{margin-top:42px;}

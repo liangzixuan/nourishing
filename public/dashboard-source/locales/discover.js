@@ -245,12 +245,6 @@ const rows={
     "Schlafdaten anzeigen",
     "Mostrar dados de sono"
   ],
-  "show.referrals": [
-    "Show Referrals",
-    "Afficher le parrainage",
-    "Empfehlungen anzeigen",
-    "Mostrar indicações"
-  ],
   "show.weightGoal": [
     "Show Weight Goal Overview",
     "Afficher l’objectif de poids",
@@ -262,18 +256,6 @@ const rows={
     "Afficher la série",
     "Serie anzeigen",
     "Mostrar sequência"
-  ],
-  "unavailable": [
-    "Unavailable",
-    "Indisponible",
-    "Nicht verfügbar",
-    "Indisponível"
-  ],
-  "noReferrals": [
-    "Nourishing has no referral program.",
-    "Nourishing ne propose pas de programme de parrainage.",
-    "Nourishing hat kein Empfehlungsprogramm.",
-    "O Nourishing não tem programa de indicações."
   ],
   "streak.reset": [
     "Reset Streak",

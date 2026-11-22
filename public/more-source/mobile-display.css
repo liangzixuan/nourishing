@@ -12,7 +12,8 @@
 .mds-overview button.mds-row{min-height:57px}
 .mds-overview button.mds-row:last-child{min-height:56px}
 .mds-overview label.mds-row{min-height:61px}
-.mds-overview .mds-row{font-size:calc(14rem / 18)}
+.mds-overview .mds-row{font-size:calc(15rem / 18)}
+.mds-overview .mds-row img{width:24px;height:24px}
 .mds-overview .mds-row strong{font-size:calc(15rem / 18)}
 .mds-diary-options .mds-row{min-height:56px;font-size:calc(14rem / 18)}
 .mds-diary-switches .mds-row strong,.mds-diary-options .mds-row strong,.mds-font-mode .mds-row strong{font-size:calc(15rem / 18)}

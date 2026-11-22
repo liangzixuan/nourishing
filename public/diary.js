@@ -4,7 +4,7 @@ import './client-errors.js';
 import './pwa.js';
 import {startBackgroundWrites,onBackgroundWriteStatus} from './background-writes.js';
 import {localLibraryItem, localDiaryView} from './local-engine.js';
-import {walkingEfforts,priorWalkingEfforts} from './local-diary-projection.js';
+import {defaultDiaryQuickAddAction,walkingEfforts,priorWalkingEfforts} from './local-diary-projection.js';
 import {pushBackHandler} from './back-history.js';
 import {startDeviceSync, warmDeviceViews} from './device-sync.js';
 import {startPrivateImages} from './private-images.js';
@@ -617,7 +617,7 @@ function handleDocumentClick(event) {
   if (action === 'complete-day') return toggleCompleteDay(target);
   if (action === 'add-food' || action === 'group-quick-add') {
     group = target.dataset.group ?? defaultGroup(diary?.groups);
-    return runAddAction(action === 'group-quick-add' ? diary.presentation.groupQuickAdd[group] ?? 'food' : 'food', group);
+    return runAddAction(action === 'group-quick-add' ? diary.presentation.groupQuickAdd[group] ?? defaultDiaryQuickAddAction : 'food', group);
   }
   if(target.hasAttribute('data-md-delete')){
     const row=target.closest('[data-diary-record]');

@@ -1727,7 +1727,7 @@ html[data-nourishing-native] [data-nourishing-health-connect]{display:inline-fle
 .brand-mark:has(.nourishing-app-icon){padding:0;background:transparent;}
 
 .dc-header-actions{display:flex;align-items:center;gap:2px;}.dc-header-actions .dc-symbol-svg{width:26px;height:26px;}
-.dc-dashboard-settings .dc-row{min-height:61px;}.dc-dashboard-settings .dc-unavailable{font:calc(13rem / 18) Lato,sans-serif;color:var(--muted);margin-left:auto;}.dc-switch:disabled{opacity:.5;cursor:default;}
+.dc-dashboard-settings .dc-row{min-height:61px;}.dc-switch:disabled{opacity:.5;cursor:default;}
 .dc-reset-streak h2{text-align:center;margin:26px 16px 18px;}.dc-reset-streak>p{padding:0 16px;margin:18px 0;line-height:1.4;}.dc-reset-streak .dc-row{background:var(--paper);margin-top:16px;min-height:66px;}
 .dc-streak-input{display:flex;gap:8px;align-items:center;}.dc-streak-input input{width:86px;min-height:34px;border:1px solid var(--line);background:transparent;text-align:right;padding:6px 10px;}
 .dc-current-streak{text-align:center;margin:10px 16px;font:700 calc(16rem / 18) Karla,Lato,sans-serif;}.dc-reset-streak .dc-pill{margin-top:42px;}
@@ -1877,7 +1877,7 @@ html[data-nourishing-native] [data-nourishing-health-connect]{display:inline-fle
 .dc-badge .dc-symbol-svg{width:70%;height:70%}
 .dc-symbol-svg{width:24px;height:24px}
 .dc-macro-list span{min-width:0;overflow-wrap:anywhere}.dc-macro-list strong{flex:none}
-.dashboard-panel{padding:16px}.dashboard-panel .dc-row{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:61px;border-bottom:1px solid var(--line)}.dashboard-panel .dc-row>span{min-width:0}.dc-switch{width:48px;height:28px;accent-color:var(--green);flex:none;cursor:pointer}.dc-switch:disabled{opacity:.4}.dc-unavailable{color:var(--muted);font-size:.8rem}.dc-reset-streak{margin-top:24px}.dc-reset-streak p{color:var(--muted);font-size:.9rem}.dc-streak-input{display:flex;gap:8px;align-items:center}.dc-streak-input input{width:86px}.dc-sleep-facts{display:grid;gap:10px}.dc-sleep-facts>div{display:flex;justify-content:space-between;gap:14px}.dc-sleep-facts dd{margin:0}.dc-sleep-record{border-bottom:1px solid var(--line);padding:16px 0}.dc-sleep-record h3,.dc-sleep-source h3{font-size:1rem}.dc-sleep-record pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.75rem}.dc-sleep-record details,.dc-sleep-notes{margin-top:12px}.dc-news-empty{text-align:center}.dashboard-panel [hidden]{display:none!important}
+.dashboard-panel{padding:16px}.dashboard-panel .dc-row{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:61px;border-bottom:1px solid var(--line)}.dashboard-panel .dc-row>span{min-width:0}.dc-switch{width:48px;height:28px;accent-color:var(--green);flex:none;cursor:pointer}.dc-switch:disabled{opacity:.4}.dc-reset-streak{margin-top:24px}.dc-reset-streak p{color:var(--muted);font-size:.9rem}.dc-streak-input{display:flex;gap:8px;align-items:center}.dc-streak-input input{width:86px}.dc-sleep-facts{display:grid;gap:10px}.dc-sleep-facts>div{display:flex;justify-content:space-between;gap:14px}.dc-sleep-facts dd{margin:0}.dc-sleep-record{border-bottom:1px solid var(--line);padding:16px 0}.dc-sleep-record h3,.dc-sleep-source h3{font-size:1rem}.dc-sleep-record pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.75rem}.dc-sleep-record details,.dc-sleep-notes{margin-top:12px}.dc-news-empty{text-align:center}.dashboard-panel [hidden]{display:none!important}
 
 .dc-summary-header,.dc-summary-period-row{display:flex;align-items:center;gap:8px}
 .dc-summary-header{justify-content:space-between;min-height:24px}
@@ -3005,7 +3005,8 @@ body.discover-mobile dialog.mee-activity-editor{
 .mds-overview button.mds-row{min-height:57px}
 .mds-overview button.mds-row:last-child{min-height:56px}
 .mds-overview label.mds-row{min-height:61px}
-.mds-overview .mds-row{font-size:calc(14rem / 18)}
+.mds-overview .mds-row{font-size:calc(15rem / 18)}
+.mds-overview .mds-row img{width:24px;height:24px}
 .mds-overview .mds-row strong{font-size:calc(15rem / 18)}
 .mds-diary-options .mds-row{min-height:56px;font-size:calc(14rem / 18)}
 .mds-diary-switches .mds-row strong,.mds-diary-options .mds-row strong,.mds-font-mode .mds-row strong{font-size:calc(15rem / 18)}

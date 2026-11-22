@@ -1,6 +1,7 @@
 import {escape as e} from '../html.js';
 import {t} from '../app-language.js';
 import {diaryGroupSlots} from '../local-group-rename.js';
+import {diaryQuickAddAction} from '../local-diary-projection.js';
 import {coreText} from '../core-cloud-messages.js';
 export function mobileDiarySettings({settings:s,row,toggle,groupsOpen}){
  const slots=diaryGroupSlots(s).map((group,i)=>{
@@ -19,7 +20,7 @@ export function mobileDiarySettings({settings:s,row,toggle,groupsOpen}){
 }
 export function mobileQuickAddSettings({settings:s,row}){
  const groups=s.groups.map(group=>{
-  const action=s.diaryQuickAdd.shortcuts.find(item=>item.group===group)?.action??'food';
+  const action=diaryQuickAddAction(s.diaryQuickAdd,group);
   return row('quickAdd:'+group,group,action==='all'?coreText('display.allShortcuts'):t('shortcut.'+action));
  });
  return `<section class="mds-group mds-quick-add">${groups.join('')}</section>`;

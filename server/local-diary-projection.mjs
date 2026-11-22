@@ -4,6 +4,7 @@ import {diaryToolsPresentation} from './diary-presentation.mjs';
 import {mergeEntryUpdate} from './domain/entry-update-fields.mjs';
 import {setDiaryGroupOrder,sortAllDiaryEntriesByTime} from './domain/diary-order.mjs';
 import {nutrientTargetSettingsPatch,nutrientTargetCustomPatch,resetNutrientTargetSettings} from './domain/nutrient-target-edit.mjs';
+export {diaryQuickAddAction,defaultDiaryQuickAddAction} from './domain/diary-quick-add.mjs';
 export {resolvePauseLife} from './domain/pause-life.mjs';
 export {createReportNutrientDetail} from './domain/report-nutrient-detail.mjs';
 export {createNutrientTargetsView} from './domain/nutrient-target-view.mjs';

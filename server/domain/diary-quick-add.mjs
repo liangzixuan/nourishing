@@ -16,7 +16,7 @@ export function parseDiaryQuickAdd(value,groups){
   });
   return {version:1,shortcuts};
 }
-export function diaryQuickAddAction(settings,group){
-  const policy=settings.diaryQuickAdd===undefined?null:parseDiaryQuickAdd(settings.diaryQuickAdd,settings.groups);
-  return policy?.shortcuts.find(row=>row.group===group)?.action??'food';
+export const defaultDiaryQuickAddAction='all';
+export function diaryQuickAddAction(policy,group){
+  return policy?.shortcuts.find(row=>row.group===group)?.action??defaultDiaryQuickAddAction;
 }

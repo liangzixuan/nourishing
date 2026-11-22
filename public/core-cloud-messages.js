@@ -156,7 +156,6 @@ const rows={
  'display.allShortcuts':['All','Toutes','Alle','Todas'],
  'display.systemTheme':['System','Système','System','Sistema'],
  'display.browserSize':['Use browser text size','Utiliser la taille du texte du navigateur','Schriftgröße des Browsers verwenden','Usar tamanho do texto do navegador'],
- 'display.browserDefault':['Browser default','Réglage du navigateur','Browserstandard','Padrão do navegador'],
  'display.fontHelp':['Use your browser’s text size, or choose a custom size for Nourishing.','Utilisez la taille du texte du navigateur ou choisissez une taille pour Nourishing.','Verwende die Schriftgröße deines Browsers oder wähle eine Größe für Nourishing.','Use o tamanho do texto do navegador ou escolha um tamanho para o Nourishing.'],
  'display.scaleValue':['{{scale}}x Default','{{scale}}× par défaut','{{scale}}× Standard','{{scale}}× padrão'],
  'display.customFont':['Custom font size','Taille du texte personnalisée','Eigene Schriftgröße','Tamanho de texto personalizado'],

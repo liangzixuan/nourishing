@@ -1,4 +1,5 @@
 import {t,uiLanguage,appLanguages} from '../app-language.js';
+import {diaryQuickAddAction} from '../local-diary-projection.js';
 import {coreText} from '../core-cloud-messages.js';
 import {isStandardMobileNutrient,mobileNutrientName} from '../mobile-nutrient-groups.js';
 import {formatMessage as targetMessage} from '../targets-source/message-format.js';
@@ -12,7 +13,7 @@ const icon='<img src="/more-source/icons/chevron-right.svg" alt="">';
 const toggles=()=>[['showTimestamp',t('mobileDisplay.showTimestamp')],['showEnergy',t('mobileDisplay.showEnergy')],['showMacros',t('mobileDisplay.showMacros')],['showHighlights',t('mobileDisplay.showHighlights')],['showWater',t('mobileDisplay.showWater')]];
 const listScreens=new Set(['energyUnit','summaryNutrient','groupSubtotals']);
 const subtotalModes=()=>[['none',t('settings.none')],['calories',t('targetSetup.macro.calories')],['macros',t('settings.macroLabel')],['summary',coreText('display.sameSummary')]];
-const themes=(systemLabel=t('settings.system'))=>[['light',t('settings.light')],['dark',t('settings.dark')],['system',systemLabel]];
+const themes=systemLabel=>[['light',t('settings.light')],['dark',t('settings.dark')],['system',systemLabel]];
 const fontScaleNumber=scale=>Number(scale).toLocaleString(uiLanguage(),{minimumFractionDigits:2,maximumFractionDigits:2});
 function fontScaleControl(settings){
  const scale=fontScaleNumber(settings.fontScale),factor=uiLanguage()==='en'?'x':'×';
@@ -61,7 +62,7 @@ export class MobileDisplay {
   if(name===from&&enabled===!this.settings.diaryGroups.hiddenGroups.includes(from))return;
   void this.save({slot,from,name,enabled},null,'group.editSlot');
  }
- row(key,label,value){return `<button type="button" class="mds-row" data-display-open="${e(key)}"><strong>${e(label)}</strong><span class="mds-value">${e(value)}</span>${icon}</button>`;}
+ row(key,label,value=''){return `<button type="button" class="mds-row" data-display-open="${e(key)}"><strong>${e(label)}</strong>${value?`<span class="mds-value">${e(value)}</span>`:''}${icon}</button>`;}
  summaryLabel(id){
   if(id==='none')return t('settings.none');
   if(id==='calories')return coreText('display.energyConsumed');
@@ -121,9 +122,9 @@ export class MobileDisplay {
    this.row('dashboard',t('discover.title.dashboard-settings'),''),
    this.row('diary',t('mobileDisplay.diary'),''),
    this.row('calendar',t('mobileDisplay.calendar'),''),
-   this.row('theme',t('mobileDisplay.theme'),themes().find(([key])=>key===settings.theme)?.[1]??t('settings.dark')),
-   this.row('fontScale',t('mobileDisplay.fontScale'),settings.matchDeviceFontSize?coreText('display.browserDefault'):settings.fontScale.toFixed(2)+'×'),
-   this.row('appLanguage',t('mobileDisplay.appLanguage'),appLanguages.find(row=>row.id===settings.appLanguage)?.name??'English')
+   this.row('theme',t('mobileDisplay.theme')),
+   this.row('fontScale',t('mobileDisplay.fontScale')),
+   this.row('appLanguage',t('mobileDisplay.appLanguage'))
   ];
   return `<section class="mds-group mds-overview">${rows.join('')}</section><section class="mds-group mds-overview">${this.row('water',waterText('settings'),'')}</section>`;
  }
@@ -148,7 +149,9 @@ export class MobileDisplay {
  }
 
  lock(){for(const node of [...this.root.querySelectorAll('input,button:not([data-display-retry]):not([data-display-reload])'),...this.dialog?.querySelectorAll('input,[data-display-apply]')??[]])node.disabled=this.saving||!!this.pending||node.hasAttribute('data-display-font')&&this.settings.matchDeviceFontSize;this.root.querySelector('[data-display-root]')?.setAttribute('aria-busy',String(this.saving));}
- open(key){if(this.saving||this.pending)return;if(['pauseLife','dashboard','water'].includes(key)){this.onDestination?.(key);return;}if(listScreens.has(key)||['diary','calendar','quickAdd','fontScale'].includes(key)){this.navigation.screen=key;this.render();window.scrollTo(0,0);return;}const options=key==='appLanguage'?appLanguages.map(({id,name})=>[id,name]):key.startsWith('quickAdd:')?this.quickAddActions.map(({id})=>[id,t('shortcut.'+id)]):key==='theme'?themes(coreText('display.systemTheme')):null;if(!options)return;this.closeDialog();const dialog=document.createElement('dialog');this.dialog=dialog;this.returnFocus=document.activeElement;dialog.className=key==='theme'?'mds-dialog mds-theme-dialog settings-compact-dialog':'mds-dialog';dialog.setAttribute('aria-label',key.startsWith('quickAdd:')?key.slice(9):({appLanguage:t('mobileDisplay.appLanguage'),theme:t('mobileDisplay.changeTheme')})[key]);dialog.innerHTML=`<form><h2>${e(dialog.getAttribute('aria-label'))}</h2><div class="mds-choices">${options.map(([value,label])=>`<label><input type="radio" name="choice" value="${e(value)}" ${value===(key.startsWith('quickAdd:')?this.settings.diaryQuickAdd.shortcuts.find(row=>row.group===key.slice(9))?.action??'food':['summaryNutrient','groupSubtotals'].includes(key)?this.settings.diaryTable[key]:this.settings[key])?'checked':''}><span>${e(label)}</span></label>`).join('')}</div><p role="status" aria-live="polite"></p><footer><button type="button" data-display-cancel>${e(t('mobileDisplay.cancel'))}</button><button type="submit" data-display-apply>${e(t('mobileDisplay.ok'))}</button></footer></form>`;
+ open(key){if(this.saving||this.pending)return;if(['pauseLife','dashboard','water'].includes(key)){this.onDestination?.(key);return;}if(listScreens.has(key)||['diary','calendar','quickAdd','fontScale'].includes(key)){this.navigation.screen=key;this.render();window.scrollTo(0,0);return;}const options=key==='appLanguage'?appLanguages.map(({id,name})=>[id,name]):key.startsWith('quickAdd:')?this.quickAddActions.map(({id})=>[id,t('shortcut.'+id)]):key==='theme'?themes(coreText('display.systemTheme')):null;if(!options)return;this.closeDialog();const dialog=document.createElement('dialog');this.dialog=dialog;this.returnFocus=document.activeElement;dialog.className=key==='theme'?'mds-dialog mds-theme-dialog settings-compact-dialog':'mds-dialog';dialog.setAttribute('aria-label',key.startsWith('quickAdd:')?key.slice(9):({appLanguage:t('mobileDisplay.appLanguage'),theme:t('mobileDisplay.changeTheme')})[key]);
+  const selected=key.startsWith('quickAdd:')?diaryQuickAddAction(this.settings.diaryQuickAdd,key.slice(9)):this.settings[key];
+  dialog.innerHTML=`<form><h2>${e(dialog.getAttribute('aria-label'))}</h2><div class="mds-choices">${options.map(([value,label])=>`<label><input type="radio" name="choice" value="${e(value)}" ${value===selected?'checked':''}><span>${e(label)}</span></label>`).join('')}</div><p role="status" aria-live="polite"></p><footer><button type="button" data-display-cancel>${e(t('mobileDisplay.cancel'))}</button><button type="submit" data-display-apply>${e(t('mobileDisplay.ok'))}</button></footer></form>`;
  dialog.addEventListener('cancel',event=>{event.preventDefault();this.closeDialog();});dialog.addEventListener('click',event=>{if(event.target.closest('[data-display-cancel]'))this.closeDialog();if(event.target===dialog){const b=dialog.getBoundingClientRect();if(event.clientX<b.left||event.clientX>b.right||event.clientY<b.top||event.clientY>b.bottom)this.closeDialog();}});
  dialog.querySelector('form').addEventListener('submit',event=>{event.preventDefault();const value=new FormData(event.target).get('choice');if(value!==null)void this.save(key.startsWith('quickAdd:')?{diaryQuickAdd:{version:1,shortcuts:[...this.settings.diaryQuickAdd.shortcuts.filter(row=>row.group!==key.slice(9)),{group:key.slice(9),action:value}]}}:{[key]:value},dialog);});document.body.append(dialog);dialog.showModal();
  }

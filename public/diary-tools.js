@@ -1,7 +1,7 @@
 import {mountRecipeEditor} from './recipe-editor.js';
 import {mountMealEditor} from './composite-editor.js';
 import {localWorkspaceState} from './local-engine.js';
-import {createDisplayView,projectLocalDiary} from './local-diary-projection.js';
+import {createDisplayView,diaryQuickAddAction,projectLocalDiary} from './local-diary-projection.js';
 import {prepareLocalDiaryReview,prepareSelectionEditor} from './diary-preparation.js';
 import {request,queueCommand} from './diary-api.js';
 import {mealActionText as mealText} from './meal-action-messages.js';
@@ -83,7 +83,7 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
   const origin=content.firstElementChild;
   const state=await localWorkspaceState(),view=state?createDisplayView(state):await request('/api/display'),policy=view.settings.diaryQuickAdd;
   if(!origin?.isConnected)return;
-  const current=policy.shortcuts.find(row=>row.group===group)?.action??'food';
+  const current=diaryQuickAddAction(policy,group);
   actionForm(coreText('diary.groupQuickAdd'),`<div class="diary-tools-choices">${view.quickAddActions.map(({id})=>`<label><input type="radio" name="action" value="${e(id)}" ${id===current?'checked':''}><span>${e(t('shortcut.'+id))}</span></label>`).join('')}</div>`,values=>save('display.save',{diaryQuickAdd:{version:1,shortcuts:[...policy.shortcuts.filter(row=>row.group!==group),{group,action:values.action}]}}));
  }
  function menu(){

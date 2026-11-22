@@ -1,4 +1,4 @@
-import {diaryQuickAddAction} from './domain/diary-quick-add.mjs';
+import {diaryQuickAddAction,parseDiaryQuickAdd} from './domain/diary-quick-add.mjs';
 import {resolveScoreDisplay} from './domain/nutrition-score-policy.mjs';
 import {nutrientDisplayOptions} from './domain/nutrient-display.mjs';
 import {parseDiscoverSettings} from './domain/discover-settings.mjs';
@@ -12,6 +12,7 @@ export function diarySummaryPresentation(state, summary, clock) {
  settings.showScores=display.show;
  settings.waterSettings=resolveWaterSettings(source);
  const byId=new Map(summary.scores.map(score=>[score.id,score]));
+ const quickAdd=source.diaryQuickAdd==null?null:parseDiaryQuickAdd(source.diaryQuickAdd,source.groups);
  const asOf=(clock?.now??new Date()).toISOString();
- return {settings,groupQuickAdd:Object.fromEntries(source.groups.map(group=>[group,diaryQuickAddAction(source,group)])),scoreDisplay:display,nutrientOptions:nutrientDisplayOptions,scores:display.selected.map(id=>byId.get(id)).filter(Boolean),fasting:{visible:discover.fastingEnabled&&discover.fastingDiary,asOf,...captureFastingTiming(state,asOf)}};
+ return {settings,groupQuickAdd:Object.fromEntries(source.groups.map(group=>[group,diaryQuickAddAction(quickAdd,group)])),scoreDisplay:display,nutrientOptions:nutrientDisplayOptions,scores:display.selected.map(id=>byId.get(id)).filter(Boolean),fasting:{visible:discover.fastingEnabled&&discover.fastingDiary,asOf,...captureFastingTiming(state,asOf)}};
 }
