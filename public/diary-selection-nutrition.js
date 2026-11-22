@@ -1,4 +1,4 @@
-import {withDiaryReviewWorkspace} from './diary-preparation.js';
+import {withDiaryWorkspace} from './diary-preparation.js';
 import {captureDeviceOwner} from './device-cache.js';
 import {diarySelectionNutrition} from './local-diary-projection.js';
 import {remapWriteReferences} from './write-identities.js';
@@ -13,7 +13,7 @@ export function watchDiarySelection({selection,onChange}){
   if(lifetime.signal.aborted)return;
   const current=++serial;clearTimeout(timer);requestController?.abort();const reading=new AbortController();requestController=reading;
   try{
-   const result=await withDiaryReviewWorkspace(({state,recordIds})=>{
+   const result=await withDiaryWorkspace(({state,recordIds})=>{
     const resolved=remapWriteReferences(structuredClone(selection),recordIds);
     // A row deleted while this view was opening no longer contributes.
     const currentSelection=resolved.scope==='selected'?{...resolved,records:resolved.records.filter(ref=>state[ref.collection]?.some(row=>row.id===ref.id&&row.date===resolved.date))}:resolved;

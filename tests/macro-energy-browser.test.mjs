@@ -34,6 +34,15 @@ test('source Macro Energy supports canonical modes, advanced settings, cancellat
   browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915},extraHTTPHeaders:{Cookie:'__Host-nourishing_session=fixture'}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));await page.goto(base);
   const ready=async()=>{try{await page.locator('[data-mte-ready]').waitFor()}catch(e){console.log(await page.locator('body').innerText(),errors);throw e}},open=async()=>{await page.getByRole('button',{name:'Targets',exact:true}).click();await page.getByRole('button',{name:'Macro & Energy Targets',exact:true}).click();await ready();};await open();
   const goal=structuredClone(state().settings.energyPolicy.target),save=()=>page.locator('[data-mte-save]').click(),form=()=>page.locator('[data-mte-form]');
+  await page.locator('[data-mte-breakdown]').click();
+  const formula=page.locator('.mte-breakdown .mte-formula');
+  assert.deepEqual(await formula.getByRole('button').allTextContents(),['Profile','Weight Goal','Energy Expenditure']);
+  await formula.getByRole('button',{name:'Profile',exact:true}).click();
+  await page.locator('[data-profile-row=age]').waitFor();
+  await page.getByRole('button',{name:'Back',exact:true}).click();await ready();
+  assert.equal(await page.locator('[data-mte-breakdown]').getAttribute('aria-expanded'),'true');
+  await page.locator('[data-mte-breakdown]').click();
+  assert.equal(await formula.count(),0);assert.equal(attempts.length,0);
   await page.locator('[data-mte-mode=ratios]').click();await form().locator('[name=protein]').fill('30');await form().locator('[name=carbohydrate]').fill('40');await form().locator('[name=protein]').blur();await save();await ready();assert.equal(state().settings.macroPolicy.mode,'ratios');assert.equal(state().settings.macroPolicy.values.protein,30);assert.deepEqual(state().settings.energyPolicy.target,goal);
   await page.locator('[data-mte-breakdown]').click();await page.locator('[data-mte-baseline]').waitFor();await page.locator('[data-mte-advanced]').click();await page.locator('[name=macroCalculation][value=ratio]').check();await save();await ready();assert.equal(state().settings.macroPolicy.basis,'kcal');await page.locator('[name=macroUnits][value=grams]').check();await save();await ready();assert.equal(state().settings.macroPolicy.basis,'grams');
   await page.locator('[data-mte-mode=fixed]').click();await form().locator('[name=protein]').fill('120');await page.locator('[name=macroUnits][value=kcal]').check();assert.ok(Math.abs(Number(await form().locator('[name=protein]').inputValue())-2008.32)<.01);await save();await ready();assert.equal(state().settings.targets.protein,120);assert.equal(state().settings.macroPolicy,undefined);

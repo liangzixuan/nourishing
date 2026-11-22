@@ -1,4 +1,5 @@
-import {readDeviceCache} from './device-cache.js';
+import {captureDeviceOwner,readDeviceCache} from './device-cache.js';
+import {withDiaryWorkspace} from './diary-preparation.js';
 import './client-errors.js';
 import './pwa.js';
 import {startBackgroundWrites,onBackgroundWriteStatus} from './background-writes.js';
@@ -107,6 +108,7 @@ let diaryReceivedAt = 0;
 let date = today();
 let diary = null;
 let loadId = 0;
+let requestedDiaryDate;
 let searchId = 0;
 let group = 'Uncategorized';
 let selectedDiaryGroup = null;
@@ -183,8 +185,20 @@ sheet.addEventListener('cancel', event => {
   if (!pickerCleanup?.back?.()) close();
 });
 
-async function load({reuseUnchanged = false} = {}) {
+async function load({reuseUnchanged = false, selectedDate} = {}) {
   const id = ++loadId;
+  const day = selectedDate ?? date;
+  const ticket = captureDeviceOwner();
+  requestedDiaryDate = selectedDate;
+  const current = () => id === loadId && (!selectedDate || view === 'diary');
+  const showDay = result => {
+    if (selectedDate) date = selectedDate;
+    notice.textContent = '';
+    applyDiary(result);
+  };
+  const selectedDayCopy = hydrate => withDiaryWorkspace(
+    ({state}) => localDiaryView(day, diary ?? {}, state), () => null, {ticket,hydrate},
+  );
   notice.textContent = '';
   page.setAttribute('aria-busy', 'true');
   try {
@@ -200,30 +214,47 @@ async function load({reuseUnchanged = false} = {}) {
       startBackgroundWrites();
       startPrivateImages();
     }
-    const result = await request('/api/diary?date=' + date, undefined, undefined, {
+    if (selectedDate && ticket) {
+      const retained = await selectedDayCopy(false);
+      if (!current() || document.querySelector('dialog[open]')) return;
+      if (retained) showDay(retained);
+    }
+    const result = await request('/api/diary?date=' + day, undefined, undefined, {
       onRefresh: next => {
-        if (id !== loadId || document.querySelector('dialog[open]')) return;
-        applyDiary(next);
+        if (!current() || document.querySelector('dialog[open]')) return;
+        showDay(next);
       },
     });
-    if (id !== loadId) return;
+    if (!current()) return;
     // Revalidate the current in-memory snapshot without replacing live controls.
     // A pending editor keeps its captured revision; its save still uses the server guard.
     if (reuseUnchanged && (sameDiarySnapshot(diary, result) || document.querySelector('dialog[open]'))) return;
-    applyDiary(result);
+    showDay(result);
   } catch (error) {
     // The response cache may have been invalidated by a completed save. The
     // retained account snapshot still owns the diary, including pending edits.
-    const retained=id===loadId?await localDiaryView(date,diary??{}):null;
-    if(id===loadId&&retained){applyDiary(retained);return;}
-    if (id === loadId) {
-      notice.textContent = error.message;
-      if (view === 'diary' && !reuseUnchanged) {
-        page.innerHTML = `<p class="empty"><button type="button" data-reload>${e(coreText('retry'))}</button></p>`;
-      }
+    if (!current() || error.name === 'AbortError' || error.status === 401) return;
+    const transient = !error.status || [408,409,429].includes(error.status) || error.status >= 500;
+    let retained;
+    try {
+      retained = selectedDate ? await selectedDayCopy(transient) : await localDiaryView(day,diary??{});
+    } catch (failure) {
+      if (failure.name === 'AbortError' || failure.status === 401) return;
+    }
+    if (!current()) return;
+    if (retained) {
+      if (!selectedDate || !document.querySelector('dialog[open]')) showDay(retained);
+      return;
+    }
+    notice.textContent = error.message;
+    if (view === 'diary' && !reuseUnchanged) {
+      page.innerHTML = `<p class="empty"><button type="button" data-reload>${e(coreText('retry'))}</button></p>`;
     }
   } finally {
-    if (id === loadId) page.setAttribute('aria-busy', 'false');
+    if (id === loadId) {
+      page.setAttribute('aria-busy', 'false');
+      requestedDiaryDate = undefined;
+    }
   }
 }
 
@@ -252,6 +283,11 @@ function selectTab(id) {
 
 let diaryFastingAction;
 function leaveView() {
+  if (requestedDiaryDate) {
+    loadId++;
+    requestedDiaryDate = undefined;
+    page.setAttribute('aria-busy','false');
+  }
   diaryFastingAction?.dispose();diaryFastingAction=null;
   waterPanel?.dispose();waterPanel=null;waterMenu?.close(false);waterMenu=null;waterAmount?.close();waterAmount=null;
   diaryCalendar?.close();
@@ -441,15 +477,7 @@ function openInsights(mode = 'suggestions', day = date) {
 
 async function switchDiaryDate(nextDate) {
   diaryTools.reset();
-  date = nextDate;
-  if (diary && view === 'diary') {
-    const local = await localDiaryView(nextDate, diary);
-    if (local && date === nextDate && view === 'diary') {
-      diary = local;
-      render();
-    }
-  }
-  return load({reuseUnchanged: true});
+  return load({reuseUnchanged: true,selectedDate: nextDate});
 }
 
 function openDiaryCalendar() {
@@ -468,7 +496,7 @@ function openDiaryCalendar() {
 }
 
 function shiftDiaryDate(delta) {
-  const d = new Date(date + 'T12:00:00');
+  const d = new Date((requestedDiaryDate ?? date) + 'T12:00:00');
   d.setDate(d.getDate() + delta);
   return switchDiaryDate(formatDate(d));
 }
@@ -877,6 +905,7 @@ function updateRecordDisplay(recordDisplay, {add = [], removeIds = new Set(), mo
 }
 
 function foodEditor({item, entry, quantity, returnSearch, viewState}) {
+  const parentLibrary = library;
   pickerCleanup = mountFoodEntry({
     item,
     entry,
@@ -933,7 +962,7 @@ function foodEditor({item, entry, quantity, returnSearch, viewState}) {
         const projected=await localDiaryView(date,diary);if(projected)diary=projected;
         if (view === 'diary') render();
       }
-
+      if (type === 'entry.add') parentLibrary?.entryAdded(value.date === today());
     },
     onBack: returnSearch ?? search,
     onAdjust: () =>

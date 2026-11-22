@@ -88,9 +88,9 @@ export async function localPreviewDiaryItem(payload,reviewedFood) {
   }
 }
 
-export async function localDiaryView(targetDate, template) {
+export async function localDiaryView(targetDate, template, state) {
   if (!targetDate || !template) return null;
-  const state = await readLocalState();
+  state ??= await readLocalState();
   if (!state) return null;
   try {
     const {projectLocalDiary} = await import('./local-diary-projection.js');

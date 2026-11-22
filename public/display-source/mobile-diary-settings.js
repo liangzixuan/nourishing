@@ -11,10 +11,10 @@ export function mobileDiarySettings({settings:s,row,toggle,groupsOpen}){
     <input type="checkbox" role="switch" class="dc-switch" data-group-enabled aria-label="${e(label)}" ${enabled?'checked':''}>
   </div>`;
  }).join('');
- return `<section class="mds-group">${toggle('showGroups',coreText('display.showGroups'),s.diaryGroups.showGroups)}${toggle('alwaysExpandMeals',t('mobileDisplay.alwaysExpandMeals'),s.alwaysExpandMeals)}</section>
+ return `<section class="mds-group mds-diary-switches">${toggle('showGroups',t('mobileDisplay.showGroups'),s.diaryGroups.showGroups)}${toggle('alwaysExpandMeals',t('mobileDisplay.alwaysExpandMeals'),s.alwaysExpandMeals)}</section>
   <p class="mds-meals-help">${e(coreText('display.expandMealsHelp'))}</p>
-  <h2 class="mds-section-title">${e(t('mobileDisplay.diaryGroupsTitle'))}</h2><section class="mds-group">${row('groupSubtotals',t('mobileDisplay.groupSubtotals'),{none:t('settings.none'),calories:coreText('calories'),macros:t('settings.macroLabel'),summary:coreText('display.sameSummary')}[s.diaryTable.groupSubtotals])}${row('quickAdd',t('mobileDisplay.quickAdd'),'')}</section>
-  <details class="mds-group mds-groups" data-display-groups ${groupsOpen?'open':''}><summary>${e(t('mobileDisplay.groups'))}</summary>${slots}</details>`;
+  <h2 class="mds-section-title">${e(t('mobileDisplay.diaryGroupsTitle'))}</h2><section class="mds-group mds-diary-options">${row('groupSubtotals',t('mobileDisplay.groupSubtotals'),{none:t('settings.none'),calories:coreText('calories'),macros:t('settings.macroLabel'),summary:coreText('display.sameSummary')}[s.diaryTable.groupSubtotals])}${row('quickAdd',t('mobileDisplay.quickAdd'),'')}</section>
+  <details class="mds-group mds-groups" data-display-groups ${groupsOpen?'open':''}><summary><span>${e(t('mobileDisplay.groups'))}</span><img src="/more-source/icons/chevron-right.svg" alt=""></summary>${slots}</details>`;
 
 }
 export function mobileQuickAddSettings({settings:s,row}){

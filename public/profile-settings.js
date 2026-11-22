@@ -20,7 +20,7 @@ export function mountProfile({page,headerRoot,...ui}){
  void ensureDeviceSnapshot().catch(()=>{});
  let disposed=false,data,editor;const abort=new AbortController(),root=document.createElement('section');root.className='profile-page';page.replaceChildren(root);
  const alive=()=>!disposed&&root.isConnected,date=()=>typeof ui.date==='function'?ui.date():ui.date;
- headerRoot.innerHTML=moreBackHeader(t('settings.profile'));
+ if(headerRoot)headerRoot.innerHTML=moreBackHeader(t('settings.profile'));
  async function load(fresh=false){root.setAttribute('aria-busy','true');try{const apply=value=>{if(alive()){data=value;render();}};apply(await request('/api/profile-settings?date='+encodeURIComponent(date()),null,abort.signal,{fresh,onRefresh:value=>{if(!editor)apply(value);}}));}catch(error){if(alive()){root.innerHTML='<p class="empty" role="status">'+e(error.message)+`</p><button class="profile-retry" data-profile-reload>${t('mobileSuggest.retry')}</button>`;}}finally{if(alive())root.setAttribute('aria-busy','false');}}
  const changed=async next=>{if(next){data=next;if(alive())render();void ui.onChange?.();return;}await ui.onChange?.();if(alive())await load(true);};
  function render(){

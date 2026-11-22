@@ -19,7 +19,7 @@ import {AnchoredMenu} from './targets-source/anchored-menu.js';
 import {formatMessage} from './targets-source/message-format.js';
 import {moreIcon} from './more-source/menu-view.js';
 import {openTargetPolicies} from './target-policies.js';
-import {openProfileSettings} from './profile-settings.js';
+import {mountProfile,openProfileSettings} from './profile-settings.js';
 import {openDiarySummaryAction} from './diary-summary-actions.js';
 
 const main=["weight",'macros','scheduler','expenditure','nutrients','scores'];
@@ -30,12 +30,13 @@ const m=key=>formatMessage(uiLanguage(),'mobileTargets.'+key);
 export function mountTargets({page,headerRoot,date,show,close,header,content,onChange=async()=>{},onExit,initialScreen='home',initialNutrient=null}){
  const root=document.createElement('section');root.className='targets-page';page.replaceChildren(root);
  const events=new AbortController();let child=null,menu=null,disposed=false,screen='home',operation=0;
+ let returnToMacros=null;
  document.body.classList.add('targets-mobile');
  const alive=()=>!disposed&&root.isConnected;
  const day=()=>typeof date==='function'?date():date;
  const expenditureSession={pending:null,listener:null},weightSession={pending:null,listener:null},macroSession={pending:null,listener:null},schedulerSession={pending:null,listener:null},limitsSession={pending:null,listener:null},setupSession={pending:null,listener:null};
  const ui={date,show,close,header,content,onChange:async()=>{await onChange();if(alive()&&child)await child.load();}};
- function heading(title){headerRoot.innerHTML=`<div class="mm-child-header"><button type="button" data-mt-back aria-label="${t('discover.back')}">${moreIcon('chevron-left')}</button><h1>${e(title)}</h1><button type="button" data-mt-menu aria-label="${e(m('tools'))}" aria-haspopup="menu" aria-expanded="false">⋮</button></div>`;}
+ function heading(title,withTools=true){headerRoot.innerHTML=`<div class="mm-child-header"><button type="button" data-mt-back aria-label="${t('discover.back')}">${moreIcon('chevron-left')}</button><h1>${e(title)}</h1>${withTools?`<button type="button" data-mt-menu aria-label="${e(m('tools'))}" aria-haspopup="menu" aria-expanded="false">⋮</button>`:'<span></span>'}</div>`;}
  function reset(){operation++;menu?.close(false);menu=null;child?.dispose();child=null;}
  function home(){reset();screen='home';heading(m('title'));root.innerHTML=`<section class="mt-home mm-group" data-mt-home>${main.map(id=>`<button type="button" class="mm-row" data-mt-open="${id}"><span>${e(m(id))}</span>${moreIcon('chevron-right','mm-chevron')}</button>`).join('')}</section>`;window.scrollTo(0,0);}
  async function summary(action){
@@ -49,8 +50,13 @@ export function mountTargets({page,headerRoot,date,show,close,header,content,onC
   }
   catch(error){if(alive()&&marker.isConnected)marker.textContent=error.message;}
  }
- function open(id){
+ function open(id,macroView){
   menu?.close();
+  returnToMacros=null;
+  if(id==='profile'){
+   reset();screen=id;heading(t('settings.profile'),false);
+   window.scrollTo(0,0);child=mountProfile({page:root,date:day,onChange});return;
+  }
   if(id==='guided'){
    reset();screen=id;heading(m('guided'));root.innerHTML='<section class="target-setup"></section>';window.scrollTo(0,0);
    child=new TargetSetupPanel({language:uiLanguage(),root:root.firstElementChild,date:day(),session:setupSession,onSaved:onChange});return;
@@ -64,8 +70,8 @@ export function mountTargets({page,headerRoot,date,show,close,header,content,onC
    child=new MobileMacroScheduler({root:root.querySelector('#mobile-macro-scheduler-root'),header:headerRoot,date:day(),language:uiLanguage(),energyUnit:'kcal',session:schedulerSession,onSaved:onChange,onNavigate:open,onDiary:onExit,initialAction:id==="day"?"day":'home'});return;
   }
   if(id==='macros'){
-   reset();screen='macros';heading(m('macros'));root.innerHTML='<div class="mt-section"><div id="mobile-macro-energy-root"></div></div>';window.scrollTo(0,0);
-   child=new MobileMacroEnergy({root:root.querySelector('#mobile-macro-energy-root'),date:day(),language:uiLanguage(),energyUnit:'kcal',session:macroSession,onSaved:onChange,onNavigate:open});return;
+   reset();screen='macros';heading(m('macros'),false);root.innerHTML='<div class="mt-section"><div id="mobile-macro-energy-root"></div></div>';window.scrollTo(0,0);
+   child=new MobileMacroEnergy({root:root.querySelector('#mobile-macro-energy-root'),date:day(),language:uiLanguage(),energyUnit:'kcal',session:macroSession,onSaved:onChange,initialView:macroView,onNavigate:(next,view)=>{open(next);if(screen!=='macros')returnToMacros=view;}});return;
   }
   if(id==="weight"){
    reset();screen="weight";heading(m("weight"));root.innerHTML='<div class="mt-section"><div id="mobile-weight-goal-root"></div></div>';window.scrollTo(0,0);
@@ -86,7 +92,7 @@ export function mountTargets({page,headerRoot,date,show,close,header,content,onC
   if(id==='references'||id==='body'){void openProfileSettings({...ui,initialScreen:id});return;}
   if(id==='weekday')void openTargetPolicies(ui);
  }
- function back(){if(menu){menu.close();return true;}if(child?.back?.())return true;if(screen!=='home'){home();return true;}return false;}
+ function back(){if(menu){menu.close();return true;}if(child?.back?.())return true;if(returnToMacros){open('macros',returnToMacros);return true;}if(screen!=='home'){home();return true;}return false;}
  headerRoot.addEventListener('click',event=>{
   if(event.target.closest('[data-mt-back]')){if(!back())onExit();}
   else if(event.target.closest('[data-mt-menu]')){

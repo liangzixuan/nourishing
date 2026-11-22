@@ -21,6 +21,21 @@ import {mealActionText} from './meal-action-messages.js';
 const labels=()=>({food:t("mobileSearch.food"),recipe:t("recipeEditor.recipe"),meal:fc("meal")});
 export function mountLibrary({page,show,close,header,content,date,openEntry,onChange,headerRoot}){
  let data,kind='food',screen='home',showMealTip=true,sort='recent',retired=false,query='',disposed=false,serial=0,extrasCleanup,optionsSheet,foodEditor,mealEditor,recipeEditor,collectionBack=null,deleteDialog;
+ const confirmation=document.createElement('p');
+ confirmation.className='library-log-confirmation';
+ confirmation.setAttribute('role','status');
+ page.after(confirmation);
+ let confirmationTimer;
+ function clearConfirmation(){
+  clearTimeout(confirmationTimer);
+  confirmation.textContent='';
+ }
+ function entryAdded(isToday){
+  if(disposed)return;
+  clearConfirmation();
+  confirmation.textContent=fc(isToday?'addedToTodaysDiary':'addedToSelectedDiary');
+  confirmationTimer=setTimeout(clearConfirmation,4500);
+ }
  // A browser Back request reaches the outer sheet before its editor handles it.
  const backFromDelete=event=>{
   if(!deleteDialog)return;
@@ -29,7 +44,7 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
   deleteDialog.dismiss();
  };
  window.addEventListener('nourishing-back',backFromDelete,{capture:true});
- const leaveCollection=({popHistory=true}={})=>{screen='home';query='';if(collectionBack){const handle=collectionBack;collectionBack=null;handle.release({popHistory});}render();};
+ const leaveCollection=({popHistory=true}={})=>{clearConfirmation();screen='home';query='';if(collectionBack){const handle=collectionBack;collectionBack=null;handle.release({popHistory});}render();};
  const alive=id=>!disposed&&id===serial;
  async function reload(){
   const id=++serial,{ticket}=await readDeviceCache('/api/library'),apply=value=>{if(alive(id)){data={...value,ticket};render();}};
@@ -130,5 +145,5 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
    const editorMount=itemKind==='recipe'?mountRecipeEditor:mountMealEditor;const mounted=editorMount({...importOptions,onImported:prepared=>editor('recipe',null,prepared.recipe,{imported:prepared}),saved,data,draft,show,close,content,date,onSaved:savedChange,onAction:action,openEntry});if(itemKind==='recipe')recipeEditor=mounted;else mealEditor=mounted;return;
   }
  }
- render();reload();return {reload,openItem,dispose(){disposed=true;serial++;window.removeEventListener('nourishing-back',backFromDelete,{capture:true});deleteDialog?.close(false);if(collectionBack){collectionBack.release({popHistory:false});collectionBack=null;}retirement.dispose();foodEditor?.dispose();mealEditor?.dispose();recipeEditor?.dispose();extrasCleanup?.();optionsSheet?.close(false);itemMenu.dispose();data=null;page.removeEventListener('click',select);headerRoot?.removeEventListener('click',select);document.body.classList.remove('foods-home-mobile','mobile-library');}};
+ render();reload();return {reload,openItem,entryAdded,dispose(){disposed=true;clearConfirmation();confirmation.remove();serial++;window.removeEventListener('nourishing-back',backFromDelete,{capture:true});deleteDialog?.close(false);if(collectionBack){collectionBack.release({popHistory:false});collectionBack=null;}retirement.dispose();foodEditor?.dispose();mealEditor?.dispose();recipeEditor?.dispose();extrasCleanup?.();optionsSheet?.close(false);itemMenu.dispose();data=null;page.removeEventListener('click',select);headerRoot?.removeEventListener('click',select);document.body.classList.remove('foods-home-mobile','mobile-library');}};
 }

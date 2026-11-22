@@ -97,6 +97,10 @@ test('Display source controls change the production Diary and persist with cance
   await page.getByRole('heading',{name:'Group Quick Add Preferences',exact:true}).waitFor();
   const lunchShortcut=page.locator('[data-display-open="quickAdd:Lunch"] .mds-value');assert.equal(await lunchShortcut.innerText(),'Add food');
   await choose('quickAdd:Lunch','Add note');assert.equal(await lunchShortcut.innerText(),'Add note');await page.getByRole('button',{name:'Back',exact:true}).click();await page.locator('[data-display-groups] summary').click();const field=slot=>page.locator('[data-group-slot="'+slot+'"] [data-group-name]'),toggle=slot=>page.getByRole('switch',{name:'Group '+slot,exact:true});
+  const disclosure=page.locator('[data-display-groups] summary'),icon=disclosure.locator('img');
+  assert.equal(await icon.getAttribute('alt'),'');assert.ok(await icon.evaluate(el=>el.getBoundingClientRect().left>el.closest('summary').getBoundingClientRect().width/2));
+  await disclosure.focus();await disclosure.press('Space');assert.equal(await field(1).isVisible(),false);
+  await disclosure.press('Enter');assert.ok(await field(1).isVisible());
   assert.equal(await page.locator('[data-group-slot]').count(),8);
   await field(2).fill('Cancelled');await field(2).press('Escape');assert.equal(await field(2).inputValue(),'Lunch');
   await field(2).fill('Midday');await field(2).press('Enter');await ready(()=>fixture.state().settings.groups.includes('Midday'));assert.equal(fixture.state().entries.find(row=>row.foodId==='rice').group,'Midday');assert.equal(fixture.state().settings.diaryQuickAdd.shortcuts.find(row=>row.group==='Midday').action,'note');

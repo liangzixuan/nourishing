@@ -1,4 +1,4 @@
-import {currentPrivateResponseTicket} from './offline-store.js';
+import {currentPrivateResponseTicket,readWriteCopy} from './offline-store.js';
 import {captureDeviceOwner} from './device-cache.js';
 import {ensureDeviceSnapshot} from './device-sync.js';
 import {workspaceViewFromCopy} from './local-engine.js';
@@ -13,14 +13,14 @@ export function remapDiaryReview(review,identities){
 }
 // Wait for the same account snapshot that startup is already fetching. A missing
 // local copy can use the server; a changed account must abandon the old selection.
-export async function withDiaryReviewWorkspace(local,remote,{signal,ticket=captureDeviceOwner()}={}){
+export async function withDiaryWorkspace(local,remote,{signal,ticket=captureDeviceOwner(),hydrate=true}={}){
  async function verify(){
   if(signal?.aborted||ticket&&!await currentPrivateResponseTicket(ticket))throw new DOMException('Account changed or screen closed.','AbortError');
  }
  let copy;
  if(ticket){
   await verify();
-  try{copy=await ensureDeviceSnapshot({ownerId:ticket.ownerId});}
+  try{copy=hydrate?await ensureDeviceSnapshot({ownerId:ticket.ownerId}):await readWriteCopy();}
   catch(error){if(error.name==='AbortError'||error.status===401)throw error;}
  }
  await verify();
@@ -45,13 +45,13 @@ function reviewFromWorkspace({state,recordIds},input,revision,captured){
  return {...result,revision,localReview};
 }
 export function prepareLocalDiaryReview(input,revision,{captured}={}){
- return withDiaryReviewWorkspace(
+ return withDiaryWorkspace(
   view=>reviewFromWorkspace(view,input,revision,captured),
   ()=>request('/api/diary/tools/review',input),
  );
 }
 export function prepareSelectionEditor(input,revision){
- return withDiaryReviewWorkspace(
+ return withDiaryWorkspace(
   view=>[reviewFromWorkspace(view,input,revision),libraryCollectionView(view.state,view.revision)],
   async()=>[await request('/api/diary/tools/review',input),await request('/api/library')],
  );
