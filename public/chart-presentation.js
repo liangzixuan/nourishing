@@ -60,6 +60,7 @@ export function chartPlotConfig(card){
    label:chartSeriesLabel(series)+(series.unit?' ('+series.unit+')':''),
    data:series.points.map(p=>({x:chartPointTime(p)+(dailyBars?dayMs/2:0),y:p.value,coverage:p.coverage})),
    borderColor:color,backgroundColor:color,borderWidth:2,pointRadius:3,
+   ...(card.id==='metric' && series.metric?.kind==='biometric' && ['weight','Weight'].includes(series.metric.type)?{spanGaps:true}:{}),
    ...(card.id==='metric'?{clip:4}:{}),yAxisID:series.axis==='right'?'right':'y',
    stack:card.plot==='stacked-bars'?'values':undefined,
    ...(card.id==='cgm'&&series.id==='glucose'?cgmGlucoseStyle(card.targetRange,series.points.length):{}),

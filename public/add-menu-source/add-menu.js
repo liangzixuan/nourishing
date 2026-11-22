@@ -2,6 +2,24 @@ import {addMenuActions,addMenuColors,parseAddMenu} from './add-menu.mjs';
 import {escape as e,symbol} from '../dashboard-source/discover-ui.js';
 import {coreText} from '../core-cloud-messages.js';
 
+import {AnchoredMenu} from '../targets-source/anchored-menu.js';
+
+const groupOrder=['food','barcode','photo','voice','exercise','biometric','note','suggest','fast'];
+
+export function openGroupAddMenu(origin,event,onChoose){
+ const rect=origin.getBoundingClientRect();
+ const navTop=document.querySelector('.app-nav').getBoundingClientRect().top;
+ const items=groupOrder.map(id=>({
+  id,label:coreText('add.'+id),glyph:addMenuActions.find(action=>action.id===id).icon,
+ }));
+ return new AnchoredMenu({
+  origin,items,onChoose,modal:true,className:'am-group',label:coreText('add.title'),
+  x:event.detail?event.clientX:rect.left+rect.width/2,
+  y:event.detail?event.clientY:rect.top+rect.height/2,
+  bounds:{bottom:navTop>0?navTop-8:innerHeight-8},
+ });
+}
+
 export class AddMenu {
  constructor({preferences,onSelect,onSave}) {
   this.saved=parseAddMenu(preferences);this.value=structuredClone(this.saved);this.onSelect=onSelect;this.onSave=onSave;this.editing=false;this.busy=false;

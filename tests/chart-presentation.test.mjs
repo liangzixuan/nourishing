@@ -23,3 +23,16 @@ test('daily bars stay inside their own day and do not shift the selected date ra
  assert.equal(x.min,Date.parse('2026-11-19T00:00:00Z'));assert.equal(x.max,Date.parse('2026-11-20T23:59:59Z'));
  const scale={};x.afterBuildTicks(scale);assert.deepEqual(scale.ticks.map(t=>x.ticks.callback(t.value)),['Nov 19','Nov 20']);
 });
+
+test('the Weight chart connects observations while preserving missing days',()=>{
+ const dates=['2026-11-01','2026-11-02','2026-11-03'];
+ const card={id:'metric',dates,range:{from:dates[0],to:dates[2]},settings:{},plot:'lines'};
+ const points=dates.map((date,i)=>({date,value:i===1?null:68.5}));
+ const series={id:'primary',name:'Weight',unit:'kg',metric:{kind:'biometric',type:'Weight'},points};
+ const dataset=chartPlotConfig({...card,series:[series]}).data.datasets[0];
+ assert.equal(dataset.spanGaps,true);
+ assert.deepEqual(dataset.data.map(point=>point.y),[68.5,null,68.5]);
+ const other={...series,metric:{kind:'biometric',type:'custom-weight'}};
+ const custom=chartPlotConfig({...card,series:[other]});
+ assert.equal(custom.data.datasets[0].spanGaps??custom.options.spanGaps,false);
+});

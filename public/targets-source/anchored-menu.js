@@ -15,6 +15,10 @@ export class AnchoredMenu{
         name.textContent=item.label;description.textContent=item.description;button.append(name,description);
       }else button.textContent=item.label;
       if(item.icon){const image=document.createElement('img');image.src=item.icon;image.alt='';button.prepend(image);}
+      if(item.glyph){
+        const glyph=document.createElement('span');glyph.className='material-symbols-rounded';
+        glyph.setAttribute('aria-hidden','true');glyph.textContent=item.glyph;button.prepend(glyph);
+      }
       button.dataset.menuCommand=item.id;button.disabled=Boolean(item.disabled);button.tabIndex=-1;root.append(button);
     }
     root.addEventListener('click',event=>{const button=event.target.closest('[data-menu-command]');if(!button||button.disabled)return;const id=button.dataset.menuCommand;this.close();onChoose(id);});
@@ -36,7 +40,7 @@ export class AnchoredMenu{
     window.addEventListener('resize',this.resize);
     const host=origin?.closest('dialog')||document.body;host.append(root);
     const minTop=Math.max(8,bounds?.top??8,anchor?host.querySelector(':scope>.dialog-head')?.getBoundingClientRect().bottom??8:8),maxBottom=Math.min(innerHeight-8,bounds?.bottom??innerHeight-8);
-    if(anchor)root.style.maxHeight=Math.max(44,maxBottom-minTop)+'px';
+    if(anchor||bounds)root.style.maxHeight=Math.max(44,maxBottom-minTop)+'px';
     if(modal)root.showModal();else root.showPopover();const rect=root.getBoundingClientRect(),anchorRect=anchor?.getBoundingClientRect();
     if(placement==='bottom'){root.style.left=Math.max(0,(innerWidth-rect.width)/2)+'px';root.style.top=Math.max(0,Math.min(innerHeight,bounds?.bottom??innerHeight)-rect.height)+'px';}else{root.style.left=Math.max(8,Math.min(anchorRect?anchorRect.right-rect.width:x,innerWidth-rect.width-8))+'px';root.style.top=Math.max(minTop,Math.min(anchorRect?anchorRect.bottom:y,maxBottom-rect.height))+'px';}
     const selected=[...root.querySelectorAll('[aria-checked=true]')].find(button=>button.dataset.menuCommand!=='');(selected||root.querySelector('button:not(:disabled)'))?.focus(bounds?{preventScroll:true}:undefined);if(bounds&&selected&&root.scrollHeight>root.clientHeight)root.scrollTop=selected.offsetTop-(root.clientHeight-selected.offsetHeight)/2;

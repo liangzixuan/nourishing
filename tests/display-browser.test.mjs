@@ -44,7 +44,10 @@ test('Display source controls change the production Diary and persist with cance
   assert.ok(await heartRate.locator('.md-record-menu .md-heart-rate-icon').isVisible());
   const open=async()=>{await page.locator('#settings-tab').click();await page.getByRole('button',{name:'Display',exact:true}).click();await page.locator('[data-display-root]').waitFor();},ready=async committed=>{await page.waitForFunction(()=>document.querySelector('[data-display-root]')?.getAttribute('aria-busy')==='false'&&!document.querySelector('[data-display-toggle]')?.disabled);await waitForOutboxIdle(page,committed);await page.waitForFunction(async ({date,revision})=>(await(await import('/device-cache.js')).readDeviceCache('/api/diary?date='+date)).value?.revision===revision,{date,revision:displayView(fixture.state()).revision});};
   await page.locator('[data-action=group-quick-add][data-group=Breakfast]').click();
-  await page.locator('[data-am=select][data-id=note]').click();
+  const groupMenu=page.getByRole('menu',{name:'Add to Diary'});
+  assert.deepEqual(await groupMenu.getByRole('menuitem').evaluateAll(rows=>rows.map(row=>row.dataset.menuCommand)),
+    ['food','barcode','photo','voice','exercise','biometric','note','suggest','fast']);
+  await groupMenu.getByRole('menuitem',{name:'Add Note',exact:true}).click();
   await page.locator('.note-editor').waitFor();
   assert.equal(await page.locator('.note-editor [name=group]').inputValue(),'Breakfast');
   await page.keyboard.press('Escape');

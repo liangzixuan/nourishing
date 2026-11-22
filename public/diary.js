@@ -17,7 +17,7 @@ import {diaryEntryAmount, diaryGroupSubtotal} from './diary-table-presentation.j
 import {mountTargets,mountTargetsSheet} from './targets.js';
 import {mountFoodCopy} from './food-copy.js';
 import {mountFoodEntry} from './food-entry.js';
-import {AddMenu} from './add-menu-source/add-menu.js';
+import {AddMenu,openGroupAddMenu} from './add-menu-source/add-menu.js';
 import {createAppShell} from './app-shell.js';
 import {mountMore} from './more.js';
 import {diarySummaryMarkup, mountDiarySummary} from './diary-summary.js';
@@ -92,6 +92,7 @@ const num = (v, d = 1) => (Number.isFinite(v) ? v.toLocaleString(uiLanguage(), {
 const defaultGroup = groups => (groups?.includes('Uncategorized') ? 'Uncategorized' : groups?.[0]);
 
 let addMenu = null;
+let groupAddMenu = null;
 let diaryCalendar = null;
 let view = 'diary';
 let library = null;
@@ -285,6 +286,8 @@ function selectTab(id) {
 
 let diaryFastingAction, diaryTargets;
 function leaveView() {
+  groupAddMenu?.close(false);
+  groupAddMenu = null;
   if (requestedDiaryDate) {
     loadId++;
     requestedDiaryDate = undefined;
@@ -447,7 +450,6 @@ function runAddAction(kind, initialGroup) {
     photo: () => photoLog(initialGroup),
     voice: () => textLog(initialGroup),
     barcode: () => barcode(),
-    all: () => openAddMenu(initialGroup),
     suggest: () => openInsights(),
     fast: () => {diaryFastingAction?.dispose();diaryFastingAction=openFastingAction({page,initialAction:'new',onChange:()=>load({reuseUnchanged:true})});},
     biometric: () => recordEditor('biometric', undefined, initialGroup),
@@ -457,9 +459,9 @@ function runAddAction(kind, initialGroup) {
   return actions[kind]();
 }
 
-function openAddMenu(initialGroup) {
+function openAddMenu() {
   if (!diary) {
-    pendingDiaryAction = () => openAddMenu(initialGroup);
+    pendingDiaryAction = openAddMenu;
     return;
   }
   close();
@@ -470,7 +472,7 @@ function openAddMenu(initialGroup) {
       await command(diary.revision, 'addMenu.save', {addMenu: value});
       await load();
     },
-    onSelect: kind => runAddAction(kind, initialGroup),
+    onSelect: kind => runAddAction(kind),
   });
 }
 
@@ -617,7 +619,14 @@ function handleDocumentClick(event) {
   if (action === 'complete-day') return toggleCompleteDay(target);
   if (action === 'add-food' || action === 'group-quick-add') {
     group = target.dataset.group ?? defaultGroup(diary?.groups);
-    return runAddAction(action === 'group-quick-add' ? diary.presentation.groupQuickAdd[group] ?? defaultDiaryQuickAddAction : 'food', group);
+    const shortcut = action === 'group-quick-add' ? diary.presentation.groupQuickAdd[group] ?? defaultDiaryQuickAddAction : 'food';
+    if (shortcut === 'all') {
+      const initialGroup = group;
+      groupAddMenu?.close(false);
+      groupAddMenu = openGroupAddMenu(target,event,kind => runAddAction(kind,initialGroup));
+      return;
+    }
+    return runAddAction(shortcut, group);
   }
   if(target.hasAttribute('data-md-delete')){
     const row=target.closest('[data-diary-record]');

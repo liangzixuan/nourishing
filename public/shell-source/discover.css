@@ -207,3 +207,10 @@ html[data-nourishing-native] [data-nourishing-health-connect]{display:inline-fle
 
 .dc-dialog-header>.dc-fasting-help{margin-left:0;margin-right:-8px;text-decoration:none;}
 .dc-fasting-help-icon{display:block;width:24px;height:24px;background:currentColor;mask:url("/score-icons/help-circle-outline.svg") center/contain no-repeat;}
+
+.dc-sleep-empty>p{margin-bottom:15px}
+.dc-sleep-empty .dc-inset{padding:16px}
+.dc-sleep-empty .dc-inset h2{font-size:calc(16rem / 18);line-height:calc(20rem / 18);margin:0}
+.dc-sleep-empty .dc-inset .dc-badge{width:72px;height:72px;margin:8px auto;background:#cef1f5}
+.dc-sleep-empty .dc-inset svg{display:block;width:100%;height:100%}
+.dc-sleep-empty .dc-inset p{margin:0;font-size:calc(14rem / 18);line-height:calc(20rem / 18)}
