@@ -52,14 +52,14 @@ test('Pause Life saves offline, updates Diary, restarts and replays only for its
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.exposeFunction('recordCspViolation',directive=>errors.push('CSP '+directive));
   await page.addInitScript(()=>document.addEventListener('securitypolicyviolation',event=>window.recordCspViolation(event.violatedDirective)));
-  const launch=async()=>{await page.goto(base+'/diary');await page.locator('.md-diary').waitFor();};
+  const launch=async()=>{await page.goto(base+'/diary');await page.locator('#page[aria-busy=false] .md-diary').waitFor();};
   const ready=()=>page.locator('.pause-life[aria-busy=false] [data-pause-enabled]').waitFor();
   const display=async()=>{await page.locator('#settings-tab').click();await page.locator('[data-more-open=display]').click();await page.locator('[data-display-open=pauseLife]').waitFor();};
   const open=async()=>{await display();await page.locator('[data-display-open=pauseLife]').click();await ready();};
-  const diary=async()=>{await page.locator('#diary-tab').click();await page.locator('.md-diary').waitFor();};
+  const diary=async()=>{await page.locator('#diary-tab').click();await page.locator('#page[aria-busy=false] .md-diary').waitFor();};
   const enabled=page.locator('[data-pause-enabled]'),program=page.locator('[data-pause-program][value="bfb-ps"]');
   const pending=()=>page.evaluate(async()=>((await(await import('/offline-store.js')).readWriteCopy())?.pending??[]).map(row=>row.command));
-  const noWidget=async()=>assert.equal(await page.locator('[data-md-page-id=pauseLife]').count(),0);
+  const noWidget=()=>page.locator('[data-md-page-id=pauseLife]').waitFor({state:'detached'});
   const checkWidget=async()=>{
    const card=page.locator('[data-md-page-id=pauseLife]');await card.waitFor();
    assert.equal(await page.locator('[data-md-page-id]').first().getAttribute('data-md-page-id'),'pauseLife');
