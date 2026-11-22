@@ -27,7 +27,14 @@ test('source food search categories, options, debounce, paging and child selecti
   await page.locator('[data-mfs-category=all]').click();await page.locator('[data-mfs=sort]').click();await page.locator('[data-mfs-sort-option=za]').click();await page.getByRole('button',{name:/Oats 61/}).waitFor();assert.match(await page.locator('.mfs-result').first().textContent(),/Oats 61/);
   await page.locator('[data-mfs=options]').click();await page.locator('[data-mfs-database=custom]').click();await page.getByRole('button',{name:'Close',exact:true}).last().click();await page.getByRole('button',{name:/My recipe/}).waitFor();assert.equal(await page.locator('.mfs-result').count(),3);
   await page.locator('[data-mfs=options]').click();await page.locator('[data-mfs-database=""]').click();await page.locator('[data-mfs-sort-option=best]').click();const input=page.getByRole('searchbox');await input.fill('apple');await page.waitForRequest(request=>request.url().includes('q=apple'));await input.fill('cof');await page.getByRole('button',{name:/Coffee/}).waitFor();await page.waitForTimeout(650);assert.equal(await page.locator('.mfs-result').count(),1);assert.match(await page.locator('.mfs-result').textContent(),/Coffee/);
-  await input.fill('');await page.getByRole('button',{name:/Apple juice/}).waitFor();await page.locator('.mfs-more').scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelectorAll('.mfs-result').length>25);assert.equal(queries.some(q=>q.includes('offset=25')),true);
+  const clear=page.getByRole('button',{name:'Clear search',exact:true});
+  await input.blur();
+  assert.ok(await clear.isVisible(),'a populated query can be cleared when the search field is unfocused');
+  await clear.click();
+  assert.equal(await input.inputValue(),'');
+  assert.equal(await input.evaluate(node=>node===document.activeElement),true);
+  assert.equal(await clear.isVisible(),false);
+  await page.getByRole('button',{name:/Apple juice/}).waitFor();await page.locator('.mfs-more').scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelectorAll('.mfs-result').length>25);assert.equal(queries.some(q=>q.includes('offset=25')),true);
   await page.evaluate(()=>window.mount({allowMeals:false,allowRecipes:false}));await page.locator('[data-mfs-category=custom]').click();await page.getByRole('button',{name:/My Apple/}).waitFor();assert.equal(await page.locator('.mfs-result').count(),1);
   await page.locator('[data-mfs=scan]').click();assert.equal(await page.evaluate(()=>window.scanned),true);
   await page.locator('[data-mfs=options]').click();await page.getByRole('checkbox',{name:'Category Tabs',exact:true}).uncheck();await page.keyboard.press('Escape');assert.equal(await page.locator('.mfs-tabs').isVisible(),false);await page.evaluate(()=>window.mount());await page.locator('.mfs-result').first().waitFor();assert.equal(await page.locator('.mfs-tabs').isVisible(),false);

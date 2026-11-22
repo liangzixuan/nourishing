@@ -340,7 +340,10 @@ function renderDiaryRow(collection, row) {
   const swipeOptions={swipe:!diaryTools.selection(),canDelete:!diary.completed,labels:{actions:coreText('diary.actions'),remove:t('mobileRepeat.delete')}};
   const time = diary.presentation?.settings?.showTimestamp === false ? '' : row.time;
   if (collection === 'entries') {
-    const iconName = row.kind === 'exercise' ? 'fitness_center' : row.recipeId || row.mealId ? 'restaurant' : 'nutrition';
+    const restaurantIcon = diarySymbol('restaurant');
+    const icon = row.kind === 'exercise' ? diarySymbol('fitness_center')
+      : row.mealId ? `<span class="md-meal-icon">${restaurantIcon}</span>`
+      : row.recipeId ? restaurantIcon : '<span class="md-food-icon" aria-hidden="true"></span>';
     // Older catalog records do not identify whether the user chose a preset or a specific pace.
     const selection=row.exerciseSelection;
     const walkingEffort=row.kind==='exercise'&&selection?.generalWalking&&row.name===selection.description&&(walkingEfforts[selection.code]??priorWalkingEfforts[selection.code]);
@@ -351,7 +354,7 @@ function renderDiaryRow(collection, row) {
       name: walkingEffort?t('exerciseBrowser.generalWalking'):row.facts?.name ?? row.name,
       meta: formatEntryMeta(row, time, walkingEffort),
       amount: diaryEntryAmount(row, diary.summary.diaryTable, {energyUnit: diary.energyUnit, language: uiLanguage(),exerciseFractionDigits:walkingEffort?1:2}),
-      icon: row.mealId ? `<span class="md-meal-icon">${diarySymbol(iconName)}</span>` : diarySymbol(iconName),
+      icon,
       selectBox: diaryTools.selectBox(collection, row),
       action: 'edit-entry',
     });

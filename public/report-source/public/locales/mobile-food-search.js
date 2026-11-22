@@ -1,4 +1,5 @@
 const rows={
+ clear:['Clear search','Effacer la recherche','Suche leeren','Limpar busca'],
  more:['Load more','Afficher plus','Mehr laden','Carregar mais'],
  offline:['Offline diary','Journal hors ligne','Offline-Tagebuch','Diário offline'],
  preferencesError:['Search options could not be saved.','Impossible d’enregistrer les options.','Suchoptionen konnten nicht gespeichert werden.','Não foi possível salvar as opções.'],
