@@ -123,9 +123,13 @@ export function mountMore({
   }
 
   function heading(title) {
-    const help = (screen === 'notifications' || screen === 'bulk-delete')
-      ? `<button type="button" ${screen==='notifications'?'data-notification-help':'data-bulk-help'} aria-label="${e(t('mobileMore.manual'))}">${moreIcon('help-circle')}</button>`
-      : undefined;
+    let help;
+    if (screen === 'notifications' || screen === 'bulk-delete') {
+      const notifications = screen === 'notifications';
+      const action = notifications ? 'data-notification-help' : 'data-bulk-help';
+      const icon = notifications ? '<img src="/report-mobile-source/score-icons/help-circle-outline.svg" alt="">' : moreIcon('help-circle');
+      help = `<button type="button" ${action} aria-label="${e(t('mobileMore.manual'))}">${icon}</button>`;
+    }
     headerRoot.innerHTML = moreBackHeader(title, help);
     document.body.classList.add('more-destination');
   }

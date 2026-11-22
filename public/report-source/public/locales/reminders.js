@@ -1,8 +1,8 @@
 import './reminder-notification.js';
 const rows=[
  ['foodShortcut','Reminder to Log Food','Rappel de saisie des aliments','Erinnerung zum Eintragen von Lebensmitteln','Lembrete para registrar alimentos'],
- ['foodShortcutHint','Remind me if I have not logged food by the selected time.','Me rappeler de saisir mes aliments si je ne l’ai pas fait à l’heure choisie.','Erinnere mich zur gewählten Zeit, wenn ich noch keine Lebensmittel eingetragen habe.','Lembrar se eu ainda não tiver registrado alimentos no horário escolhido.'],
- ['groupHint','Choose a diary group to set its reminder time.','Choisissez un groupe du journal pour régler l’heure du rappel.','Wähle eine Tagebuchgruppe, um die Erinnerungszeit festzulegen.','Escolha um grupo do diário para definir o horário do lembrete.'],
+ ['foodShortcutHint','If you have not logged food by the time you choose, we will remind you to log it.','Si vous n’avez saisi aucun aliment à l’heure choisie, vous recevrez un rappel.','Wenn du zur gewählten Uhrzeit noch keine Lebensmittel eingetragen hast, erhältst du eine Erinnerung.','Se você ainda não tiver registrado alimentos até o horário escolhido, receberá um lembrete.'],
+ ['groupHint','Choose the diary groups you want reminders for and set the time for each group.','Choisissez les groupes du journal à rappeler et réglez l’heure pour chacun.','Wähle die Tagebuchgruppen aus und lege für jede Gruppe die Erinnerungszeit fest.','Escolha os grupos do diário para os quais deseja lembretes e defina o horário de cada um.'],
  ['weightShortcut','Log Weight Reminder','Rappel de pesée','Erinnerung zum Wiegen','Lembrete para registrar o peso'],
  ['weightShortcutHint','Remind me seven days after my last entry for the selected weight metric.','Me rappeler sept jours après ma dernière saisie pour la mesure de poids choisie.','Erinnere mich sieben Tage nach dem letzten Eintrag für die gewählte Gewichtsmessung.','Lembrar sete dias após a última entrada para a medida de peso selecionada.'],
  ['fastShortcut','Fasting Reminder','Rappel de jeûne','Fastenerinnerung','Lembrete de jejum'],

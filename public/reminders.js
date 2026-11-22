@@ -20,7 +20,7 @@ export async function disconnectCurrentPush(){
  return {disconnected:serverDisconnected||browserDisconnected,serverDisconnected,browserDisconnected};
 }
 export function mountReminders({root,notifications=false}){
- root.innerHTML=`<section class="push-panel"><p role="status">${m("mobileNutrientDetail.loading")}</p><div data-push-controls></div></section>`;
+ root.innerHTML=`<section class="push-panel${notifications?' push-notifications':''}"><p role="status">${m("mobileNutrientDetail.loading")}</p><div data-push-controls></div></section>`;
  const panel=root.querySelector('.push-panel'),message=panel.querySelector('[role=status]'),controls=panel.querySelector('[data-push-controls]');
  let data,busy=false,failed=false,disposed=false,readAbort,localEndpoint=null,devicesOpen=false;
  const alive=()=>!disposed&&panel.isConnected;
@@ -47,7 +47,9 @@ export function mountReminders({root,notifications=false}){
   const inlineBrowser=!notifications||!localEndpoint;
   const devices=`<details class="push-connections" ${devicesOpen?'open':''}><summary>${m("accountCloud.connectedDevices")} <span>${data.devices.length}</span></summary>${inlineBrowser?"":browserControls}<ul class="push-devices">${data.devices.map(device=>`<li><span>${e(device.label||m("accountCloud.browser"))}</span><div class="push-actions"><button type="button" data-test="${e(device.id)}" ${device.currentOrigin?'':'disabled'}>${pendingTests.has(device.id)?m("accountCloud.checkResult"):m("accountCloud.test")}</button><button type="button" data-remove="${e(device.id)}">${m("reminders.remove")}</button></div></li>`).join('')||`<li class="push-muted">${m("accountCloud.noConnectedDevices")}</li>`}</ul>${!schedules.locked&&!failed?reload:''}</details>`;
   const scheduleControls=!notifications||!data.paused||schedules.locked?schedules.html({showPause:!notifications,shortcuts:notifications}):'';
-  controls.innerHTML=`${switchRow}${!schedules.editing&&inlineBrowser?browserControls:''}${scheduleControls}${!schedules.editing?devices:''}${schedules.locked||failed?`<div class="push-reload">${schedules.locked?`<p>${m("mobileNutrientTargets.unknown")}</p>`:''}${reload}</div>`:''}`;
+  const connection=!schedules.editing&&inlineBrowser?browserControls:'';
+  const content=notifications?scheduleControls+connection:connection+scheduleControls;
+  controls.innerHTML=`${switchRow}${content}${!schedules.editing?devices:''}${schedules.locked||failed?`<div class="push-reload">${schedules.locked?`<p>${m("mobileNutrientTargets.unknown")}</p>`:''}${reload}</div>`:''}`;
   if(busy||schedules.locked)controls.querySelectorAll('button,input,select').forEach(control=>{if(!control.hasAttribute('data-push-reload')||busy)control.disabled=true;});
  }
  async function run(action){

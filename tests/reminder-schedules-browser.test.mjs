@@ -41,6 +41,9 @@ test('schedule editor saves preferences paused and requires explicit resume, wit
   await allow.check();
   const toggle=name=>page.getByRole('switch',{name,exact:true});
   await toggle('Reminder to Log Food').waitFor();
+  const shortcuts=await page.locator('.push-shortcuts').boundingBox();
+  const connection=await page.locator('.push-browser').boundingBox();
+  assert.ok(shortcuts.y+shortcuts.height<=connection.y,'the reminder choices stay together above browser setup');
   assert.deepEqual(await page.locator('.push-shortcuts strong').allTextContents(),['Reminder to Log Food','Breakfast','Lunch','Log Weight Reminder','Fasting Reminder']);
   await toggle('Lunch').click();assert.equal(await page.getByLabel('Send when').inputValue(),'group:Lunch');
   await page.getByRole('button',{name:'Cancel',exact:true}).click();assert.equal(data.schedules.length,0);
