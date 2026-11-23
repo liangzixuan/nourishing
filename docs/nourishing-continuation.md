@@ -11,7 +11,7 @@ The remaining audit continues from the release recorded below. Screen-level comp
 - Repository: `C:/Users/zixua/Documents/REA/nourishing-cloud`
 - GitHub: `https://github.com/liangzixuan/nourishing`, branch `master`.
 - Production: `https://nourishing.app`, Appwrite site and database, public account registration.
-- Verified production release **1.2.3** at `603a24690e493c5a41720d6a105b41c0c75d8ddb`. All 741 local tests passed. CI passed 738 and skipped 3. Appwrite activated the site and three functions. All 299 checked live assets matched the build, along with the 914-file offline and 249-file startup inventories. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/45125718708)
+- Verified production release **1.2.4** at `e06b0bedaef02489ba8cab499265cf778a8f4716`. All 12 focused local tests passed. CI passed 738 and skipped 3. Appwrite activated the site and three functions. All 299 checked live assets matched the build, along with the 913-file offline and 249-file startup inventories. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/45130458023)
 - This is a PWA for Android and iOS. Health Connect and deliberately removed native integrations are excluded. Do not restart native APK work or use Azure.
 - Product wording must say Nourishing, not Cronometer. Reference filenames and historical evidence can retain Cronometer.
 - Preserve unrelated untracked `android/` and `docs/superpowers/`. Never stage them automatically.
@@ -19,7 +19,7 @@ The remaining audit continues from the release recorded below. Screen-level comp
 ## User decisions
 
 - New Diary entries default to Uncategorized. An explicit category or configured shortcut takes precedence. Keep Fasting in More and Dashboard, and omit its Diary controls and calendar marker.
-- More has no Workspace tools section. Account omits Account Preferences. Notifications contains one Allow Notifications switch for the current browser.
+- More has no Workspace tools section. Account omits Account Preferences. Account Data contains Bulk Delete Diary Data and Delete My Account. Notifications contains one Allow Notifications switch for the current browser.
 - Delete Account uses the supplied mobile reference with a password, optional feedback, required acknowledgement and Delete Account button. Store optional feedback with the private deletion receipt until it expires. Omit the support prompt and contact link.
 - Both side edges go back one level. At a main tab the Pixel uses Android Back to exit. On the installed iPad, either side swipe at a main tab leaves that tab visible without a prompt. The iPad Home button and bottom Home gesture remain available.
 - More search uses the orange Add-button caret and opens nested settings.

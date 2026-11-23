@@ -1239,6 +1239,12 @@ Verified production release **1.2.3** at `603a24690e493c5a41720d6a105b41c0c75d8d
 
 On the installed iPad, the production app downloaded the catalog automatically. Selecting an unopened Golden Delicious apple displayed 57 kcal in 193 ms, with zero food-detail or preview requests after the tap. The check restored More and confirmed the screen wake lock was held.
 
+### Device storage removed from Account Data (1.2.4, released)
+
+Verified production release **1.2.4** at `e06b0bedaef02489ba8cab499265cf778a8f4716`. All 12 focused local tests passed. CI passed 738 and skipped 3. Appwrite activated the site and three functions. All 299 checked live assets matched the build, along with the 913-file offline and 249-file startup inventories. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/45130458023)
+
+The installed iPad PWA showed only Bulk Delete Diary Data and Delete My Account. Searching More for Device storage returned no matches. Browser tests also covered offline Diary reload, queued edits and the automatic nutrient download.
+
 ### Findings from all 333 retained states
 
 The private `.local/full-parity/reference-review-1.1.15.json` has one comparison note per reference. The retained numbers run through 335 and omit 38 and 277. Each note points to the capture used and records visible differences or limits. The index includes state 335, the final empty test day. For reference 78 the test removed the last temporary food entry and returned to the empty Diary through Foods. The reference also shows an orange “Error loading food” banner. The original trigger remains unknown. Release 1.1.63 verifies the user’s chosen recovery after a failed saved-item read. Some comparisons use older releases. Recheck a difference against current code or a matching fixture before changing the app. The behavior index links 333 retained states to at least one named flow. Each link covers the actions named in its receipt. The additional links include existing biometric, Water, Recipe, Targets and calendar tests. A fresh local check swiped a saved meal, exploded its five ingredients, canceled their selected deletion, then confirmed it and verified the unrelated entry survived reload. These counts describe the index only. A recorded Cancel check, for example, leaves Save and Delete unverified unless the receipt also exercises them.
