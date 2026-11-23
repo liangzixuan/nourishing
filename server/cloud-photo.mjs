@@ -67,33 +67,52 @@ async function matchObservations(analysis, {search, foods, signal}) {
   return observations.map((row, index) => ({...row, ...matchIngredient(parsed[index], {foods, foodCatalog: {search: query => queries.get(query) ?? {items: []}}})}));
 }
 
+export async function measurePhotoStep(stages, name, work) {
+  const started = performance.now();
+  try { return await work(); }
+  finally { stages[name] = Math.round(performance.now() - started); }
+}
+
 /** The caller authenticates and meters the request before invoking this provider. */
 export function createCloudPhotoAnalyzer({apiKey = process.env.GEMINI_API_KEY, reviewSecret = process.env.PHOTO_REVIEW_SECRET, model = CLOUD_PHOTO_MODEL, clientFactory = async key => {const {GoogleGenAI} = await import('@google/genai'); return new GoogleGenAI({apiKey: key, vertexai: false, apiVersion: 'v1'});}, timeoutMs = 30000, now = Date.now} = {}) {
+  async function recognize(visionBase64, requestSignal, signal, timeout) {
+    try {
+      const client = await clientFactory(apiKey);
+      // Retry only explicit temporary-overload responses, within the same total deadline.
+      // Do not replay quota, authentication, validation or ambiguous transport failures.
+      return await client.interactions.create({model, store: false, input: [{type: 'user_input', content: [{type: 'text', text: MEAL_PHOTO_PROMPT + ' Use the best-supported likely food name. Keep reasons brief. Return concise JSON only.'}, {type: 'image', mime_type: 'image/jpeg', data: visionBase64}]}], response_format: {type: 'text', mime_type: 'application/json', schema: responseSchema}, generation_config: {thinking_level: 'minimal', max_output_tokens: 4096}}, {signal: requestSignal, retry_codes: ['503'], retries: {strategy: 'attempt-count-backoff', maxRetries: 2, retryConnectionErrors: false, backoff: {initialInterval: 500, maxInterval: 1000, exponent: 2}}});
+    } catch (error) {
+      if (signal?.aborted) throw failure('Photo recognition cancelled.', 499);
+      if (timeout.aborted) throw failure('Recognition took too long. Try again.', 504);
+      const code = error?.statusCode ?? error?.status ?? error?.response?.status;
+      if (code === 429) throw failure('Photo recognition limit reached. Try again later.', 429);
+      if ([401, 403].includes(code)) throw failure('Photo recognition access needs attention.', 503);
+      throw failure('Photo recognition is unavailable. Try again.', 503);
+    }
+  }
   return {
-    async analyze(input, {owner, search, foods = [], signal} = {}) {
+    async analyze(input, {owner, prepareMatching, signal, stages = {}} = {}) {
       if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).length !== 1 || !Object.hasOwn(input, 'image')) throw failure('Choose one photo.');
       if (typeof apiKey !== 'string' || !apiKey.trim() || apiKey.length > 512 || /\s/.test(apiKey)) throw failure('Photo recognition is not configured.', 503);
       signingSecret(reviewSecret);
-      if (typeof search !== 'function') throw failure('Food search is unavailable.', 503);
+      if (typeof prepareMatching !== 'function') throw failure('Food search is unavailable.', 503);
       if (signal?.aborted) throw failure('Photo recognition cancelled.', 499);
       let photo;
-      try { photo = await normalizePhoto(input.image); } catch (error) { throw failure(error.message, error.status ?? 400); }
+      try { photo = await measurePhotoStep(stages, 'normalizeMs', () => normalizePhoto(input.image)); } catch (error) { throw failure(error.message, error.status ?? 400); }
       identity(owner, photo.id);
-      const visionBase64 = await prepareVisionImage(photo);
-      const timeout = AbortSignal.timeout(timeoutMs), requestSignal = signal ? AbortSignal.any([signal, timeout]) : timeout, started = performance.now();
-      let response;
+      const visionBase64 = await measurePhotoStep(stages, 'visionImageMs', () => prepareVisionImage(photo));
+      const timeout = AbortSignal.timeout(timeoutMs), controller = new AbortController();
+      const requestSignal = AbortSignal.any([controller.signal, timeout, ...(signal ? [signal] : [])]);
+      const started = performance.now();
+      let response, matching;
       try {
-        const client = await clientFactory(apiKey);
-        // Retry only explicit temporary-overload responses, within the same total deadline.
-        // Do not replay quota, authentication, validation or ambiguous transport failures.
-        response = await client.interactions.create({model, store: false, input: [{type: 'user_input', content: [{type: 'text', text: MEAL_PHOTO_PROMPT + ' Use the best-supported likely food name. Keep reasons brief. Return concise JSON only.'}, {type: 'image', mime_type: 'image/jpeg', data: visionBase64}]}], response_format: {type: 'text', mime_type: 'application/json', schema: responseSchema}, generation_config: {thinking_level: 'minimal', max_output_tokens: 4096}}, {signal: requestSignal, retry_codes: ['503'], retries: {strategy: 'attempt-count-backoff', maxRetries: 2, retryConnectionErrors: false, backoff: {initialInterval: 500, maxInterval: 1000, exponent: 2}}});
+        [response, matching] = await Promise.all([
+          measurePhotoStep(stages, 'geminiMs', () => recognize(visionBase64, requestSignal, signal, timeout)),
+          measurePhotoStep(stages, 'matchingSetupMs', prepareMatching),
+        ]);
       } catch (error) {
-        if (signal?.aborted) throw failure('Photo recognition cancelled.', 499);
-        if (timeout.aborted) throw failure('Recognition took too long. Try again.', 504);
-        const code = error?.statusCode ?? error?.status ?? error?.response?.status;
-        if (code === 429) throw failure('Photo recognition limit reached. Try again later.', 429);
-        if ([401, 403].includes(code)) throw failure('Photo recognition access needs attention.', 503);
-        throw failure('Photo recognition is unavailable. Try again.', 503);
+        controller.abort();
+        throw error;
       }
       if (requestSignal.aborted) throw failure(signal?.aborted ? 'Photo recognition cancelled.' : 'Recognition took too long. Try again.', signal?.aborted ? 499 : 504);
       if (response?.status !== 'completed' || typeof response.output_text !== 'string') throw failure('Photo recognition did not finish. Try again.', 502);
@@ -101,10 +120,10 @@ export function createCloudPhotoAnalyzer({apiKey = process.env.GEMINI_API_KEY, r
       try { result = mealResult(JSON.parse(response.output_text), PROVIDER); } catch { throw failure('Photo recognition returned an invalid result. Try again.', 502); }
       const analysis = analysisValue({observations: result.observations, possibleAdditions: result.possibleAdditions, notes: result.notes});
       let suggestions;
-      try { suggestions = await matchObservations(analysis, {search, foods, signal: requestSignal}); }
+      try { suggestions = await measurePhotoStep(stages, 'matchMs', () => matchObservations(analysis, {...matching, signal: requestSignal})); }
       catch (error) { if (timeout.aborted && !signal?.aborted) throw failure('Food matching took too long. Try again.', 504); throw error; }
       const token = value => Number.isSafeInteger(value) && value >= 0 ? value : null;
-      return {...result, photo: {id: photo.id, dataUrl: photo.dataUrl, width: photo.width, height: photo.height}, suggestions, reviewToken: signPhotoReview({owner, photoId: photo.id, analysis}, {secret: reviewSecret, now: now()}), metrics: {model, elapsedMs: Math.round(performance.now() - started), inputTokens: token(response.usage?.total_input_tokens), outputTokens: token(response.usage?.total_output_tokens)}};
+      return {...result, photo: {id: photo.id, dataUrl: photo.dataUrl, width: photo.width, height: photo.height}, suggestions, reviewToken: signPhotoReview({owner, photoId: photo.id, analysis}, {secret: reviewSecret, now: now()}), metrics: {model, stages, elapsedMs: Math.round(performance.now() - started), inputTokens: token(response.usage?.total_input_tokens), outputTokens: token(response.usage?.total_output_tokens)}};
     },
   };
 }

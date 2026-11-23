@@ -965,6 +965,7 @@ function validateMethodAndHeaders(req, config) {
 }
 
 async function executeMatchedRoute({route, api, secret, req, url, headers, json}) {
+  const photoStart = url.pathname === '/api/photos/analyze' ? performance.now() : null;
   if (route.auth === 'prebody') {
     if (!secret) fail(401, 'Please sign in.');
     await (api.authenticate ?? api.current)(secret);
@@ -972,7 +973,9 @@ async function executeMatchedRoute({route, api, secret, req, url, headers, json}
     fail(401, 'Please sign in.');
   }
   if (route.noSearch && url.search) fail(400, route.noSearch);
+  const authDone = photoStart === null ? null : performance.now();
   const body = req.method === 'GET' ? null : await readBody(req, route.maxBytes ?? DEFAULT_BODY_BYTES);
+  if (photoStart !== null) headers.set('Server-Timing', `auth;dur=${Math.round(authDone-photoStart)}, body;dur=${Math.round(performance.now()-authDone)}`);
   return route.handler({api, secret, req, url, body, headers, json});
 }
 

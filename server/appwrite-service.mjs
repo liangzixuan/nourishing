@@ -38,7 +38,7 @@ import {profileSettingsView} from './profile-settings.mjs';
 import {snapshotsView, prepareSnapshot, SNAPSHOT_MEDIA_NAMESPACE} from './snapshots.mjs';
 import {importRecipeUrl, previewRecipeImport, prepareRecipeImportDraft, recipeImportCatalog} from './recipe-import.mjs';
 import {fastingView} from './fasting.mjs';
-import {createCloudPhotoAnalyzer} from './cloud-photo.mjs';
+import {createCloudPhotoAnalyzer, measurePhotoStep} from './cloud-photo.mjs';
 import {validateStoredPhoto} from './domain/photo-images.mjs';
 import {stagePhotoMedia} from './photo-storage.mjs';
 import {loadCatalogIndex,nutritionPackETag} from './catalog-index.mjs';
@@ -314,34 +314,38 @@ function buildMediaAndPhotoMethods(ctx) {
       );
     },
     analyzePhoto: async (secret, input, signal) => {
-      const {owner, repository, storage} = await data(secret);
-      await takePhotoAnalyzeBudget(new TablesDB(elevated()), {database: ctx.config.database, owner});
-      const [state, catalogHead] = await Promise.all([
-        readStateEnsured(owner, repository),
-        new TablesDB(ctx.session(secret))
+      const started = performance.now(), stages = {};
+      const {owner, repository, storage} = await measurePhotoStep(stages, 'accountMs', () => data(secret));
+      await measurePhotoStep(stages, 'budgetMs', () => takePhotoAnalyzeBudget(new TablesDB(elevated()), {database: ctx.config.database, owner}));
+
+      async function loadSearch() {
+        const head = await new TablesDB(ctx.session(secret))
           .getRow({databaseId: ctx.config.database, tableId: 'catalog_heads', rowId: 'active'})
-          .catch(() => null),
-      ]);
-      let search = (query, {limit}) => repository.search({query, limit, offset: 0});
-      if (catalogHead) {
-        try {
-          const catalog = await loadCatalogIndex({
-            storage,
-            head: catalogHead,
-            namespace: ctx.config.endpoint + '/' + ctx.config.project,
-          });
-          const fastCatalog = recipeImportCatalog(catalog);
-          search = (query, {limit}) => fastCatalog.search(query, {limit, offset: 0});
-        } catch {
-          // Fall back to TablesDB search if the compact catalog index is unavailable.
+          .catch(() => null);
+        if (head) {
+          try {
+            const catalog = await loadCatalogIndex({storage, head, namespace: ctx.config.endpoint + '/' + ctx.config.project});
+            const fastCatalog = recipeImportCatalog(catalog);
+            return (query, {limit}) => fastCatalog.search(query, {limit, offset: 0});
+          } catch {
+            // Use TablesDB when the compact catalog is unavailable.
+          }
         }
+        return (query, {limit}) => repository.search({query, limit, offset: 0});
       }
+      let state;
       const result = await createCloudPhotoAnalyzer().analyze(input, {
-        owner,
-        foods: state.foods,
-        signal,
-        search,
+        owner, signal, stages,
+        async prepareMatching() {
+          const [workspace, search] = await Promise.all([
+            measurePhotoStep(stages, 'workspaceMs', () => readStateEnsured(owner, repository)),
+            measurePhotoStep(stages, 'catalogMs', loadSearch),
+          ]);
+          state = workspace;
+          return {foods: state.foods, search};
+        },
       });
+      const previewStart = performance.now();
       try {
         const matched = (result.suggestions ?? [])
           .filter(row => row.kind === 'observation' && row.selection?.id)
@@ -355,7 +359,7 @@ function buildMediaAndPhotoMethods(ctx) {
           const localIds = new Set(previewState.foods.map(f => f.id));
           const missingIds = [...new Set(matched.map(({candidate}) => candidate.ref.id).filter(id => !localIds.has(id)))];
           const readFood = catalogReader(repository);
-          const fetched = await Promise.all(missingIds.map(async id => [id, await readFood(id)]));
+          const fetched = await measurePhotoStep(stages, 'previewFoodReadsMs', () => Promise.all(missingIds.map(async id => [id, await readFood(id)])));
           const capturedIds = new Map();
           for (const [id, food] of fetched) {
             if (food) capturedIds.set(id, captureCatalogFood(previewState, food).id);
@@ -384,6 +388,8 @@ function buildMediaAndPhotoMethods(ctx) {
       } catch {
         // Never fail photo analysis if preview precomputation fails.
       }
+      stages.previewMs = Math.round(performance.now() - previewStart);
+      stages.serviceMs = Math.round(performance.now() - started);
       return result;
     },
     savePhoto: async (secret, input, _signal, {reviewSavedAt} = {}) => {
