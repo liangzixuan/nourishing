@@ -135,19 +135,33 @@ test('source diary carousel, rings, water, actions and disposal work on a phone 
   assert.deepEqual(await page.locator('.md-energy-item strong').allTextContents(),['0','Consumed','—','Expenditure','2000','Remaining']);
   await page.getByRole('button',{name:'Remaining',exact:false}).first().click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).kind,'remaining');
   await page.getByRole('button',{name:'Target',exact:true}).click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).action,'toggle-energy-display');
-  await page.locator('[data-md-dot="1"]').click();assert.equal(await page.locator('[data-md-page-id=macros]').isVisible(),true);const consumed=await page.locator('[data-md-page-id=macros] .md-target').first().textContent();
+  await page.locator('[data-md-dot="1"]').click();await page.waitForFunction(()=>document.querySelector('[data-md-dot="1"]').getAttribute('aria-pressed')==='true');assert.equal(await page.locator('[data-md-page-id=macros]').isVisible(),true);const consumed=await page.locator('[data-md-page-id=macros] .md-target').first().textContent();
   await page.getByRole('button',{name:'Consumed',exact:true}).click();const remaining=await page.locator('[data-md-page-id=macros] .md-target').first().textContent();assert.notEqual(consumed,remaining);assert.match(remaining,/2,000/);
   await page.locator('[data-md-page-id=macros] [data-id=protein]').click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).id,'protein');
-  await page.locator('[data-md-dot="2"]').click();assert.equal(await page.locator('[data-md-page-id=highlights]').isVisible(),true);
-  await page.locator('[data-md-dot="3"]').click();assert.equal(await page.locator('[data-md-page-id=scores]').isVisible(),true);await page.locator('[data-md-page-id=scores] [data-action=score-details]').first().click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).action,'score-details');
+  assert.equal((await page.evaluate(()=>window.actions.at(-1))).action,'targets-summary');
+  assert.equal(await page.locator('[data-action=toggle-macro-display] svg').count(),1);
+  await page.locator('[data-md-page-id=macros] .md-summary-heading button').first().click();
+  assert.equal((await page.evaluate(()=>window.actions.at(-1))).action,'targets-summary');
+  await page.locator('[data-md-dot="2"]').click();await page.waitForFunction(()=>document.querySelector('[data-md-dot="2"]').getAttribute('aria-pressed')==='true');assert.equal(await page.locator('[data-md-page-id=highlights]').isVisible(),true);
+  await page.locator('[data-md-dot="3"]').click();await page.waitForFunction(()=>document.querySelector('[data-md-dot="3"]').getAttribute('aria-pressed')==='true');assert.equal(await page.locator('[data-md-page-id=scores]').isVisible(),true);await page.locator('[data-md-page-id=scores] [data-action=score-details]').first().click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).action,'score-details');
   await page.locator('[data-action=water-menu]').click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).action,'water-menu');assert.equal(await page.locator('.md-water').getAttribute('open'),null);
   await page.locator('.md-water summary').click();await page.locator('.water-glasses [data-action=water]').first().click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).amount,236.5882365);
   assert.equal(await page.locator('.md-fasting,[data-action=open-fasting]').count(),0);
-  await page.locator('[data-md-dot="0"]').click();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await page.locator('[data-md-dot="0"]').click();await page.waitForFunction(()=>document.querySelector('[data-md-dot="0"]').getAttribute('aria-pressed')==='true');assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   mkdirSync('.local/ui-parity',{recursive:true});await page.screenshot({path:'.local/ui-parity/diary-summary-restored.png'});
   const count=await page.evaluate(()=>{window.mounted.dispose();return window.actions.length;});assert.equal(await page.evaluate(()=>Object.keys(window.Chart.instances).length),0);await page.getByRole('button',{name:'Target',exact:true}).click();assert.equal(await page.evaluate(()=>window.actions.length),count);assert.deepEqual(errors,[]);
   await page.evaluate(async()=>{const {openDiarySummaryAction}=await import('/diary-summary-actions.js');const sheet=document.createElement('aside');document.body.append(sheet);window.sheet=sheet;window.reports=[];window.openSummary=(action,id)=>openDiarySummaryAction({action,id,diary:window.diary,show:html=>sheet.innerHTML=html,close:()=>sheet.replaceChildren(),header:title=>`<h2>${title}</h2>`,content:sheet,onReport:date=>window.reports.push(date)});});
   await page.evaluate(()=>window.openSummary('score-details','overall'));assert.match(await page.locator('aside').textContent(),/All Targets: 0%/);await page.getByRole('button',{name:'View Daily Report'}).click();assert.deepEqual(await page.evaluate(()=>window.reports),[date]);assert.deepEqual(errors,[]);assert.deepEqual(await page.evaluate(()=>window.cspViolations),[]);
+  await page.evaluate(async()=>{
+   const {openDiaryTargetsSummary}=await import('/diary-targets-summary.js');
+   openDiaryTargetsSummary({diary:window.diary,today:window.diary.date,initialId:'protein',show:html=>window.sheet.innerHTML=html,content:window.sheet,onOpen:(screen,id)=>window.actions.push({screen,id})});
+  });
+  assert.equal(await page.locator('[data-target-tab][aria-pressed=true]').getAttribute('data-target-tab'),'protein');
+  assert.equal(await page.locator('.ds-targets h2').textContent(),'Targets Summary');
+  await page.locator('[data-target-tab=calories]').click();
+  assert.match(await page.locator('[data-target-values]').textContent(),/Total Target/);
+  await page.locator('[data-target-link=sources]').click();
+  assert.deepEqual(await page.evaluate(()=>window.actions.at(-1)),{screen:'sources',id:'calories'});
   await checkDiaryHighlights(page);
   await checkDiaryBudgets(page);assert.deepEqual(errors,[]);
  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

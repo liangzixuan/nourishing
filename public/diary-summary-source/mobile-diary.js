@@ -1,4 +1,3 @@
-import {navigationEdge} from '../edge-navigation.js';
 import {diaryEnergyBudget} from './energy-budget.js';
 import {formatMessage,highlightedNutrientName} from './message-format.js';
 import {escape as e} from '../html.js';
@@ -8,6 +7,7 @@ import {displayValue,displayUnit} from '../dashboard-source/energy-display.js';
 // View-only state survives diary mutations and tab changes; no health data is stored here.
 export const mobileDiarySession={page:0,groups:new Map()};
 const number=(v,language,digits=1,useGrouping=true)=>Number.isFinite(v)?v.toLocaleString(language,{maximumFractionDigits:digits,useGrouping}):'—';
+const swapIcon='<svg aria-hidden="true" viewBox="0 0 24 24" fill="var(--green)"><path d="M6.99 11 3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>';
 const button=(label,action,extra='')=>`<button type="button" data-action="${action}" ${extra}>${label}</button>`;
 export const diarySymbol=name=>`<span class="md-symbol" aria-hidden="true">${e(name)}</span>`;
 export function diaryFoodIcon(kind){
@@ -56,7 +56,7 @@ export function mobileDiarySummary({summary,facts,settings,unit,language,labels,
  const ring=(id,label,value)=>button(`<span class="md-ring"><canvas data-md-ring="${id}" role="img" aria-label="${e(label)}"></canvas><span><strong>${number(displayValue(value,'kcal',unit),language,0,false)}</strong><small>${e(unit)}</small></span></span><strong>${e(label)}</strong>`,'mobile-diary-energy',`class="md-energy-item" data-kind="${id}"`);
  if(settings.showEnergy!==false){
   const budget=diaryEnergyBudget(energy);
-  pages.push({id:'energy',title:labels.energy,body:`<div class="md-summary-heading">${button(e(labels.energy)+icons.chevron,'mobile-diary-energy')} ${button(e(budget.heading)+'<svg aria-hidden="true" viewBox="0 0 24 24" fill="var(--green)"><path d="M6.99 11 3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>','toggle-energy-display')}</div><div class="md-energy-rings">${ring('consumed',labels.consumed,energy.consumed)}${ring('expenditure',labels.expenditure,energy.expenditure)}${ring(budget.mode,budget.label,budget.value)}</div>`});
+  pages.push({id:'energy',title:labels.energy,body:`<div class="md-summary-heading">${button(e(labels.energy)+icons.chevron,'mobile-diary-energy')} ${button(e(budget.heading)+swapIcon,'toggle-energy-display')}</div><div class="md-energy-rings">${ring('consumed',labels.consumed,energy.consumed)}${ring('expenditure',labels.expenditure,energy.expenditure)}${ring(budget.mode,budget.label,budget.value)}</div>`});
  }
  const targetRow=(row,kind)=>{
   const value=macroMode==='remaining'&&kind==='macros'?row.remaining:row.value,amount=displayValue(value,row.unit,unit),target=displayValue(row.target,row.unit,unit),empty=row.coverage?.total===0;
@@ -64,18 +64,18 @@ export function mobileDiarySummary({summary,facts,settings,unit,language,labels,
   const highlight=kind==='highlights',name=highlight?highlightedNutrientName(row,language,nutrientName):nutrientName(row);
   const percent=pct===null?'—':number(pct,language,0)+'%',shownUnit=displayUnit(row.unit,unit);
   const accessible=highlight?` aria-label="${e([name,highlightReading(row,amount,target,shownUnit,language),percent].join(', '))}"`:'';
-  return button(`<span><strong>${e(name)}</strong>${kind==='macros'?` - ${number(shown,language)} / ${number(target,language)} ${e(shownUnit)}`:''}</span><small>${percent}</small><progress max="100" value="${Math.min(100,Math.max(0,pct??0))}" aria-label="${e(name)}"></progress>`,'nutrient-contributors',`class="md-target md-target-${e(row.id)}" data-id="${e(row.id)}"${accessible}`);
+  return button(`<span><strong>${e(name)}</strong>${kind==='macros'?` - ${number(shown,language)} / ${number(target,language)} ${e(shownUnit)}`:''}</span><small>${percent}</small><progress max="100" value="${Math.min(100,Math.max(0,pct??0))}" aria-label="${e(name)}"></progress>`,kind==='macros'?'targets-summary':'nutrient-contributors',`class="md-target md-target-${e(row.id)}" data-id="${e(row.id)}"${accessible}`);
  };
  if(settings.pauseLife?.enabled){
   const title=formatMessage(language,'mobileDisplay.pauseLife'),caption=formatMessage(language,'mobileDisplay.macrosConsumed');
   pages.unshift({id:'pauseLife',title,body:`<div class="md-pause-life" data-program="${e(settings.pauseLife.program)}"><div class="md-pause-brand"><div class="md-pause-name" aria-label="The Pause Life"><span>THE</span><strong>&#8216;PAUSE</strong><span>LIFE</span></div><span class="md-ring"><canvas data-md-ring="consumed" data-pause-ring role="img" aria-label="${e(caption)}"></canvas><span><small>${e(caption)}</small></span></span></div><div class="md-macros">${(facts.diaryDisplay?.macros??[]).map(row=>targetRow(row,'pauseLife')).join('')}</div></div>`});
  }
- if(settings.showMacros!==false)pages.push({id:'macros',title:labels.macros,body:`<div class="md-summary-heading">${button(e(labels.macros)+icons.chevron,'edit-day-targets')}${button(e(macroMode==='remaining'?labels.remaining:labels.consumed),'toggle-macro-display')}</div><div class="md-macros">${(facts.diaryDisplay?.macros??[]).map(row=>targetRow(row,'macros')).join('')}</div>`});
+ if(settings.showMacros!==false)pages.push({id:'macros',title:labels.macros,body:`<div class="md-summary-heading">${button(e(labels.macros)+icons.chevron,'targets-summary')}${button(e(macroMode==='remaining'?labels.remaining:labels.consumed)+swapIcon,'toggle-macro-display')}</div><div class="md-macros">${(facts.diaryDisplay?.macros??[]).map(row=>targetRow(row,'macros')).join('')}</div>`});
  if(facts.diaryDisplay?.policy.showHighlights!==false)pages.push({id:'highlights',title:labels.highlights,body:`<div class="md-summary-heading">${button(e(labels.highlights)+icons.chevron,'nutrient-targets')}</div><div class="md-highlights" data-md-rows="${Math.max(1,Math.ceil((facts.diaryDisplay?.highlights?.length??0)/2))}">${(facts.diaryDisplay?.highlights??[]).map(row=>targetRow(row,'highlights')).join('')}</div>`});
  if(settings.showScores!==false)pages.push({id:'scores',title:labels.scores,body:`<div class="md-summary-heading">${button(e(labels.scores)+icons.chevron,'choose-scores')}</div><div class="md-highlights" data-md-rows="${Math.max(1,Math.ceil(scores.length/2))}">${scores.map(row=>button(`<span><strong>${e(scoreName(row))}</strong></span><small>${row.value===null?'—':number(row.value,language,0)+'%'}</small><progress value="${row.value??0}" max="100" aria-label="${e(scoreName(row))}"></progress>`,'score-details',`class="md-target md-score" data-id="${e(row.id)}"`)).join('')}</div>`});
  if(!pages.length)return '';
  const index=Math.min(mobileDiarySession.page,pages.length-1);
- return `<section class="md-summary" data-md-summary aria-label="${e(labels.summary)}">${selected?`<div class="md-scope">${e(labels.selected)}</div>`:''}<div class="md-summary-track">${pages.map((page,i)=>`<div class="md-summary-page" data-md-page="${i}" data-md-page-id="${page.id}" ${i!==index?'hidden':''}>${page.body}</div>`).join('')}</div><div class="md-pagination"><button type="button" data-md-step="-1" aria-label="${e(labels.previous)}">${icons.back}</button>${pages.map((page,i)=>`<button type="button" data-md-dot="${i}" aria-label="${e(page.title)}" aria-pressed="${i===index}"><span></span></button>`).join('')}<button type="button" data-md-step="1" aria-label="${e(labels.next)}">${icons.chevron}</button></div><p class="md-chart-error" role="status"></p></section>`;
+ return `<section class="md-summary" data-md-summary aria-label="${e(labels.summary)}">${selected?`<div class="md-scope">${e(labels.selected)}</div>`:''}<div class="md-summary-track">${pages.map((page,i)=>`<div class="md-summary-page" data-md-page="${i}" data-md-page-id="${page.id}" ${i!==index?'inert':''}>${page.body}</div>`).join('')}</div><div class="md-pagination"><button type="button" data-md-step="-1" aria-label="${e(labels.previous)}">${icons.back}</button>${pages.map((page,i)=>`<button type="button" data-md-dot="${i}" aria-label="${e(page.title)}" aria-pressed="${i===index}"><span></span></button>`).join('')}<button type="button" data-md-step="1" aria-label="${e(labels.next)}">${icons.chevron}</button></div><p class="md-chart-error" role="status"></p></section>`;
 }
 
 export class MobileDiary {
@@ -99,15 +99,37 @@ export class MobileDiary {
    }
    if(event.target.closest('.md-group summary button,.md-water summary button'))event.preventDefault();
   },options);
-  let start=null;
-  root.addEventListener('pointerdown',event=>{start=!(event.pointerType==='touch'&&navigationEdge(event.clientX,innerWidth))&&event.target.closest('[data-md-summary]')?{x:event.clientX,y:event.clientY}:null;},options);
-  root.addEventListener('pointerup',event=>{if(start&&Math.abs(event.clientX-start.x)>55&&Math.abs(event.clientY-start.y)<40)this.showPage(mobileDiarySession.page+(event.clientX<start.x?1:-1));start=null;},options);
+  root.addEventListener('scroll',event=>{
+   const track=event.target;
+   if(!track.matches?.('.md-summary-track')||!track.clientWidth)return;
+   this.selectPage(Math.round(track.scrollLeft/track.clientWidth));
+  },{...options,capture:true});
+  this.restorePage();
   document.addEventListener('pointerdown',event=>{const menu=header.querySelector('details[open]');if(menu&&!menu.contains(event.target))menu.open=false;},options);
   header.addEventListener('click',event=>{if(event.target.closest('[data-md-calendar]')){header.querySelectorAll('details[open]').forEach(el=>el.open=false);onDatePicker();}if(event.target.closest('[data-action]'))header.querySelectorAll('details[open]').forEach(el=>el.open=false);},options);
   window.addEventListener('nourishing-back',event=>{const menu=header.querySelector('details[open]');if(menu){menu.open=false;event.preventDefault();event.stopImmediatePropagation();}},{...options,capture:true});
   void this.rings.draw(summary);
  }
- showPage(index){const pages=[...this.root.querySelectorAll('[data-md-page]')];if(!pages.length)return;index=(index+pages.length)%pages.length;mobileDiarySession.page=index;pages.forEach((page,i)=>page.hidden=i!==index);this.root.querySelectorAll('[data-md-dot]').forEach((dot,i)=>dot.setAttribute('aria-pressed',String(i===index)));this.rings.resize();}
- update(html,summary){const old=this.root.querySelector('[data-md-summary]');if(old)old.outerHTML=html;void this.rings.draw(summary);}
+ selectPage(index){
+  const pages=this.root.querySelectorAll('[data-md-page]');
+  if(!pages[index])return;
+  mobileDiarySession.page=index;
+  pages.forEach((page,i)=>page.inert=i!==index);
+  this.root.querySelectorAll('[data-md-dot]').forEach((dot,i)=>dot.setAttribute('aria-pressed',String(i===index)));
+ }
+ restorePage(){
+  const track=this.root.querySelector('.md-summary-track');
+  if(!track)return;
+  const index=Math.min(mobileDiarySession.page,track.children.length-1);
+  this.selectPage(index);
+  track.scrollTo({left:index*track.clientWidth,behavior:'instant'});
+ }
+ showPage(index){
+  const track=this.root.querySelector('.md-summary-track');
+  if(!track?.children.length)return;
+  const count=track.children.length,next=(index+count)%count;
+  track.scrollTo({left:next*track.clientWidth,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+ }
+ update(html,summary){const old=this.root.querySelector('[data-md-summary]');if(old)old.outerHTML=html;this.restorePage();void this.rings.draw(summary);}
  dispose(){this.abort.abort();this.rings.clear();}
 }

@@ -28,7 +28,7 @@ export function mountDiarySummary({root,diary,onAction,selection,onGroupSelect})
  let disposed=false,facts=diary.summary,chartSummary=diary.summary,ready=!selection?.records.length;
  const panel=new MobileDiary({root,header,summary:diary.summary,context:()=>{},onDatePicker:()=>{},onGroupSelect});
  const selected=ready?null:watchDiarySelection({selection,onChange:result=>{if(disposed)return;facts=result.facts;chartSummary=result.chartSummary;ready=true;panel.update(summaryMarkup(diary,facts,chartSummary),chartSummary);}});
- const actions=new Set(['mobile-diary-energy','toggle-energy-display','edit-day-targets','nutrient-contributors','nutrient-targets','choose-scores','score-details','water','water-custom','water-menu','water-remove','water-hint-close','water-settings','water-target']);
+ const actions=new Set(['mobile-diary-energy','toggle-energy-display','targets-summary','nutrient-contributors','nutrient-targets','choose-scores','score-details','water','water-custom','water-menu','water-remove','water-hint-close','water-settings','water-target']);
  root.addEventListener('toggle',event=>{if(event.target.matches('.md-water'))waterExpanded=event.target.open;},{capture:true,signal:controller.signal});
  root.addEventListener('click',event=>{
   const button=event.target.closest('[data-action]');if(!button)return;

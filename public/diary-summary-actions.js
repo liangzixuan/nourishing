@@ -22,7 +22,6 @@ const button=(label,attributes='')=>`<button type="button" ${attributes}>${label
 
 /** Dialog adapter: all calculations and saved settings remain owned by the workspace domain. */
 export function openDiarySummaryAction({action,id,anchor,diary,date=diary.date,show,close,header,content,onChange,onTargets,onReport,navigation='diary',ownerTicket}){
- if(action==='edit-day-targets'){onTargets?.(date);return true;}
  const present=(title,body)=>{show(header(title)+`<section class="ds-dialog">${body}</section>`);return content.querySelector('.ds-dialog');};
  if(action==='score-details'){
   const score=diary.summary.scores.find(row=>row.id===id);if(!score)return false;

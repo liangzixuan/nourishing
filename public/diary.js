@@ -22,6 +22,7 @@ import {AddMenu,openGroupAddMenu} from './add-menu-source/add-menu.js';
 import {createAppShell,createStatusBanner} from './app-shell.js';
 import {mountMore} from './more.js';
 import {diarySummaryMarkup, mountDiarySummary} from './diary-summary.js';
+import {openDiaryTargetsSummary} from './diary-targets-summary.js';
 import {openDiarySummaryAction} from './diary-summary-actions.js';
 import {diaryCycleMarkup} from './diary-cycle.js';
 import {openDiarySession} from './diary-startup.js';
@@ -768,10 +769,26 @@ function openCustomWaterSheet() {
   waterAmount?.close();waterAmount=openWaterAmount({policy:waterPolicy(diary),onAdd:amount=>SUMMARY_ACTIONS.water({amount,refresh:false}),onAdded:()=>load({reuseUnchanged:true})});
 }
 
+function showTargetsSummary(initialId) {
+  openDiaryTargetsSummary({diary, today:today(), initialId, show, close, content, onOpen(screen, id) {
+    const returnToSummary = () => { showTargetsSummary(id); return true; };
+    if (screen === 'report') { close(); navigate('discover', 'report', date); return; }
+    if (screen === 'sources') {
+      const panel = openNutrientDetail({nutrient:id, date, show, content,
+        header:title => header(title).replace('data-close', 'data-return-targets'),
+        onReport:day => { close(); navigate('discover', 'report', day); },
+      });
+      content.querySelector('[data-return-targets]').onclick = returnToSummary;
+      pickerCleanup = Object.assign(() => panel.dispose(), {back:returnToSummary});
+      return;
+    }
+    const panel = mountTargetsSheet({date:() => date, show, close:returnToSummary, header, content, onChange:load, initialScreen:screen});
+    pickerCleanup = Object.assign(() => panel(), {back:source => panel.back(source) || returnToSummary()});
+  }});
+}
+
 const SUMMARY_ACTIONS = {
-  'edit-day-targets': () => {
-    pickerCleanup = mountTargetsSheet({date: () => date, show, close, header, content, onChange: load, initialScreen: 'day'});
-  },
+  'targets-summary': ({id}) => showTargetsSummary(id),
   'nutrient-targets': () => navigate('nutrient-targets'),
   water: async input => {
     const targetDate = date;
