@@ -79,29 +79,61 @@ export function mobileDiarySummary({summary,facts,settings,unit,language,labels,
  return `<section class="md-summary" data-md-summary aria-label="${e(labels.summary)}">${selected?`<div class="md-scope">${e(labels.selected)}</div>`:''}<div class="md-summary-track">${pages.map((page,i)=>`<div class="md-summary-page" data-md-page="${i}" data-md-page-id="${page.id}" ${i!==index?'inert aria-hidden="true"':''}>${page.body}</div>`).join('')}</div><div class="md-pagination"><button type="button" data-md-step="-1" aria-label="${e(labels.previous)}">${icons.back}</button>${pages.map((page,i)=>`<button type="button" data-md-dot="${i}" aria-label="${e(labels.showCard?.(page.title)??page.title)}" aria-pressed="${i===index}"><span></span></button>`).join('')}<button type="button" data-md-step="1" aria-label="${e(labels.next)}">${icons.chevron}</button></div><p class="md-chart-error" role="status"></p></section>`;
 }
 
-// Native scrolling follows the finger. On a short horizontal flick, settle on
-// the adjacent page even if the browser's momentum would select the starting page.
+// Touch owns the horizontal drag through release. Wheel and keyboard scrolling
+// continue to use CSS snap; vertical pans and pinch zoom stay with the browser.
 function bindSummaryFlicks(root,signal){
- let start=null;
+ let gesture=null,settling=null;
+ function restoreSnap(track){
+  if(settling?.track!==track)return;
+  if(Math.abs(track.scrollLeft-settling.page*track.clientWidth)>0.75)return;
+  track.removeAttribute('data-md-drag');
+  settling=null;
+ }
+ function settle(track,page){
+  settling={track,page};
+  scrollToSummaryPage(track,page);
+  restoreSnap(track);
+ }
+ function cancel(){
+  if(gesture?.dragging)settle(gesture.track,Math.round(gesture.track.scrollLeft/gesture.track.clientWidth));
+  gesture=null;
+ }
+ root.addEventListener('scroll',event=>restoreSnap(event.target),{signal,capture:true,passive:true});
  root.addEventListener('touchstart',event=>{
-  start=null;
+  cancel();
   const track=event.target.closest('.md-summary-track'),touch=event.touches[0];
   if(!track||event.touches.length!==1||navigationEdge(touch.clientX,innerWidth))return;
-  start={track,id:touch.identifier,x:touch.clientX,y:touch.clientY,time:event.timeStamp,
-   page:Math.round(track.scrollLeft/track.clientWidth)};
+  const left=track.scrollLeft;
+  gesture={track,id:touch.identifier,x:touch.clientX,y:touch.clientY,time:event.timeStamp,
+   left,page:Math.round(left/track.clientWidth),dragging:false};
  },{signal,passive:true});
- root.addEventListener('touchcancel',()=>{start=null;},{signal,passive:true});
+ root.addEventListener('touchmove',event=>{
+  if(!gesture)return;
+  const touch=event.touches[0];
+  if(event.touches.length!==1||touch.identifier!==gesture.id)return cancel();
+  const dx=gesture.x-touch.clientX,dy=gesture.y-touch.clientY;
+  if(!gesture.dragging){
+   if(Math.max(Math.abs(dx),Math.abs(dy))<6)return;
+   if(Math.abs(dx)<1.25*Math.abs(dy))return cancel();
+   settling=null;
+   gesture.dragging=true;
+   gesture.track.setAttribute('data-md-drag','');
+  }
+  gesture.track.scrollTo({left:gesture.left+dx,behavior:'instant'});
+ },{signal,passive:true});
+ root.addEventListener('touchcancel',cancel,{signal,passive:true});
  root.addEventListener('touchend',event=>{
-  const origin=start;start=null;
+  const origin=gesture;gesture=null;
   const touch=event.changedTouches[0];
   if(!origin||event.touches.length||touch.identifier!==origin.id)return;
   const dx=origin.x-touch.clientX,dy=origin.y-touch.clientY,distance=Math.abs(dx);
-  if(distance<16||distance<1.5*Math.abs(dy)||distance<0.25*(event.timeStamp-origin.time))return;
-  const {track,page}=origin,next=Math.max(0,Math.min(track.children.length-1,page+Math.sign(dx)));
-  requestAnimationFrame(()=>{
-   if(track.isConnected&&!signal.aborted)scrollToSummaryPage(track,next);
-  });
- },{signal,passive:true});
+  const flick=distance>=16&&distance>=1.25*Math.abs(dy)&&distance>=0.25*(event.timeStamp-origin.time);
+  if(!origin.dragging&&!flick)return;
+  if(event.cancelable)event.preventDefault();
+  const {track,page}=origin,advance=flick||distance>=track.clientWidth/2;
+  const next=Math.max(0,Math.min(track.children.length-1,page+(advance?Math.sign(dx):0)));
+  settle(track,next);
+ },{signal,passive:false});
 }
 function scrollToSummaryPage(track,index){
  track.scrollTo({left:index*track.clientWidth,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
