@@ -120,6 +120,13 @@ test('both edges step back once, respect an editor saving and leave tab roots to
   await page.locator('#settings-tab').click();await page.locator('#add-food').click();await page.locator('[data-am=select][data-id=food]').click();
   await page.locator('[data-mfs=options]').click();await right();await page.locator('.mfs-overlay').waitFor({state:'hidden'});
   assert.equal(await page.locator('#food-search').isVisible(),true);
+  const foodSearch=page.locator('#food-search');await foodSearch.focus();
+  assert.deepEqual(await foodSearch.evaluate(input=>{
+   const style=getComputedStyle(input), add=getComputedStyle(document.body).getPropertyValue('--mobile-add-color');
+   const swatch=document.createElement('span');swatch.style.color=add;document.body.append(swatch);
+   const expected=getComputedStyle(swatch).color;swatch.remove();
+   return [style.outlineStyle,style.boxShadow,style.caretColor===expected];
+  }),['none','none',true]);
   await page.locator('[data-mfs=options]').click();await left();await page.locator('.mfs-overlay').waitFor({state:'hidden'});assert.equal(await page.locator('#food-search').isVisible(),true);
   await right();await page.locator('#sheet').waitFor({state:'hidden'});
   await page.locator('#settings-tab').click();await page.locator('[data-more-open=support]').click();

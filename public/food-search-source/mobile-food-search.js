@@ -62,7 +62,14 @@ export class MobileFoodSearch{
  }
  refresh(){this.root.querySelector('[data-mfs-sort]').textContent=this.m(this.filters.sort);this.root.querySelector('[data-mfs-databases]').textContent=this.databases.filter(row=>this.filters.databases.includes(row.id)).map(row=>row.name).join(', ');this.search.setQuery(this.root.querySelector('#food-search').value,0);}
  click(event){
-  const picked=event.target.closest('.mfs-result');if(picked){event.preventDefault();event.stopPropagation();const row=this.search.state.items.find(row=>row.id===picked.dataset.id&&row.kind===picked.dataset.kind);if(row){if(this.multi?.locked())return;if(this.multi?.enabled)this.multi.toggle(row);else this.onPick(row);}return;}
+  const picked=event.target.closest('.mfs-result');if(picked){event.preventDefault();event.stopPropagation();const row=this.search.state.items.find(row=>row.id===picked.dataset.id&&row.kind===picked.dataset.kind);if(row){
+    const select=()=>{
+     if(this.abort.signal.aborted||this.multi?.locked()||!this.search.state.items.includes(row))return;
+     if(this.multi?.enabled)this.multi.toggle(row);else this.onPick(row);
+    };
+    // A result can paint before the account's pending Multi-Add check finishes.
+    if(this.multi?.loading)this.multi.ready.then(select);else select();
+   }return;}
   const category=event.target.closest('[data-mfs-category]');if(category){this.filters.category=category.dataset.mfsCategory;for(const tab of this.root.querySelectorAll('[data-mfs-category]'))tab.setAttribute('aria-pressed',String(tab===category));this.refresh();return;}
   const sort=event.target.closest('[data-mfs-sort-option]');if(sort){this.filters.sort=sort.dataset.mfsSortOption;this.persistOptions();this.refresh();this.closeOptions();return;}
   const database=event.target.closest('[data-mfs-database]');if(database){const id=database.dataset.mfsDatabase;this.filters.databases=!id?[]:this.filters.databases.includes(id)?this.filters.databases.filter(v=>v!==id):[...this.filters.databases,id];this.persistOptions();this.refresh();this.renderOptions();this.root.querySelector(`[data-mfs-database="${CSS.escape(id)}"]`)?.focus();return;}

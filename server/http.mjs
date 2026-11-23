@@ -303,6 +303,11 @@ function registerOfflineAndReminderRoutes(add) {
     noSearch: 'Invalid notification request.',
     handler: async ({api, secret, json}) => json(200, await api.reminders(secret)),
   });
+  add('GET', '/api/reminders/connection', {
+    auth: 'secret',
+    noSearch: 'Invalid notification request.',
+    handler: async ({api, secret, json}) => json(200, await api.pushConnection(secret)),
+  });
   for (const [path, method] of [
     ['/api/reminders/subscribe', 'subscribePush'],
     ['/api/reminders/unsubscribe', 'unsubscribePush'],
@@ -832,6 +837,16 @@ function registerRecordsAndCatalogRoutes(add) {
         fail(400, 'Invalid search.');
       }
       return json(200, await api.searchCatalog(secret, {query, offset, limit}));
+    },
+  });
+  add('GET', '/api/catalog/food-details', {
+    auth: 'secret',
+    handler: async ({api, secret, url, json}) => {
+      const ids = url.searchParams.getAll('id');
+      if ([...url.searchParams.keys()].some(key => key !== 'id') || !ids.length || ids.length > 25 || new Set(ids).size !== ids.length) {
+        fail(400, 'Choose one page of catalog foods.');
+      }
+      return json(200, await api.catalogFoodDetails(secret, ids.map(id => string(id, 1, 1000))));
     },
   });
   add('GET', '/api/catalog/food', {

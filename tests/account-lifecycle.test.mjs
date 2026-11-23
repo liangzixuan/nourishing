@@ -114,6 +114,26 @@ test('a lost registration or activation reply recovers the same request and runs
  assert.equal(f.table('account_operations').size,0);
 });
 
+test('a dropped activation request retries the same published marker before Diary work starts',async()=>{
+ for(const recover of [true,false]){
+  const f=accountFixture(),life=createAccountLifecycle({db:f.db});
+  await life.initialize('owner');
+  const update=f.db.updateRow,attempts=[];let calls=0;
+  f.db.updateRow=async input=>{
+   if(input.tableId==='account_operations' && input.data.state==='active'){
+    attempts.push(input.rowId);
+    if(attempts.length===1 || !recover)throw new TypeError('fetch failed');
+   }
+   return update(input);
+  };
+  const diary=life.run('owner','readDiary',async()=>++calls);
+  if(recover)assert.equal(await diary,1);else await assert.rejects(diary,/fetch failed/);
+  assert.equal(attempts.length,2);assert.equal(attempts[0],attempts[1]);
+  assert.equal(calls,recover?1:0);
+  assert.equal(f.table('account_operations').size,0);
+ }
+});
+
 test('failed operation-row removal is recoverable only after its settled marker is durable',async()=>{
  const f=accountFixture(),life=createAccountLifecycle({db:f.db});await life.initialize('owner');const op=await life.enter('owner','finished');f.failDeleteRow=true;await life.settle(op);assert.equal(f.table('account_operations').get(op.id).state,'settled');assert.equal((await life.pending('owner')).active,0);assert.equal(f.table('account_operations').size,0);
 });

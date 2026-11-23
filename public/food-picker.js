@@ -39,14 +39,51 @@ export function multiReviewer(ownerId,{requireTicket=true}={}){
  };
 }
 /** Shared source search surface. The third callback argument identifies the selected corpus. */
-export function mountFoodPicker(root,{onPick,onClose,allowMeals=true,allowRecipes=true,excludeRecipe=null,onBarcode,onBranded,multi=null,restore=null,initialCategory}){
+export function mountFoodPicker(root,{onPick,onClose,allowMeals=true,allowRecipes=true,excludeRecipe=null,onBarcode,onBranded,multi=null,restore=null,initialCategory,prepareCatalogDetails=false}){
  root.classList.add('food-picker-host');
+ // The search view can append pages. Prepare the latest requested page, with
+ // at most one read in flight. A tap on an earlier page selects its own batch.
+ let latest=null,reading=null;
+ function prepare(items){
+  if(!prepareCatalogDetails)return null;
+  const ids=items.filter(row=>row.kind==='catalog').map(row=>row.id).sort();
+  if(!ids.length){latest=null;return null;}
+  const path='/api/catalog/food-details?'+new URLSearchParams(ids.map(id=>['id',id]));
+  if(latest?.path===path)return latest;
+  const page={path,ids};latest=page;
+  page.result=(async()=>{
+   if(reading)await reading;
+   if(latest!==page&&!page.selected)return null;
+   const work=request(path).catch(()=>null);
+   reading=work;
+   try{return await work;}finally{if(reading===work)reading=null;}
+  })();
+  return page;
+ }
+ function pick(row){
+  const kind=({catalog:'food',foods:'food',recipes:'recipe',meals:'meal'})[row.kind];
+  const meta={source:row.kind==='catalog'?'catalog':'library'};
+  if(prepareCatalogDetails&&row.kind==='catalog'){
+   const items=search.search.state.items;
+   const start=Math.floor(items.indexOf(row)/search.search.limit)*search.search.limit;
+   const page=latest?.ids.includes(row.id)?latest:prepare(items.slice(start,start+search.search.limit));
+   if(page){
+    page.selected=true;
+    meta.catalogFood=page.result.then(result=>result?.foods?.find(food=>food.id===row.id));
+   }
+  }
+  return onPick(kind,row.id,meta);
+ }
  const search=new MobileFoodSearch({root,initialCategory,language:uiLanguage(),request:(path,{signal,body}={})=>request(path,body?JSON.parse(body):null,signal),onScan:onBarcode,multi:multi?{...multi,onReview:multiReviewer(multi.ownerId,{requireTicket:Boolean(multi.onQueue)})}:null,restore:restore??multi?.restore,
-  fetchPage:async(params,signal)=>{params.set('allowMeals',String(allowMeals));params.set('allowRecipes',String(allowRecipes));if(excludeRecipe)params.set('excludeRecipe',excludeRecipe);const local=await localFoodSearch(params);if(local)return local;return request('/api/food-search?'+params,null,signal);},
-  onPick:row=>onPick(({catalog:'food',foods:'food',recipes:'recipe',meals:'meal'})[row.kind],row.id,{source:row.kind==='catalog'?'catalog':'library'}),
+  fetchPage:async(params,signal)=>{params.set('allowMeals',String(allowMeals));params.set('allowRecipes',String(allowRecipes));if(excludeRecipe)params.set('excludeRecipe',excludeRecipe);const local=await localFoodSearch(params);const page=local??await request('/api/food-search?'+params,null,signal);
+   if(!signal.aborted)prepare(page.items);
+   return page;},
+  onPick:pick,
   onClose:onClose??(()=>root.closest('dialog')?.querySelector('[data-close]')?.click()),onPreferenceError:message=>{root.querySelector('[role=status]').textContent=message;}
  });
+ const restored=restore??multi?.restore;
+ if(restored?.search?.result)prepare(restored.search.result.items);
  if(onBranded){const button=document.createElement('button');button.type='button';button.dataset.pickerBranded='';button.textContent=fc("searchBranded");button.onclick=onBranded;root.querySelector('.mfs-content').append(button);}
- const dispose=()=>{search.dispose();root.classList.remove('food-picker-host');};
+ const dispose=()=>{latest=null;search.dispose();root.classList.remove('food-picker-host');};
  Object.assign(dispose,{snapshot:()=>search.snapshot(),ready:search.multi?.ready??Promise.resolve(),applyEntry:(entry,label)=>search.multi?.applyEntry(entry,label)??false,returnFromDetail:()=>search.multi?.returnFromDetail(),select:(row,entry)=>search.multi?.select(row,entry)??false});return dispose;
 }

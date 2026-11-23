@@ -532,6 +532,7 @@ function buildLibraryAndSearchMethods(ctx) {
       const catalog = await loadCatalogIndex({storage, head, namespace: config.endpoint + '/' + config.project});
       return {...catalog.clientSearchIndex(), generation: head.generation};
     },
+    catalogFoodDetails: async (secret, ids) => (await data(secret)).repository.catalogFoodDetails(ids),
     readCatalogFood: async (secret, id) => (await data(secret)).repository.food(id),
     importRecipe: async (secret, input) => {
       if (typeof input?.url === 'string' && input.url.trim()) {
@@ -609,6 +610,7 @@ function buildDiaryAndViewMethods(ctx) {
       const calendar = await calendarContext(secret, owner);
       return createWorkspaceStore(new TablesDB(elevated()), owner).offlineCommand(input, calendar);
     },
+    pushConnection: async secret => (await pushStore(secret)).status(),
     reminders: async secret => ({...(await (await pushStore(secret)).status()), ...(await (await reminderStore(secret)).status())}),
     saveReminder: async (secret, input) => (await reminderStore(secret)).save(input),
     deleteReminder: async (secret, input) => (await reminderStore(secret)).remove(input),
@@ -849,7 +851,6 @@ export function createAppwriteService(config, key, userAgent = '') {
   const vapidConfig = () => ({publicKey: process.env.WEB_PUSH_PUBLIC_KEY, privateKey: process.env.WEB_PUSH_PRIVATE_KEY});
   const pushStore = async secret => {
     const {owner} = await data(secret);
-    await createWorkspaceStore(new TablesDB(elevated()), owner).create();
     return createWebPushStore({db: new TablesDB(elevated()), ownerId: owner, origin: config.origin, vapid: vapidConfig()});
   };
   const reminderStore = async secret => {

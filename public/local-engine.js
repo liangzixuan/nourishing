@@ -46,13 +46,18 @@ export async function localLibraryView(){
  const view=await localWorkspaceView();
  return view?libraryCollectionView(view.state,view.revision):null;
 }
-export async function localLibraryItem({kind,id,entry}){
+export async function localLibraryItem({kind,id,entry,catalogFood}){
  if(!LIBRARY_KINDS.includes(kind)||!id)return null;
+ const catalog=catalogFood?await catalogFood:null;
  const view=await localWorkspaceView();if(!view)return null;
  const source=remapWriteReferences({id,entry:entry?structuredClone(entry):undefined},view.recordIds);
- const resource=view.state[kind+'s']?.find(row=>row.id===source.id);if(!resource)return null;
+ let state=view.state,resource=state[kind+'s']?.find(row=>row.id===source.id);
+ if(!resource&&catalog?.id===id&&kind==='food'&&!entry&&source.id===id){
+   resource=catalog;state={...state,foods:[...state.foods,catalog]};
+ }
+ if(!resource)return null;
  const savedEntry=source.entry?.id?view.state.entries.find(row=>row.id===source.entry.id)??source.entry:source.entry;
- try{return {...libraryItem(view.state,kind,resource,savedEntry),_local:true};}catch{return null;}
+ try{return {...libraryItem(state,kind,resource,savedEntry),...(state!==view.state?{copySelection:{kind:'catalog',id}}:{}),_local:true};}catch{return null;}
 }
 
 export async function localPreviewDiaryItem(input,reviewedFood) {

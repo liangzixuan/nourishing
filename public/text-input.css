@@ -1,0 +1,11 @@
+/* Text entry uses the Add button's caret color in each theme. Keep focus rings on other controls. */
+:is(input:not([type]), input[type=text], input[type=search], input[type=email], input[type=password],
+    input[type=number], input[type=tel], input[type=url], textarea, [contenteditable=true]) {
+  caret-color: var(--mobile-add-color, #ff6430);
+  -webkit-tap-highlight-color: transparent;
+}
+:is(input:not([type]), input[type=text], input[type=search], input[type=email], input[type=password],
+    input[type=number], input[type=tel], input[type=url], textarea, [contenteditable=true]):focus {
+  outline: none;
+  box-shadow: none;
+}

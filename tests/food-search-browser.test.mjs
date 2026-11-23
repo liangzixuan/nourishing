@@ -11,7 +11,14 @@ test('source food search categories, options, debounce, paging and child selecti
  const state=initialState(),foods=Array.from({length:62},(_,i)=>({id:`usda:sr-legacy-2018-04:${i+1}`,name:i===0?'Apple juice':i===1?'Coffee':`Oats ${String(i).padStart(2,'0')}`,serving:'100 g',grams:100,nutrients:{calories:100},source:{name:'USDA',datasetId:'sr-legacy-2018-04',dataset:'USDA SR Legacy',fdcId:i+1},category:{id:'usda-category:14',name:'Beverages'}}));
  state.foods=[{id:'custom',name:'My Apple',serving:'1 bowl',grams:100,nutrients:{calories:150}}];state.recipes=[{id:'recipe',name:'My recipe',ingredients:[{foodId:'custom',amount:1}]}];state.meals=[{id:'meal',name:'My meal',items:[]}];state.settings.favorites=[{kind:'food',id:'custom'}];
  const catalog=createInsightCatalog(foods,{metadata:{datasets:[{id:'sr-legacy-2018-04',name:'USDA SR Legacy',foodCount:62}]}}),queries=[];
+ const detailPages=[];let releaseFirst;
+ const firstRead=new Promise(resolve=>{releaseFirst=resolve;});
  const server=createServer(async(req,res)=>{try{const url=new URL(req.url,'http://localhost'),path=url.pathname;
+  if(path==='/api/catalog/food-details'){
+   const ids=url.searchParams.getAll('id');detailPages.push(ids);
+   if(detailPages.length===1)await firstRead;
+   res.setHeader('Content-Type','application/json');return res.end(JSON.stringify({foods:foods.filter(row=>ids.includes(row.id))}));
+  }
   if(path==='/api/food-search'){queries.push(url.search);const result=searchCloudFoods(state,catalog,readCloudFoodSearchQuery(url.searchParams));if(url.searchParams.get('q')==='apple')await new Promise(resolve=>setTimeout(resolve,600));res.setHeader('Content-Type','application/json');return res.end(JSON.stringify(result));}
   if(path==='/'){res.setHeader('Content-Type','text/html');return res.end(`<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/mobile-theme.css"><link rel="stylesheet" href="/diary.css"><link rel="stylesheet" href="/app-shell.css"><link rel="stylesheet" href="/food-search-source/mobile-food-search.css"></head><body class="discover-mobile dark"><dialog id="sheet" open><div id="sheet-content"><header class="sheet-header"><button data-close>Close</button><h2>Add Food</h2></header><div id="picker"></div></div></dialog><script type="module">import {mountFoodPicker} from '/food-picker.js';window.mount=(options={})=>{window.cleanup?.();window.cleanup=mountFoodPicker(document.querySelector('#picker'),{onPick:(kind,id,meta)=>window.picked={kind,id,meta},onBarcode:()=>window.scanned=true,...options});};window.mount();document.querySelector('[data-close]').onclick=()=>{window.closed=true;window.cleanup();};</script></body></html>`);}
   if(!/^\/[a-zA-Z0-9/_.-]+\.(?:js|mjs|css|woff2)$/.test(path)||path.includes('..'))return res.writeHead(404).end();res.setHeader('Content-Type',path.endsWith('.css')?'text/css':path.endsWith('.woff2')?'font/woff2':'text/javascript');res.end(readFileSync(new URL('../public'+path,import.meta.url)));
@@ -42,6 +49,18 @@ test('source food search categories, options, debounce, paging and child selecti
   await page.evaluate(()=>{window.realSetItem=Storage.prototype.setItem;Storage.prototype.setItem=()=>{throw new DOMException('Storage disabled','SecurityError');};});
   await page.locator('[data-mfs=sort]').click();await page.locator('[data-mfs-sort-option=az]').click();await page.getByRole('status').filter({hasText:'Search options could not be saved.'}).waitFor();await page.locator('.mfs-result').first().waitFor();await page.evaluate(()=>{Storage.prototype.setItem=window.realSetItem;});
   if(process.env.FOOD_SEARCH_SCREENSHOTS){mkdirSync('.local/food-search-restoration',{recursive:true});await page.evaluate(()=>document.querySelector('#sheet').scrollTop=0);await page.screenshot({path:'.local/food-search-restoration/search.png'});await page.locator('[data-mfs=options]').click();await page.screenshot({path:'.local/food-search-restoration/options.png'});}
+  const started=page.waitForRequest(r=>r.url().includes('/api/catalog/food-details?'));
+  await page.evaluate(()=>window.mount({prepareCatalogDetails:true,onPick:async(_,id,meta)=>{window.openedFood=(await meta.catalogFood)?.id;}}));
+  await started;
+  await input.fill('oats 59');
+  await page.getByRole('button',{name:/Oats 59/}).waitFor();
+  await input.fill('oats 60');
+  await page.getByRole('button',{name:/Oats 60/}).click();
+  assert.equal(detailPages.length,1,'Slow reads do not start a request for every settled query');
+  releaseFirst();
+  await page.waitForFunction(id=>window.openedFood===id,foods[60].id);
+  assert.deepEqual(detailPages[1],[foods[59].id,foods[60].id]);
+  assert.equal(detailPages.length,2);
   assert.deepEqual(errors,[]);
- }finally{await browser?.close();catalog.disposeSearch();await new Promise(resolve=>server.close(resolve));}
+ }finally{releaseFirst();await browser?.close();catalog.disposeSearch();await new Promise(resolve=>server.close(resolve));}
 });

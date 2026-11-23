@@ -13,7 +13,7 @@
 .mb-value>input{flex:1 1 0;}
 .mb-value>span{flex:none;}
 #sheet.mobile-biometric .mb-row input:not([type=checkbox]){min-width:0;min-height:0;width:100%;border:0;background:transparent;color:inherit;border-radius:6px;font:inherit;text-align:right;padding:4px 0;box-shadow:none;}
-#sheet.mobile-biometric .mb-row input:focus-visible{outline:1px solid var(--green);outline-offset:2px;}
+#sheet.mobile-biometric .mb-row input:is([type=time],[type=checkbox]):focus-visible{outline:1px solid var(--green);outline-offset:2px;}
 #sheet.mobile-biometric .mb-row input[type=time]{background:var(--pale);padding:4px 6px;width:5.2em;max-width:100%;flex:none;color-scheme:var(--mobile-color-scheme);}
 .mb-row input[readonly]{opacity:.4;}
 .mb-row input[type=checkbox]{width:24px;height:24px;accent-color:var(--mobile-accent-text);margin:0;flex:none;}

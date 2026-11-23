@@ -42,6 +42,15 @@ test('Discover touch swipes navigate bounded tabs while preserving scrolling, co
   const page=await browser.newPage({viewport:{width:412,height:915},hasTouch:true,isMobile:true}),errors=[];
   page.on('pageerror',error=>errors.push(error.message));page.setDefaultTimeout(10000);
   await page.goto(`http://127.0.0.1:${server.address().port}`);await page.locator('.cloud-dashboard').waitFor();
+  for(const width of [320,412,810]){
+   await page.setViewportSize({width,height:915});
+   const rects=await page.locator('.dc-tabs').evaluate(nav=>[nav,...nav.children].map(el=>{const {left,right,width}=el.getBoundingClientRect();return {left,right,width}}));
+   const [bar,...tabs]=rects;
+   assert.equal(tabs.length,4);
+   assert.ok(Math.abs(tabs[0].left-bar.left)<1 && Math.abs(tabs.at(-1).right-bar.right)<1);
+   assert.ok(tabs.every(t=>Math.abs(t.width-bar.width/4)<1));
+  }
+  await page.setViewportSize({width:412,height:915});
   const tab=name=>page.waitForFunction(expected=>{
    const current=document.querySelector('[data-tab][aria-current="page"]');
    return current?.dataset.tab===expected&&!document.documentElement.classList.contains('discover-transition');

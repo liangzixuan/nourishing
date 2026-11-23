@@ -51,7 +51,7 @@
   border:1px solid var(--muted);border-radius:4px;
   font:400 calc(14rem / 18)/1.35 Lato,sans-serif;
 }
-.profile-editor[data-profile-editor=weight] .profile-number:focus-within {outline:2px solid var(--green)}
+
 .profile-editor[data-profile-editor=weight] .profile-number input {
   appearance:textfield;width:7ch;height:32px;min-height:0;min-width:2ch;max-width:78%;
   padding:0;border:0;box-shadow:none;outline:0;text-align:right;font:inherit;

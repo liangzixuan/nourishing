@@ -841,9 +841,10 @@ async function search(restore = null, {applied, selected, initialCategory} = {})
   };
   const picker = mountFoodPicker(content.querySelector('.diary-picker'), {
     initialCategory,
-    onPick: (kind, id, {source}) => {
+    prepareCatalogDetails: true,
+    onPick: (kind, id, {source, catalogFood}) => {
       const snapshot = picker.snapshot();
-      return edit({id, kind, source, initialGroup:group, returnSearch: () => search(snapshot)});
+      return edit({id, kind, source, catalogFood, initialGroup:group, returnSearch: () => search(snapshot)});
     },
     onBarcode: () => searchBarcode('camera', picker.snapshot()),
     onBranded: () => searchBarcode('search', picker.snapshot()),
@@ -928,7 +929,7 @@ function returnToDiaryWithFoodError() {
   foodLoadBanner.show(coreText('diary.foodLoadError'));
 }
 
-async function edit({entry = null, id, kind, source = 'library', quantity, returnSearch, initialGroup = defaultDiaryGroup} = {}) {
+async function edit({entry = null, id, kind, source = 'library', catalogFood, quantity, returnSearch, initialGroup = defaultDiaryGroup} = {}) {
   const itemId = id ?? entry?.foodId ?? entry?.recipeId ?? entry?.mealId;
   const itemKind = kind ?? (entry?.recipeId ? 'recipe' : entry?.mealId ? 'meal' : 'food');
   if (!itemId) {
@@ -940,7 +941,7 @@ async function edit({entry = null, id, kind, source = 'library', quantity, retur
   let item;
   try {
     const query = new URLSearchParams({kind: itemKind, id: itemId, ...(entry ? {entryId: entry.id} : {})});
-    item = await localLibraryItem({kind: itemKind, id: itemId, entry}) ?? await request('/api/library/item?' + query);
+    item = await localLibraryItem({kind: itemKind, id: itemId, entry, catalogFood}) ?? await request('/api/library/item?' + query);
   } catch (error) {
     if (!loading.isConnected || error.name === 'AbortError') return;
     if (source === 'library' && (itemKind === 'food' || itemKind === 'recipe')) returnToDiaryWithFoodError();

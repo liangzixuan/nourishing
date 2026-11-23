@@ -30,6 +30,24 @@ export function createDataRepository(db,ownerId){
      const items=result.rows.slice(0,limit).map(row=>JSON.parse(row.compact));
      return {items,total:terms.length?null:h.count,offset,nextOffset:result.rows.length>limit?offset+limit:null};
    },
+   async catalogFoodDetails(ids){
+     const h=await catalogHead(),wanted=new Set(ids);
+     const result=await db.listRows({databaseId,tableId:'catalog_foods',queries:[
+       Query.equal('$id',ids.map(id=>rowId(h.generation,id))),
+       Query.select(['generation','sourceId','payload']),Query.limit(ids.length)
+     ],total:false});
+     // Leave room for the response envelope in the device's 2 MiB cache entry.
+     // A skipped resource still opens with the existing single-item read.
+     const foods=[];let remaining=1024*1024;
+     for(const row of result.rows){
+       if(row.generation!==h.generation||!wanted.delete(row.sourceId))notFound();
+       const bytes=Buffer.byteLength(row.payload);
+       if(bytes>remaining)continue;
+       const food=JSON.parse(row.payload);if(food.id!==row.sourceId)notFound();
+       remaining-=bytes;foods.push(food);
+     }
+     return {generation:h.generation,foods};
+   },
    async food(id){const h=await catalogHead(),row=await get('catalog_foods',rowId(h.generation,id));if(row.generation!==h.generation||row.sourceId!==id)notFound();return {food:JSON.parse(row.payload),original:JSON.parse(row.original)};},
    async media(namespace,id){const h=await head(),row=await get('workspace_media',rowId(ownerId,h.generation,namespace,id));if(row.ownerId!==ownerId||row.generation!==h.generation||row.namespace!==namespace||row.sourceId!==id)notFound();return row.fileId;}
  };

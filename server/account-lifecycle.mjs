@@ -3,6 +3,10 @@ import {setTimeout as delay} from 'node:timers/promises';
 import {Query} from 'node-appwrite';
 const fail=(message='Account deletion is pending.',code=409)=>{throw Object.assign(Error(message),{code,publicMessage:message});};
 const optional=async work=>{try{return await work();}catch(error){if(error.code===404)return null;throw error;}};
+const transientProviderFailure=error=>!error.publicMessage && (
+ (error instanceof TypeError && error.message==='fetch failed') ||
+ error.code===408 || error.code===429 || (error.code>=500 && error.code<600)
+);
 
 /** Server-only ownership of requests which can still finish account work. Never expire an operation. */
 export function createAccountLifecycle({db,database='nourishing',now=()=>Date.now()}){
@@ -24,10 +28,16 @@ export function createAccountLifecycle({db,database='nourishing',now=()=>Date.no
   const marker=args('account_operations',id);
   const registration={ownerId:owner,label,state:'registering',createdAt:at(),reason:''};
   async function confirmed(write,state){
-   try{await write();}catch(error){
-    if(Number.isInteger(error.code)&&error.code<500&&![408,409].includes(error.code))throw error;
-    const saved=await owned(operation);
-    if(saved?.label!==label || saved.state!==state || saved.createdAt!==registration.createdAt)throw error;
+   for(let attempt=0;;attempt++){
+    try{await write();return;}catch(error){
+     if(Number.isInteger(error.code)&&error.code<500&&![408,409,429].includes(error.code))throw error;
+     const saved=await owned(operation);
+     if(saved?.label!==label || saved.createdAt!==registration.createdAt)throw error;
+     if(saved.state===state)return;
+     // Only the active transition on this already published marker is safe to repeat.
+     if(state!=='active'||saved.state!=='registering'||attempt>0||!transientProviderFailure(error))throw error;
+     await delay(100);
+    }
    }
   }
   // Publish before checking the gate. A later deletion must drain this marker;
@@ -61,9 +71,7 @@ export function createAccountLifecycle({db,database='nourishing',now=()=>Date.no
     if(row.state!=='settled')await optional(()=>db.updateRow({...rowArgs,data:{state:'settled',reason:''}}));
     break;
    }catch(error){
-    const transient=error instanceof TypeError && error.message==='fetch failed' ||
-     error.code===408 || error.code===429 || error.code>=500 && error.code<600;
-    if(!transient || error.publicMessage || attempt>=2)throw error;
+    if(!transientProviderFailure(error) || attempt>=2)throw error;
     await delay(100*2**attempt);
    }
   }

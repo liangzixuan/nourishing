@@ -55,9 +55,19 @@ test('native Back closes one live layer, honors keep and leaves the root in one 
     return length;
   });
   assert.equal(await page.evaluate(() => history.length), baseLength + 1);
+  const cdp = await page.context().newCDPSession(page);
+  const currentEntry = async () => {
+    const {entries, currentIndex} = await cdp.send('Page.getNavigationHistory');
+    return entries[currentIndex].id;
+  };
+  const marker = await currentEntry();
   for (const expected of [['detail'], ['detail', 'sheet'], ['detail', 'sheet', 'parent']]) {
     await page.goBack();
     assert.deepEqual(await page.evaluate(() => calls), expected);
+    if (expected.length < 3) {
+      await page.waitForFunction(() => history.state?.nourishingBack);
+      assert.equal(await currentEntry(), marker, 'Nested Back reuses the original browser entry');
+    }
   }
   assert.deepEqual(await page.evaluate(() => history.state), {source: 'base'});
   assert.equal(await page.evaluate(() => back.requestAppBack()), false);

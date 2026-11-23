@@ -4,7 +4,7 @@
  */
 const stack = [];
 const marker = 'nourishing-back-stack';
-let draining = false;
+let traversing = false;
 let handling = false;
 
 export function hasAppBack() {
@@ -16,13 +16,13 @@ function atMarker() {
 }
 
 function syncHistory() {
-  if (handling || draining) return;
+  if (handling || traversing) return;
   if (hasAppBack()) {
     if (!atMarker()) history.pushState({...history.state, nourishingBack: marker}, '');
   } else if (atMarker()) {
     // A replacement sheet can open before this traversal reaches the base.
     // The popstate listener restores the marker for the live stack.
-    draining = true;
+    traversing = true;
     history.back();
   }
 }
@@ -43,11 +43,20 @@ export function requestAppBack() {
 
 if (typeof window !== 'undefined' && window.history) {
   window.addEventListener('popstate', () => {
-    if (draining || atMarker()) {
-      draining = false;
+    if (atMarker()) {
+      traversing = false;
       syncHistory();
-    } else {
-      requestAppBack();
+      return;
+    }
+    const appReleasedMarker = traversing;
+    traversing = true;
+    try {
+      if (!appReleasedMarker) requestAppBack();
+    } finally {
+      // Reuse the marker created when the user opened the screen. Pushing a
+      // new one here makes Chrome skip the app on the next system Back.
+      if (hasAppBack()) history.forward();
+      else traversing = false;
     }
   });
   // A reload starts at the root even if a sheet owned the current entry.

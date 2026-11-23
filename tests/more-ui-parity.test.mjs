@@ -39,7 +39,11 @@ test('source More menu preserves search and back focus, cloud destinations and d
   await page.getByRole('heading',{name:'More',exact:true}).waitFor();assert.equal(await page.getByRole('button',{name:'Targets',exact:true}).count(),1);assert.equal(await page.getByRole('button',{name:'Connect Apps & Devices',exact:true}).count(),0);assert.equal(await page.getByRole('button',{name:'Referrals',exact:true}).count(),0);
   const version=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')).version;
   const versionValue=page.locator('.mm-version').getByText(version,{exact:true});
-  await page.getByRole('button',{name:'About',exact:true}).click();await versionValue.waitFor();await page.getByRole('button',{name:'Check for updates',exact:true}).click();await page.getByText('You are up to date.',{exact:true}).waitFor();await page.goBack();await page.getByRole('heading',{name:'More',exact:true}).waitFor();assert.equal(page.url(),origin+'/');
+  await page.getByRole('button',{name:'About',exact:true}).click();await versionValue.waitFor();
+  const dataRow=page.locator('[data-more-open=backup]');
+  assert.ok(await dataRow.evaluate(el=>el.getBoundingClientRect().bottom<=document.querySelector('.mm-version').getBoundingClientRect().top));
+  assert.ok(await versionValue.evaluate(el=>el.getBoundingClientRect().bottom<=document.querySelector('[data-more-check-update]').getBoundingClientRect().top));
+  await page.getByRole('button',{name:'Check for updates',exact:true}).click();await page.getByText('You are up to date.',{exact:true}).waitFor();await page.goBack();await page.getByRole('heading',{name:'More',exact:true}).waitFor();assert.equal(page.url(),origin+'/');
   await page.getByRole('button',{name:'About',exact:true}).click();await versionValue.waitFor();await page.getByRole('button',{name:'Back',exact:true}).click();
   const search=page.getByRole('searchbox',{name:'Search More'});await search.fill('target');assert.equal(await page.getByRole('button',{name:'Profile',exact:true}).isVisible(),false);await page.getByRole('button',{name:'Targets',exact:true}).click();await page.locator('[data-mt-home]').waitFor();assert.equal(await page.getByRole('heading',{name:'Targets & Settings',exact:true}).count(),0);await page.getByRole('button',{name:'Back',exact:true}).click();assert.equal(await search.inputValue(),'target');assert.equal(await search.evaluate(node=>node===document.activeElement),false);
   assert.equal(await page.getByRole('heading',{name:'Workspace tools'}).count(),0);

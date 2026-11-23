@@ -25,7 +25,7 @@ import {repeatView} from '../server/repeat-view.mjs';
 import {libraryView, libraryItem} from '../server/library-view.mjs';
 import {favoriteView} from '../server/library-extras.mjs';
 import {offlineSnapshot as projectOfflineSnapshot} from '../server/offline.mjs';
-import {digest} from '../server/data-codec.mjs';
+import {digest,rowId} from '../server/data-codec.mjs';
 
 const TINY_PNG =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAD0lEQVQImWPowAEYhpYEANsRZgE07zdlAAAAAElFTkSuQmCC';
@@ -50,6 +50,14 @@ async function createFixture() {
   act(state, 'entry.add', {date: today, time: '08:00', group: 'Breakfast', foodId: 'oats', quantity: 100, unit: 'g'});
 
   const data = diaryStoreFixture(state);
+  const catalogFood={
+    id:'usda:apple',name:'Apple, raw',serving:'100 g',grams:100,readOnly:true,
+    nutrients:{calories:52,protein:0.26,carbs:13.81,fat:0.17,potassium:107,sodium:0},
+    portions:[{id:'slice',label:'Slice',grams:25}],source:{name:'USDA',attribution:'Fixture source credit'},
+  };
+  const generation='cat-1',catalogRowId=rowId(generation,catalogFood.id);
+  data.table('catalog_heads').set('active',{generation});
+  data.table('catalog_foods').set(catalogRowId,{$id:catalogRowId,generation,sourceId:catalogFood.id,payload:JSON.stringify(catalogFood)});
   const repository = createDataRepository(data.db, 'fixture');
   const clock = {now: new Date(), timeZone: 'UTC', asOf: new Date().toISOString()};
   let apiDelayMs = 0;
@@ -86,6 +94,7 @@ async function createFixture() {
     charts: async (_, input) => chartSurfaceView(state, input, clock),
     nutritionReport: async (_, input) => reportView(state, input, clock),
     snapshots: async () => ({items: []}),
+    catalogFoodDetails: (_,ids)=>repository.catalogFoodDetails(ids),
     catalogSearchIndex: async () => ({
       version: 1,
       generation: 'cat-1',
@@ -253,6 +262,57 @@ test('startup asset waterfall and bundle size stay within responsiveness budgets
   } finally {
     await f.close();
   }
+});
+
+test('Search Food prepares a page of source foods and reopens their complete nutrient preview offline',async()=>{
+  const fixture=await createFixture();
+  const {page,base,apiHits}=fixture;
+  try{
+    await page.goto(base+'/diary');
+    await page.locator('.md-diary').waitFor();
+    let ready=false;
+    for(let i=0;i<100&&!ready;i++){
+      ready=await page.evaluate(async()=>{
+        const result=await (await import('/local-search.js')).localFoodSearch(new URLSearchParams());
+        return Boolean(result?.items.some(row=>row.id==='usda:apple'));
+      });
+      if(!ready)await page.waitForTimeout(100);
+    }
+    assert.ok(ready,'The public search index and account snapshot are present');
+    assert.equal(apiHits.filter(hit=>hit.path==='/api/catalog/food-details').length,0);
+    await page.locator('#add-food').click();
+    const prepared=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/catalog/food-details');
+    await page.locator('[data-am="select"][data-id="food"]').click();
+    const response=await prepared;
+    assert.equal(response.status(),200);
+    const path=new URL(response.url()).pathname+new URL(response.url()).search;
+    assert.equal(new URL(response.url()).searchParams.getAll('id').length,2);
+    await page.waitForFunction(async path=>{
+      const cached=await (await import('/device-cache.js')).readDeviceCache(path);
+      return cached.value?.foods.some(food=>food.id==='usda:apple');
+    },path);
+    const apple=page.locator('.mfs-result[data-id="usda:apple"]');
+    await apple.click();
+    await page.locator('[data-mf-energy]').filter({hasText:'52'}).waitFor();
+    // The item requires the complete source (including portions and credits).
+    assert.match(await page.locator('[data-mf-source]').textContent(),/Fixture source credit/);
+    const amount=id=>page.locator('[data-mf-nutrient="'+id+'"] .mf-amount');
+    assert.match(await amount('potassium').textContent(),/^107 \/ /);
+    assert.match(await amount('sodium').textContent(),/^0 \/ /);
+    assert.match(await amount('vitaminC').textContent(),/^\u2014 \/ /);
+    await page.locator('[data-quantity-unit]').selectOption('portion:slice');
+    await page.locator('[data-mf-energy]').filter({hasText:'13'}).waitFor();
+    await page.locator('[data-action="picker-back"]').click();
+    await page.locator('[data-mfs="close"]').click();
+    await page.context().setOffline(true);
+    await page.locator('#add-food').click();
+    await page.locator('[data-am="select"][data-id="food"]').click();
+    await apple.click();
+    await page.locator('[data-mf-energy]').filter({hasText:'52'}).waitFor();
+    assert.equal(apiHits.filter(hit=>hit.path==='/api/catalog/food-details').length,1);
+    assert.equal(apiHits.filter(hit=>['/api/library/item','/api/diary/preview'].includes(hit.path)).length,0);
+    assert.deepEqual(fixture.errors,[]);
+  }finally{await fixture.close();}
 });
 
 test('the narrow Add Menu keeps its width while the symbol font loads', async () => {

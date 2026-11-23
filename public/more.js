@@ -331,10 +331,11 @@ export function mountMore({
       section(
         id,
         t('mobileMore.about'),
-        group(row('licenses',coreText('more.licenses')) +
-          `<dl class="mm-version" tabindex="-1"><dt>${e(coreText('more.version'))}</dt><dd>${e(appVersion)}</dd></dl>`, 'mm-about-details') +
-        group(`<button type="button" class="mm-row" data-more-check-update><span>${e(coreText('more.checkUpdates'))}</span></button><p class="mm-update-status" role="status" aria-live="polite"></p>` +
-          row('account', t('mobileMore.account')) + row('backup', coreText('more.yourData'))),
+        group(row('licenses',coreText('more.licenses')) + row('account', t('mobileMore.account')) +
+          row('backup', coreText('more.yourData'))) +
+        group(`<dl class="mm-version" tabindex="-1"><dt>${e(coreText('more.version'))}</dt><dd>${e(appVersion)}</dd></dl>
+          <button type="button" class="mm-row" data-more-check-update><span>${e(coreText('more.checkUpdates'))}</span></button>
+          <p class="mm-update-status" role="status" aria-live="polite"></p>`, 'mm-about-details'),
       );
       if(option==='version')root.querySelector('.mm-version')?.focus();
       if(option==='updates')root.querySelector('[data-more-check-update]')?.focus();
