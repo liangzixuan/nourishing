@@ -1,3 +1,4 @@
+import {hasDiaryGroup} from './diary-groups.mjs';
 import Big from 'big.js';
 import {waterLimits} from './diary-record-fields.mjs';
 
@@ -10,7 +11,7 @@ const fields=['version','unit','goalMl','containerMl','showEntries','showTotal',
 export const defaultWaterSettings=Object.freeze({version:1,unit:'fl oz',goalMl:1892.705892,containerMl:236.5882365,showEntries:true,showTotal:true,group:null});
 export function parseWaterSettings(value,groups){
  if(value===null)return null;
- if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==fields.length||fields.some(key=>!Object.hasOwn(value,key))||value.version!==1||!Object.hasOwn(waterUnits,value.unit)||!volume(value.goalMl)||!volume(value.containerMl)||typeof value.showEntries!=='boolean'||typeof value.showTotal!=='boolean'||value.group!==null&&(!Array.isArray(groups)||!groups.includes(value.group)))fail();
+ if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==fields.length||fields.some(key=>!Object.hasOwn(value,key))||value.version!==1||!Object.hasOwn(waterUnits,value.unit)||!volume(value.goalMl)||!volume(value.containerMl)||typeof value.showEntries!=='boolean'||typeof value.showTotal!=='boolean'||value.group!==null&&(!Array.isArray(groups)||!hasDiaryGroup(groups,value.group)))fail();
  return Object.fromEntries(fields.map(key=>[key,value[key]]));
 }
 export function resolveWaterSettings(settings){return settings.waterSettings==null?{...defaultWaterSettings}:parseWaterSettings(settings.waterSettings,settings.groups);}

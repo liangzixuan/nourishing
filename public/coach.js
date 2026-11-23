@@ -1,3 +1,4 @@
+import {guardSheetExit} from './edge-navigation.js';
 import {dc} from './discover-cloud-messages.js';
 import {nutrientDisplayName} from './report-source/public/nutrient-language.js';
 import {carbohydrateDisplayLabel,carbohydrateControlDescription} from './report-source/public/carbohydrate-description.js';
@@ -70,6 +71,7 @@ export function openCoach({date,show,close,header,content,onChange=async()=>{},o
   if(setupStep==='about'){setupStep='choices';understood=false;}else editor=null;
   render();return true;
  }
+ guardSheetExit(root,()=>mutation?.blocked,life.signal);
  function stepBack(event){
   if(!setupStep||!alive())return;
   if(mutation?.blocked||back()){event.preventDefault();event.stopImmediatePropagation();}

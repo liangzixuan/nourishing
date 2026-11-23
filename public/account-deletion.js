@@ -7,7 +7,7 @@ export function createAccountDeletion({root,request,onSignIn,beforeDelete=async(
  let disposed=false,dialog=null,operation=null,timer=null,inFlight=false,active=false;
  const alive=()=>!disposed&&root.isConnected;
  const clearTimer=()=>{clearTimeout(timer);timer=null;};
- const clearDialog=()=>{operation?.abort();operation=null;if(dialog){dialog.querySelector('form')?.reset();dialog.close();dialog.remove();dialog=null;}};
+ const clearDialog=()=>{operation?.abort();operation=null;if(dialog){dialog.querySelector('form')?.reset();dialog.close?.();dialog.remove();dialog=null;}};
  const links=()=>`<nav class="links"><a href="/login">${m("accountCloud.signIn")}</a><a href="/register">${m("accountCloud.createAccount")}</a></nav>`;
  function screen(title,text,{retry=false,ready=false}={}){
   if(!alive())return;clearDialog();root.innerHTML='<h1></h1><p class="notice" role="status"></p>'+(retry?`<button type="button" data-deletion-retry>${m("mobileSuggest.retry")}</button>`:'')+(ready?`<button type="button" data-deletion-confirm>${m("accountCloud.retryDeletion")}</button>`:'')+links();
@@ -39,29 +39,40 @@ export function createAccountDeletion({root,request,onSignIn,beforeDelete=async(
   catch{inFlight=false;await check();}
   finally{inFlight=false;}
  }
- function open(){
+ function open({inline=false}={}){
   if(!alive()||dialog||active)return;
-  dialog=document.createElement('dialog');dialog.className='account-delete-dialog';dialog.setAttribute('aria-labelledby','deletion-title');
-  dialog.innerHTML=`<header><h2 id="deletion-title">${m("accountCloud.deleteAccountQuestion")}</h2><button type="button" class="deletion-close" aria-label="${m("mobileNutrientDetail.close")}">×</button></header><section><p>${m("accountCloud.yourCloudDiaryPhotosAndRetainedVersionsWillBeDeletedDownloadedBackupCopiesStayOnYourDevices")}</p><button type="button" class="secondary" data-deletion-backup>${m("accountCloud.downloadBackup")}</button><form><label>${m("accountCloud.password")}<input name="password" type="password" autocomplete="current-password" maxlength="256" required></label><p class="notice" data-deletion-status role="status"></p><button type="submit" class="danger">${m("accountCloud.deleteAccount")}</button></form></section>`;
+  dialog=document.createElement(inline?'section':'dialog');
+  dialog.className=inline?'account-delete-page':'account-delete-dialog';
+  const header=inline?'':`<header><h2 id="deletion-title">${m("accountCloud.bulk.account")}</h2><button type="button" class="deletion-close" aria-label="${m("mobileNutrientDetail.close")}">×</button></header>`;
+  if(!inline)dialog.setAttribute('aria-labelledby','deletion-title');
+  dialog.innerHTML=header+`<section><form class="delete-account-form">
+   <input name="password" type="password" autocomplete="current-password" maxlength="256" required aria-label="${m('accountCloud.accountPassword')}" placeholder="${m('accountCloud.accountPassword')}">
+   <textarea name="leavingReason" maxlength="1000" aria-label="${m('accountCloud.leavingReason')}" placeholder="${m('accountCloud.leavingReason')}" aria-describedby="deletion-feedback-note"></textarea>
+   <small id="deletion-feedback-note">${m('accountCloud.feedbackNote')}</small>
+   <label class="bulk-check deletion-ack"><input name="acknowledged" type="checkbox" required>${m('accountCloud.deletionAck')}</label>
+   <p class="notice" data-deletion-status role="status"></p><button type="submit" class="danger" disabled>${m("accountCloud.deleteAccount")}</button>
+  </form>${inline?'':`<button type="button" class="secondary" data-deletion-backup>${m("accountCloud.downloadBackup")}</button>`}</section>`;
   const current=dialog,form=current.querySelector('form'),status=current.querySelector('[role=status]'),password=form.elements.password;
   const message=text=>{if(current.isConnected)status.textContent=text;};
-  const busy=value=>current.querySelectorAll('button:not(.deletion-close),input').forEach(item=>item.disabled=value);
-  current.querySelector('.deletion-close').onclick=clearDialog;
+  function ready(){form.querySelector('[type=submit]').disabled=Boolean(operation)||!password.value||!form.elements.acknowledged.checked;}
+  const busy=value=>{current.querySelectorAll('button:not(.deletion-close),input,textarea').forEach(item=>item.disabled=value);ready();};
+  form.oninput=ready;
+  current.querySelector('.deletion-close')?.addEventListener('click',clearDialog);
   current.oncancel=event=>{event.preventDefault();clearDialog();};
   current.onclick=event=>{if(event.target!==current)return;const r=current.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)clearDialog();};
-  current.querySelector('[data-deletion-backup]').onclick=async()=>{
+  current.querySelector('[data-deletion-backup]')?.addEventListener('click',async()=>{
    if(operation)return;operation=new AbortController();const signal=operation.signal;busy(true);message(m("accountCloud.preparingBackup"));
    try{await downloadBackup({signal,onProgress:message,isCurrent:()=>alive()&&current.isConnected,requestJson:(path,body,signal)=>request(path,body,'GET',signal)});}
    catch(error){if(error.name!=='AbortError')message(error.message);}
    finally{if(current.isConnected){operation=null;busy(false);}}
-  };
+  });
   form.onsubmit=async event=>{
-   event.preventDefault();if(operation)return;const value=password.value;password.value='';operation=new AbortController();const signal=operation.signal;busy(true);message(m("accountCloud.checkingPassword"));
-   try{await request('/api/account/deletion/prepare',{password:value},'POST',signal);if(alive()&&current.isConnected&&!signal.aborted){operation=null;await confirm();}}
+   event.preventDefault();if(operation||!form.reportValidity())return;const value=password.value,leavingReason=form.elements.leavingReason.value.trim();password.value='';operation=new AbortController();const signal=operation.signal;busy(true);message(m("accountCloud.checkingPassword"));
+   try{await request('/api/account/deletion/prepare',{password:value,...(leavingReason?{leavingReason}:{})},'POST',signal);if(alive()&&current.isConnected&&!signal.aborted){operation=null;await confirm();}}
    catch(error){if(error.name!=='AbortError')message(error.message);}
    finally{if(current.isConnected){operation=null;busy(false);}}
   };
-  document.body.append(current);current.showModal();password.focus();
+  root.append(current);if(!inline){current.showModal();password.focus();}
  }
  async function recover(){
   try{const result=await request('/api/account/deletion/status',{});if(!alive())return true;if(result.status==='ready'){onSignIn();return true;}present(result);return true;}

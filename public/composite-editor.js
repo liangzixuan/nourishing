@@ -1,3 +1,4 @@
+import {guardSheetExit} from './edge-navigation.js';
 import {compositeHeader,compositeHelp,compositeNameField} from './composite-source/mobile-composite-header.js';
 import {previewLocalLibrary} from './library-local.js';
 import {uiLanguage,t} from './app-language.js';
@@ -63,7 +64,8 @@ export function mountMealEditor({saved,data,draft,selection,show,close,content,d
   if(b.hasAttribute('data-meal-reorder')){ordering=true;render();return;}
   if(b.hasAttribute('data-meal-menu'))menu=new MobileLibrarySheet({actionRows:true,label:t("mobileSuggest.mealOptions"),onClose:()=>menu=null,items:[{id:'delete',label:foodActionLabel('delete'),icon:'<img src="/repeat-source/delete.svg" alt="">'}],onChoose:id=>onAction?.(id)});
  },{signal:abort.signal});
- const cancel=event=>{if(!alive())return;event.preventDefault();event.stopImmediatePropagation();back();};sheet.addEventListener('cancel',cancel,{capture:true,signal:abort.signal});window.addEventListener('nourishing-back',cancel,{capture:true,signal:abort.signal});
+ guardSheetExit(root,()=>busy,abort.signal);
+ const cancel=event=>{if(!alive()||event.type==='cancel'&&event.target!==sheet)return;event.preventDefault();event.stopImmediatePropagation();back();};sheet.addEventListener('cancel',cancel,{capture:true,signal:abort.signal});window.addEventListener('nourishing-back',cancel,{capture:true,signal:abort.signal});
  const observer=new MutationObserver(()=>{if(!root.isConnected)dispose();});observer.observe(content,{childList:true});
  render();return {element:root,dispose};
 }

@@ -1,3 +1,4 @@
+import {diaryGroups} from './domain/diary-groups.mjs';
 import {exerciseLimits} from './domain/diary-record-fields.mjs';
 import {biometricEntryForPair} from './domain/biometric-library.mjs';
 import {digest} from './data-codec.mjs';
@@ -8,7 +9,7 @@ import {estimateExercise} from './domain/exercise-estimate.mjs';
 import {readDiaryRecordCorrection} from './domain/diary-record-correction.mjs';
 import {diaryDayComplete} from './domain/diary-day-status.mjs';
 const invalid=message=>{throw Object.assign(Error(message),{status:400});};
-export function recordOptions(state,date){return {revision:digest(state),date,energyUnit:state.settings.energyUnit??'kcal',exerciseLimits,groups:[...state.settings.groups],biometrics:createBiometricLibrary(state),exerciseWeight:resolveExerciseWeight(state,date)};}
+export function recordOptions(state,date){return {revision:digest(state),date,energyUnit:state.settings.energyUnit??'kcal',exerciseLimits,groups:diaryGroups(state.settings.groups),biometrics:createBiometricLibrary(state),exerciseWeight:resolveExerciseWeight(state,date)};}
 export function recordView(state,input){
  const result=readDiaryRecordCorrection(state,input);
  return {...result,...(input.collection==='biometrics'?{biometricChoice:biometricEntryForPair(createBiometricLibrary(state),result.record.type,result.record.unit)}:{}),recordRevision:result.revision,revision:digest(state),deletable:!diaryDayComplete(state,result.record.date)};

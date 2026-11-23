@@ -46,6 +46,63 @@ test('first center swipe works in both directions after Diary to Discover remoun
 });
 
 
+test('edge gestures return to Diary, step through nested destinations and respect an editor saving',async()=>{
+ const f=await fixture();let finishSave;
+ try{
+  const {page}=f;await page.goto(f.base+'/diary');await page.locator('.md-diary').waitFor();
+  const cdp=await page.context().newCDPSession(page);
+  async function drag(from,to){
+   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[from]});
+   for(let i=1;i<=6;i++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:from.x+(to.x-from.x)*i/6,y:from.y+(to.y-from.y)*i/6}]});
+   await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  }
+  const home=()=>drag({x:4,y:430},{x:160,y:434});
+  const back=()=>drag({x:407,y:430},{x:240,y:434});
+  await page.locator('#discover-tab').click();await page.locator('[data-tab=charts]').click();
+  await page.waitForFunction(()=>!document.documentElement.classList.contains('discover-transition'));
+  await back();await page.locator('.md-diary').waitFor();
+  await back();assert.equal(await page.locator('.md-diary').count(),1);
+  await page.locator('#settings-tab').click();await page.locator('[data-more-open=support]').click();
+  await page.locator('[data-more-open=manual]').click();
+  await drag({x:406,y:430},{x:377,y:431});assert.ok(await page.locator('.mm-manual-topic').count());
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:406,y:430}]});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:265,y:431}]});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});assert.ok(await page.locator('.mm-manual-topic').count());
+  await drag({x:407,y:540},{x:388,y:360});assert.ok(await page.locator('.mm-manual-topic').count());
+  await back();await page.locator('[data-more-open=manual]').waitFor();
+  await page.locator('[data-more-open=manual]').click();await home();await page.locator('.md-diary').waitFor();
+  await page.locator('#settings-tab').click();await page.locator('[data-more-open=account]').click();
+  await page.locator('[data-account-edit=name]').click();
+  const editor=page.locator('.account-edit-dialog');
+  await editor.getByLabel('Name',{exact:true}).fill('Unsaved');
+  await back();await editor.waitFor({state:'detached'});
+  await page.locator('[data-account-edit=name]').filter({hasText:'Alice Example'}).click();
+  await editor.getByLabel('Name',{exact:true}).fill('Saved');
+  const saving=new Promise(resolve=>page.route('**/api/account/update',async route=>{
+   await new Promise(done=>{finishSave=done;resolve();});await route.continue();
+  }));
+  await editor.getByRole('button',{name:'Save',exact:true}).click();await saving;
+  await home();assert.equal(await editor.isVisible(),true);
+  finishSave();await editor.waitFor({state:'detached'});await page.locator('[data-account-edit=name]').filter({hasText:'Saved'}).waitFor();
+  await page.locator('[data-account-edit=name]').click();await home();await page.locator('.md-diary').waitFor();
+  await page.locator('#settings-tab').click();await page.locator('#add-food').click();
+  await page.locator('[data-am=edit]').click();await back();await page.locator('[data-am=edit]').waitFor();
+  await page.locator('[data-am=edit]').click();await home();await page.locator('.md-diary').waitFor();
+  await page.locator('[data-md-calendar]').click();await page.locator('[data-mdc-legend]').click();
+  await back();await page.locator('.mdc-legend').waitFor({state:'detached'});assert.equal(await page.locator('.mdc-dialog').isVisible(),true);
+  await page.locator('[data-mdc-legend]').click();await home();await page.locator('.mdc-dialog').waitFor({state:'detached'});
+  await page.locator('#settings-tab').click();await page.locator('#add-food').click();await page.locator('[data-am=select][data-id=food]').click();
+  await page.locator('[data-mfs=options]').click();await back();await page.locator('.mfs-overlay').waitFor({state:'hidden'});
+  assert.equal(await page.locator('#food-search').isVisible(),true);
+  await page.locator('[data-mfs=options]').click();await home();await page.locator('.md-diary').waitFor();
+  await page.locator('#settings-tab').click();await page.locator('[data-more-open=support]').click();
+  await page.evaluate(()=>history.back());await page.locator('[data-more-open=support]').waitFor();
+  await page.evaluate(()=>history.back());await page.locator('.md-diary').waitFor();
+  await page.locator('#settings-tab').click();await back();await page.locator('.md-diary').waitFor();
+  assert.equal(await page.locator('dialog[open]').count(),0);assert.deepEqual(f.errors,[]);
+ }finally{finishSave?.();await f.close();}
+});
+
 test('More reflects a saved account name immediately and after reopening from cache',async()=>{
  const f=await fixture();try{const {page}=f;await page.goto(f.base+'/diary');await page.locator('.md-diary').waitFor();await page.locator('#settings-tab').click();
   assert.equal(await page.locator('.mm-identity').textContent(),'Alice Example');

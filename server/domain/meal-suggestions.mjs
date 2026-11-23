@@ -1,3 +1,4 @@
+import {defaultDiaryGroup} from './diary-groups.mjs';
 import {mealSuggestionGuidance,captureMealSuggestionGuidance} from './meal-suggestion-guidance.mjs';
 import {MEAL_OPTIONS_VERSION} from './meal-suggestion-options.mjs';
 import {mergeSourceAttributions} from './catalog-source.mjs';
@@ -43,7 +44,7 @@ function projectMeal(state,date,rows){
   for(const [index,row] of rows.entries()){
     let id='meal-preview:'+index;while(ids.has(id))id+=':';ids.add(id);
     foods.push({...row.food,id});
-    entries.push({id,kind:'food',foodId:id,amount:row.amount,date,group:state.settings.groups[0],time:''});
+    entries.push({id,kind:'food',foodId:id,amount:row.amount,date,group:defaultDiaryGroup,time:''});
   }
   return {...state,foods,entries};
 }

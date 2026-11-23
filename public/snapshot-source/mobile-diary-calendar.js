@@ -1,7 +1,7 @@
 import {pushBackHandler} from '../back-history.js';
 import {escape as e} from '../html.js';
 import {formatMessage} from './message-format.js';
-import {diaryCalendarKinds} from './diary-calendar.mjs';
+import {visibleDiaryCalendarKinds} from './diary-calendar.mjs';
 const icon=name=>`<img src="/snapshot-source/${name}.svg" alt="">`;
 export const calendarMarker=kind=>`<i class="mdc-marker mdc-${kind}" aria-hidden="true"></i>`;
 export class MobileDiaryCalendar {
@@ -17,7 +17,7 @@ export class MobileDiaryCalendar {
  openLegend(){
   if(this.legendDialog)return;
   const t=this.text,legend=document.createElement('dialog');legend.className='mdc-legend';legend.setAttribute('aria-label',t('legend'));
-  legend.innerHTML=`<h2 tabindex="-1" autofocus>${e(t('legend'))}</h2>${diaryCalendarKinds.map(kind=>`<p>${calendarMarker(kind)}${e(t('kind.'+kind))}</p>`).join('')}${['today','selected','logged','complete'].map(state=>`<p><i class="mdc-state is-${state}" aria-hidden="true"></i>${e(t('state.'+state))}</p>`).join('')}<button data-mdc-back type="button">${e(t('back'))}</button>`;
+  legend.innerHTML=`<h2 tabindex="-1" autofocus>${e(t('legend'))}</h2>${visibleDiaryCalendarKinds.map(kind=>`<p>${calendarMarker(kind)}${e(t('kind.'+kind))}</p>`).join('')}${['today','selected','logged','complete'].map(state=>`<p><i class="mdc-state is-${state}" aria-hidden="true"></i>${e(t('state.'+state))}</p>`).join('')}<button data-mdc-back type="button">${e(t('back'))}</button>`;
   legend.addEventListener('cancel',event=>{event.preventDefault();event.stopPropagation();this.closeLegend()});
   legend.addEventListener('click',event=>{event.stopPropagation();const rect=legend.getBoundingClientRect();if(event.target.closest('[data-mdc-back]')||event.target===legend&&(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom))this.closeLegend()});
   this.legendDialog=legend;this.dialog.append(legend);legend.showModal();
@@ -38,7 +38,7 @@ export class MobileDiaryCalendar {
   const projection=this.projection;
   if(projection?.month!==this.month)return;
   for(const button of this.dialog.querySelectorAll('[data-mdc-date]')){
-   const day=button.dataset.mdcDate,kinds=projection.markers?.[day]??[];
+   const day=button.dataset.mdcDate,kinds=(projection.markers?.[day]??[]).filter(kind=>visibleDiaryCalendarKinds.includes(kind));
    const complete=projection.completedDays.includes(day),logged=projection.loggedDays?.includes(day)??kinds.some(kind=>kind!=='fast');
    const today=projection.calendar.today===day;
    const states=[...(today?['today']:[]),...(complete?['complete']:logged?['logged']:[])];

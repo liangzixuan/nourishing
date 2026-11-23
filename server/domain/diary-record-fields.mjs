@@ -1,3 +1,4 @@
+import {hasDiaryGroup} from './diary-groups.mjs';
 import {isWeightUnit} from './weight-units.mjs';
 import {matchesWalkingSnapshot} from './general-walking.mjs';
 import {DiaryRecordError} from './diary-record-errors.mjs';
@@ -7,7 +8,7 @@ export const exerciseLimits=Object.freeze({minimumMinutes:0.01,maximumMinutes:14
 export const waterLimits=Object.freeze({minimumMl:0.01,maximumMl:20000});
 const fail=message=>{throw Object.assign(new Error(message),{status:400});};
 const failRecord=code=>{throw new DiaryRecordError(code);};
-export function requiredRecordGroup(value,groups){if(typeof value!=='string'||!groups.includes(value))failRecord('group');return value;}
+export function requiredRecordGroup(value,groups){if(typeof value!=='string'||!hasDiaryGroup(groups,value))failRecord('group');return value;}
 export function text(value,name,max=10000){if(typeof value!=='string'||!value.trim()||value.length>max)fail(`${name} must be nonempty text (up to ${max} characters).`);return value.trim();}
 export function time(value){if(value!==undefined&&value!==''&&(typeof value!=='string'||!/^([01]\d|2[0-3]):[0-5]\d$/.test(value)))failRecord('time');return value||'';}
 export function parseFoodDiaryFields(input,groups){
@@ -19,7 +20,7 @@ export function parseFoodDiaryFields(input,groups){
 export function optionalRecordGroup(input,groups){
  if(!Object.hasOwn(input,'group'))return {};
  const group=input.group===null?null:biometricIdentity(input.group,'Group',100);
- if(group!==null&&groups&&!groups.includes(group))failRecord('optionalGroup');
+ if(group!==null&&groups&&!hasDiaryGroup(groups,group))failRecord('optionalGroup');
  return {group};
 }
 export function parseNoteFields(input){return {date:date(input.date),text:text(input.text,'Note',100000),time:time(input.time)};}

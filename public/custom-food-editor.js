@@ -1,3 +1,4 @@
+import {guardSheetExit} from './edge-navigation.js';
 import {previewFoodLabel} from './local-diary-projection.js';
 import {previewLocalLibrary} from './library-local.js';
 import {nutritionLabelPresentation} from './custom-food-source/nutrition-label-language.js';
@@ -118,7 +119,8 @@ export function mountCustomFoodEditor({resource,data,draft,show,close,content,da
  root.querySelectorAll('[data-food-action]').forEach(button=>button.onclick=()=>{void enqueue(async()=>{flush();const snapshot=read(),action=button.dataset.foodAction;if(['retire','restore'].includes(action)){actionChild?.dispose();actionChild=onAction?.(action,snapshot);return;}dispose();onAction?.(action,snapshot);});});
  form.addEventListener('invalid',event=>{for(let node=event.target.parentElement;node&&node!==form;node=node.parentElement)if(node.tagName==='DETAILS')node.open=true;},{capture:true,signal});
  root.addEventListener('toggle',event=>{if(event.target.dataset.mfSection)sections.set(event.target.dataset.mfSection,event.target.open);},{capture:true,signal});
- const cancel=event=>{if(!alive())return;event.preventDefault();event.stopImmediatePropagation();back();};dialog?.addEventListener('cancel',cancel,{capture:true,signal});window.addEventListener('nourishing-back',cancel,{capture:true,signal});
+ guardSheetExit(root,()=>saving,signal);
+ const cancel=event=>{if(!alive()||event.type==='cancel'&&event.target!==dialog)return;event.preventDefault();event.stopImmediatePropagation();back();};dialog?.addEventListener('cancel',cancel,{capture:true,signal});window.addEventListener('nourishing-back',cancel,{capture:true,signal});
  // Android resizes the editor when its keyboard opens. Keep the editing area free
  // of the fixed footer until the viewport recovers, even if the input keeps focus.
  const viewport=window.visualViewport,footer=form.querySelector('.mfe-footer');

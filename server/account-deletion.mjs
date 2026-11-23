@@ -37,11 +37,11 @@ export function createAccountDeletion({db,storage,users,lifecycle,database='nour
    await db.updateTransaction({transactionId:tx.$id,commit:true});return await load(job.$id);
   }catch(error){await db.updateTransaction({transactionId:tx.$id,rollback:true}).catch(()=>{});throw error;}
  }
- async function prepare(owner){
+ async function prepare(owner,leavingReason){
   const id=randomUUID(),secret=randomBytes(32).toString('hex');
   await lifecycle.run(owner,'deletion.prepare',async operation=>{
    const userCreatedAt=creationIdentity(await users.get({userId:owner}),owner);
-   try{await db.createRow({...args('account_deletions',id),data:{ownerId:owner,userCreatedAt,tokenHash:hash(secret),state:'prepared',phase:'ready',cursor:'',version:0,expiresAt:new Date(now()+10*60*1000).toISOString(),updatedAt:at(),error:'',counts:JSON.stringify({files:0,rows:0})},permissions:[]});}
+   try{await db.createRow({...args('account_deletions',id),data:{ownerId:owner,userCreatedAt,...(leavingReason?{leavingReason}:{}),tokenHash:hash(secret),state:'prepared',phase:'ready',cursor:'',version:0,expiresAt:new Date(now()+10*60*1000).toISOString(),updatedAt:at(),error:'',counts:JSON.stringify({files:0,rows:0})},permissions:[]});}
    catch(error){
     const saved=await optional(()=>load(id));if(saved?.ownerId===owner&&saved.userCreatedAt===userCreatedAt&&saved.tokenHash===hash(secret)&&saved.state==='prepared')return;
     if(!Number.isInteger(error.code)||error.code>=500||error.code===408)operation.markUncertain();throw error;

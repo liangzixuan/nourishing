@@ -11,6 +11,8 @@ test('deletion routes keep receipt out of JSON, authenticate prepare/confirm and
  assert.equal((await request('/api/account/deletion/prepare',{password:'password'},'')).status,401);
  assert.equal((await request('/api/account/deletion/prepare',{password:'password',ownerId:'victim'})).status,400);
  assert.equal((await request('/api/account/deletion/prepare',{password:'password'},undefined,'https://foreign.example')).status,403);
+ for(const leavingReason of [true,'x'.repeat(1001)])assert.equal((await request('/api/account/deletion/prepare',{password:'password',leavingReason})).status,400);
+ const withFeedback=await request('/api/account/deletion/prepare',{password:'password',leavingReason:'  Synthetic feedback  '});assert.deepEqual(await withFeedback.json(),{status:'ready'});assert.deepEqual(calls.at(-1),['prepare','fixture',{password:'password',leavingReason:'Synthetic feedback'}]);
  const prepared=await request('/api/account/deletion/prepare',{password:'password'});assert.equal(prepared.status,200);assert.deepEqual(await prepared.json(),{status:'ready'});assert.match(prepared.headers.get('set-cookie'),/HttpOnly/);const receipt=prepared.headers.get('set-cookie').split(';')[0];
  assert.equal((await request('/api/account/deletion/confirm',{confirmation:'wrong'},'__Host-nourishing_session=fixture; '+receipt)).status,400);
  const confirmed=await request('/api/account/deletion/confirm',{confirmation:'delete'},'__Host-nourishing_session=fixture; '+receipt);assert.equal(confirmed.status,202);assert.match(confirmed.headers.get('set-cookie'),/Max-Age=0/);

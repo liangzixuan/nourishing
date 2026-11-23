@@ -1,3 +1,4 @@
+import {guardSheetExit} from './edge-navigation.js';
 import {uiLanguage,t} from './app-language.js';
 import {fc} from './food-cloud-messages.js';
 import {request,command} from './diary-api.js';
@@ -9,6 +10,7 @@ export function mountFoodCopy({selection,show,content,onCancel,onSaved}){
  const heading=`<header class="sheet-header"><button type="button" class="icon-button" data-copy-cancel aria-label="${e(t("mobileFoodEditor.back"))}">×</button><h2>${e(t("mobileFood.copy"))}</h2></header>`;
  show(heading+`<p class="empty" role="status">${e(t("mobileNutrientDetail.loading"))}</p>`);const sheet=content.closest('dialog'),loading=content.querySelector('.empty');
  const alive=()=>!disposed&&content.isConnected;
+ guardSheetExit(content,()=>busy,signal);
  function cancel(event){event?.preventDefault();event?.stopImmediatePropagation();if(!busy)onCancel();}
  content.addEventListener('click',event=>{if(event.target.closest('[data-copy-cancel]'))cancel(event);},{signal});
  sheet.addEventListener('cancel',cancel,{capture:true,signal});

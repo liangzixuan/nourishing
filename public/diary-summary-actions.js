@@ -1,3 +1,4 @@
+import {guardSheetExit} from './edge-navigation.js';
 import {diaryEnergyBudget} from './diary-summary-source/energy-budget.js';
 import {uiLanguage,t} from './app-language.js';
 import {dc} from './discover-cloud-messages.js';
@@ -20,9 +21,8 @@ const switchRow=(label,name,checked)=>`<label class="ds-setting"><span>${e(label
 const button=(label,attributes='')=>`<button type="button" ${attributes}>${label}</button>`;
 
 /** Dialog adapter: all calculations and saved settings remain owned by the workspace domain. */
-export function openDiarySummaryAction({action,id,anchor,diary,date=diary.date,show,close,header,content,onChange,onTargets,onReport,onFasting,navigation='diary',ownerTicket}){
+export function openDiarySummaryAction({action,id,anchor,diary,date=diary.date,show,close,header,content,onChange,onTargets,onReport,navigation='diary',ownerTicket}){
  if(action==='edit-day-targets'){onTargets?.(date);return true;}
- if(action==='open-fasting'){onFasting?.();return true;}
  const present=(title,body)=>{show(header(title)+`<section class="ds-dialog">${body}</section>`);return content.querySelector('.ds-dialog');};
  if(action==='score-details'){
   const score=diary.summary.scores.find(row=>row.id===id);if(!score)return false;
@@ -105,7 +105,7 @@ export function openDiarySummaryAction({action,id,anchor,diary,date=diary.date,s
   const settings=diary.presentation.settings,policy=diary.summary.diaryDisplay.policy;
   const root=present(coreText('diary.display'),`<form><fieldset>${switchRow(coreText('diary.energy'),'showEnergy',settings.showEnergy!==false)}${switchRow(coreText('diary.macros'),'showMacros',settings.showMacros!==false)}${switchRow(t('mobileDiary.water'),'showWater',settings.showWater!==false)}${switchRow(coreText('diary.highlights'),'showHighlights',policy.showHighlights)}<label class="ds-setting"><span>${e(coreText('diary.macroDisplay'))}</span><select name="macroDisplay"><option value="consumed" ${policy.macroDisplay==='consumed'?'selected':''}>${e(t('mobileDiary.consumed'))}</option><option value="remaining" ${policy.macroDisplay==='remaining'?'selected':''}>${e(t('mobileDiary.remaining'))}</option></select></label><h3>${e(coreText('diary.highlights'))}</h3>${Array.from({length:8},(_,index)=>`<label class="ds-setting"><span>${index+1}</span><select name="highlight-${index}" aria-label="${e(coreText('diary.highlight',{index:index+1}))}"><option value="">${e(t('settings.none'))}</option>${diary.presentation.nutrientOptions.map(row=>`<option value="${e(row.id)}" ${policy.highlighted[index]===row.id?'selected':''}>${e(nutrientDisplayName(row,uiLanguage()))}</option>`).join('')}</select></label>`).join('')}<p role="alert" data-error></p><button type="submit" class="ds-primary">${e(t('common.save'))}</button></fieldset></form>`);
   root.insertAdjacentHTML('beforeend',button(t('mobileScoreSettings.title'),'data-ds-scores class="ds-primary"'));
-  root.querySelector('[data-ds-scores]').onclick=()=>openDiarySummaryAction({action:'choose-scores',diary,date,show,close,header,content,onChange,onTargets,onReport,onFasting,navigation,ownerTicket:owner});
+  root.querySelector('[data-ds-scores]').onclick=()=>openDiarySummaryAction({action:'choose-scores',diary,date,show,close,header,content,onChange,onTargets,onReport,navigation,ownerTicket:owner});
   const form=root.querySelector('form');form.onsubmit=async event=>{event.preventDefault();const controls=form.elements,highlighted=Array.from({length:8},(_,index)=>controls['highlight-'+index].value).filter(Boolean);root.querySelector('[data-error]').textContent='';form.querySelector('fieldset').disabled=true;
    try{await saveSettings('diaryDisplay.save',{showEnergy:controls.showEnergy.checked,showMacros:controls.showMacros.checked,showWater:controls.showWater.checked,diaryDisplay:{version:1,highlighted,showHighlights:controls.showHighlights.checked,macroDisplay:controls.macroDisplay.value}});if(!root.isConnected)return;close();await onChange?.();}catch(error){if(root.isConnected){root.querySelector('[data-error]').textContent=error.message;form.querySelector('fieldset').disabled=false;}}
   };return true;
@@ -121,6 +121,7 @@ export function openDiarySummaryAction({action,id,anchor,diary,date=diary.date,s
    return true;
   }
   const events=new AbortController(),dialog=root.closest('dialog');
+  guardSheetExit(root,()=>busy,events.signal);
   const handleBack=event=>{if(root.isConnected&&backToList()){event.preventDefault();event.stopImmediatePropagation();}};
   dialog?.addEventListener('cancel',handleBack,{capture:true,signal:events.signal});
   window.addEventListener('nourishing-back',handleBack,{capture:true,signal:events.signal});

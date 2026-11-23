@@ -1,3 +1,4 @@
+import {navigationEdge} from '../edge-navigation.js';
 import {diaryEnergyBudget} from './energy-budget.js';
 import {formatMessage,highlightedNutrientName} from './message-format.js';
 import {escape as e} from '../html.js';
@@ -99,7 +100,7 @@ export class MobileDiary {
    if(event.target.closest('.md-group summary button,.md-water summary button'))event.preventDefault();
   },options);
   let start=null;
-  root.addEventListener('pointerdown',event=>{start=event.target.closest('[data-md-summary]')?{x:event.clientX,y:event.clientY}:null;},options);
+  root.addEventListener('pointerdown',event=>{start=!(event.pointerType==='touch'&&navigationEdge(event.clientX,innerWidth))&&event.target.closest('[data-md-summary]')?{x:event.clientX,y:event.clientY}:null;},options);
   root.addEventListener('pointerup',event=>{if(start&&Math.abs(event.clientX-start.x)>55&&Math.abs(event.clientY-start.y)<40)this.showPage(mobileDiarySession.page+(event.clientX<start.x?1:-1));start=null;},options);
   document.addEventListener('pointerdown',event=>{const menu=header.querySelector('details[open]');if(menu&&!menu.contains(event.target))menu.open=false;},options);
   header.addEventListener('click',event=>{if(event.target.closest('[data-md-calendar]')){header.querySelectorAll('details[open]').forEach(el=>el.open=false);onDatePicker();}if(event.target.closest('[data-action]'))header.querySelectorAll('details[open]').forEach(el=>el.open=false);},options);

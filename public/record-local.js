@@ -1,4 +1,4 @@
-import {catalogExerciseRecord,resolveExerciseWeight,prepareDiaryRecordUpdate,manuallyEditableRecord,sourceRecordReason} from './local-diary-projection.js';
+import {diaryGroups,catalogExerciseRecord,resolveExerciseWeight,prepareDiaryRecordUpdate,manuallyEditableRecord,sourceRecordReason} from './local-diary-projection.js';
 import {request,queueCommand} from './diary-api.js';
 import {readDeviceCache} from './device-cache.js';
 import {offlineCopy,queueOffline,currentPrivateResponseTicket} from './offline-store.js';
@@ -11,7 +11,10 @@ import {flushBackgroundWrites} from './background-writes.js';
 async function localCopy(ticket){if(!ticket)return null;const copy=await offlineCopy();return copy&&!copy.locked&&copy.ownerId===ticket.ownerId&&copy.ticket.epoch===ticket.epoch?copy:null;}
 export async function recordEditorData(date,collection,id,signal){
  const {ticket}=await readDeviceCache('/api/diary'),copy=await localCopy(ticket);
- if(!copy)return Promise.all([request('/api/records/options?'+new URLSearchParams({date}),null,signal),id?request('/api/records/item?'+new URLSearchParams({collection,id}),null,signal):null,ticket]);
+ if(!copy){
+  const [options,record]=await Promise.all([request('/api/records/options?'+new URLSearchParams({date}),null,signal),id?request('/api/records/item?'+new URLSearchParams({collection,id}),null,signal):null]);
+  return [{...options,groups:diaryGroups(options.groups)},record,ticket];
+ }
  const state=offlineEffectiveState(copy);
  const options={revision:copy.snapshot.revision,date,energyUnit:state.settings.energyUnit??'kcal',groups:[...state.settings.groups],exerciseLimits,biometrics:createBiometricLibrary(state,{configuredPairs:copy.snapshot.biometricConfiguredPairs}),exerciseWeight:resolveExerciseWeight(state,date)};
  if(!id)return [options,null,ticket];

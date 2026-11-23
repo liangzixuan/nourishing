@@ -15,14 +15,26 @@ import {MobileDisplay} from './display-source/mobile-display.js';
 import {mountWaterSettings} from './water.js';
 import {waterText} from './water-messages.js';
 /** Owns the Display projection; durable writes use the shared background queue. */
-export function mountDisplay({root,headerRoot,onChange=async()=>{},date=()=>new Date().toLocaleDateString('en-CA')}){
+export function mountDisplay({root,headerRoot,initialSetting,onChange=async()=>{},date=()=>new Date().toLocaleDateString('en-CA')}){
  let disposed=false,view,controller,child;const navigation={screen:'home'};const abort=new AbortController();
  const alive=()=>!disposed&&root.isConnected;
  const stopStatus=onBackgroundWriteStatus(event=>{if(event.saved&&alive()&&view)view={...view,revision:event.result.revision??view.revision};});
- async function load(){child?.dispose();child=null;controller?.dispose();controller=null;root.textContent=coreText('loading');try{view=await request('/api/display',undefined,abort.signal);if(!alive())return;applyAppLanguage(view.settings.appLanguage);applyFontPreferences(view.settings);controller=new MobileDisplay({root,settings:view.settings,summaryNutrients:view.summaryNutrients,quickAddActions:view.quickAddActions,navigation,onTitle:title=>{if(headerRoot)headerRoot.innerHTML=moreBackHeader(title);},onSave:save,onReload:load,onDestination:destination});}catch(error){if(!alive())return;root.replaceChildren();const status=document.createElement('p');status.className='mds-status';status.setAttribute('role','status');status.textContent=error.message;const retry=document.createElement('button');retry.className='mds-row';retry.textContent=coreText('retry');retry.onclick=load;root.append(status,retry);}}
- function destination(id){if(!['pauseLife','dashboard','water'].includes(id))return;controller?.dispose();controller=null;if(id==='dashboard'){openDashboardSettings();return;}if(id==='water'){if(headerRoot)headerRoot.innerHTML=moreBackHeader(waterText('settings'));child=mountWaterSettings({root,settings:view.settings,groups:view.settings.groups,onSave:save});return;}if(headerRoot)headerRoot.innerHTML=moreBackHeader(t('mobileDisplay.pauseLife'));child=mountPauseLife({root,onChange});}
- function openDashboardSettings(){
-  let active=true,dashboard,screen='settings',saving=Promise.resolve();const path='/api/dashboard?'+new URLSearchParams({date:date()});
+ async function load(){child?.dispose();child=null;controller?.dispose();controller=null;root.textContent=coreText('loading');try{view=await request('/api/display',undefined,abort.signal);if(!alive())return;applyAppLanguage(view.settings.appLanguage);applyFontPreferences(view.settings);controller=new MobileDisplay({root,settings:view.settings,summaryNutrients:view.summaryNutrients,quickAddActions:view.quickAddActions,navigation,onTitle:title=>{if(headerRoot)headerRoot.innerHTML=moreBackHeader(title);},onSave:save,onReload:load,onDestination:destination});
+   if(initialSetting){
+    const {screen,control,section}=initialSetting;initialSetting=null;
+    if(screen==='dashboard'){destination(screen,{control,section});return;}
+    if(screen)controller.open(screen);
+    if(control==='groups'){
+     const groups=root.querySelector('[data-display-groups]');
+     if(groups){groups.open=true;groups.querySelector('summary').focus();}
+    }else if(control){
+     root.querySelector('[data-display-toggle="'+CSS.escape(control)+'"]')?.focus();
+    }
+   }
+  }catch(error){if(!alive())return;root.replaceChildren();const status=document.createElement('p');status.className='mds-status';status.setAttribute('role','status');status.textContent=error.message;const retry=document.createElement('button');retry.className='mds-row';retry.textContent=coreText('retry');retry.onclick=load;root.append(status,retry);}}
+ function destination(id,option){if(!['pauseLife','dashboard','water'].includes(id))return;controller?.dispose();controller=null;if(id==='dashboard'){openDashboardSettings(option);return;}if(id==='water'){if(headerRoot)headerRoot.innerHTML=moreBackHeader(waterText('settings'));child=mountWaterSettings({root,settings:view.settings,groups:view.settings.groups,onSave:save});return;}if(headerRoot)headerRoot.innerHTML=moreBackHeader(t('mobileDisplay.pauseLife'));child=mountPauseLife({root,onChange});}
+ function openDashboardSettings({control,section}={}){
+  let active=true,dashboard,screen=section??'settings',saving=Promise.resolve();const path='/api/dashboard?'+new URLSearchParams({date:date()});
   child={dispose(){active=false;},back(){if(screen==='streak'){screen='settings';render();return true;}return false;}};
   const current=()=>active&&alive();
   function change(type,payload){const work=saving.then(async()=>{
@@ -36,7 +48,7 @@ export function mountDisplay({root,headerRoot,onChange=async()=>{},date=()=>new 
    if(screen==='settings')renderDashboardSettings({host,data:dashboard,onSave:change,onStreak:()=>{screen='streak';render();}});
    else{host.innerHTML=streakSettingsMarkup(dashboard.streaks,dashboard.dashboard.widgets.streaks,uiLanguage())+'<p role="alert"></p>';host.querySelector('[data-widget]').onchange=event=>void change('dashboard.widgets',{patch:{streaks:event.target.checked}}).catch(error=>host.querySelector('[role=alert]').textContent=error.message);host.querySelector('form').onsubmit=event=>event.preventDefault();host.querySelector('[data-discover=reset-streak]').onclick=async()=>{const form=host.querySelector('form');if(!form.reportValidity())return;try{await change('dashboard.streakReset',{count:Number(form.elements.count.value)});if(current())render();}catch(error){if(current())host.querySelector('[role=alert]').textContent=error.message;}};}
   }
-  root.textContent=coreText('loading');void request(path,undefined,abort.signal).then(value=>{dashboard=value;render();}).catch(error=>{if(current())root.textContent=error.message;});
+  root.textContent=coreText('loading');void request(path,undefined,abort.signal).then(value=>{dashboard=value;render();if(current()&&control){const key=CSS.escape(control);root.querySelector('[data-widget="'+key+'"],[data-pref="'+key+'"]')?.focus();}}).catch(error=>{if(current())root.textContent=error.message;});
  }
  async function save(patch,type='display.save'){
   let settings={...view.settings,...structuredClone(patch)};

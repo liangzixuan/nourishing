@@ -1,7 +1,10 @@
 import {createUITranslator,t} from './app-language.js';
 export const accountCloudMessages={
   "en": {
-    "accountCloud.preferences": "Account preferences",
+    "accountCloud.accountPassword": "Account Password",
+    "accountCloud.leavingReason": "Tell us why you’re leaving",
+    "accountCloud.feedbackNote": "Optional. Your feedback stays with the private deletion receipt until it expires.",
+    "accountCloud.deletionAck": "I understand that my account will be irreversibly deleted.",
     "accountCloud.reconnectEdit": "Reconnect to save your account changes.",
     "accountCloud.enterPassword": "Enter Your Password",
     "accountCloud.reauthReason": "For your security, please re-enter your password to continue",
@@ -286,7 +289,10 @@ export const accountCloudMessages={
     "accountCloud.pleaseWait": "Please wait…"
   },
   "fr": {
-    "accountCloud.preferences": "Préférences du compte",
+    "accountCloud.accountPassword": "Mot de passe du compte",
+    "accountCloud.leavingReason": "Dites-nous pourquoi vous partez",
+    "accountCloud.feedbackNote": "Facultatif. Votre avis reste dans le reçu privé de suppression jusqu’à son expiration.",
+    "accountCloud.deletionAck": "Je comprends que mon compte sera supprimé définitivement.",
     "accountCloud.reconnectEdit": "Reconnectez-vous au réseau pour enregistrer vos modifications.",
     "accountCloud.enterPassword": "Saisissez votre mot de passe",
     "accountCloud.reauthReason": "Pour votre sécurité, saisissez à nouveau votre mot de passe pour continuer",
@@ -571,7 +577,10 @@ export const accountCloudMessages={
     "accountCloud.pleaseWait": "Veuillez patienter…"
   },
   "de": {
-    "accountCloud.preferences": "Kontoeinstellungen",
+    "accountCloud.accountPassword": "Kontopasswort",
+    "accountCloud.leavingReason": "Warum verlassen Sie uns?",
+    "accountCloud.feedbackNote": "Freiwillig. Ihr Feedback bleibt bis zum Ablauf im privaten Löschbeleg.",
+    "accountCloud.deletionAck": "Ich verstehe, dass mein Konto unwiderruflich gelöscht wird.",
     "accountCloud.reconnectEdit": "Stelle eine Internetverbindung her, um deine Änderungen zu speichern.",
     "accountCloud.enterPassword": "Passwort eingeben",
     "accountCloud.reauthReason": "Gib zur Sicherheit dein Passwort erneut ein, um fortzufahren",
@@ -856,7 +865,10 @@ export const accountCloudMessages={
     "accountCloud.pleaseWait": "Bitte warten…"
   },
   "pt-BR": {
-    "accountCloud.preferences": "Preferências da conta",
+    "accountCloud.accountPassword": "Senha da conta",
+    "accountCloud.leavingReason": "Conte por que você está saindo",
+    "accountCloud.feedbackNote": "Opcional. Seu comentário fica no comprovante privado de exclusão até ele expirar.",
+    "accountCloud.deletionAck": "Entendo que minha conta será excluída permanentemente.",
     "accountCloud.reconnectEdit": "Reconecte-se para salvar as alterações da sua conta.",
     "accountCloud.enterPassword": "Digite sua senha",
     "accountCloud.reauthReason": "Para sua segurança, digite sua senha novamente para continuar",

@@ -1,3 +1,4 @@
+import {defaultDiaryGroup} from './diary-groups.mjs';
 import {parseReferencedQuantity} from './resource-quantity.mjs';
 import {parseFoodDiaryFields} from './diary-record-fields.mjs';
 
@@ -31,7 +32,7 @@ export function expandResourceQuantity(state,row,{target='foods',limit=1000}={})
 // Shared row production for explicit expansion and automatic meal logging.
 // Persistence supplies child IDs; the source quantity and lineage stay identical.
 export function expandedDiarySources(state,original){
-  const common=parseFoodDiaryFields({date:original.date,group:original.group??state.settings.groups[0],time:original.time??''},state.settings.groups),parent=parseReferencedQuantity(state,original).source;
+  const common=parseFoodDiaryFields({date:original.date,group:original.group??defaultDiaryGroup,time:original.time??''},state.settings.groups),parent=parseReferencedQuantity(state,original).source;
   return expandResourceQuantity(state,original,{target:'children'}).map(({source,path})=>({
     ...source,...common,kind:'food',name:parseReferencedQuantity(state,source).resource.name,
     ...(original.photo?{photo:original.photo}:{}),

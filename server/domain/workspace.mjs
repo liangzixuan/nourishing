@@ -1,3 +1,4 @@
+import {diaryGroups, defaultDiaryGroup, hasDiaryGroup} from './diary-groups.mjs';
 import {previewLibraryResource} from './library-editor-preview.mjs';
 import {normalizeLibraryDraft as normalizeLibraryDraftCore,foodPortions,foodSource,retainSourceReviews} from './library-normalization.mjs';
 
@@ -120,7 +121,7 @@ export function initialState({demo=false}={}) {
   return {
     version: 1, sampleData: demo,
     profile: { name: 'My workspace', age: 30, height: 170, weight: 70, activity: 'moderate', goal: 'Maintain', units: 'metric' },
-    settings: { targets: {...initialWorkspaceTargets}, macroSchedule: {}, groups: ['Uncategorized','Breakfast','Lunch','Dinner','Snacks'], customBiometrics: [], theme: 'dark', showEnergy: true, completedDays: [], scoreSelection: [], reminders: [] },
+    settings: { targets: {...initialWorkspaceTargets}, macroSchedule: {}, groups: [defaultDiaryGroup,'Breakfast','Lunch','Dinner','Snacks'], customBiometrics: [], theme: 'dark', showEnergy: true, completedDays: [], scoreSelection: [], reminders: [] },
     foods, recipes: [], meals: [],
     entries: foods.slice(0,3).map((food,i) => ({id:randomUUID(),date,foodId:food.id,name:food.name,amount:i===0?1:0.5,group:'Breakfast',time:'08:00',kind:'food'})),
     biometrics: demo ? [{id:randomUUID(),date,type:'Weight',value:70,unit:'kg',time:'07:30'}] : [],
@@ -188,7 +189,7 @@ function entry(s,p) {
   if(Object.keys(p).some(key=>!fields.includes(key)))fail('Diary entry contains fields that do not belong to its selected food, recipe or meal.');
   if(p.kind!==undefined&&p.kind!=='food')fail('Use the exercise action for exercise records.');
   const parsed=reference?parseReferencedQuantity(s,p,{reference,defaultAmount:1}):null;
-  const result={date:date(p.date),...(parsed?parsed.source:{amount:parseServingAmount(p.amount??1)}),group:text(p.group??s.settings.groups[0],'Group',100),time:time(p.time),kind:'food',...recordCopyLineage(p,'entries')};
+  const result={date:date(p.date),...(parsed?parsed.source:{amount:parseServingAmount(p.amount??1)}),group:text(p.group??defaultDiaryGroup,'Group',100),time:time(p.time),kind:'food',...recordCopyLineage(p,'entries')};
   if(p.photo!==undefined)result.photo=photoMetadata(p.photo);
   if(p.textReview!==undefined)result.textReview=textReviewMetadata(p.textReview);
   if(p.suggestedMeal!==undefined)result.suggestedMeal=suggestedMealRecord(p.suggestedMeal);
@@ -264,13 +265,13 @@ function saveRepeat(s,p){
   if(!days.length||days.some(day=>!Number.isInteger(day)||day<0||day>6)||new Set(days).size!==days.length)fail('Choose one or more distinct weekdays.');
   if(endDate&&endDate<startDate)fail('End date must follow start date.');
   const quantity=parseReferencedQuantity(s,p,{defaultAmount:1}).source;
-  const validated=entry(s,{...quantity,date:startDate,group:p.group??s.settings.groups[0],time:p.time});
+  const validated=entry(s,{...quantity,date:startDate,group:p.group??defaultDiaryGroup,time:p.time});
   const next={id:p.id||randomUUID(),...quantity,group:validated.group,time:validated.time,days,startDate,endDate,enabled:p.enabled??true};
   // A schedule is a complete value. Replacing it removes the previous resource
   // reference when the user changes between food, recipe and meal.
   if(p.id){const previous=lookup(s,'repeats',p.id);s.repeats[s.repeats.indexOf(previous)]=next;}else s.repeats.push(next);
 }
-function exerciseRecord(s,p) {return {...parseExerciseFields({...p,group:p.group||s.settings.groups[0]},s.settings.groups),...(p.exerciseSelection?{exerciseSelection:parseExerciseSelection(p.exerciseSelection,p.exerciseBasis)}:{}),...(p.photo===undefined?{}:{photo:photoMetadata(p.photo)}),...recordCopyLineage(p,'entries')};}
+function exerciseRecord(s,p) {return {...parseExerciseFields({...p,group:p.group??defaultDiaryGroup},s.settings.groups),...(p.exerciseSelection?{exerciseSelection:parseExerciseSelection(p.exerciseSelection,p.exerciseBasis)}:{}),...(p.photo===undefined?{}:{photo:photoMetadata(p.photo)}),...recordCopyLineage(p,'entries')};}
 
 export function parseBiometricRecord(p,groups){const record={...parseBiometricFields(p),...recordCopyLineage(p,'biometrics')};Object.assign(record,optionalRecordGroup(p,groups));if(p.source!==undefined)record.source=healthMeasurementSource(p.source,record);return record;}
 export function parseNoteRecord(p,groups){return {...parseNoteFields(p),...optionalRecordGroup(p,groups),...recordCopyLineage(p,'notes'),...notePhotoFields(p)};}
@@ -303,7 +304,7 @@ function setRecordTimes(s,input){
 }
 function moveRecordGroups(s,input){
   objectKeys(input,['date','group','records'],'Diary movement');
-  if(typeof input.group!=='string'||!s.settings.groups.includes(input.group))fail('Choose an existing destination group.');
+  if(typeof input.group!=='string'||!hasDiaryGroup(s.settings.groups,input.group))fail('Choose an existing destination group.');
   const records=resolveGroupedRecordSelection(s,input);
   // Group is local presentation metadata. Validate the whole batch before
   // changing it, and retain all current source facts and record identities.
@@ -694,7 +695,7 @@ export function act(s,type,p={},context={}) {
       if(p.targetSetup!==undefined)next.targetSetup=validateTargetSetupRecord(p.targetSetup,next.targets);
       else if(next.targetSetup&&setupTargetKeys.some(key=>next.targets[key]!==next.targetSetup.targets[key]))delete next.targetSetup;
       if(Object.hasOwn(p,'macroSchedule')){if(!p.macroSchedule||typeof p.macroSchedule!=='object'||Array.isArray(p.macroSchedule))fail('Macro schedule must be an object.');next.macroSchedule={};for(const [day,targets]of Object.entries(p.macroSchedule)){if(!/^[0-6]$/.test(day))fail('Invalid weekday.');next.macroSchedule[day]=validateTargets(targets);}}
-      if(p.groups){const groups=array(p.groups,'Groups',30).map(x=>text(x,'Group',100));if(!groups.length||new Set(groups).size!==groups.length)fail('Use unique diary groups.');if(s.entries.some(x=>!groups.includes(x.group))||s.repeats.some(x=>!groups.includes(x.group))||[...s.biometrics,...s.notes].some(x=>typeof x.group==='string'&&!groups.includes(x.group)))fail('A group is still used by entries, repeats, biometrics or notes. Use Rename to keep its records.');next.groups=groups;}
+      if(p.groups){const configured=array(p.groups,'Groups',31).map(x=>text(x,'Group',100));if(!configured.length||new Set(configured).size!==configured.length)fail('Use unique diary groups.');const groups=diaryGroups(configured);if(groups.length>31)fail('Use at most 30 custom diary groups.');if(s.entries.some(x=>!groups.includes(x.group))||s.repeats.some(x=>!groups.includes(x.group))||[...s.biometrics,...s.notes].some(x=>typeof x.group==='string'&&!groups.includes(x.group)))fail('A group is still used by entries, repeats, biometrics or notes. Use Rename to keep its records.');next.groups=groups;}
       if(Object.hasOwn(p,'customBiometrics')){const definitions=parseCustomBiometrics(p.customBiometrics);if(parseCustomBiometrics(s.settings.customBiometrics??[]).some(row=>!definitions.some(next=>next.name===row.name&&next.unit===row.unit)))throw Object.assign(Error('Use the reviewed custom-biometric deletion flow to remove a definition and its history.'),{status:409});next.customBiometrics=definitions;}
       if(Object.hasOwn(p,'diaryGroups')){const policy=parseDiaryGroups(p.diaryGroups,next.groups);if(policy===null)delete next.diaryGroups;else next.diaryGroups=policy;}
       else if(next.diaryGroups&&Object.hasOwn(p,'groups'))next.diaryGroups=parseDiaryGroups({...next.diaryGroups,hiddenGroups:next.diaryGroups.hiddenGroups.filter(group=>next.groups.includes(group))},next.groups);

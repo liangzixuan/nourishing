@@ -7,7 +7,7 @@ import {projectSnapshotList,snapshotMediaPath} from './snapshot-queue.js';
 import {request} from './diary-api.js';
 import {acceptOfflineReceipt,offlineEffectiveState} from './offline-model.js';
 import {applyWriteToState,projectSavedDefinition} from './write-projection.js';
-import {projectLocalDiary,createDisplayView,projectDiaryCalendar,libraryItems,usesNutrientTargets,projectNutrientTargetResponse} from './local-diary-projection.js';
+import {diaryGroups,defaultDiaryGroup,projectLocalDiary,createDisplayView,projectDiaryCalendar,libraryItems,usesNutrientTargets,projectNutrientTargetResponse} from './local-diary-projection.js';
 import {offlineFailure} from './offline-errors.js';
 
 const listeners=new Set();
@@ -193,9 +193,9 @@ export async function overlayPendingResponse(path,value,nutrientTargetRevision){
   result.presentation={...result.presentation,settings:{...result.presentation?.settings,...state.settings}};
   if(state.settings.theme)result.theme=state.settings.theme;
   if(state.settings.energyUnit)result.energyUnit=state.settings.energyUnit;
-  const groups=(result.groups??['Uncategorized']).map(name=>({name,records:[]}));
+  const groups=diaryGroups(result.groups).map(name=>({name,records:[]}));
   for(const collection of ['entries','notes','biometrics'])for(const row of result[collection]){
-   const group=groups.find(group=>group.name===row.group)??groups[0];group?.records.push({collection,id:row.id});
+   const group=groups.find(group=>group.name===(row.group||defaultDiaryGroup));group?.records.push({collection,id:row.id});
   }
   result.recordDisplay={...result.recordDisplay,groups};
  }

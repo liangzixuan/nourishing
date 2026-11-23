@@ -4,7 +4,7 @@ import {coreText} from '../core-cloud-messages.js';
 import {isStandardMobileNutrient,mobileNutrientName} from '../mobile-nutrient-groups.js';
 import {formatMessage as targetMessage} from '../targets-source/message-format.js';
 import {mobileDiarySettings,mobileQuickAddSettings} from './mobile-diary-settings.js';
-import {diaryCalendarKinds} from '../snapshot-source/diary-calendar.mjs';
+import {visibleDiaryCalendarKinds} from '../snapshot-source/diary-calendar.mjs';
 import {calendarMarker} from '../snapshot-source/mobile-diary-calendar.js';
 import {escape as e} from '../html.js';
 import {diaryGroupSlots} from '../local-group-rename.js';
@@ -99,7 +99,7 @@ export class MobileDisplay {
  }
  renderCalendar(){
   this.onTitle(t('mobileDisplay.calendar'));
-  const rows=diaryCalendarKinds.map(kind=>{
+  const rows=visibleDiaryCalendarKinds.map(kind=>{
    const label=e(t('mobileDisplay.kind.'+kind));
    const checked=this.settings.diaryCalendar[kind]?' checked':'';
    return `<label class="mds-row">${calendarMarker(kind)}<strong>${label}</strong><input type="checkbox" role="switch" class="dc-switch" data-display-toggle="calendar:${kind}"${checked}></label>`;

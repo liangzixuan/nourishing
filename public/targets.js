@@ -26,6 +26,8 @@ const main=["weight",'macros','scheduler','expenditure','nutrients','scores'];
 const tools=['diary','display','references','limits','body','weekday','guided'];
 const m=key=>formatMessage(uiLanguage(),'mobileTargets.'+key);
 
+export const targetDestinations=()=>[...main,...tools.filter(id=>id!=='display')].map(id=>[id,m(id)]);
+
 /** Source Targets navigation; account commands and calculations stay server owned. */
 export function mountTargets({page,headerRoot,date,show,close,header,content,onChange=async()=>{},onExit,rootScreen='home',initialScreen=rootScreen,initialNutrient=null}){
  const root=document.createElement('section');root.className='targets-page';page.replaceChildren(root);
@@ -105,13 +107,13 @@ export function mountTargets({page,headerRoot,date,show,close,header,content,onC
   }
  },{signal:events.signal});
  root.addEventListener('click',event=>{const button=event.target.closest('[data-mt-open]');if(button)open(button.dataset.mtOpen);},{signal:events.signal});
- if(initialScreen==='home')home();else open(initialScreen);return {back,dispose(){disposed=true;reset();events.abort();document.body.classList.remove('targets-mobile');}};
+ home();if(initialScreen!=='home')open(initialScreen);return {back,dispose(){disposed=true;reset();events.abort();document.body.classList.remove('targets-mobile');}};
 }
 
 /** Reuses the same source target child for Diary settings, with the selected date intact. */
 export function mountTargetsSheet({date,show,close,header,content,onChange,initialScreen='macros',initialNutrient=null}){
  show('<section class="targets-sheet"><header class="targets-sheet-header"></header><div class="targets-sheet-page"></div></section>');
  const host=content.querySelector('.targets-sheet'),alreadyMobile=document.body.classList.contains('targets-mobile');
- const panel=mountTargets({page:host.querySelector('.targets-sheet-page'),headerRoot:host.querySelector('.targets-sheet-header'),date,show,close,header,content,onChange,initialScreen,initialNutrient,onExit:close});
- return ()=>{panel.dispose();if(alreadyMobile)document.body.classList.add('targets-mobile');};
+ const panel=mountTargets({page:host.querySelector('.targets-sheet-page'),headerRoot:host.querySelector('.targets-sheet-header'),date,show,close,header,content,onChange,rootScreen:initialScreen,initialNutrient,onExit:close});
+ return Object.assign(()=>{panel.dispose();if(alreadyMobile)document.body.classList.add('targets-mobile');},{back:source=>source!=='cancel'&&panel.back()});
 }

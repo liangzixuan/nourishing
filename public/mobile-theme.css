@@ -2,7 +2,7 @@
 html,body{overscroll-behavior:none}
 .discover-mobile{
  --bg:#f5f6fa;--paper:#fff;--card:var(--paper);--ink:#232638;--muted:#606577;
- --line:#d8dbe5;--border:var(--line);--pale:#e7e9f1;--green:#176e73;--accent:#ff6430;
+ --line:#d8dbe5;--border:var(--line);--pale:#e7e9f1;--green:#176e73;--accent:#ff6430;--mobile-add-color:var(--accent);
  --mobile-accent-text:#ac3500;--mobile-danger:#b42318;--mobile-disabled:#a0a2b1;
  --mobile-button-bg:#252839;--mobile-button-ink:#f5f6ff;--mobile-on-accent:#101222;
  --mobile-icon-filter:none;--mobile-color-scheme:light;
@@ -10,7 +10,7 @@ html,body{overscroll-behavior:none}
 .discover-mobile.dark{
  --bg:#101223;--paper:#262a3b;--ink:#fafbff;--muted:#a0a2b1;
  --line:#3d4051;--pale:#404252;--green:#41adb0;
- --mobile-accent-text:#ff8050;--mobile-danger:#ffb7ab;
+ --mobile-add-color:#ff7e56;--mobile-accent-text:#ff8050;--mobile-danger:#ffb7ab;
  --mobile-button-bg:#f2f1ff;--mobile-button-ink:#171827;
  --mobile-icon-filter:brightness(0) invert(1);--mobile-color-scheme:dark;
 }

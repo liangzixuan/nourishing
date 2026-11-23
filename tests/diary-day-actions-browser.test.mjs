@@ -102,7 +102,7 @@ test('Diary day actions use the chosen calendar date and preserve other days',as
   assert.equal(await cell(day).getAttribute('aria-current'),'date');assert.equal(await cell(previous).getAttribute('class'),'is-complete');
   assert.equal(await cell(day).evaluate(n=>n.classList.contains('is-logged')),true);
   await shot('calendar');await calendar.locator('[data-mdc-legend]').click();await calendar.getByRole('dialog',{name:'Legend'}).waitFor();
-  assert.deepEqual(await calendar.locator('.mdc-legend p').allTextContents(),['Food','Exercise','Biometric','Note','Fast','Today','Selected Day','Logged Day','Completed Day']);await shot('legend');
+  assert.deepEqual(await calendar.locator('.mdc-legend p').allTextContents(),['Food','Exercise','Biometric','Note','Today','Selected Day','Logged Day','Completed Day']);await shot('legend');
   await page.mouse.click(3,3);await calendar.locator('.mdc-legend').waitFor({state:'detached'});await calendar.locator('[data-mdc-legend]').click();
   await page.evaluate(()=>history.back());await calendar.locator('.mdc-legend').waitFor({state:'detached'});
   await calendar.locator('[data-mdc-month="-1"]').click();await cell('2026-10-31').waitFor();await cell('2026-10-31').click();

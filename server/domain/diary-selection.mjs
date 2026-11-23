@@ -1,3 +1,4 @@
+import {hasDiaryGroup} from './diary-groups.mjs';
 import {contentDigestInput} from './content-digest-input.mjs';
 import {withoutFoodNotes} from './food-notes.mjs';
 import {sha256} from '@noble/hashes/sha2.js';
@@ -35,7 +36,7 @@ export function prepareRecordSelection(s,selection){
     });
     normalized={date:sourceDate,scope:'selected',records:refs};records=refs.map(ref=>{const row=s[ref.collection].find(item=>item.id===ref.id);if(!row||row.date!==sourceDate)throw Object.assign(Error('A selected record no longer belongs to this date. Review the records again.'),{status:409});return {collection:ref.collection,row};});
   }else if(selection.scope==='group'){
-    if(selection.records!==undefined||typeof selection.group!=='string'||!s.settings.groups.includes(selection.group))fail('Choose an existing source group without a record selection.');
+    if(selection.records!==undefined||typeof selection.group!=='string'||!hasDiaryGroup(s.settings.groups,selection.group))fail('Choose an existing source group without a record selection.');
     normalized={date:sourceDate,scope:'group',group:selection.group};records=copyCollections.flatMap(collection=>s[collection].filter(row=>row.date===sourceDate&&row.group===selection.group).map(row=>({collection,row})));
   }else if(selection.scope==='day'){
     if(selection.records!==undefined||selection.group!==undefined)fail('A full day cannot also select records or a group.');
@@ -53,7 +54,7 @@ export function captureRecordSelection(s,input){
 export function prepareRecordCopy(s,p){
   objectKeys(p,['selection','destination'],'Record copy review');
   const destination=p.destination;objectKeys(destination,['date','group'],'Copy destination');const targetDate=date(destination.date);
-  if(!Object.hasOwn(destination,'group')||(destination.group!==null&&(typeof destination.group!=='string'||!s.settings.groups.includes(destination.group))))fail('Choose an existing destination group or keep the original groups.');
+  if(!Object.hasOwn(destination,'group')||(destination.group!==null&&(typeof destination.group!=='string'||!hasDiaryGroup(s.settings.groups,destination.group))))fail('Choose an existing destination group or keep the original groups.');
   const {selection:normalized,records}=prepareRecordSelection(s,p.selection);
   const target={date:targetDate,group:destination.group},collections=new Set(records.map(item=>item.collection)),groups=new Set(records.filter(item=>item.collection==='entries').map(item=>target.group??item.row.group));
   const targets=copyCollections.filter(collection=>collections.has(collection)).flatMap(collection=>s[collection].filter(row=>row.date===targetDate&&(collection!=='entries'||groups.has(row.group))).map(row=>({collection,row})));

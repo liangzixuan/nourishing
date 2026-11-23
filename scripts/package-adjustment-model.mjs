@@ -13,5 +13,5 @@ export async function packageAdjustmentModel(){
    catch{await copy(match[1]);}
   }
  }
- for(const name of ['diary-adjustment-model.mjs','resource-expansion.mjs','resource-quantity.mjs','recipe-portions.mjs','content-digest-input.mjs','entry-update-fields.mjs'])await copy(name);
+ for(const name of ['diary-groups.mjs','diary-adjustment-model.mjs','resource-expansion.mjs','resource-quantity.mjs','recipe-portions.mjs','content-digest-input.mjs','entry-update-fields.mjs'])await copy(name);
 }

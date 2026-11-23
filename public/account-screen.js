@@ -15,7 +15,7 @@ import {disconnectCurrentPush} from './reminders.js';
 import {installButton,refreshInstallButton} from './pwa.js';
 import {createAccountDeletion} from './account-deletion.js';
 import {mountBulkDiaryDeletion} from './account-diary-deletion.js';
-export function mountAccount({root,embedded=false,section,onIdentity=()=>{}}){
+export function mountAccount({root,embedded=false,section,initialAction,onIdentity=()=>{}}){
 let disposed=false,profileSerial=0;const lifetime=new AbortController();
 const alive=()=>!disposed&&root.isConnected;
 root.classList.add('account-surface');
@@ -64,16 +64,16 @@ async function profile(knownUser=null){
     const {ticket}=await readDeviceCache(accountDisplayKey);
     if(ticket&&ticket.ownerId!==value.id)throw new DOMException('Account changed.','AbortError');
     return accountDisplay(value);
-  },lifetime.signal,{onRefresh:value=>{if(alive()&&!bulk&&serial===profileSerial&&!root.querySelector('dialog[open]')&&!root.querySelector('form:focus-within'))void profile(value);}}):await api('/api/account',null,'GET');}catch(error){if(!alive()||serial!==profileSerial)return;if(error.status===401){await lockCurrentOffline();if(!await deletion.recover())accountForm('login');return;}root.innerHTML=`<h1>${m("mobileMore.account")}</h1>${notice()}<button id="retry">${m("mobileSuggest.retry")}</button>`;message(error.message,true);root.querySelector('#retry').onclick=profile;return;}
+  },lifetime.signal,{onRefresh:value=>{if(alive()&&!bulk&&section!=='delete-account'&&serial===profileSerial&&!root.querySelector('dialog[open]')&&!root.querySelector('form:focus-within'))void profile(value);}}):await api('/api/account',null,'GET');}catch(error){if(!alive()||serial!==profileSerial)return;if(error.status===401){await lockCurrentOffline();if(!await deletion.recover())accountForm('login');return;}root.innerHTML=`<h1>${m("mobileMore.account")}</h1>${notice()}<button id="retry">${m("mobileSuggest.retry")}</button>`;message(error.message,true);root.querySelector('#retry').onclick=profile;return;}
   if(!alive()||serial!==profileSerial)return;
   if(!embedded)await rememberOfflineAccount(user);
   else if(knownUser){const {ticket}=await readDeviceCache(accountDisplayKey);await cacheAccountDisplay(user,ticket);}
   if(!alive()||serial!==profileSerial)return;
   onIdentity(accountDisplay(user));
   const display=await (embedded?diaryRequest('/api/display',undefined,lifetime.signal):api('/api/display',null,'GET')).catch(()=>null);if(!alive()||serial!==profileSerial)return;if(display?.settings?.appLanguage)applyAppLanguage(display.settings.appLanguage);applyTheme(display?.settings?.theme);applyFontPreferences(display?.settings);
+  if(section==='delete-account'){deletion.open({inline:true});return;}
   if(section==='account-data'){
-   root.innerHTML=`<section class="mm-group account-data-menu">${moreRow('bulk-delete',m('accountCloud.bulk.title'))}<button type="button" class="mm-row" id="delete-account"><span>${m('accountCloud.bulk.account')}</span>${moreIcon('chevron-right','mm-chevron')}</button></section><p class="account-data-note">${m('accountCloud.bulk.accountNote')}</p>`;
-   root.querySelector('#delete-account').onclick=deletion.open;
+   root.innerHTML=`<section class="mm-group account-data-menu">${moreRow('bulk-delete',m('accountCloud.bulk.title'))}${moreRow('delete-account',m('accountCloud.bulk.account'))}${moreRow('storage',coreText('more.storage'))}</section><p class="account-data-note">${m('accountCloud.bulk.accountNote')}</p>`;
    return;
   }
   if(section==='bulk-delete'){
@@ -91,21 +91,21 @@ async function profile(knownUser=null){
   const preferences=`<form><label>${m("reminders.zone")}<input name="timeZone" value="${escape(zone)}" required maxlength="100"></label><label>${m("mobileWeightGoal.units")}<select name="units"><option value="metric">${m("accountCloud.metricUnits")}</option><option value="imperial">${m("accountCloud.imperial")}</option></select></label><button>${m("accountCloud.saveSettings")}</button></form>`;
   const signout=`<button class="secondary signout" id="signout">${m(landing?"accountCloud.logOut":"accountCloud.signOut")}</button>`;
   if(landing){
-    const preferencesOpen=root.querySelector('.account-preferences')?.open??!user.emailVerified;
-    root.innerHTML=`<section class="account-landing-list mm-group account-identity">${identityRows}${moreRow('account-data',coreText('more.accountData'))}${moreRow('notifications',coreText('more.notifications'))}</section>${signout}
-      <details class="account-preferences" ${preferencesOpen?'open':''}><summary>${m('accountCloud.preferences')}</summary>${verification}${preferences}${installButton()}</details>${notice()}`;
+    root.innerHTML=`<section class="account-landing-list mm-group account-identity">${identityRows}${moreRow('account-data',coreText('more.accountData'))}${moreRow('notifications',coreText('more.notifications'))}</section>${signout}${user.emailVerified?'':verification}${notice()}`;
   }else{
     root.innerHTML=`<h1>${m("mobileMore.account")}</h1>${installButton()}<section class="card account-identity">${identityRows}${verification}</section>${preferences}${notice()}${signout}<button type="button" class="delete-account" id="delete-account">${m("accountCloud.deleteAccount")}</button>`;
   }
   editor?.dispose();editor=createAccountEditor({root,request:api,onSaved:async identity=>{await profile({...user,...identity});message(m("accountCloud.saved"));}});
   for(const button of root.querySelectorAll('[data-account-edit]'))button.onclick=()=>editor.open(button.dataset.accountEdit,user,button);
   refreshInstallButton();
-  const form=root.querySelector('form');form.elements.units.value=user.profile.units;
+  const form=root.querySelector(':scope > form');
+  if(form)form.elements.units.value=user.profile.units;
   if(!embedded){const diaryLink=document.createElement('a');diaryLink.href='/diary';diaryLink.textContent='‹ '+m('accountCloud.backToDiary');diaryLink.className='links';root.prepend(diaryLink);}
-  form.onsubmit=e=>{e.preventDefault();busy(form,async()=>{await api('/api/profile',Object.fromEntries(new FormData(form)),'PUT');message(m("accountCloud.saved"));});};
+  if(form)form.onsubmit=e=>{e.preventDefault();busy(form,async()=>{await api('/api/profile',Object.fromEntries(new FormData(form)),'PUT');message(m("accountCloud.saved"));});};
   const verify=root.querySelector('#verify');if(verify)verify.onclick=()=>busy(verify.parentElement,async()=>{await api('/api/auth/verification',{});message(m("accountCloud.verificationEmailSent"));});
   root.querySelector('#delete-account')?.addEventListener('click',deletion.open);
   root.querySelector('#signout').onclick=()=>busy(root,async()=>{if(!await leaveOfflineAccount(root))return;await disconnectCurrentPush();await api('/api/auth/logout',{});user=null;root.replaceChildren();location.replace('/login');});
+  if(['name','email','password'].includes(initialAction)){const action=initialAction;initialAction=null;root.querySelector(`[data-account-edit="${action}"]`).click();}
 }
 const mode=embedded?'account':location.pathname.slice(1);
 // Appwrite serves this static root before Astro's catch-all route.

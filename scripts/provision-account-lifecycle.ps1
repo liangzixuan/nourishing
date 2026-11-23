@@ -20,6 +20,14 @@ foreach ($spec in ($specs | ConvertFrom-Json)) {
     foreach ($index in $spec.indexes) { $arguments += @('--indexes',($index | ConvertTo-Json -Depth 5 -Compress)) }
     $null = Call-Appwrite $arguments
   }
+  if ($spec.id -eq 'account_deletions') {
+    $existing = Call-Appwrite @('tablesdb','get-table','--database-id','nourishing','--table-id',$spec.id)
+    if (-not $existing.rowSecurity -or @($existing.'$permissions').Count) { throw 'Account tables must be server-only.' }
+    if (-not ($existing.columns | Where-Object key -eq 'leavingReason')) {
+      $column = $spec.columns | Where-Object key -eq 'leavingReason'
+      $null = Call-Appwrite @('tablesdb','create-varchar-column','--database-id','nourishing','--table-id',$spec.id,'--key',$column.key,'--size',$column.size,'--required=false','--encrypt')
+    }
+  }
   for ($attempt=0; $attempt -lt 30; $attempt++) {
     $table = Call-Appwrite @('tablesdb','get-table','--database-id','nourishing','--table-id',$spec.id)
     if (-not $table.rowSecurity -or @($table.'$permissions').Count) { throw 'Account tables must be server-only.' }
@@ -30,6 +38,7 @@ foreach ($spec in ($specs | ConvertFrom-Json)) {
   foreach ($column in $spec.columns) {
     $actual = @($table.columns | Where-Object { $_.key -eq $column.key })
     if ($actual.Count -ne 1 -or $actual[0].status -ne 'available' -or $actual[0].type -ne $column.type -or $actual[0].required -ne $column.required) { throw "Account column differs: $($column.key)" }
+    if ($column.encrypt -and !$actual[0].encrypt) { throw 'Account feedback column must be encrypted.' }
     if ($column.type -eq 'varchar' -and $actual[0].size -ne $column.size) { throw 'Account column size differs.' }
   }
   foreach ($index in $spec.indexes) {

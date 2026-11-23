@@ -109,16 +109,15 @@ test('summary settings persist through canonical validators and reject stale or 
 });
 test('diary presentation preserves canonical nutrition, selected scores, hydration and account settings',()=>{
  const state=initialState();state.entries=[];state.biometrics=[];
- const empty=view(state);assert.equal(empty.summary.energy.target,2000);assert.equal(empty.summary.hydration.logged,0);assert.equal(empty.summary.hydration.target,2500);assert.equal(empty.presentation.fasting.status,'none');
+ const empty=view(state);assert.equal(empty.summary.energy.target,2000);assert.equal(empty.summary.hydration.logged,0);assert.equal(empty.summary.hydration.target,2500);assert.equal(Object.hasOwn(empty.presentation,'fasting'),false);
  act(state,'entry.add',{date,group:'Lunch',amount:1,name:'Fixture lunch',nutrients:{calories:200,protein:10,carbs:30,fat:4}});
  act(state,'water.add',{date,time:'12:00',amount:500});
  state.settings.scoreSelection=['protein','overall'];state.settings.showWater=false;state.settings.showEnergy=false;state.settings.energyUnit='kJ';
  state.settings.discover={version:1,fastingDiary:false};state.fasts=[{id:'fast',start:date+'T16:30:00Z',end:null,goalHours:16}];
  const before=structuredClone(state),actual=view(state);assert.deepEqual(state,before);
  assert.equal(actual.summary.energy.consumed,200);assert.equal(actual.summary.hydration.logged,500);assert.equal(actual.presentation.settings.showWater,false);assert.equal(actual.presentation.settings.showEnergy,false);assert.deepEqual(actual.presentation.scores.map(row=>row.id),['protein','overall']);
- assert.equal(actual.presentation.fasting.visible,false);assert.equal(actual.presentation.fasting.elapsedSeconds,5400);assert.equal(actual.presentation.fasting.remainingSeconds,52200);
+ assert.equal(Object.hasOwn(actual.presentation,'fasting'),false);
  assert.deepEqual(actual.summary,calculateSummary(state,date));
- state.fasts[0].start=date+'T19:00:00Z';assert.equal(view(state).presentation.fasting.status,'future-start');assert.equal(view(state).presentation.fasting.elapsedSeconds,null);
 });
 
 test('source diary carousel, rings, water, actions and disposal work on a phone viewport',async()=>{
@@ -143,7 +142,7 @@ test('source diary carousel, rings, water, actions and disposal work on a phone 
   await page.locator('[data-md-dot="3"]').click();assert.equal(await page.locator('[data-md-page-id=scores]').isVisible(),true);await page.locator('[data-md-page-id=scores] [data-action=score-details]').first().click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).action,'score-details');
   await page.locator('[data-action=water-menu]').click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).action,'water-menu');assert.equal(await page.locator('.md-water').getAttribute('open'),null);
   await page.locator('.md-water summary').click();await page.locator('.water-glasses [data-action=water]').first().click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).amount,236.5882365);
-  await page.locator('.md-fasting summary').click();await page.getByRole('button',{name:'Open Fasting'}).click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).action,'open-fasting');
+  assert.equal(await page.locator('.md-fasting,[data-action=open-fasting]').count(),0);
   await page.locator('[data-md-dot="0"]').click();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   mkdirSync('.local/ui-parity',{recursive:true});await page.screenshot({path:'.local/ui-parity/diary-summary-restored.png'});
   const count=await page.evaluate(()=>{window.mounted.dispose();return window.actions.length;});assert.equal(await page.evaluate(()=>Object.keys(window.Chart.instances).length),0);await page.getByRole('button',{name:'Target',exact:true}).click();assert.equal(await page.evaluate(()=>window.actions.length),count);assert.deepEqual(errors,[]);

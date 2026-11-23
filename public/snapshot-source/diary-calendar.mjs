@@ -1,5 +1,6 @@
 import {date,captureCalendar} from './calendar.mjs';
 export const diaryCalendarKinds=Object.freeze(['food','exercise','biometric','note','fast']);
+export const visibleDiaryCalendarKinds=Object.freeze(diaryCalendarKinds.filter(kind=>kind!=='fast'));
 export const defaultDiaryCalendar=Object.freeze({version:1,...Object.fromEntries(diaryCalendarKinds.map(key=>[key,true]))});
 export function parseDiaryCalendar(value){
  if(value===undefined||value===null)return null;

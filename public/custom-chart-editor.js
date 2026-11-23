@@ -1,3 +1,4 @@
+import {guardSheetExit} from './edge-navigation.js';
 import {appendShellNavigation} from './app-shell.js';
 import {dc,chartText,customChartText as cm} from './discover-cloud-messages.js';
 import {uiLanguage,t} from './app-language.js';
@@ -70,7 +71,8 @@ export function mountCustomChartEditor(chart,data,ui){
  root.querySelector('[data-mce-back]').addEventListener('click',back,{signal:abort.signal});
  root.querySelector('[data-mce-reload]').addEventListener('click',reload,{signal:abort.signal});
  form.addEventListener('submit',save,{signal:abort.signal});
- const handleBack=event=>{if(!alive())return;event.preventDefault();event.stopImmediatePropagation();back();};
+ guardSheetExit(root,()=>busy,abort.signal);
+ const handleBack=event=>{if(!alive()||event.type==='cancel'&&event.target!==dialog)return;event.preventDefault();event.stopImmediatePropagation();back();};
  dialog?.addEventListener('cancel',handleBack,{capture:true,signal:abort.signal});window.addEventListener('nourishing-back',handleBack,{capture:true,signal:abort.signal});
  const observer=new MutationObserver(()=>{if(!root.isConnected)dispose();});observer.observe(content,{childList:true});
  const controller={element:root,dispose};ui.onEditor?.(controller);controls();return controller;

@@ -1,3 +1,4 @@
+import {diaryGroups} from './domain/diary-groups.mjs';
 import {catalog as nutrients} from './domain/nutrition.mjs';
 import {rankNutrient} from './domain/catalog-insights.mjs';
 import {mealSuggestionOptions,suggestMeals,previewSuggestedMeal,previewSuggestedIngredient,resolveMealIngredient,applyMealSuggestionPreference} from './domain/meal-suggestions.mjs';
@@ -87,7 +88,7 @@ export function createInsightCatalog(foods,{metadata={},sourceFactDigests={},nut
   }
  };
 }
-export function foodInsightOptions(state){return {revision:digest(state),groups:state.settings.groups,energyUnit:state.settings.energyUnit??'kcal',nutrients:nutrients.map(({id,name,unit,category})=>({id,name,unit,category})),suggestions:{...mealSuggestionOptions(state),templates:MEAL_LIBRARY.map(({ref,name})=>({ref,name}))}};}
+export function foodInsightOptions(state){return {revision:digest(state),groups:diaryGroups(state.settings.groups),energyUnit:state.settings.energyUnit??'kcal',nutrients:nutrients.map(({id,name,unit,category})=>({id,name,unit,category})),suggestions:{...mealSuggestionOptions(state),templates:MEAL_LIBRARY.map(({ref,name})=>({ref,name}))}};}
 export function foodOracle(state,foodCatalog,input){
  exact(input,['nutrient','basis','query','offset','limit','categoryMode','categoryIds','includeUncategorized']);
  return rankNutrient({...input,foods:state.foods,foodCatalog,favorites:state.settings.favorites,entries:state.entries});

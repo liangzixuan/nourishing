@@ -1,3 +1,4 @@
+import {guardSheetExit} from './edge-navigation.js';
 import {recordEditorData,saveRecordCommand} from './record-local.js';
 import {savedExerciseSettings,walkingEfforts,walkingPresets} from './local-diary-projection.js';
 import {dc} from './discover-cloud-messages.js';
@@ -41,8 +42,7 @@ function resolveDefaultGroup(options, record, value, initialGroup) {
   if (record) return record.group;
   if (value.group) return value.group;
   if (options.groups.includes(initialGroup)) return initialGroup;
-  if (options.groups.includes('Uncategorized')) return 'Uncategorized';
-  return options.groups[0];
+  return 'Uncategorized';
 }
 
 function buildExerciseSubmitAction({activity, generalWalking, record, form, unit, correction}) {
@@ -91,7 +91,7 @@ function buildBiometricDraft({options, record, detail, date, initialSelection, i
   if (selected && (!metric || (selected.unit !== null && !metric.units.includes(selected.unit)))) {
     throw Error(dc('measurementUnavailable'));
   }
-  const group = record ? record.group : options.groups.includes(initialGroup) ? initialGroup : null;
+  const group = record ? record.group : resolveDefaultGroup(options, null, {}, initialGroup);
   const draft = blankBiometricDraft(record?.date ?? date, record?.time ?? clock(), group);
   if (!record) return {selected, metric, draft};
   if (!metric) throw Error(dc('measurementUnavailable'));
@@ -486,8 +486,9 @@ class RecordEditorController {
   }
 
   bindEvents() {
+    guardSheetExit(this.root,()=>this.busy,this.abort.signal);
     const cancel = event => {
-      if (!this.alive()) return;
+      if (!this.alive() || event.type === 'cancel' && event.target !== this.sheet) return;
       event.preventDefault();
       event.stopImmediatePropagation();
       this.back();

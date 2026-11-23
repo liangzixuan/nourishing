@@ -32,7 +32,7 @@ export function createWebPushStore({db,ownerId:owner,origin,vapid,now=()=>Date.n
  }
  async function status(){
   let config;try{config=parseVapid(vapid,origin);}catch(error){if(error.code!==503)throw error;return {configured:false,paused:true,devices:[],limit:PUSH_DEVICE_LIMIT};}
-  const account=await load();return {configured:true,paused:true,publicKey:config.publicKey,devices:(account?.state.devices??[]).map(device=>({id:device.id,label:device.label,createdAt:device.createdAt,currentOrigin:device.origin===origin})),limit:PUSH_DEVICE_LIMIT};
+  const account=await load();return {configured:true,paused:true,publicKey:config.publicKey,devices:(account?.state.devices??[]).map(device=>({id:device.id,label:device.label,createdAt:device.createdAt,currentOrigin:device.origin===origin,...(device.origin===origin?{endpointDigest:digest(device.subscription.endpoint)}:{})})),limit:PUSH_DEVICE_LIMIT};
  }
  async function update(account,change){
   const workspace=await readReminderWorkspace(db,owner);

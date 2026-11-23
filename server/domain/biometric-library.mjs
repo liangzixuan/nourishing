@@ -1,3 +1,4 @@
+import {diaryGroups} from './diary-groups.mjs';
 import {publicWeightUnits} from './weight-units.mjs';
 import {stoolUnit} from './stool-scale.mjs';
 import {biometricGuidance} from './biometric-guidance.mjs';
@@ -54,7 +55,7 @@ export function createBiometricLibrary(state,{configuredPairs=configuredBiometri
     add(row.type,row.unit,'Recorded');const metric=pairs.get(pairKey(row.type,row.unit));if(metric){recent.set(metric.key,index);if(!metric.categories.includes('Most recent'))metric.categories.push('Most recent');}
   }
   metrics.sort((a,b)=>(recent.get(b.key)??-1)-(recent.get(a.key)??-1));
-  return {version:1,categories:['Most recent','Body','Cardio','Labs','Mental','Custom','Recorded'],groups:[...(state.settings?.groups??[])],metrics};
+  return {version:1,categories:['Most recent','Body','Cardio','Labs','Mental','Custom','Recorded'],groups:diaryGroups(state.settings?.groups),metrics};
 }
 
 /** Resolve catalog type identity here; consumers never derive it from a label. */

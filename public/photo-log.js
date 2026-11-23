@@ -57,9 +57,8 @@ async function prepareUploadImage(file) {
 export function mountPhotoLog({show, close, header, content, date, groups, initialGroup, save, onOptimisticSave, onChange = async () => {}}) {
   let disposed = false, serial = 0, abort, analysis, originalImage, rows = [], pickerCleanup, pendingSave = false, nutritionVersion = 0, hintDismissed = false, createCleanup, portionDialog, menuDialog, swapMenu, lastAddition, energyExpanded = true;
   const nutritionCache = new Map(), itemCache = new Map(), itemLoads = new Map(), additionDrafts = new Map();
-  // Same default as the existing mobile photoDialog: uncategorized, then the current meal.
-  const clock = new Date(), hour = clock.getHours(), meal = hour >= 6 && hour < 11 ? 'Breakfast' : hour >= 11 && hour < 16 ? 'Lunch' : hour >= 16 && hour < 22 ? 'Dinner' : 'Snacks';
-  let group = groups.includes(initialGroup) ? initialGroup : groups.includes('Uncategorized') ? 'Uncategorized' : groups.includes(meal) ? meal : groups[0], time = clock.toTimeString().slice(0, 5), diaryDate = typeof date === 'function' ? date() : date;
+  const clock = new Date();
+  let group = groups.includes(initialGroup) ? initialGroup : 'Uncategorized', time = clock.toTimeString().slice(0, 5), diaryDate = typeof date === 'function' ? date() : date;
   show(`<section class="photo-log"><div class="photo-log-heading">${header(t("mobilePhoto.title"))}<div data-photo-summary></div></div><input type="file" accept="image/jpeg,image/png,image/webp" data-photo-gallery><input type="file" accept="image/*" capture="environment" data-photo-camera><div class="photo-log-body"></div></section>`);
   const shell = content.querySelector('.photo-log'), body = shell.querySelector('.photo-log-body');
   const photoSummary = shell.querySelector('[data-photo-summary]');

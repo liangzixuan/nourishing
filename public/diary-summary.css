@@ -1,12 +1,11 @@
 @import "./targets-source/anchored-menu.css";
 /* These surfaces use mobile-diary.css from the source app. Keep host button resets scoped. */
 .md-selection-status{padding:16px}.md-selection-status p{margin:0}.md-selection-status button{min-height:44px;color:var(--accent)}
-.md-summary button,.md-fasting button,.md-water button{appearance:none;border:0;background:none;color:inherit;padding:0;font:inherit;cursor:pointer;}
+.md-summary button,.md-water button{appearance:none;border:0;background:none;color:inherit;padding:0;font:inherit;cursor:pointer;}
 .md-summary [hidden]{display:none;}
 .md-summary .md-energy-item{width:100%;}
 .md-summary .md-target{width:100%;}
 .md-highlights[data-md-rows="1"]{--md-rows:1;}.md-highlights[data-md-rows="2"]{--md-rows:2;}.md-highlights[data-md-rows="3"]{--md-rows:3;}.md-highlights[data-md-rows="4"]{--md-rows:4;}
-.md-fasting-body button{min-height:40px;color:inherit;}
 .md-water+.md-group{margin-top:15px;}
 .md-record-menu .water-row-icon{width:22px;height:22px;filter:invert(62%) sepia(63%) saturate(1200%) hue-rotate(130deg)}
 .md-water summary{min-height:56px;column-gap:6px;padding:4px 16px 4px 0}

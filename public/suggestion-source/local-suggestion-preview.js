@@ -16,7 +16,7 @@ function project(state,date,inputRows){
   return {...row,name:food.name,serving:food.serving,servingGrams:food.grams??null,servingMilliliters:food.milliliters??null,servingTranslations:food.servingTranslations??[],amount,grams:measured?.grams??(Number.isFinite(food.grams)?amount*food.grams:null),source:food.source,portions:food.portions??[]};
  });
  const used=new Set(state.entries.map(row=>row.id));
- const entries=rows.map((row,index)=>{let id='suggestion-preview:'+index;while(used.has(id))id+=':';used.add(id);return {id,foodId:row.ref.id,amount:row.amount,date,group:state.settings.groups[0],time:''};});
+ const entries=rows.map((row,index)=>{let id='suggestion-preview:'+index;while(used.has(id))id+=':';used.add(id);return {id,foodId:row.ref.id,amount:row.amount,date,group:'Uncategorized',time:''};});
  return {rows,entries,state:{...state,entries:[...state.entries,...entries]}};
 }
 

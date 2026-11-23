@@ -254,8 +254,9 @@ function registerDeletionRoutes(add) {
     auth: 'prebody',
     noSearch: 'Invalid account request.',
     handler: async ({api, secret, body, headers, json}) => {
-      fields(body, ['password']);
-      const prepared = await api.prepareAccountDeletion(secret, {password: string(body.password, 8, 256)});
+      fields(body, ['password', 'leavingReason']);
+      const leavingReason = body.leavingReason === undefined ? '' : string(body.leavingReason, 0, 1000).trim();
+      const prepared = await api.prepareAccountDeletion(secret, {password: string(body.password, 8, 256), ...(leavingReason ? {leavingReason} : {})});
       headers.set('Set-Cookie', deletionCookie(prepared.ticket));
       return json(200, prepared.status);
     },

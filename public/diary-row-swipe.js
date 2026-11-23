@@ -1,3 +1,4 @@
+import {navigationEdge} from './edge-navigation.js';
 /** Owns row gestures only. Existing Diary actions own edits and deletion. */
 export function bindDiaryRowSwipe(root){
  const controller=new AbortController(),options={signal:controller.signal},document=root.ownerDocument;
@@ -15,6 +16,7 @@ export function bindDiaryRowSwipe(root){
  document.addEventListener('pointerdown',event=>{
   suppressed=null;
   if(!event.isPrimary||event.button!==0){cancel();return;}
+  if(event.pointerType==='touch'&&navigationEdge(event.clientX,innerWidth)){cancel();return;}
   const row=event.target.closest('[data-md-swipable]');
   if(!row||!root.contains(row)){cancel();return;}
   if(event.target.closest('[data-md-swipe-action]'))return;

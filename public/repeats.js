@@ -1,3 +1,4 @@
+import {diaryGroups,defaultDiaryGroup} from './report-source/server/diary-groups.mjs';
 import {uiLanguage,t} from './app-language.js';
 import {fc} from './food-cloud-messages.js';
 import {mobileRepeatsHeader,mobileRepeatsMarkup,MobileRepeatList,mobileRepeatForm,MobileRepeatEditor} from './repeat-source/mobile-repeats.js';
@@ -35,10 +36,10 @@ export function mountRepeats({page, show, close, header, content, date, headerRo
     const id = ++serial;
     if(!data)root.innerHTML = `<p class="empty">${e(t("mobileNutrientDetail.loading"))}</p>`;
     try {
-      const apply=result=>{if(alive()&&id===serial){data=result;render();}};
+      const apply=result=>{if(alive()&&id===serial){data={...result,groups:diaryGroups(result.groups)};render();}};
       const result = await request('/api/repeats?' + new URLSearchParams({date: date()}),undefined,undefined,{fresh,onRefresh:apply});
       if (!alive() || id !== serial) return;
-      data = result;
+      data = {...result,groups:diaryGroups(result.groups)};
       render();return true;
     } catch (error) {
       if (alive() && id === serial) {
@@ -101,7 +102,7 @@ export function mountRepeats({page, show, close, header, content, date, headerRo
       if (disposed || !loading.isConnected) return;
       if (!search) return editor(existing, value, item);
       pickerCleanup = mountFoodEntry({
-        item, date: data.date, group: data.groups.includes('Uncategorized') ? 'Uncategorized' : data.groups[0],
+        item, date: data.date, group: defaultDiaryGroup,
         groups: data.groups, draft: {time: new Date().toTimeString().slice(0, 5)}, revision: () => data.revision,
         show, close, content, onChange, onBack: () => chooseItem(search),
         submitLabel: t('mobileRepeat.next'),
@@ -111,7 +112,7 @@ export function mountRepeats({page, show, close, header, content, date, headerRo
     } catch (error) { if (!disposed && loading.isConnected) loading.textContent = error.message; }
   }
   function editor(existing, draft, item) {
-    const value = {startDate: data.date, days: [], time: new Date().toTimeString().slice(0, 5), group: data.groups.includes('Uncategorized') ? 'Uncategorized' : data.groups[0], enabled: true, ...draft};
+    const value = {startDate: data.date, days: [], time: new Date().toTimeString().slice(0, 5), group: defaultDiaryGroup, enabled: true, ...draft};
     const fields='<div class="quantity-fields" data-quantity-fields>'+quantityFields(item.options,value).replace('name="amount"',`name="amount" aria-label="${e(t('mobileFood.amount'))}"`).replace('name="unit"','name="unit" data-quantity-unit')+'</div>';
     open(mobileRepeatForm({language:uiLanguage(),record:value,name:item.resource.name,reference:{[item.kind+'Id']:item.resource.id},quantity:fields,groupOptions:data.groups.map(group=>`<option value="${e(group)}" ${group===value.group?'selected':''}>${e(group)}</option>`).join(''),icon}));
     const form=content.querySelector('form'),revision=data.revision;form.querySelector('h2').id='sheet-title';form.elements.group.setAttribute('aria-label',t("mobileRepeat.group"));

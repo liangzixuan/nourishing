@@ -1,3 +1,4 @@
+import {hasDiaryGroup} from './diary-groups.mjs';
 const recordedTime=row=>typeof row?.time==='string'&&/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(row.time)?row.time:null;
 
 export function sortAllDiaryEntriesByTime(state){
@@ -29,7 +30,7 @@ export function parseDiaryGroupOrder(value,groups){
   if(!exactKeys(value,['version','groups'])||value.version!==1||!Array.isArray(value.groups))groupOrderError();
   const seen=new Set();
   return {version:1,groups:value.groups.map(row=>{
-    if(!exactKeys(row,['group','mode'])||typeof row.group!=='string'||!groups.includes(row.group)||seen.has(row.group)||!['source','time'].includes(row.mode))groupOrderError();
+    if(!exactKeys(row,['group','mode'])||typeof row.group!=='string'||!hasDiaryGroup(groups,row.group)||seen.has(row.group)||!['source','time'].includes(row.mode))groupOrderError();
     seen.add(row.group);return {group:row.group,mode:row.mode};
   })};
 }
@@ -39,7 +40,7 @@ export function diaryGroupOrders(settings){
   return new Map(policy?.groups.map(row=>[row.group,row.mode])??[]);
 }
 export function setDiaryGroupOrder(state,input){
-  if(!exactKeys(input,['group','mode'])||typeof input.group!=='string'||!state.settings.groups.includes(input.group)||![null,'source','time'].includes(input.mode))groupOrderError();
+  if(!exactKeys(input,['group','mode'])||typeof input.group!=='string'||!hasDiaryGroup(state.settings.groups,input.group)||![null,'source','time'].includes(input.mode))groupOrderError();
   const orders=diaryGroupOrders(state.settings);
   if(input.mode===null)orders.delete(input.group);else orders.set(input.group,input.mode);
   if(orders.size)state.settings.diaryGroupOrder={version:1,groups:[...orders].map(([group,mode])=>({group,mode}))};

@@ -1,3 +1,4 @@
+import {guardSheetExit} from './edge-navigation.js';
 import {escape as e} from './html.js';
 import {uiLanguage} from './app-language.js';
 import {dc} from './discover-cloud-messages.js';
@@ -92,6 +93,7 @@ export function mountCgmDetail(view,ui){
   if(input.hasAttribute('data-mcl-range-mode')){const targetRange=structuredClone(card.settings.targetRange);targetRange.mode=input.value;if(input.value==='custom'&&!targetRange.custom)targetRange.custom={...card.targetRange.options.custom};return void save({targetRange});}
   if(input.dataset.mclRangeValue){if(!input.checkValidity()){input.reportValidity();return;}const key=input.dataset.mclRangeValue,custom={...card.targetRange.options.custom,[key]:Number(input.value)};if(['low','high'].includes(key))custom.fastedHigh=Math.max(custom.low,Math.min(custom.high,custom.fastedHigh));void save({targetRange:{mode:'custom',custom}});}
  },{signal:abort.signal});
+ guardSheetExit(root,()=>busy,abort.signal);
  const handleBack=event=>{if(!alive()||picker)return;if(screen!=='detail'||busy){event.preventDefault();event.stopImmediatePropagation();back();}};
  dialog?.addEventListener('cancel',handleBack,{capture:true,signal:abort.signal});window.addEventListener('nourishing-back',handleBack,{capture:true,signal:abort.signal});
  render();

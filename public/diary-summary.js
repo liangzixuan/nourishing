@@ -2,7 +2,6 @@ import {uiLanguage,t} from './app-language.js';
 import {coreText} from './core-cloud-messages.js';
 import {nutrientDisplayName} from './report-source/public/nutrient-language.js';
 import {mobileDiarySummary,MobileDiary,diarySymbol} from './diary-summary-source/mobile-diary.js';
-import {escape as e} from './html.js';
 import {scoreName} from './diary-summary-source/score-labels.js';
 import {watchDiarySelection} from './diary-selection-nutrition.js';
 import {waterWidgetMarkup} from './water.js';
@@ -18,21 +17,18 @@ function summaryMarkup(diary,facts=diary.summary,summary=diary.summary){
  return mobileDiarySummary({summary,facts,settings:presentation.settings,unit:diary.energyUnit??'kcal',language:uiLanguage(),labels:labels(),icons,macroMode:macroMode??facts.diaryDisplay?.policy.macroDisplay??'consumed',scores:presentation.scores,nutrientName,scoreName});
 }
 const waitingMarkup=()=>'<section class="md-summary md-selection-status" data-md-summary aria-busy="true"></section>';
-function duration(seconds){if(!Number.isFinite(seconds))return '';const minutes=Math.floor(Math.max(0,seconds)/60);return `${Math.floor(minutes/60)}h ${String(minutes%60).padStart(2,'0')}m`;}
 export function diarySummaryMarkup(diary,selection,ownerId){
- const {summary,presentation={settings:{},scores:[]}}=diary,fast=presentation.fasting;
- const fasting=fast?.visible===false?'':`<details class="md-fasting"><summary><strong>${e(t('nav.fasting'))}</strong><span class="md-group-chevron">${icons.chevron}</span></summary><div class="md-fasting-body">${fast?.active?`<strong data-diary-fast-clock>${e(duration(fast.elapsedSeconds))}</strong>`:''}<button type="button" data-action="open-fasting">${e(t('dashboard.openFast'))}</button></div></details>`;
  const hydration=waterWidgetMarkup(diary,{expanded:waterExpanded,ownerId});
- return (selection?.records.length?waitingMarkup():summaryMarkup(diary))+fasting+hydration;
+ return (selection?.records.length?waitingMarkup():summaryMarkup(diary))+hydration;
 }
 
-/** Owns summary carousel, charts and timer only. Mutations and destination navigation stay with the shell. */
+/** Owns summary carousel and charts only. Mutations and destination navigation stay with the shell. */
 export function mountDiarySummary({root,diary,onAction,selection,onGroupSelect}){
  const controller=new AbortController(),header=document.createElement('div');
  let disposed=false,facts=diary.summary,chartSummary=diary.summary,ready=!selection?.records.length;
  const panel=new MobileDiary({root,header,summary:diary.summary,context:()=>{},onDatePicker:()=>{},onGroupSelect});
  const selected=ready?null:watchDiarySelection({selection,onChange:result=>{if(disposed)return;facts=result.facts;chartSummary=result.chartSummary;ready=true;panel.update(summaryMarkup(diary,facts,chartSummary),chartSummary);}});
- const actions=new Set(['mobile-diary-energy','toggle-energy-display','edit-day-targets','nutrient-contributors','nutrient-targets','choose-scores','score-details','open-fasting','water','water-custom','water-menu','water-remove','water-hint-close','water-settings','water-target']);
+ const actions=new Set(['mobile-diary-energy','toggle-energy-display','edit-day-targets','nutrient-contributors','nutrient-targets','choose-scores','score-details','water','water-custom','water-menu','water-remove','water-hint-close','water-settings','water-target']);
  root.addEventListener('toggle',event=>{if(event.target.matches('.md-water'))waterExpanded=event.target.open;},{capture:true,signal:controller.signal});
  root.addEventListener('click',event=>{
   const button=event.target.closest('[data-action]');if(!button)return;
@@ -40,8 +36,5 @@ export function mountDiarySummary({root,diary,onAction,selection,onGroupSelect})
   if(action==='toggle-macro-display'){macroMode=(macroMode??facts.diaryDisplay?.policy.macroDisplay??'consumed')==='remaining'?'consumed':'remaining';panel.update(summaryMarkup(diary,facts,chartSummary),chartSummary);return;}
   if(actions.has(action)){event.preventDefault();onAction({action,id:button.dataset.id,kind:button.dataset.kind,anchor:button,amount:button.dataset.amount?Number(button.dataset.amount):undefined});}
  },{signal:controller.signal});
- const initial=diary.presentation?.fasting,started=performance.now();
- const updateClock=()=>{const target=root.querySelector('[data-diary-fast-clock]');if(target&&initial?.status==='active')target.textContent=duration(initial.elapsedSeconds+(performance.now()-started)/1000);};
- const timer=initial?.status==='active'?setInterval(updateClock,30000):null;
- return {context(){return ready?{entryIds:facts.scope==='selection'?facts.selectedEntryIds:null,chartSummary}:null;},dispose(){disposed=true;controller.abort();selected?.dispose();panel.dispose();if(timer)clearInterval(timer);}};
+ return {context(){return ready?{entryIds:facts.scope==='selection'?facts.selectedEntryIds:null,chartSummary}:null;},dispose(){disposed=true;controller.abort();selected?.dispose();panel.dispose();}};
 }

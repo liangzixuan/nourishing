@@ -1,3 +1,4 @@
+import {guardSheetExit} from './edge-navigation.js';
 import {recordEditorData,saveRecordCommand} from './record-local.js';
 import {queueBackgroundWrite} from './background-writes.js';
 import {privateImageAttributes} from './private-images.js';
@@ -20,9 +21,9 @@ export async function mountNoteEditor({record,date,initialGroup,show,close,heade
   [options,detail]=await recordEditorData(record?.date??date,'notes',record?.id);
   if(!loading.isConnected)return;if(detail)record=detail.record;
  }catch(error){if(loading.isConnected)loading.textContent=error.message;return;}
- const editable=!record||detail.editable,limit=Math.max(1024,record?.text?.length??0),group=record?record.group??'':options.groups.includes(initialGroup)?initialGroup:'',time=record?.time??new Date().toTimeString().slice(0,5);
+ const editable=!record||detail.editable,limit=Math.max(1024,record?.text?.length??0),group=record?record.group??'':options.groups.includes(initialGroup)?initialGroup:'Uncategorized',time=record?.time??new Date().toTimeString().slice(0,5);
  // Ungrouped notes display in Uncategorized. Keep the stored value when editing one.
- const groups=options.groups.includes('Uncategorized')?options.groups:['',...options.groups];
+ const groups=options.groups;
  const noteGroupValue=name=>name==='Uncategorized'&&!group?'':name;
  let mode='keep',photo=null,pending=null,busy=false,serial=0,lastTime=time;
  const camera='<svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="4"/></svg>';
@@ -65,6 +66,7 @@ export async function mountNoteEditor({record,date,initialGroup,show,close,heade
  const alive=()=>form.isConnected;
  function closeChoices(){choices.hidden=true;choose.setAttribute('aria-expanded','false');}
  const sheet=form.closest('dialog');
+ guardSheetExit(form,()=>busy&&pending,abort.signal);
  function backFromChoices(event){
   if(choices.hidden||!alive()||(event.type==='cancel'&&event.target!==sheet))return;
   event.preventDefault();

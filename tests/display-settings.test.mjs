@@ -53,5 +53,5 @@ test('group slots preserve gaps, existing assignments and accounts with more tha
  await assert.rejects(change(6,'Afternoon','Lunch',true),error=>(error.code??error.status)===409);
  await change(6,'Afternoon','Tea',true);assert.equal(slots()[5],'Tea');
  assert.deepEqual(fixture.state().settings.diaryGroups.hiddenGroups,[]);
- const extended=Array.from({length:10},(_,i)=>'Name '+i);assert.deepEqual(diaryGroupSlots({groups:extended}),extended);
+ const extended=Array.from({length:10},(_,i)=>'Name '+i);assert.deepEqual(diaryGroupSlots({groups:extended}),[...extended,'Uncategorized']);
 });

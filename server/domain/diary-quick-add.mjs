@@ -1,3 +1,4 @@
+import {hasDiaryGroup} from './diary-groups.mjs';
 export const diaryQuickAddActions=Object.freeze([
   {id:'food',label:'Add food'},{id:'exercise',label:'Add exercise'},
   {id:'biometric',label:'Add biometric'},{id:'note',label:'Add note'},
@@ -11,7 +12,7 @@ export function parseDiaryQuickAdd(value,groups){
   if(!keys(value,['version','shortcuts'])||value.version!==1||!Array.isArray(value.shortcuts))fail();
   const seen=new Set();
   const shortcuts=value.shortcuts.map(row=>{
-    if(!keys(row,['group','action'])||typeof row.group!=='string'||!groups.includes(row.group)||seen.has(row.group)||!diaryQuickAddActions.some(action=>action.id===row.action))fail();
+    if(!keys(row,['group','action'])||typeof row.group!=='string'||!hasDiaryGroup(groups,row.group)||seen.has(row.group)||!diaryQuickAddActions.some(action=>action.id===row.action))fail();
     seen.add(row.group);return {group:row.group,action:row.action};
   });
   return {version:1,shortcuts};

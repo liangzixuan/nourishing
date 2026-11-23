@@ -36,3 +36,7 @@
 .mm-manual-topic{padding:12px 16px;border-bottom:1px solid var(--line)}.mm-manual-topic summary{cursor:pointer;font-weight:700}.mm-manual-topic p{margin:12px 0 4px;line-height:1.5}
 
 .mm-license{padding:16px;white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}
+
+.more-mobile .mm-search:focus-within,.more-mobile .mm-search input:focus{outline:0;box-shadow:none}
+.more-mobile .mm-search input{caret-color:var(--mobile-add-color);-webkit-tap-highlight-color:transparent}
+.mm-row .mm-search-parent{display:block;color:var(--muted);font-size:.85em;font-weight:400}

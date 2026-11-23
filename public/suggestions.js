@@ -1,3 +1,4 @@
+import {diaryGroups} from './report-source/server/diary-groups.mjs';
 import {uiLanguage,t} from './app-language.js';
 import {MealSuggestionsPanel} from './suggestion-source/meal-suggestions.js';
 import {request,queueCommand} from './diary-api.js';
@@ -5,7 +6,7 @@ import {escape as e} from './html.js';
 import {symbol} from './suggestion-source/ui.js';
 
 /** Source presentation with an account-scoped cloud transport. Drafts die with this sheet. */
-export function openSuggestions({date,show,close,content,onAdded,onPreferences}){
+export function openSuggestions({date,initialGroup,show,close,content,onAdded,onPreferences}){
  const day=typeof date==='function'?date():date;
  show(`<div class="suggestion-heading"><header class="ms-header"><button type="button" data-loading-close aria-label="${e(t("common.close"))}">×</button><h1>${e(t("mobileSuggest.title"))}</h1><span></span></header></div><div class="suggestion-body"><p class="empty" role="status">${e(t("mobileNutrientDetail.loading"))}</p></div>`);
  const root=content.querySelector('.suggestion-body'),heading=content.querySelector('.suggestion-heading'),sheet=root.closest('dialog');
@@ -46,7 +47,7 @@ export function openSuggestions({date,show,close,content,onAdded,onPreferences})
  preferences().then(canonical=>{
   if(!alive())return;
   initialOptions=canonical;
-  panel=new MealSuggestionsPanel({root,request:sourceRequest,date:day,session:{},language:uiLanguage(),energyUnit:options.energyUnit??'kcal',onSelect:addMeal,onPreferences,mobile:{groups:options.groups,header:heading,nutrients:options.nutrients,icon:symbol,onBack:()=>{dispose();close();}}});
- }).catch(error=>{if(!alive())return;heading.innerHTML=`<header class="ms-header"><button type="button" data-retry-close aria-label="${e(t("common.close"))}">×</button><h1>${e(t("mobileSuggest.title"))}</h1></header>`;root.innerHTML=`<p role="alert">${e(error.message)}</p><button type="button" data-retry>${e(t("mobileSuggest.retry"))}</button>`;heading.querySelector('[data-retry-close]').onclick=()=>{dispose();close();};root.querySelector('[data-retry]').onclick=()=>{dispose();openSuggestions({date,show,close,content,onAdded,onPreferences});};});
+  panel=new MealSuggestionsPanel({root,request:sourceRequest,date:day,session:{},language:uiLanguage(),energyUnit:options.energyUnit??'kcal',onSelect:addMeal,onPreferences,mobile:{groups:diaryGroups(options.groups),initialGroup,header:heading,nutrients:options.nutrients,icon:symbol,onBack:()=>{dispose();close();}}});
+ }).catch(error=>{if(!alive())return;heading.innerHTML=`<header class="ms-header"><button type="button" data-retry-close aria-label="${e(t("common.close"))}">×</button><h1>${e(t("mobileSuggest.title"))}</h1></header>`;root.innerHTML=`<p role="alert">${e(error.message)}</p><button type="button" data-retry>${e(t("mobileSuggest.retry"))}</button>`;heading.querySelector('[data-retry-close]').onclick=()=>{dispose();close();};root.querySelector('[data-retry]').onclick=()=>{dispose();openSuggestions({date,initialGroup,show,close,content,onAdded,onPreferences});};});
  return dispose;
 }

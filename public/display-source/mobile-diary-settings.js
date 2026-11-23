@@ -8,7 +8,7 @@ export function mobileDiarySettings({settings:s,row,toggle,groupsOpen}){
   const slot=i+1,label=coreText('display.groupSlot',{slot}),enabled=group!==null&&!s.diaryGroups.hiddenGroups.includes(group);
   return `<div class="mds-group-edit" data-group-slot="${slot}">
     <label for="group-name-${slot}">${e(label)}:</label>
-    <input id="group-name-${slot}" type="text" data-group-name maxlength="100" value="${e(group??'')}" placeholder="${e(label)}">
+    <input id="group-name-${slot}" type="text" data-group-name ${group==='Uncategorized'?'readonly':''} maxlength="100" value="${e(group??'')}" placeholder="${e(label)}">
     <input type="checkbox" role="switch" class="dc-switch" data-group-enabled aria-label="${e(label)}" ${enabled?'checked':''}>
   </div>`;
  }).join('');

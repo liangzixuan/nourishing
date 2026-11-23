@@ -16,12 +16,12 @@ const number=(form,name)=>form.elements[name].value===''?null:Number(form.elemen
 const display=value=>value===null||value===undefined?t('threshold.target.notSet'):Number(value).toLocaleString(uiLanguage(),{maximumFractionDigits:1});
 
 /** Profile is a projection of explicitly configured policies and measurement series. */
-export function mountProfile({page,headerRoot,...ui}){
+export function mountProfile({page,headerRoot,initialField,...ui}){
  void ensureDeviceSnapshot().catch(()=>{});
  let disposed=false,data,editor;const abort=new AbortController(),root=document.createElement('section');root.className='profile-page';page.replaceChildren(root);
  const alive=()=>!disposed&&root.isConnected,date=()=>typeof ui.date==='function'?ui.date():ui.date;
  if(headerRoot)headerRoot.innerHTML=moreBackHeader(t('settings.profile'));
- async function load(fresh=false){root.setAttribute('aria-busy','true');try{const apply=value=>{if(alive()){data=value;render();}};apply(await request('/api/profile-settings?date='+encodeURIComponent(date()),null,abort.signal,{fresh,onRefresh:value=>{if(!editor)apply(value);}}));}catch(error){if(alive()){root.innerHTML='<p class="empty" role="status">'+e(error.message)+`</p><button class="profile-retry" data-profile-reload>${t('mobileSuggest.retry')}</button>`;}}finally{if(alive())root.setAttribute('aria-busy','false');}}
+ async function load(fresh=false){root.setAttribute('aria-busy','true');try{const apply=value=>{if(alive()){data=value;render();if(initialField){const field=initialField;initialField=null;editField(field);}}};apply(await request('/api/profile-settings?date='+encodeURIComponent(date()),null,abort.signal,{fresh,onRefresh:value=>{if(!editor)apply(value);}}));}catch(error){if(alive()){root.innerHTML='<p class="empty" role="status">'+e(error.message)+`</p><button class="profile-retry" data-profile-reload>${t('mobileSuggest.retry')}</button>`;}}finally{if(alive())root.setAttribute('aria-busy','false');}}
  const changed=async next=>{if(next){data=next;if(alive())render();void ui.onChange?.();return;}await ui.onChange?.();if(alive())await load(true);};
  function render(){
   const {demographics:d,measurements:m,bmi}=data.profile;
@@ -29,7 +29,8 @@ export function mountProfile({page,headerRoot,...ui}){
   const value=kind=>m[kind].value===null?(m[kind].status==='unselected'?t('threshold.target.notSet'):m[kind].status==='empty'?dc('noReading'):t('health.unknown')):display(m[kind].value)+(m[kind].unit==='%'?'%':' '+m[kind].unit);
   root.innerHTML='<div class="profile-card">'+row('age',t('printDocument.stored.age'),display(d.age))+row('sex',dc('sex'),profileSexLabel(d))+row("weight",t('measurementCatalog.metric.weight'),value("weight"))+row("height",t('measurementCatalog.metric.height'),value("height"))+row('bmi',dc('bmi'),display(bmi),'',false)+row('bodyFat',t('measurementCatalog.metric.body-fat'),value('bodyFat'),m.bodyFat.date?dc('lastUpdated',{date:m.bodyFat.date}):'')+'</div>';
  }
- root.addEventListener('click',event=>{if(event.target.closest('[data-profile-reload]'))return void load(true);const kind=event.target.closest('[data-profile-row]')?.dataset.profileRow;if(!kind||!data)return;editor?.dispose();editor=openProfileEditor({kind,data,date:date(),onSaved:changed,onClose:()=>{editor=null;}});},{signal:abort.signal});
+ function editField(kind){if(!kind||!data)return;editor?.dispose();editor=openProfileEditor({kind,data,date:date(),onSaved:changed,onClose:()=>{editor=null;}});}
+ root.addEventListener('click',event=>{if(event.target.closest('[data-profile-reload]'))return void load(true);editField(event.target.closest('[data-profile-row]')?.dataset.profileRow);},{signal:abort.signal});
  root.textContent=t('mobileNutrientDetail.loading');void load();return {back(){if(editor){editor.close();return true;}return false;},dispose(){disposed=true;abort.abort();editor?.dispose();}};
 }
 

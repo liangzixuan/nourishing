@@ -4,11 +4,12 @@ import './client-errors.js';
 import './pwa.js';
 import {startBackgroundWrites,onBackgroundWriteStatus} from './background-writes.js';
 import {localLibraryItem, localDiaryView} from './local-engine.js';
-import {defaultDiaryQuickAddAction,walkingEfforts,priorWalkingEfforts} from './local-diary-projection.js';
-import {pushBackHandler} from './back-history.js';
+import {diaryGroups,defaultDiaryGroup,defaultDiaryQuickAddAction,walkingEfforts,priorWalkingEfforts} from './local-diary-projection.js';
+import {batchBackReleases,pushBackHandler,requestAppBack} from './back-history.js';
+import {activeOverlay,bindEdgeNavigation,dismissOverlay,openOverlays} from './edge-navigation.js';
 import {startDeviceSync, warmDeviceViews} from './device-sync.js';
 import {startPrivateImages} from './private-images.js';
-import {sameDiarySnapshot, presentDiarySnapshot} from './diary-snapshot.js';
+import {sameDiarySnapshot} from './diary-snapshot.js';
 import {uiLanguage, applyAppLanguage, t} from './app-language.js';
 import {coreText} from './core-cloud-messages.js';
 import {applyFontPreferences} from './font-presentation.js';
@@ -90,7 +91,6 @@ const formatDate = d =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const today = () => formatDate(new Date());
 const num = (v, d = 1) => (Number.isFinite(v) ? v.toLocaleString(uiLanguage(), {maximumFractionDigits: d}) : '—');
-const defaultGroup = groups => (groups?.includes('Uncategorized') ? 'Uncategorized' : groups?.[0]);
 
 let addMenu = null;
 let groupAddMenu = null;
@@ -107,13 +107,12 @@ let pickerCleanup;
 let account;
 let accountReady = false;
 let pendingDiaryAction = null;
-let diaryReceivedAt = 0;
 let date = today();
 let diary = null;
 let loadId = 0;
 let requestedDiaryDate;
 let searchId = 0;
-let group = 'Uncategorized';
+let group = defaultDiaryGroup;
 let selectedDiaryGroup = null;
 let sheetBackHandle = null;
 let tabBackHandle = null;
@@ -185,7 +184,38 @@ sheet.addEventListener('click', event => {
 sheet.addEventListener('cancel', event => {
   if (event.target !== sheet) return;
   event.preventDefault();
-  if (!pickerCleanup?.back?.()) close();
+  // Escape dismisses the target sheet. An edge Back steps through its settings.
+  const source=event.detail?.destination==='back'?'back':'cancel';
+  if (!pickerCleanup?.back?.(source)) requestSheetExit();
+});
+
+function requestSheetExit(){
+  if(sheet.dispatchEvent(new Event('nourishing-before-exit',{cancelable:true})))close();
+}
+
+function navigateFromEdge(destination){
+  if(!diary)return;
+  // A new dialog opened by a cancellation belongs to its owner (for example
+  // a discard confirmation). Only dismiss layers present at the gesture start.
+  const layers=openOverlays();
+  let overlay=activeOverlay();
+  while(overlay){
+    if(!layers.delete(overlay))return;
+    if(overlay===sheet&&destination==='home'){
+      requestSheetExit();
+    }else dismissOverlay(overlay,destination);
+    if(destination==='back')return;
+    overlay=activeOverlay();
+  }
+  if(destination==='back'){
+    const event=new CustomEvent('nourishing-back',{cancelable:true});
+    if(!window.dispatchEvent(event)||requestAppBack())return;
+  }
+  navigate('diary');
+}
+bindEdgeNavigation(destination=>{
+  if(destination==='home')batchBackReleases(()=>navigateFromEdge(destination));
+  else navigateFromEdge(destination);
 });
 
 async function load({reuseUnchanged = false, selectedDate} = {}) {
@@ -265,7 +295,13 @@ async function load({reuseUnchanged = false, selectedDate} = {}) {
 function applyDiary(result) {
   warmDeviceViews(date);
   diary = result;
-  diaryReceivedAt = performance.now() - Math.max(0, Date.now() - (Date.parse(result.presentation?.fasting?.asOf) || Date.now()));
+  if (!result.groups.includes(defaultDiaryGroup)) {
+    const groups = diaryGroups(result.groups);
+    const rows = result.recordDisplay.groups;
+    const recordDisplay = rows.some(row => row.name === defaultDiaryGroup) ? result.recordDisplay
+      : {...result.recordDisplay,groups:[...rows,{name:defaultDiaryGroup,configured:true,records:[]}]};
+    diary = {...result,groups,recordDisplay};
+  }
   const nextLanguage = result.presentation?.settings?.appLanguage ?? 'en';
   const languageChanged = uiLanguage() !== nextLanguage;
   applyAppLanguage(nextLanguage);
@@ -387,7 +423,6 @@ function renderDiaryRow(collection, row) {
 
 function render() {
   disposeRowSwipe?.();disposeRowSwipe=null;
-  const displayedDiary = presentDiarySnapshot(diary, performance.now() - diaryReceivedAt);
   summaryPanel?.dispose();
   selectTab('diary-tab');
   dateBar.dataset.date = date;
@@ -432,12 +467,12 @@ function render() {
   });
 
   const focusedGroup = page.contains(document.activeElement) ? document.activeElement.dataset.toolGroup : undefined;
-  page.innerHTML = `${diaryCycleMarkup(diary.cycleDays)}${diarySummaryMarkup(displayedDiary, diaryTools.selection(), account?.id)}<div class="md-diary diary-layout">${groupMarkup}</div>`;
+  page.innerHTML = `${diaryCycleMarkup(diary.cycleDays)}${diarySummaryMarkup(diary, diaryTools.selection(), account?.id)}<div class="md-diary diary-layout">${groupMarkup}</div>`;
   if (focusedGroup !== undefined) page.querySelector(`[data-tool-group="${CSS.escape(focusedGroup)}"]`)?.focus({preventScroll:true});
   disposeRowSwipe=bindDiaryRowSwipe(page);
   summaryPanel = mountDiarySummary({
     root: page,
-    diary: displayedDiary,
+    diary,
     onAction: summaryAction,
     onGroupSelect: value => { selectedDiaryGroup = value; },
     selection: diaryTools.selection(),
@@ -445,14 +480,14 @@ function render() {
 }
 
 function runAddAction(kind, initialGroup) {
-  group = initialGroup ?? (view==='diary'&&diary.groups.includes(selectedDiaryGroup)?selectedDiaryGroup:defaultGroup(diary.groups));
+  group = initialGroup ?? (view==='diary'&&diary.groups.includes(selectedDiaryGroup)?selectedDiaryGroup:defaultDiaryGroup);
   initialGroup = group;
   const actions = {
     food: search,
     photo: () => photoLog(initialGroup),
     voice: () => textLog(initialGroup),
     barcode: () => barcode(),
-    suggest: () => openInsights(),
+    suggest: () => openInsights('suggestions', date, initialGroup),
     fast: () => {diaryFastingAction?.dispose();diaryFastingAction=openFastingAction({page,initialAction:'new',onChange:()=>load({reuseUnchanged:true})});},
     biometric: () => recordEditor('biometric', undefined, initialGroup),
     note: () => recordEditor('note', undefined, initialGroup),
@@ -470,6 +505,7 @@ function openAddMenu() {
   addMenu?.dispose();
   addMenu = new AddMenu({
     preferences: diary.presentation?.settings?.addMenu,
+    includeFast: view !== 'diary',
     onSave: async value => {
       await command(diary.revision, 'addMenu.save', {addMenu: value});
       await load();
@@ -478,9 +514,9 @@ function openAddMenu() {
   });
 }
 
-function openInsights(mode = 'suggestions', day = date) {
+function openInsights(mode = 'suggestions', day = date, initialGroup) {
   return openFoodInsights({
-    mode,
+    mode, initialGroup,
     date: () => day,
     show,
     close,
@@ -620,7 +656,7 @@ function handleDocumentClick(event) {
   if (action === 'prev-day' || action === 'next-day') return shiftDiaryDate(action === 'prev-day' ? -1 : 1);
   if (action === 'complete-day') return toggleCompleteDay(target);
   if (action === 'add-food' || action === 'group-quick-add') {
-    group = target.dataset.group ?? defaultGroup(diary?.groups);
+    group = target.dataset.group ?? defaultDiaryGroup;
     if (target.dataset.foodCategory === 'custom') return search(null,{initialCategory:'custom'});
     const shortcut = action === 'group-quick-add' ? diary.presentation.groupQuickAdd[group] ?? defaultDiaryQuickAddAction : 'food';
     if (shortcut === 'all') {
@@ -689,7 +725,7 @@ function navigate(next, initialTab = 'dashboard', reportDate) {
   if (!tabBackHandle) {
     tabBackHandle = pushBackHandler(() => {
       if (view === 'diary') return;
-      if (diaryTargets?.back()) return 'keep';
+      if (diaryTargets?.back()||waterPanel?.back()) return 'keep';
       tabBackHandle = null;
       navigate('diary');
     });
@@ -750,7 +786,6 @@ function openCustomWaterSheet() {
 }
 
 const SUMMARY_ACTIONS = {
-  'open-fasting': () => navigate('discover', 'fasting'),
   'edit-day-targets': () => {
     pickerCleanup = mountTargetsSheet({date: () => date, show, close, header, content, onChange: load, initialScreen: 'day'});
   },
@@ -759,7 +794,7 @@ const SUMMARY_ACTIONS = {
     const targetDate = date;
     const entryTime = new Date().toTimeString().slice(0, 5);
     const policy=waterPolicy(diary);
-    await queueCommand(diary.revision,'water.add',{date:targetDate,time:entryTime,group:policy.group??(diary.groups.includes(selectedDiaryGroup)?selectedDiaryGroup:defaultGroup(diary.groups)),amount:input.amount??policy.containerMl});
+    await queueCommand(diary.revision,'water.add',{date:targetDate,time:entryTime,group:policy.group??(diary.groups.includes(selectedDiaryGroup)?selectedDiaryGroup:defaultDiaryGroup),amount:input.amount??policy.containerMl});
     if(input.refresh!==false)await load({reuseUnchanged:true});
   },
   'water-custom': openCustomWaterSheet,
@@ -805,7 +840,7 @@ async function summaryAction(input) {
 
 async function search(restore = null, {applied, selected, initialCategory} = {}) {
   if (!diary) return;
-  if (!diary.groups.includes(group)) group = defaultGroup(diary.groups);
+  if (!diary.groups.includes(group)) group = defaultDiaryGroup;
   show(`${header(t('diary.addFood'))}<div class="diary-picker"></div>`);
   const ownerTicket=readDeviceCache('/api/diary').then(result=>result.ticket);
   const currentTicket=async()=>{
@@ -817,7 +852,7 @@ async function search(restore = null, {applied, selected, initialCategory} = {})
     initialCategory,
     onPick: (kind, id, {source}) => {
       const snapshot = picker.snapshot();
-      return edit({id, kind, source, returnSearch: () => search(snapshot)});
+      return edit({id, kind, source, initialGroup:group, returnSearch: () => search(snapshot)});
     },
     onBarcode: () => searchBarcode('camera', picker.snapshot()),
     onBranded: () => searchBarcode('search', picker.snapshot()),
@@ -902,7 +937,7 @@ function returnToDiaryWithFoodError() {
   foodLoadBanner.show(coreText('diary.foodLoadError'));
 }
 
-async function edit({entry = null, id, kind, source = 'library', quantity, returnSearch} = {}) {
+async function edit({entry = null, id, kind, source = 'library', quantity, returnSearch, initialGroup = defaultDiaryGroup} = {}) {
   const itemId = id ?? entry?.foodId ?? entry?.recipeId ?? entry?.mealId;
   const itemKind = kind ?? (entry?.recipeId ? 'recipe' : entry?.mealId ? 'meal' : 'food');
   if (!itemId) {
@@ -921,7 +956,7 @@ async function edit({entry = null, id, kind, source = 'library', quantity, retur
     else loading.textContent = error.message;
     return;
   }
-  if (loading.isConnected) foodEditor({item, entry, quantity, returnSearch});
+  if (loading.isConnected) foodEditor({item, entry, quantity, returnSearch, initialGroup});
 }
 
 function updateRecordDisplay(recordDisplay, {add = [], removeIds = new Set(), move = null} = {}) {
@@ -931,7 +966,7 @@ function updateRecordDisplay(recordDisplay, {add = [], removeIds = new Set(), mo
     records: g.records.filter(ref => !(ref.collection === 'entries' && (removeIds.has(ref.id) || (move && ref.id === move.id)))),
   }));
   const appendTo = (groupName, id) => {
-    let target = groups.find(g => g.name === groupName) ?? groups[0];
+    let target = groups.find(g => g.name === (groupName || defaultDiaryGroup));
     if (!target) {
       target = {name: groupName || 'Uncategorized', records: []};
       groups.push(target);
@@ -943,19 +978,19 @@ function updateRecordDisplay(recordDisplay, {add = [], removeIds = new Set(), mo
   return {...recordDisplay, groups};
 }
 
-function foodEditor({item, entry, quantity, returnSearch, viewState}) {
+function foodEditor({item, entry, quantity, returnSearch, viewState, initialGroup}) {
   const parentLibrary = library;
   pickerCleanup = mountFoodEntry({
     item,
     entry,
     quantity,
     date,
-    group,
+    group:initialGroup,
     groups: diary.groups,
     viewState,
     onCopy:
       item.kind === 'food'
-        ? kept => copyFood(item, () => foodEditor({item, entry, quantity, returnSearch, viewState: kept}))
+        ? kept => copyFood(item, () => foodEditor({item, entry, quantity, returnSearch, initialGroup, viewState: kept}))
         : undefined,
     revision: () => diary.revision,
     show,

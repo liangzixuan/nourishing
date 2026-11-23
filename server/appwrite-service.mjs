@@ -1,3 +1,4 @@
+import {defaultDiaryGroup} from './domain/diary-groups.mjs';
 import {AsyncLocalStorage} from 'node:async_hooks';
 import {createHash} from 'node:crypto';
 import {Client, Functions, Account, Users, TablesDB, Storage, ID, Permission, Role, Query} from 'node-appwrite';
@@ -224,10 +225,10 @@ function buildAuthAndLifecycleMethods(ctx) {
       if (account.$id !== ownerId) throw Object.assign(Error('Your account changed. Reopen your account.'), {code: 409, publicMessage: 'Your account changed. Reopen your account.'});
       await confirmAccountPassword({account, password, budget, auth: new Account(elevated()), users: new Users(elevated())});
     },
-    prepareAccountDeletion: async (secret, {password}) => {
+    prepareAccountDeletion: async (secret, {password, leavingReason}) => {
       const account = await resolveAccount(secret);
       await confirmAccountPassword({account, password, budget, auth: new Account(elevated()), users: new Users(elevated())});
-      return deletion().prepare(account.$id);
+      return deletion().prepare(account.$id, leavingReason);
     },
     confirmAccountDeletion: async (secret, ticket) => deletion().begin(ticket, (await resolveAccount(secret)).$id),
     accountDeletionStatus: async ticket => deletion().status(ticket, {advance: true}),
@@ -368,7 +369,7 @@ function buildMediaAndPhotoMethods(ctx) {
                 foodId,
                 date: today,
                 time: '12:00',
-                group: previewState.settings.groups?.[0] ?? 'Uncategorized',
+                group: defaultDiaryGroup,
                 ...(Number.isFinite(candidate.grams) && candidate.grams > 0 && estimate
                   ? {quantity: estimate.grams, unit: 'g'}
                   : {amount: 1}),

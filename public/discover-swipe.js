@@ -1,3 +1,4 @@
+import {navigationEdge} from './edge-navigation.js';
 const tabs=['dashboard','charts','report','snapshots'];
 // Taps still activate cards, charts and headings; horizontal intent owns a swipe.
 const controls='input,select,textarea,[contenteditable]:not([contenteditable="false"]),[role="slider"],[data-discover-swipe-ignore]';
@@ -19,6 +20,7 @@ export function bindDiscoverSwipe(root,{current,select,onMove=()=>{},onCancel=()
   cancel();
   if(event.touches.length!==1||blocked()||!tabs.includes(current()))return;
   const touch=event.touches[0],bounds=root.getBoundingClientRect();
+  if(navigationEdge(touch.clientX,innerWidth))return;
   // Native view-transition snapshots temporarily hit-test as the document.
   // Keep ownership of touches inside Discover while that animation is active.
   const snapshot=isTransitioning()&&event.target===surface.documentElement&&touch.clientX>=bounds.left&&touch.clientX<=bounds.right&&touch.clientY>=bounds.top&&touch.clientY<=bounds.bottom;

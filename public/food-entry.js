@@ -1,3 +1,4 @@
+import {guardSheetExit} from './edge-navigation.js';
 import {uiLanguage,t} from './app-language.js';
 import {fc} from './food-cloud-messages.js';
 import {mobileFoodEntryMarkup} from './food-entry-source/mobile-food-entry.js';
@@ -98,7 +99,10 @@ export function mountFoodEntry({item,entry,quantity,date,group,groups,revision,s
  },{signal});
  form.addEventListener('click',event=>{const action=event.target.closest('[data-action]')?.dataset.action;if(action==='close-dialog')close();if(action==='picker-back')(onBack??close)();if(action==='mobile-food-source'){const source=form.querySelector('[data-mf-source]');source.hidden=!source.hidden;}if(event.target.closest('[data-mf-dismiss]'))closeMenu();if(event.target.closest('[data-mf-copy]')){const kept={values:{...Object.fromEntries(new FormData(form)),time:form.elements.time.value},timestamp:form.querySelector('[data-mf-timestamp]').checked,sections:[...sections],sourceOpen:!form.querySelector('[data-mf-source]').hidden,scrollTop:sheet.scrollTop};closeMenu();onCopy?.(kept);}if(event.target.closest('[data-mf-favorite],[data-favorite-id]')){closeMenu();void favorite();}if(event.target.closest('[data-retry]'))schedule(0);if(event.target.closest('[data-delete]')){closeMenu();void save('entry.delete',{id:entry.id});}if(event.target.closest('[data-adjust]')){closeMenu();onAdjust();}},{signal});
  menu.addEventListener('toggle',()=>{for(const el of form.children)if(!el.classList.contains('mf-header'))el.inert=menu.open;for(const el of form.querySelector('.mf-header').children)if(el!==menu)el.inert=menu.open;if(menu.open)menu.querySelector('[data-mf-favorite]').focus();},{signal});
- sheet.addEventListener('cancel',event=>{if(menu.open){event.preventDefault();event.stopImmediatePropagation();closeMenu();}},{capture:true,signal});
+ guardSheetExit(form,()=>busy,signal);
+ sheet.addEventListener('cancel',event=>{if(event.target!==sheet)return;
+  if(busy){event.preventDefault();event.stopImmediatePropagation();return;}
+  if(menu.open||event.detail?.destination==='back'&&!entry&&onBack){event.preventDefault();event.stopImmediatePropagation();if(menu.open)closeMenu();else onBack();}},{capture:true,signal});
  menu.addEventListener('keydown',event=>{if(!menu.open||event.key!=='Tab')return;const controls=[...menu.querySelectorAll('.mf-menu-items button,.mf-menu-items input')].filter(el=>!el.disabled),first=controls[0],last=controls.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}},{signal});
  form.querySelector('[data-favorite-id]').disabled=true;form.querySelector('[data-mf-favorite]').disabled=true;
  loadFavorites().then(()=>{if(alive())form.querySelector('[data-mf-favorite]').disabled=false;}).catch(error=>{if(alive())status.textContent=error.message;});schedule(0);

@@ -66,7 +66,7 @@ export function importCsv(state,text,kind='biometrics') {
         }
         act(candidate,'food.save',{name:row.name,serving:row.serving||'1 serving',grams:row.grams?Number(row.grams):100,barcode:row.barcode,nutrients,...classification,...carbohydrateBasis});
       }
-      else if(kind==='diary'){const food=state.foods.find(x=>x.id===row.foodid||x.name.toLowerCase()===String(row.name||'').toLowerCase());if(!food)invalid(`Food '${row.name||row.foodid}' is not in the local database.`);act(candidate,'entry.add',{date:row.date,foodId:food.id,amount:Number(row.amount||1),group:row.group||state.settings.groups[0],time:row.time});}
+      else if(kind==='diary'){const food=state.foods.find(x=>x.id===row.foodid||x.name.toLowerCase()===String(row.name||'').toLowerCase());if(!food)invalid(`Food '${row.name||row.foodid}' is not in the local database.`);act(candidate,'entry.add',{date:row.date,foodId:food.id,amount:Number(row.amount||1),group:row.group||undefined,time:row.time});}
       else invalid('CSV kind must be biometrics, foods or diary.');
     }catch(error){invalid(`Row ${index+2}: ${error.message}`);}
   }
