@@ -1,3 +1,4 @@
+import {buildClientNutritionPack} from './client-nutrition-pack.mjs';
 import {createHash} from 'node:crypto';
 import {gunzipSync} from 'node:zlib';
 import {createInsightCatalog} from './food-insights.mjs';
@@ -29,18 +30,29 @@ export function decodeCatalogIndex(bytes,head){
  const decoded=gunzipSync(bytes,{maxOutputLength:ref.expandedBytes});if(decoded.length!==ref.expandedBytes)unavailable();
  const value=JSON.parse(decoded);
  if(value.version!==2||value.generation!==head.generation||value.catalogDigest!==head.digest||!Array.isArray(value.foods)||value.foods.length!==head.count||Object.keys(value.sourceFactDigests??{}).length!==head.count||!Array.isArray(value.nutrientIds)||!Array.isArray(value.sources))unavailable();
+ const packedSources=value.foods.map(food=>food.source);
  for(const food of value.foods){
   if(!Array.isArray(food.source)||food.source.length!==2||!value.sources[food.source[0]])unavailable();
   food.source={...value.sources[food.source[0]],...food.source[1]};
  }
  if(![0,1].includes(value.searchVersion??0))unavailable();
- return createInsightCatalog(value.foods,{metadata,sourceFactDigests:value.sourceFactDigests,nutrientIds:value.nutrientIds,searchVersion:value.searchVersion??0});
+ const catalog=createInsightCatalog(value.foods,{metadata,sourceFactDigests:value.sourceFactDigests,nutrientIds:value.nutrientIds,searchVersion:value.searchVersion??0});
+ let pack;
+ catalog.clientNutritionPack=()=>pack??=buildClientNutritionPack(value,packedSources).catch(error=>{pack=null;throw error;});
+ return catalog;
 }
 // Only public catalog facts are shared. Account state never enters this cache.
+function catalogIndexReference(head){
+ const ref=JSON.parse(head.metadata).insightIndex;if(!ref||ref.bucketId!=='catalog-index'||typeof ref.fileId!=='string'||!/^[a-f0-9]{64}$/.test(ref.sha256??''))unavailable();
+ return ref;
+}
+export function nutritionPackETag(head){
+ return 'W/"nutrition-v1-'+catalogIndexReference(head).sha256+'"';
+}
 export function createCatalogIndexLoader(){
  let cached;
  return async function load({storage,head,namespace}){
-  const ref=JSON.parse(head.metadata).insightIndex;if(!ref||ref.bucketId!=='catalog-index'||typeof ref.fileId!=='string'||!/^[a-f0-9]{64}$/.test(ref.sha256??''))unavailable();
+  const ref=catalogIndexReference(head);
   const key=JSON.stringify([namespace,head.generation,head.digest,head.count,ref]);
   if(cached?.key===key)return cached.promise;
   // A retired public artifact must not retain a live SQLite connection. An

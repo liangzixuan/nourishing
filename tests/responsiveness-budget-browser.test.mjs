@@ -5,6 +5,10 @@ import {createServer} from 'node:http';
 import {readFileSync, existsSync} from 'node:fs';
 import {resolve, extname} from 'node:path';
 import {gzipSync} from 'node:zlib';
+import {compactFoodSource} from '../server/domain/catalog-source.mjs';
+import {foodSourceFacts} from '../server/domain/food-catalog-identity.mjs';
+import {contentDigest} from '../server/domain/content-digest.mjs';
+import {buildClientNutritionPack} from '../server/client-nutrition-pack.mjs';
 import {chromium} from 'playwright-core';
 import {signPhotoReview,verifyPhotoReview} from '../server/cloud-photo.mjs';
 import {normalizePhoto} from '../server/domain/photo-images.mjs';
@@ -12,7 +16,7 @@ import {randomBytes} from 'node:crypto';
 import {barcodeAssets} from '../scripts/package-barcode-assets.mjs';
 import {createWebHandler} from '../server/http.mjs';
 import {initialState, act, previewDiaryItem} from '../server/domain/workspace.mjs';
-import {applyWorkspaceCommand} from '../server/workspace-commands.mjs';
+import {applyWorkspaceCommand,captureActionFoods} from '../server/workspace-commands.mjs';
 import {createDataRepository} from '../server/data-repository.mjs';
 import {diaryStoreFixture} from './fixtures/diary-store.mjs';
 import {dashboardView} from '../server/dashboard-view.mjs';
@@ -35,7 +39,7 @@ function todayLocal() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-async function createFixture() {
+async function createFixture({nutritionPack=false}={}) {
   const state = initialState();
   const reviewSecret = randomBytes(32).toString('hex');
   const today = todayLocal();
@@ -51,10 +55,19 @@ async function createFixture() {
 
   const data = diaryStoreFixture(state);
   const catalogFood={
-    id:'usda:apple',name:'Apple, raw',serving:'100 g',grams:100,readOnly:true,
+    id:'usda:fixture:71',name:'Apple, raw',serving:'100 g',grams:100,readOnly:true,sample:false,dataQuality:'Canonical analysis notes',
     nutrients:{calories:52,protein:0.26,carbs:13.81,fat:0.17,potassium:107,sodium:0},
-    portions:[{id:'slice',label:'Slice',grams:25}],source:{name:'USDA',attribution:'Fixture source credit'},
+    portions:[{id:'slice',label:'Slice',grams:25}],source:{name:'USDA',datasetId:'fixture',fdcId:71,attribution:'Fixture source credit',recordLocator:{fdcId:71},archiveSha256:'a'.repeat(64)},
   };
+  const banana={...catalogFood,id:'usda:fixture:72',name:'Banana, raw',source:{...catalogFood.source,fdcId:72,recordLocator:{fdcId:72}},nutrients:{calories:89,potassium:358,sodium:0}};
+  const makePack=async(generation,appleCalories=52)=>{
+    const apple={...catalogFood,nutrients:{...catalogFood.nutrients,calories:appleCalories}};
+    const nutrientIds=Object.keys(apple.nutrients),foods=[apple,banana];
+    const rows=foods.map(({dataQuality,...food})=>({...food,nutrients:Object.entries(food.nutrients).flatMap(([key,value])=>[nutrientIds.indexOf(key),value])}));
+    const bytes=await buildClientNutritionPack({generation,nutrientIds,sources:[{}],foods:rows,sourceFactDigests:Object.fromEntries(foods.map(f=>[f.id,contentDigest(foodSourceFacts(f))]))},foods.map(f=>[0,compactFoodSource(f.source)]));
+    return {bytes,etag:'W/"nutrition-v1-'+digest(generation)+'"'};
+  };
+  let pack=nutritionPack?await makePack('cat-1'):null;
   const generation='cat-1',catalogRowId=rowId(generation,catalogFood.id);
   data.table('catalog_heads').set('active',{generation});
   data.table('catalog_foods').set(catalogRowId,{$id:catalogRowId,generation,sourceId:catalogFood.id,payload:JSON.stringify(catalogFood)});
@@ -95,6 +108,10 @@ async function createFixture() {
     nutritionReport: async (_, input) => reportView(state, input, clock),
     snapshots: async () => ({items: []}),
     catalogFoodDetails: (_,ids)=>repository.catalogFoodDetails(ids),
+    catalogNutritionPack: async(_,etag)=>{
+      if(!pack)throw Object.assign(Error('Fixture has no pack'),{code:404});
+      return {...pack,bytes:pack.etag===etag?null:pack.bytes};
+    },
     catalogSearchIndex: async () => ({
       version: 1,
       generation: 'cat-1',
@@ -102,13 +119,14 @@ async function createFixture() {
       sources: [{datasetId: 'usda-foundation', dataset: 'USDA Foundation', provider: 'usda', name: 'USDA Foundation'}],
       categories: ['usda-category:09'],
       rows: [
-        ['usda:apple', 'Apple, raw', '100 g', 0, 0, 0, 'fruit'],
-        ['usda:banana', 'Banana, raw', '100 g', 0, 0, 0, 'fruit'],
+        ['usda:fixture:71', 'Apple, raw', '100 g', 0, 0, 0, 'fruit'],
+        ['usda:fixture:72', 'Banana, raw', '100 g', 0, 0, 0, 'fruit'],
       ],
     }),
     workspaceCommand: async (_, input) => {
-      applyWorkspaceCommand(state, {type: input.type, payload: input.payload});
-      return {revision: digest(state)};
+      const resolved=captureActionFoods(state,{type:input.type,payload:input.payload},new Map([catalogFood,banana].map(f=>[f.id,f])));
+      const saved=applyWorkspaceCommand(state,resolved);
+      return {...saved,revision:digest(state)};
     },
     analyzePhoto: async (_, input) => {
       const photo = await normalizePhoto(input.image);
@@ -226,6 +244,10 @@ async function createFixture() {
     errors,
     apiHits,
     staticHits,
+    changePack:async(mode)=>{
+      const next=await makePack('cat-2',64);
+      pack=mode==='truncated'?{...next,bytes:next.bytes.subarray(0,-17)}:next;
+    },
     setApiDelay(ms) {
       apiDelayMs = ms;
     },
@@ -274,7 +296,7 @@ test('Search Food prepares a page of source foods and reopens their complete nut
     for(let i=0;i<100&&!ready;i++){
       ready=await page.evaluate(async()=>{
         const result=await (await import('/local-search.js')).localFoodSearch(new URLSearchParams());
-        return Boolean(result?.items.some(row=>row.id==='usda:apple'));
+        return Boolean(result?.items.some(row=>row.id==='usda:fixture:71'));
       });
       if(!ready)await page.waitForTimeout(100);
     }
@@ -289,9 +311,9 @@ test('Search Food prepares a page of source foods and reopens their complete nut
     assert.equal(new URL(response.url()).searchParams.getAll('id').length,2);
     await page.waitForFunction(async path=>{
       const cached=await (await import('/device-cache.js')).readDeviceCache(path);
-      return cached.value?.foods.some(food=>food.id==='usda:apple');
+      return cached.value?.foods.some(food=>food.id==='usda:fixture:71');
     },path);
-    const apple=page.locator('.mfs-result[data-id="usda:apple"]');
+    const apple=page.locator('.mfs-result[data-id="usda:fixture:71"]');
     await apple.click();
     await page.locator('[data-mf-energy]').filter({hasText:'52'}).waitFor();
     // The item requires the complete source (including portions and credits).
@@ -313,6 +335,80 @@ test('Search Food prepares a page of source foods and reopens their complete nut
     assert.equal(apiHits.filter(hit=>['/api/library/item','/api/diary/preview'].includes(hit.path)).length,0);
     assert.deepEqual(fixture.errors,[]);
   }finally{await fixture.close();}
+});
+
+test('Add to Diary preserves the canonical food on online save and offline replay from the installed catalog',async()=>{
+  const f=await createFixture({nutritionPack:true}),{page,base}=f;
+  try{
+    await page.goto(base+'/diary');await page.locator('.md-diary').waitFor();
+    const snapshot=async()=> (await page.request.get(base+'/api/offline')).json();
+    let ready=false;
+    for(let i=0;i<100&&!ready;i++){
+      ready=await page.evaluate(async()=> (await import('/local-catalog-nutrition.js')).hasCatalogNutrition('cat-1'));
+      if(!ready)await page.waitForTimeout(100);
+    }
+    assert.ok(ready);
+    await page.evaluate(()=>import('/offline-store.js').then(()=>true));
+    for(const [id,energy,offline] of [['usda:fixture:71','52',false],['usda:fixture:72','89',true]]){
+      if(offline)await page.context().setOffline(true);
+      await page.locator('#add-food').click();await page.locator('[data-am="select"][data-id="food"]').click();
+      await page.locator('.mfs-result[data-id="'+id+'"]').click();
+      await page.locator('[data-mf-energy]').filter({hasText:energy}).waitFor();
+      await page.locator('.mf-form [type=submit]').click();
+      await page.locator('#sheet').waitFor({state:'hidden'});
+      if(offline){
+        const pending=await page.evaluate(async()=>(await (await import('/offline-store.js')).readWriteCopy()).pending);
+        assert.equal(pending.length,1);
+        assert.equal(pending[0].transport.body.payload.foodId,id);
+        assert.equal(pending[0].projection.foods[0].source.recordLocator,undefined);
+        await page.context().setOffline(false);
+      }
+      let saved,entries;
+      for(let i=0;i<100;i++){
+        const {state}=await snapshot();
+        entries=state.entries.filter(row=>row.foodId===id);
+        saved=state.foods.find(row=>row.id===id);
+        if(saved&&entries.length)break;
+        await page.waitForTimeout(100);
+      }
+      assert.equal(entries.length,1);assert.equal(entries[0].amount,1);
+      assert.equal(saved.dataQuality,'Canonical analysis notes');assert.deepEqual(saved.source.recordLocator,{fdcId:offline?72:71});
+      assert.equal(saved.nutrients.sodium,0);assert.equal(saved.nutrients.calories,Number(energy));
+    }
+    assert.equal(f.apiHits.filter(hit=>['/api/catalog/food-details','/api/library/item','/api/diary/preview'].includes(hit.path)).length,0);
+  }finally{await f.close();}
+});
+
+test('installed catalog opens untouched foods offline and retains its generation through a truncated replacement',async()=>{
+  const f=await createFixture({nutritionPack:true}),{page,base}=f;
+  try{
+    await page.goto(base+'/diary');await page.locator('.md-diary').waitFor();
+    let ready=false;
+    for(let i=0;i<100&&!ready;i++){
+      ready=await page.evaluate(async()=> (await import('/local-catalog-nutrition.js')).hasCatalogNutrition('cat-1'));
+      if(!ready)await page.waitForTimeout(100);
+    }
+    assert.ok(ready,'The Diary background download committed the catalog');
+    const validate=()=>page.evaluate(async()=> (await import('/local-catalog-nutrition.js')).warmCatalogNutrition({force:true}));
+    const unchanged=page.waitForResponse(r=>r.url().endsWith('/api/catalog/nutrition-pack')&&r.status()===304);
+    assert.equal(await validate(),'cat-1');await unchanged;
+    await page.reload();await page.locator('.md-diary').waitFor();
+    await page.context().setOffline(true);
+    await page.locator('#add-food').click();await page.locator('[data-am="select"][data-id="food"]').click();
+    for(const [id,energy] of [['usda:fixture:72','89'],['usda:fixture:71','52'],['oats','200']]){
+      await page.locator('.mfs-result[data-id="'+id+'"]').click();
+      await page.locator('[data-mf-energy]').filter({hasText:energy}).waitFor();
+      await page.locator('[data-action="picker-back"]').click();
+    }
+    assert.equal(f.apiHits.filter(hit=>['/api/catalog/food-details','/api/library/item','/api/diary/preview'].includes(hit.path)).length,0);
+    await page.context().setOffline(false);
+    await f.changePack('truncated');assert.equal(await validate(),null);
+    const apple=gen=>page.evaluate(async generation=>(await (await import('/local-catalog-nutrition.js')).localCatalogNutritionFood('usda:fixture:71',generation))?.nutrients.calories,gen);
+    assert.equal(await apple('cat-1'),52);
+    await f.changePack('valid');assert.equal(await validate(),'cat-2');
+    assert.equal(await apple('cat-1'),undefined);assert.equal(await apple('cat-2'),64);
+    assert.deepEqual(f.errors,[]);
+  }finally{await f.close();}
 });
 
 test('the narrow Add Menu keeps its width while the symbol font loads', async () => {

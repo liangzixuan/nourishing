@@ -31,7 +31,23 @@ test('notification controls require explicit permission/connect/test clicks and 
    window.pushEvidence={permissions:0,subscribes:0,unsubscribes:0};let subscription=null;
    Object.defineProperty(window,'Notification',{value:{permission:'default',requestPermission:async()=>{window.pushEvidence.permissions++;window.permissionWasActive=navigator.userActivation.isActive;return Notification.permission=window.denyPermission?'denied':'granted';}}});Object.defineProperty(window,'PushManager',{value:class{}});
    const manager={getSubscription:async()=>subscription,subscribe:async options=>{window.pushEvidence.subscribes++;subscription={endpoint:'https://fcm.googleapis.com/fcm/send/browser-fixture',options,toJSON:()=>({endpoint:subscription.endpoint,expirationTime:null,keys:{p256dh:publicKey,auth:'synthetic'}}),unsubscribe:async()=>{window.pushEvidence.unsubscribes++;if(window.failUnsubscribe)throw Error('Browser unavailable');subscription=null;return true;}};return subscription;}};
-   Object.defineProperty(navigator,'serviceWorker',{value:{getRegistration:async()=>({active:{},pushManager:manager})}});
+   const ready={active:{state:'activated'},pushManager:manager};
+   window.simulateInstall=({missing=false}={})=>{
+    const worker=new EventTarget();worker.state='installing';
+    const registration={installing:worker,active:null,pushManager:manager};
+    window.currentRegistration=missing?null:registration;
+    window.installRegistration=registration;
+    window.settleInstall=success=>{
+     worker.state=success?'activated':'redundant';
+     registration.installing=null;if(success)registration.active=worker;
+     worker.dispatchEvent(new Event('statechange'));
+    };
+   };
+   window.currentRegistration=ready;
+   Object.defineProperty(navigator,'serviceWorker',{value:{
+    getRegistration:async()=>window.currentRegistration,
+    register:async()=>{window.currentRegistration=window.installRegistration;return window.currentRegistration;}
+   }});
   },{publicKey});
   await page.goto(`http://127.0.0.1:${server.address().port}`);await page.getByRole('button',{name:'Connect this browser',exact:true}).waitFor();
   assert.deepEqual(await page.evaluate(()=>window.pushEvidence),{permissions:0,subscribes:0,unsubscribes:0});assert.equal(requests.some(row=>row.path.endsWith('/test')),false);
@@ -74,6 +90,23 @@ test('notification controls require explicit permission/connect/test clicks and 
   lostMutation='add';await allow.press('Space');await page.waitForFunction(()=>document.querySelector('[data-notifications-enabled]:checked:enabled'));
   assert.equal(await page.locator('[role=status]').textContent(),'');assert.equal(connected,true);
   await allow.click();await page.waitForFunction(()=>document.querySelector('[data-notifications-enabled]:not(:checked):enabled'));
+  await page.evaluate(()=>window.simulateInstall({missing:true}));
+  await allow.click();
+  await page.waitForFunction(()=>window.currentRegistration?.installing||document.querySelector('[role=status]')?.textContent.includes('Refresh Nourishing'));
+  assert.equal(await allow.isDisabled(),true,'first tap waits for installation');
+  await page.evaluate(()=>window.settleInstall(true));
+  await page.waitForFunction(()=>document.querySelector('[data-notifications-enabled]:checked:enabled'));
+  assert.equal(connected,true);await allow.click();
+  await page.waitForFunction(()=>document.querySelector('[data-notifications-enabled]:not(:checked):enabled'));
+  await page.evaluate(()=>window.simulateInstall());
+  await allow.click();await page.evaluate(()=>window.settleInstall(false));
+  await page.getByRole('status').filter({hasText:'Refresh Nourishing'}).waitFor();
+  assert.equal(await allow.isChecked(),false);assert.equal(connected,false);
+  await page.evaluate(()=>window.simulateInstall());
+  await allow.click();await page.getByRole('button',{name:'Close',exact:true}).click();
+  await page.evaluate(()=>window.settleInstall(true));
+  await page.getByRole('button',{name:'Open notifications',exact:true}).click();
+  await page.waitForFunction(()=>document.querySelector('[data-notifications-enabled]:not(:checked):enabled'));
   assert.deepEqual(status().devices,[otherDevice]);assert.equal(connected,false);
   assert.deepEqual(requests.filter(row=>row.path.endsWith('/settings')).map(row=>row.input.paused),[]);assert.deepEqual(errors,[]);
  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

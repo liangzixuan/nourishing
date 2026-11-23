@@ -2,10 +2,11 @@ import {request} from './diary-api.js';
 import {readDeviceCache} from './device-cache.js';
 import {saveOfflineSnapshot,onOfflineChange,readWriteCopy} from './offline-store.js';
 import {warmLocalCatalogIndex} from './local-search.js';
+import {warmCatalogNutrition} from './local-catalog-nutrition.js';
 
 let started=false,timer,running=false,again=false;
 let warmedDate,warmTimer,warmWorkers=0;
-let warmQueue=[];
+let warmQueue=[],catalogRetry;
 let snapshotRead;
 /** Share the initial account snapshot across startup and local editors. */
 export async function ensureDeviceSnapshot({refresh=false,ownerId}={}){
@@ -35,6 +36,15 @@ async function runWarmWorker(){
   }
  }finally{warmWorkers--;}
 }
+async function preparePublicCatalog(){
+ await warmLocalCatalogIndex();
+ const generation=await warmCatalogNutrition();
+ clearTimeout(catalogRetry);
+ if(generation)await warmLocalCatalogIndex(generation);
+ else if(navigator.onLine&&typeof DecompressionStream==='function'){
+  catalogRetry=setTimeout(()=>void preparePublicCatalog(),5*60*1000);
+ }
+}
 export function warmDeviceViews(date,{delay=500,force=false}={}){
  if(!force&&warmedDate===date)return;warmedDate=date;
  clearTimeout(warmTimer);warmQueue=[];
@@ -59,7 +69,7 @@ export function warmDeviceViews(date,{delay=500,force=false}={}){
  ];
  // Replacing queued work leaves in-flight reads in their existing slots.
  warmTimer=setTimeout(()=>{
-  warmQueue=[warmLocalCatalogIndex,...paths.map(path=>()=>request(path,undefined,undefined,{waitForRefresh:true,canonical:true}))];
+  warmQueue=[preparePublicCatalog,...paths.map(path=>()=>request(path,undefined,undefined,{waitForRefresh:true,canonical:true}))];
   while(warmWorkers<2&&warmQueue.length)void runWarmWorker();
  },delay);
 }
@@ -79,6 +89,6 @@ export function startDeviceSync(ownerId){
   if(!cached.ticket){document.querySelector('#page')?.replaceChildren();document.querySelector('#sheet-content')?.replaceChildren();location.replace('/login');}
  });
  window.addEventListener('nourishing-data-changed',()=>{schedule();rewarm();});
- window.addEventListener('online',schedule);
- window.addEventListener('pagehide',()=>{clearTimeout(timer);clearTimeout(warmTimer);warmQueue=[];warmedDate=undefined;});void save();
+ window.addEventListener('online',()=>{schedule();rewarm();});
+ window.addEventListener('pagehide',()=>{clearTimeout(timer);clearTimeout(warmTimer);clearTimeout(catalogRetry);warmQueue=[];warmedDate=undefined;});void save();
 }

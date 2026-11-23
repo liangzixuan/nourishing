@@ -7,6 +7,7 @@ import {readDeviceCache} from './device-cache.js';
 import {prepareFoodMultiReview} from './local-diary-projection.js';
 import {formatMessage} from './food-search-source/message-format.js';
 import {localFoodSearch} from './local-search.js';
+import {hasCatalogNutrition,localCatalogNutritionFood} from './local-catalog-nutrition.js';
 import {MobileFoodSearch} from './food-search-source/mobile-food-search.js';
 export function multiReviewer(ownerId,{requireTicket=true}={}){
  const opened=readDeviceCache('/api/diary');
@@ -44,17 +45,20 @@ export function mountFoodPicker(root,{onPick,onClose,allowMeals=true,allowRecipe
  // The search view can append pages. Prepare the latest requested page, with
  // at most one read in flight. A tap on an earlier page selects its own batch.
  let latest=null,reading=null;
- function prepare(items){
+ function prepare(items,generation){
   if(!prepareCatalogDetails)return null;
   const ids=items.filter(row=>row.kind==='catalog').map(row=>row.id).sort();
   if(!ids.length){latest=null;return null;}
   const path='/api/catalog/food-details?'+new URLSearchParams(ids.map(id=>['id',id]));
-  if(latest?.path===path)return latest;
-  const page={path,ids};latest=page;
+  if(latest?.path===path&&latest.generation===generation)return latest;
+  const page={path,ids,generation};latest=page;
   page.result=(async()=>{
    if(reading)await reading;
    if(latest!==page&&!page.selected)return null;
-   const work=request(path).catch(()=>null);
+   const work=(async()=>{
+    if(await hasCatalogNutrition(generation))return null;
+    return request(path);
+   })().catch(()=>null);
    reading=work;
    try{return await work;}finally{if(reading===work)reading=null;}
   })();
@@ -66,23 +70,23 @@ export function mountFoodPicker(root,{onPick,onClose,allowMeals=true,allowRecipe
   if(prepareCatalogDetails&&row.kind==='catalog'){
    const items=search.search.state.items;
    const start=Math.floor(items.indexOf(row)/search.search.limit)*search.search.limit;
-   const page=latest?.ids.includes(row.id)?latest:prepare(items.slice(start,start+search.search.limit));
+   const page=latest?.ids.includes(row.id)?latest:prepare(items.slice(start,start+search.search.limit),search.search.result?.catalogGeneration);
    if(page){
     page.selected=true;
-    meta.catalogFood=page.result.then(result=>result?.foods?.find(food=>food.id===row.id));
+    meta.catalogFood=localCatalogNutritionFood(row.id,page.generation).then(async local=>local??(await page.result)?.foods?.find(food=>food.id===row.id));
    }
   }
   return onPick(kind,row.id,meta);
  }
  const search=new MobileFoodSearch({root,initialCategory,language:uiLanguage(),request:(path,{signal,body}={})=>request(path,body?JSON.parse(body):null,signal),onScan:onBarcode,multi:multi?{...multi,onReview:multiReviewer(multi.ownerId,{requireTicket:Boolean(multi.onQueue)})}:null,restore:restore??multi?.restore,
   fetchPage:async(params,signal)=>{params.set('allowMeals',String(allowMeals));params.set('allowRecipes',String(allowRecipes));if(excludeRecipe)params.set('excludeRecipe',excludeRecipe);const local=await localFoodSearch(params);const page=local??await request('/api/food-search?'+params,null,signal);
-   if(!signal.aborted)prepare(page.items);
+   if(!signal.aborted)prepare(page.items,page.catalogGeneration);
    return page;},
   onPick:pick,
   onClose:onClose??(()=>root.closest('dialog')?.querySelector('[data-close]')?.click()),onPreferenceError:message=>{root.querySelector('[role=status]').textContent=message;}
  });
  const restored=restore??multi?.restore;
- if(restored?.search?.result)prepare(restored.search.result.items);
+ if(restored?.search?.result)prepare(restored.search.result.items,restored.search.result.catalogGeneration);
  if(onBranded){const button=document.createElement('button');button.type='button';button.dataset.pickerBranded='';button.textContent=fc("searchBranded");button.onclick=onBranded;root.querySelector('.mfs-content').append(button);}
  const dispose=()=>{latest=null;search.dispose();root.classList.remove('food-picker-host');};
  Object.assign(dispose,{snapshot:()=>search.snapshot(),ready:search.multi?.ready??Promise.resolve(),applyEntry:(entry,label)=>search.multi?.applyEntry(entry,label)??false,returnFromDetail:()=>search.multi?.returnFromDetail(),select:(row,entry)=>search.multi?.select(row,entry)??false});return dispose;

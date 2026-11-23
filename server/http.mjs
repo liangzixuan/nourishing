@@ -826,6 +826,17 @@ function registerRecordsAndCatalogRoutes(add) {
     noSearch: 'Invalid query.',
     handler: async ({api, secret, json}) => json(200, await api.catalogSearchIndex(secret)),
   });
+  add('GET', '/api/catalog/nutrition-pack', {
+    auth: 'secret',
+    noSearch: 'Invalid query.',
+    handler: async ({api, secret, req, headers}) => {
+      const {etag,bytes}=await api.catalogNutritionPack(secret,req.headers.get('if-none-match'));
+      headers.set('ETag',etag);
+      if(bytes===null)return new Response(null,{status:304,headers});
+      headers.set('Content-Type','application/octet-stream');
+      return new Response(bytes,{headers});
+    },
+  });
   add('GET', '/api/catalog/search', {
     auth: 'secret',
     handler: async ({api, secret, url, json}) => {

@@ -130,12 +130,12 @@ async function ensureMemoryCatalog() {
   return loadPromise;
 }
 
-export function warmLocalCatalogIndex() {
+export function warmLocalCatalogIndex(generation) {
   if (warmPromise) return warmPromise;
   warmPromise = (async () => {
     try {
       const existing = await ensureMemoryCatalog();
-      if (existing) return existing;
+      if (existing && (!generation || existing.generation === generation)) return existing;
       const response = await fetch('/api/catalog/search-index', {credentials: 'same-origin', cache: 'no-store'});
       if (!response.ok) return null;
       const raw = await response.json();
@@ -349,6 +349,7 @@ export async function localFoodSearch(params) {
   return {
     version: 1,
     items: page,
+    catalogGeneration:catalog?.generation,
     total,
     offset,
     nextOffset: offset + page.length < total ? offset + page.length : null,

@@ -7,6 +7,35 @@ import {createReminderSchedulePanel} from './reminder-schedules.js';
 const bytes=value=>Uint8Array.from(atob(value.replaceAll('-','+').replaceAll('_','/')),character=>character.charCodeAt(0));
 const sameKey=(a,b)=>a&&new Uint8Array(a).length===b.length&&new Uint8Array(a).every((value,index)=>value===b[index]);
 const pendingTests=new Map();
+async function readyPushRegistration(signal,onInstalling){
+ const service=navigator.serviceWorker;
+ const unavailable=()=>Error(m('accountCloud.refreshNourishingThenConnectAgain'));
+ let registration=await service.getRegistration('/');
+ signal.throwIfAborted();
+ if(!registration){
+  try{registration=await service.register('/sw.js',{scope:'/',updateViaCache:'none'});}
+  catch{throw unavailable();}
+ }
+ signal.throwIfAborted();
+ if(registration.active)return registration;
+ const worker=registration.installing??registration.waiting;
+ if(!worker)throw unavailable();
+ onInstalling();
+ await new Promise((resolve,reject)=>{
+  const stop=()=>{clearTimeout(timer);worker.removeEventListener('statechange',changed);signal.removeEventListener('abort',cancel);};
+  const cancel=()=>{stop();reject(signal.reason);};
+  const fail=()=>{stop();reject(unavailable());};
+  function changed(){
+   if(worker.state==='redundant')fail();
+   else if(registration.active){stop();resolve();}
+  }
+  const timer=setTimeout(fail,90000);
+  worker.addEventListener('statechange',changed);
+  signal.addEventListener('abort',cancel,{once:true});
+  changed();
+ });
+ return registration;
+}
 export async function disconnectCurrentPush(){
  pendingTests.clear();
  if(!('serviceWorker'in navigator))return {disconnected:true,serverDisconnected:true,browserDisconnected:true};
@@ -23,6 +52,7 @@ export function mountReminders({root,notifications=false}){
  root.innerHTML=`<section class="push-panel${notifications?' push-notifications':''}"><p role="status">${m("mobileNutrientDetail.loading")}</p><div data-push-controls></div></section>`;
  const panel=root.querySelector('.push-panel'),message=panel.querySelector('[role=status]'),controls=panel.querySelector('[data-push-controls]');
  let data,busy=false,failed=false,disposed=false,readAbort,pendingSwitch=null,localEndpoint=null,registeredHere=false,devicesOpen=false;
+ const lifetime=new AbortController();
  const alive=()=>!disposed&&panel.isConnected;
  const supported=()=>window.isSecureContext&&'Notification'in window&&'PushManager'in window&&'serviceWorker'in navigator;
  const notify=text=>{if(alive())message.textContent=text;};
@@ -74,7 +104,8 @@ export function mountReminders({root,notifications=false}){
  }
  async function connect(permission){
   const granted=await permission;if(!alive())return;if(granted!=='granted')throw Error(m("accountCloud.notificationsWereNotAllowed"));
-  const registration=await navigator.serviceWorker.getRegistration('/');if(!alive())return;if(!registration?.active)throw Error(m("accountCloud.refreshNourishingThenConnectAgain"));
+  const registration=await readyPushRegistration(lifetime.signal,()=>notify(m('mobileNutrientDetail.loading')));
+  if(!alive())return;notify('');
   const key=bytes(data.publicKey);let subscription=await registration.pushManager.getSubscription();if(!alive())return;
   if(subscription&&!sameKey(subscription.options.applicationServerKey,key)){await subscription.unsubscribe();if(!alive())return;subscription=null;}
   if(!subscription){subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});if(!alive()){try{await subscription.unsubscribe();}catch{/* The browser retains ownership if cleanup fails. */}return;}}
@@ -152,7 +183,7 @@ export function mountReminders({root,notifications=false}){
  controls.onsubmit=event=>{if(event.target.hasAttribute('data-reminder-form')){event.preventDefault();void run(()=>schedules.submit(event.target));}};
  const resume=()=>{if(document.visibilityState==='visible'&&!busy&&alive())void run(refresh,{loading:true});};
  if(notifications)document.addEventListener('visibilitychange',resume);
- function dispose(){if(disposed)return;disposed=true;document.removeEventListener('visibilitychange',resume);readAbort?.abort();observer.disconnect();controls.onclick=controls.oninput=controls.onchange=controls.onsubmit=null;}
+ function dispose(){if(disposed)return;disposed=true;lifetime.abort();document.removeEventListener('visibilitychange',resume);readAbort?.abort();observer.disconnect();controls.onclick=controls.oninput=controls.onchange=controls.onsubmit=null;}
  const observer=new MutationObserver(()=>{if(!panel.isConnected)dispose();});observer.observe(document.body,{childList:true,subtree:true});
  void run(refresh,{loading:true});
  return {dispose,back(){if(busy||schedules.locked)return false;if(schedules.back()){notify('');render();return true;}return false;}};

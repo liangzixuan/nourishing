@@ -41,7 +41,7 @@ import {fastingView} from './fasting.mjs';
 import {createCloudPhotoAnalyzer} from './cloud-photo.mjs';
 import {validateStoredPhoto} from './domain/photo-images.mjs';
 import {stagePhotoMedia} from './photo-storage.mjs';
-import {loadCatalogIndex} from './catalog-index.mjs';
+import {loadCatalogIndex,nutritionPackETag} from './catalog-index.mjs';
 import {searchCloudFoods} from './food-search.mjs';
 import {
   foodInsightOptions,
@@ -427,6 +427,13 @@ function buildMediaAndPhotoMethods(ctx) {
 
 function buildLibraryAndSearchMethods(ctx) {
   const {config, data, readView, insights, elevated, catalogReader} = ctx;
+  async function clientCatalog(secret) {
+    const {storage}=await data(secret);
+    const head=await new TablesDB(ctx.session(secret)).getRow({
+      databaseId:config.database, tableId:'catalog_heads', rowId:'active',
+    });
+    return {storage,head,namespace:config.endpoint+'/'+config.project};
+  }
   return {
     barcodeLookup: async (secret, input) => {
       const {owner} = await data(secret);
@@ -523,14 +530,15 @@ function buildLibraryAndSearchMethods(ctx) {
     searchCatalog: async (secret, input) => (await data(secret)).repository.search(input),
     foodSearch: (secret, input) => insights(secret, input, searchCloudFoods),
     catalogSearchIndex: async secret => {
-      const {storage} = await data(secret);
-      const head = await new TablesDB(ctx.session(secret)).getRow({
-        databaseId: config.database,
-        tableId: 'catalog_heads',
-        rowId: 'active',
-      });
-      const catalog = await loadCatalogIndex({storage, head, namespace: config.endpoint + '/' + config.project});
-      return {...catalog.clientSearchIndex(), generation: head.generation};
+      const source=await clientCatalog(secret);
+      const catalog=await loadCatalogIndex(source);
+      return {...catalog.clientSearchIndex(), generation:source.head.generation};
+    },
+    catalogNutritionPack: async (secret, knownTag) => {
+      const source=await clientCatalog(secret);
+      const etag=nutritionPackETag(source.head);
+      const bytes=knownTag===etag?null:await (await loadCatalogIndex(source)).clientNutritionPack();
+      return {etag,bytes};
     },
     catalogFoodDetails: async (secret, ids) => (await data(secret)).repository.catalogFoodDetails(ids),
     readCatalogFood: async (secret, id) => (await data(secret)).repository.food(id),
