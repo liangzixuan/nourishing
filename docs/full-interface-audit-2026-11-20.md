@@ -1290,6 +1290,23 @@ Workspace and catalog preparation now run concurrently with the Gemini call afte
 
 Three byte-verified requests through the Pixel network took 1.94 s to 2.11 s with a median of 2.03 s. The workstation held the key and terminated TLS over USB. The test reused a warm Google connection, the Pixel-prepared image and the production prompt and schema. It timed the full Google request and response. Client attestation, matching, signing and rendering were outside that measurement. Holding all other stages fixed and substituting the warm direct median for each hosted Gemini duration gives an estimated median saving of 0.19 s before client attestation or any extra server round trip.
 
+### Photo Log food matching on the Pixel (1.2.8, released)
+
+Verified production release **1.2.8** at `24d2a6b298634d2e1d6cecbe1b0e01fbc067247c`. All 58 focused local tests passed. CI passed 741 and skipped 3. Appwrite activated the site and three functions. All 300 checked live assets matched the build, along with the 914-file offline and 249-file startup inventories. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/45143050681)
+
+The installed PWA on the Pixel 10 Pro XL analyzed the same meal photo eight times on each release. The phone sent the same size request each time and Gemini received 1,509 input tokens. The clock started with the file-selection event and stopped at the painted review. Each review was closed without a Diary save. The runs used the same Gemini model, minimal thinking and Appwrite route. The two releases were measured in separate production windows.
+
+| Stage | 1.2.7 median (range) | 1.2.8 median (range) |
+| --- | ---: | ---: |
+| Match recognized foods | 3.43 s (3.00 s–4.31 s) | 0.39 s (0.27 s–0.49 s) |
+| Select photo to visible review | 10.27 s (9.18 s–16.32 s) | 7.21 s (4.17 s–12.58 s) |
+| Gemini request | 2.37 s (1.91 s–7.21 s) | 2.40 s (1.88 s–7.32 s) |
+| Prepare workspace and catalog during Gemini | 1.69 s (0.63 s–7.41 s) | 1.47 s (0.40 s–7.31 s) |
+
+Observed median reductions were 3.03 s (88.5%) for matching and 3.07 s (29.9%) from file selection to review.
+
+A local replay of 12 ingredient descriptions against the same 34,885 catalog foods produced identical complete ranked results, including selections and confirmation reasons. In one fresh Node process per version, the 12 matches took 919 ms before and 93 ms after. Catalog setup took 395 and 460 ms respectively. Matching CPU time was 938 and 109 ms. Peak process memory was 454 and 455 MiB. Production CPU and memory were not measured.
+
 ### Findings from all 333 retained states
 
 The private `.local/full-parity/reference-review-1.1.15.json` has one comparison note per reference. The retained numbers run through 335 and omit 38 and 277. Each note points to the capture used and records visible differences or limits. The index includes state 335, the final empty test day. For reference 78 the test removed the last temporary food entry and returned to the empty Diary through Foods. The reference also shows an orange “Error loading food” banner. The original trigger remains unknown. Release 1.1.63 verifies the user’s chosen recovery after a failed saved-item read. Some comparisons use older releases. Recheck a difference against current code or a matching fixture before changing the app. The behavior index links 333 retained states to at least one named flow. Each link covers the actions named in its receipt. The additional links include existing biometric, Water, Recipe, Targets and calendar tests. A fresh local check swiped a saved meal, exploded its five ingredients, canceled their selected deletion, then confirmed it and verified the unrelated entry survived reload. These counts describe the index only. A recorded Cancel check, for example, leaves Save and Delete unverified unless the receipt also exercises them.
