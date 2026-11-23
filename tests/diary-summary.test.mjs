@@ -132,6 +132,28 @@ test('source diary carousel, rings, water, actions and disposal work on a phone 
  });await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));let browser;
  try{
   browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true});const page=await browser.newPage({viewport:{width:412,height:915},isMobile:true,hasTouch:true}),errors=[];page.on('pageerror',error=>errors.push(error.message));await page.addInitScript(()=>{window.cspViolations=[];document.addEventListener('securitypolicyviolation',event=>window.cspViolations.push({directive:event.violatedDirective,uri:event.blockedURI}));});await page.goto(`http://127.0.0.1:${server.address().port}`);await page.locator('[data-md-summary]').waitFor();await page.waitForFunction(()=>Object.keys(window.Chart?.instances??{}).length===3);
+  const cardBounds=()=>page.locator('.md-summary-track').evaluate(track=>({
+   pages:[...track.children].map(el=>el.getBoundingClientRect().height),
+   dots:track.parentElement.querySelector('.md-pagination').getBoundingClientRect().top,
+   bottom:track.parentElement.getBoundingClientRect().bottom,
+  }));
+  const firstBounds=await cardBounds();
+  assert.equal(new Set(firstBounds.pages).size,1);
+  // A short release alone must specify the next page, independently of native inertia.
+  const flick=async(dx,dy)=>page.locator('.md-summary-track').evaluate((track,{dx,dy})=>{
+   const point=(x,y)=>new Touch({identifier:1,target:track,clientX:x,clientY:y});
+   const start=point(160,120),end=point(160+dx,120+dy);
+   track.dispatchEvent(new TouchEvent('touchstart',{bubbles:true,touches:[start],changedTouches:[start]}));
+   track.dispatchEvent(new TouchEvent('touchend',{bubbles:true,touches:[],changedTouches:[end]}));
+  },{dx,dy});
+  for(const [dx,next] of [[-30,1],[-30,2],[-30,3],[30,2],[30,1],[30,0]]){
+   await flick(dx,2);
+   await page.waitForFunction(i=>{
+    const track=document.querySelector('.md-summary-track');
+    return Math.abs(track.scrollLeft-i*track.clientWidth)<1;
+   },next);
+   assert.deepEqual(await cardBounds(),firstBounds);
+  }
   assert.deepEqual(await page.locator('.md-energy-item strong').allTextContents(),['0','Consumed','—','Expenditure','2000','Remaining']);
   await page.getByRole('button',{name:'Remaining',exact:false}).first().click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).kind,'remaining');
   await page.getByRole('button',{name:'Target',exact:true}).click();assert.equal((await page.evaluate(()=>window.actions.at(-1))).action,'toggle-energy-display');

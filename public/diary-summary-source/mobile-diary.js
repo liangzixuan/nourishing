@@ -1,3 +1,4 @@
+import {navigationEdge} from '../edge-navigation.js';
 import {diaryEnergyBudget} from './energy-budget.js';
 import {formatMessage,highlightedNutrientName} from './message-format.js';
 import {escape as e} from '../html.js';
@@ -78,6 +79,34 @@ export function mobileDiarySummary({summary,facts,settings,unit,language,labels,
  return `<section class="md-summary" data-md-summary aria-label="${e(labels.summary)}">${selected?`<div class="md-scope">${e(labels.selected)}</div>`:''}<div class="md-summary-track">${pages.map((page,i)=>`<div class="md-summary-page" data-md-page="${i}" data-md-page-id="${page.id}" ${i!==index?'inert aria-hidden="true"':''}>${page.body}</div>`).join('')}</div><div class="md-pagination"><button type="button" data-md-step="-1" aria-label="${e(labels.previous)}">${icons.back}</button>${pages.map((page,i)=>`<button type="button" data-md-dot="${i}" aria-label="${e(labels.showCard?.(page.title)??page.title)}" aria-pressed="${i===index}"><span></span></button>`).join('')}<button type="button" data-md-step="1" aria-label="${e(labels.next)}">${icons.chevron}</button></div><p class="md-chart-error" role="status"></p></section>`;
 }
 
+// Native scrolling follows the finger. On a short horizontal flick, settle on
+// the adjacent page even if the browser's momentum would select the starting page.
+function bindSummaryFlicks(root,signal){
+ let start=null;
+ root.addEventListener('touchstart',event=>{
+  start=null;
+  const track=event.target.closest('.md-summary-track'),touch=event.touches[0];
+  if(!track||event.touches.length!==1||navigationEdge(touch.clientX,innerWidth))return;
+  start={track,id:touch.identifier,x:touch.clientX,y:touch.clientY,time:event.timeStamp,
+   page:Math.round(track.scrollLeft/track.clientWidth)};
+ },{signal,passive:true});
+ root.addEventListener('touchcancel',()=>{start=null;},{signal,passive:true});
+ root.addEventListener('touchend',event=>{
+  const origin=start;start=null;
+  const touch=event.changedTouches[0];
+  if(!origin||event.touches.length||touch.identifier!==origin.id)return;
+  const dx=origin.x-touch.clientX,dy=origin.y-touch.clientY,distance=Math.abs(dx);
+  if(distance<16||distance<1.5*Math.abs(dy)||distance<0.25*(event.timeStamp-origin.time))return;
+  const {track,page}=origin,next=Math.max(0,Math.min(track.children.length-1,page+Math.sign(dx)));
+  requestAnimationFrame(()=>{
+   if(track.isConnected&&!signal.aborted)scrollToSummaryPage(track,next);
+  });
+ },{signal,passive:true});
+}
+function scrollToSummaryPage(track,index){
+ track.scrollTo({left:index*track.clientWidth,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+}
+
 export class MobileDiary {
  constructor({root,header,summary,context,onSummary,onDatePicker,onGroupSelect}){
   Object.assign(this,{root,header,context,onSummary,onDatePicker});this.rings=new DiaryEnergyRings(root);this.abort=new AbortController();const options={signal:this.abort.signal};
@@ -99,6 +128,7 @@ export class MobileDiary {
    }
    if(event.target.closest('.md-group summary button,.md-water summary button'))event.preventDefault();
   },options);
+  bindSummaryFlicks(root,this.abort.signal);
   root.addEventListener('scroll',event=>{
    const track=event.target;
    if(!track.matches?.('.md-summary-track')||!track.clientWidth)return;
@@ -132,7 +162,7 @@ export class MobileDiary {
   const track=this.root.querySelector('.md-summary-track');
   if(!track?.children.length)return;
   const count=track.children.length,next=(index+count)%count;
-  track.scrollTo({left:next*track.clientWidth,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+  scrollToSummaryPage(track,next);
  }
  update(html,summary){const old=this.root.querySelector('[data-md-summary]');if(old)old.outerHTML=html;this.restorePage();void this.rings.draw(summary);}
  dispose(){this.abort.abort();this.rings.clear();}
