@@ -1,4 +1,5 @@
 import {uiLanguage,t} from './app-language.js';
+import {createStatusBanner} from './app-shell.js';
 import {pushBackHandler} from './back-history.js';
 import {LibraryReviewDialog} from './targets-source/library-review-dialog.js';
 import {fc,foodActionLabel} from './food-cloud-messages.js';
@@ -19,22 +20,11 @@ import {icon} from './foods-source/icons.js';
 import {localLibraryItem,localLibraryView} from './local-engine.js';
 import {mealActionText} from './meal-action-messages.js';
 const labels=()=>({food:t("mobileSearch.food"),recipe:t("recipeEditor.recipe"),meal:fc("meal")});
-export function mountLibrary({page,show,close,header,content,date,openEntry,onChange,headerRoot}){
+export function mountLibrary({page,show,close,header,content,date,openEntry,onChange,headerRoot,onFoodLoadError}){
  let data,kind='food',screen='home',showMealTip=true,sort='recent',retired=false,query='',disposed=false,serial=0,extrasCleanup,optionsSheet,foodEditor,mealEditor,recipeEditor,collectionBack=null,deleteDialog;
- const confirmation=document.createElement('p');
- confirmation.className='library-log-confirmation';
- confirmation.setAttribute('role','status');
- page.after(confirmation);
- let confirmationTimer;
- function clearConfirmation(){
-  clearTimeout(confirmationTimer);
-  confirmation.textContent='';
- }
+ const confirmation=createStatusBanner(page,'library-log-confirmation');
  function entryAdded(isToday){
-  if(disposed)return;
-  clearConfirmation();
-  confirmation.textContent=fc(isToday?'addedToTodaysDiary':'addedToSelectedDiary');
-  confirmationTimer=setTimeout(clearConfirmation,4500);
+  if(!disposed)confirmation.show(fc(isToday?'addedToTodaysDiary':'addedToSelectedDiary'));
  }
  // A browser Back request reaches the outer sheet before its editor handles it.
  const backFromDelete=event=>{
@@ -44,7 +34,7 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
   deleteDialog.dismiss();
  };
  window.addEventListener('nourishing-back',backFromDelete,{capture:true});
- const leaveCollection=({popHistory=true}={})=>{clearConfirmation();screen='home';query='';if(collectionBack){const handle=collectionBack;collectionBack=null;handle.release({popHistory});}render();};
+ const leaveCollection=({popHistory=true}={})=>{confirmation.clear();screen='home';query='';if(collectionBack){const handle=collectionBack;collectionBack=null;handle.release({popHistory});}render();};
  const alive=id=>!disposed&&id===serial;
  async function reload(){
   const id=++serial,{ticket}=await readDeviceCache('/api/library'),apply=value=>{if(alive(id)){data={...value,ticket};render();}};
@@ -101,7 +91,25 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
  const itemMenu=new MobileLibraryActions({root:page,onChoose:itemActions});
  page.addEventListener('click',select);
  headerRoot?.addEventListener('click',select);
- async function openItem(itemKind,id,keptDraft,{copy=false}={}){show(header(labels()[itemKind])+`<p class="empty">${e(t("mobileNutrientDetail.loading"))}</p>`);const loading=content.querySelector('.empty');try{const item=await localLibraryItem({kind:itemKind,id})??await request('/api/library/item?'+new URLSearchParams({kind:itemKind,id}));if(!data)data=await localLibraryView()??await request('/api/library');if(!disposed&&loading.isConnected){if(copy){const resource={...item.resource};delete resource.id;editor(itemKind,{...item,resource:undefined},keptDraft??{name:mealActionText('copyName',{name:resource.name}),items:structuredClone(resource.items)});}else editor(itemKind,item,keptDraft);}}catch(error){if(!disposed&&loading.isConnected)loading.textContent=error.message;}}
+ async function openItem(itemKind,id,keptDraft,{copy=false}={}){
+  show(header(labels()[itemKind])+`<p class="empty">${e(t("mobileNutrientDetail.loading"))}</p>`);
+  const loading=content.querySelector('.empty');
+  let item;
+  try{
+   item=await localLibraryItem({kind:itemKind,id})??await request('/api/library/item?'+new URLSearchParams({kind:itemKind,id}));
+   if(!data)data=await localLibraryView()??await request('/api/library');
+  }catch(error){
+   if(disposed||!loading.isConnected||error.name==='AbortError')return;
+   if(onFoodLoadError&&!copy&&!keptDraft&&(itemKind==='food'||itemKind==='recipe'))onFoodLoadError();
+   else loading.textContent=error.message;
+   return;
+  }
+  if(disposed||!loading.isConnected)return;
+  if(copy){
+   const resource=item.resource;
+   editor(itemKind,{...item,resource:undefined},keptDraft??{name:mealActionText('copyName',{name:resource.name}),items:structuredClone(resource.items)});
+  }else editor(itemKind,item,keptDraft);
+ }
 
  function editor(itemKind,saved,draft,importOptions={}){
   deleteDialog?.close(false);foodEditor?.dispose();mealEditor?.dispose();recipeEditor?.dispose();const resource=saved?.resource;
@@ -145,5 +153,5 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
    const editorMount=itemKind==='recipe'?mountRecipeEditor:mountMealEditor;const mounted=editorMount({...importOptions,onImported:prepared=>editor('recipe',null,prepared.recipe,{imported:prepared}),saved,data,draft,show,close,content,date,onSaved:savedChange,onAction:action,openEntry});if(itemKind==='recipe')recipeEditor=mounted;else mealEditor=mounted;return;
   }
  }
- render();reload();return {reload,openItem,entryAdded,dispose(){disposed=true;clearConfirmation();confirmation.remove();serial++;window.removeEventListener('nourishing-back',backFromDelete,{capture:true});deleteDialog?.close(false);if(collectionBack){collectionBack.release({popHistory:false});collectionBack=null;}retirement.dispose();foodEditor?.dispose();mealEditor?.dispose();recipeEditor?.dispose();extrasCleanup?.();optionsSheet?.close(false);itemMenu.dispose();data=null;page.removeEventListener('click',select);headerRoot?.removeEventListener('click',select);document.body.classList.remove('foods-home-mobile','mobile-library');}};
+ render();reload();return {reload,openItem,entryAdded,dispose(){disposed=true;confirmation.dispose();serial++;window.removeEventListener('nourishing-back',backFromDelete,{capture:true});deleteDialog?.close(false);if(collectionBack){collectionBack.release({popHistory:false});collectionBack=null;}retirement.dispose();foodEditor?.dispose();mealEditor?.dispose();recipeEditor?.dispose();extrasCleanup?.();optionsSheet?.close(false);itemMenu.dispose();data=null;page.removeEventListener('click',select);headerRoot?.removeEventListener('click',select);document.body.classList.remove('foods-home-mobile','mobile-library');}};
 }

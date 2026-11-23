@@ -8,8 +8,8 @@ html,body{overscroll-behavior:none}
  --mobile-icon-filter:none;--mobile-color-scheme:light;
 }
 .discover-mobile.dark{
- --bg:#101222;--paper:#252839;--ink:#f5f6ff;--muted:#a0a2b1;
- --line:#3d4051;--pale:#414456;--green:#41adb0;
+ --bg:#101223;--paper:#262a3b;--ink:#fafbff;--muted:#a0a2b1;
+ --line:#3d4051;--pale:#404252;--green:#41adb0;
  --mobile-accent-text:#ff8050;--mobile-danger:#ffb7ab;
  --mobile-button-bg:#f2f1ff;--mobile-button-ink:#171827;
  --mobile-icon-filter:brightness(0) invert(1);--mobile-color-scheme:dark;

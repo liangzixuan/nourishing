@@ -47,4 +47,26 @@ export function installDiscoverShell({view,navigate,openAction,language="en"}){
  const click=event=>{const el=event.target.closest('[data-discover^="shell-"]');if(!el)return;const id=el.dataset.discover.slice(6);if(id==='settings'&&view==='nutrition-report')openAction('report-settings');else if(id==='newsfeed'||id==='settings'&&view==='dashboard')openAction(id==='settings'?'dashboard-settings':'newsfeed');else if(id==='add')openAction('add');else if(id==='more')openAction('more');else void navigate(id);};header.addEventListener('click',click);bottom.addEventListener('click',click);return true;
 }
 
-export function bottomNavigation(view,language="en"){const text=key=>formatMessage(language,"discover.nav."+key);const discover=['dashboard','trends','nutrition-report','progress'].includes(view);return [['dashboard','discover','chart',discover],['diary','diary','notebook',view==='diary'],['add','add','plus',false],['foods','foods','apple',['foods','repeats','oracle','suggest'].includes(view)],['more','more','more',!discover&&!['diary','foods','repeats','oracle','suggest'].includes(view)]].map(([id,label,icon,selected])=>button(`<span class="dc-nav-icon dc-nav-icon-${icon}" aria-hidden="true"></span>`+(id==='add'?'':`<span class="dc-nav-label">${escape(text(label))}</span>`),'shell-'+id,`${selected?'active':''} ${id==='add'?'dc-add':''}`,`aria-label="${escape(text(label))}" ${selected?'aria-current="page"':''}`)).join('');}
+const navIcons={
+ chart:'<rect x="3" y="3" width="26" height="26" rx="3"/><path class="dc-nav-cutout" d="M10 21.5v-7M16 21.5V10M22 21.5v-3.5"/>',
+ notebook:'<rect x="6" y="3" width="21" height="26" rx="2"/><path d="M5 8h3m-3 5h3m-3 5h3m-3 5h3" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path class="dc-nav-cutout" d="M12.5 10.5h8M12.5 16h8M12.5 21.5h5"/>',
+ apple:'<path d="M16 9c-3.4 0-4.7-2.8-4.8-6 3.1.2 5.4 1.7 5.9 4.3.7-2.5 2.6-3.8 4.8-4.1-.2 2.6-1.5 4.6-3.9 5.8 2.5-1 4.1-1.2 6.1-.4 3.7 1.5 4.8 5.7 3.6 10.6-1.5 6-4.7 9.8-8.1 9.8-1.5 0-2.5-.5-3.6-.5s-2.2.5-3.7.5c-3.5 0-6.6-4-8-9.8-1.2-5 .2-9.3 3.8-10.7 2.5-1 5-.7 7.9.5z"/>',
+ more:'<circle cx="16" cy="16" r="13"/><g class="dc-nav-holes"><circle cx="9.5" cy="16" r="1.8"/><circle cx="16" cy="16" r="1.8"/><circle cx="22.5" cy="16" r="1.8"/></g>',
+ plus:'<circle cx="16" cy="16" r="16"/><path d="M16 8.6v14.8M8.6 16h14.8" class="dc-nav-cutout"/>',
+};
+export function bottomNavigation(view,language="en"){
+ const label=key=>escape(formatMessage(language,'discover.nav.'+key));
+ const tabs=[
+  ['dashboard','discover','chart',['dashboard','trends','nutrition-report','progress']],
+  ['diary','diary','notebook',['diary']],
+  ['add','add','plus',[]],
+  ['foods','foods','apple',['foods','repeats','oracle','suggest']],
+  ['more','more','more',[]],
+ ];
+ const active=tabs.find(tab=>tab[3].includes(view))?.[0]??'more';
+ return tabs.map(([id,key,icon])=>{
+  const selected=id===active,add=id==='add',name=label(key);
+  const glyph=`<svg class="dc-nav-icon" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">${navIcons[icon]}</svg>`;
+  return button(glyph+(add?'':`<span class="dc-nav-label">${name}</span>`),'shell-'+id,add?'dc-add':selected?'active':'',`aria-label="${name}" ${selected?'aria-current="page"':''}`);
+ }).join('');
+}

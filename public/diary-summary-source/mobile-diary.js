@@ -1,5 +1,5 @@
 import {diaryEnergyBudget} from './energy-budget.js';
-import {formatMessage} from './message-format.js';
+import {formatMessage,highlightedNutrientName} from './message-format.js';
 import {escape as e} from '../html.js';
 import {DiaryEnergyRings} from './energy-rings.js';
 import {displayValue,displayUnit} from '../dashboard-source/energy-display.js';
@@ -40,7 +40,6 @@ export function mobileDiaryRecord({id,collection,name,meta,amount,icon,selectBox
  return `<tr data-diary-record ${swipe?'data-md-swipable':''} data-collection="${e(collection)}" data-id="${e(id)}"><td>${options}<div class="md-record">${selectBox}<button type="button" class="md-record-menu" data-md-context aria-label="${e(name)}: actions">${icon}</button><div class="md-record-text">${edit}${extra}</div></div></td><td ${collection==='entries'?`data-diary-summary-entry="${e(id)}"`:''}>${remove}<div class="md-record-amount">${amount}</div></td></tr>`;
 }
 
-const shortHighlights=new Set(['addedSugar','vitaminB12','vitaminA','folate']);
 function highlightReading(row,amount,target,unit,language){
  if(!row.coverage?.known||!Number.isFinite(amount))return formatMessage(language,'mobileDiary.highlight.noData');
  const format=new Intl.NumberFormat(language,{minimumFractionDigits:1,maximumFractionDigits:1,useGrouping:false});
@@ -61,7 +60,7 @@ export function mobileDiarySummary({summary,facts,settings,unit,language,labels,
  const targetRow=(row,kind)=>{
   const value=macroMode==='remaining'&&kind==='macros'?row.remaining:row.value,amount=displayValue(value,row.unit,unit),target=displayValue(row.target,row.unit,unit),empty=row.coverage?.total===0;
   const shown=Number.isFinite(amount)?amount:empty&&row.active?kind==='macros'&&macroMode==='remaining'?target:0:null,pct=Number.isFinite(shown)&&target>0?shown/target*100:null;
-  const highlight=kind==='highlights',name=highlight&&shortHighlights.has(row.id)?formatMessage(language,'mobileDiary.highlight.'+row.id):nutrientName(row);
+  const highlight=kind==='highlights',name=highlight?highlightedNutrientName(row,language,nutrientName):nutrientName(row);
   const percent=pct===null?'—':number(pct,language,0)+'%',shownUnit=displayUnit(row.unit,unit);
   const accessible=highlight?` aria-label="${e([name,highlightReading(row,amount,target,shownUnit,language),percent].join(', '))}"`:'';
   return button(`<span><strong>${e(name)}</strong>${kind==='macros'?` - ${number(shown,language)} / ${number(target,language)} ${e(shownUnit)}`:''}</span><small>${percent}</small><progress max="100" value="${Math.min(100,Math.max(0,pct??0))}" aria-label="${e(name)}"></progress>`,'nutrient-contributors',`class="md-target md-target-${e(row.id)}" data-id="${e(row.id)}"${accessible}`);

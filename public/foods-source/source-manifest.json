@@ -2,16 +2,22 @@
   {
     "source": "../nourishing-local/public/mobile-foods-home.js",
     "target": "public/foods-source/mobile-foods-home.js",
-    "sha256": "e9bd4e7fcb6c58e8dd308f5710c7cbafd95453d556f6cece5ac7b172a980cee4"
+    "sha256": "e9bd4e7fcb6c58e8dd308f5710c7cbafd95453d556f6cece5ac7b172a980cee4",
+    "sourceSha256": "e9bd4e7fcb6c58e8dd308f5710c7cbafd95453d556f6cece5ac7b172a980cee4",
+    "outputSha256": "8a9bf3f539ccd267d7289dee47e2a808be3cfaccc7b152b7febcec5129ec5072",
+    "transforms": [
+      "Render the six reference card icons and the shortcut to the Custom search category."
+    ]
   },
   {
     "source": "../nourishing-local/public/mobile-foods-home.css",
     "target": "public/foods-source/mobile-foods-home.css",
     "sha256": "c706117b69c3489c616a18c13ff16f56829560b335a7869e195d8864c96bf114",
     "sourceSha256": "c706117b69c3489c616a18c13ff16f56829560b335a7869e195d8864c96bf114",
-    "outputSha256": "3f9b5acc29d73d91b5835822f0ac78fd8c82b6539f9b832f7aaaf099ae51b06f",
+    "outputSha256": "20e6c112a93d9df33e901c38efeec9ffd03678031c3caf1622c89e00ba8bafdc",
     "transforms": [
-      "Normalize LF for Git publication"
+      "Normalize LF for Git publication",
+      "Match the Foods header, card hit areas and Create buttons to reference 72."
     ]
   },
   {
@@ -37,7 +43,12 @@
   {
     "source": "../nourishing-local/public/locales/mobile-foods-home.js",
     "target": "public/foods-source/locales/mobile-foods-home.js",
-    "sha256": "c324b70d4800b537c9a538d35c478b1628a61e32b6355402dde8a9060b32230e"
+    "sha256": "c324b70d4800b537c9a538d35c478b1628a61e32b6355402dde8a9060b32230e",
+    "sourceSha256": "c324b70d4800b537c9a538d35c478b1628a61e32b6355402dde8a9060b32230e",
+    "outputSha256": "f16984d84e0f7d2fc8c02ab2b9792e24870dd482ae5ba3e85cb4bd7fa81471ae",
+    "transforms": [
+      "Translate the shared-item help and the Custom Tab action."
+    ]
   },
   {
     "source": "../nourishing-local/public/locales/mobile-library.js",

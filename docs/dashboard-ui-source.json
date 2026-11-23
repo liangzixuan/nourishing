@@ -6,9 +6,10 @@
       "source": "public/discover-ui.js",
       "target": "public/dashboard-source/discover-ui.js",
       "sourceSha256": "b893d61eb6198ded40d71e01f97740c3b04d020c07f06ef1ac910217ad870710",
-      "sha256": "968a1c7df661de876240ddfc094d61b89d34fafb70cf1a6ee142e6c115154630",
+      "sha256": "95ffaa5b7a644d4bd1b2cd23b62276b42c48a07f0cd0c2718d0fe252639df2a0",
       "transforms": [
-        "CRLF to LF"
+        "CRLF to LF",
+        "Render the five Nourishing navigation controls with the reference glyphs and selected state."
       ]
     },
     {

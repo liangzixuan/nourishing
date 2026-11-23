@@ -18,7 +18,7 @@ import {mountTargets,mountTargetsSheet} from './targets.js';
 import {mountFoodCopy} from './food-copy.js';
 import {mountFoodEntry} from './food-entry.js';
 import {AddMenu,openGroupAddMenu} from './add-menu-source/add-menu.js';
-import {createAppShell} from './app-shell.js';
+import {createAppShell,createStatusBanner} from './app-shell.js';
 import {mountMore} from './more.js';
 import {diarySummaryMarkup, mountDiarySummary} from './diary-summary.js';
 import {openDiarySummaryAction} from './diary-summary-actions.js';
@@ -52,6 +52,7 @@ import {waterText} from './water-messages.js';
 import {moreBackHeader} from './more-source/menu-view.js';
 
 const page = document.querySelector('#page');
+const foodLoadBanner = createStatusBanner(page,'diary-food-load-error');
 const dateBar = document.querySelector('#diary-date');
 const sheet = document.querySelector('#sheet');
 const content = document.querySelector('#sheet-content');
@@ -286,6 +287,7 @@ function selectTab(id) {
 
 let diaryFastingAction, diaryTargets;
 function leaveView() {
+  foodLoadBanner.clear();
   groupAddMenu?.close(false);
   groupAddMenu = null;
   if (requestedDiaryDate) {
@@ -619,6 +621,7 @@ function handleDocumentClick(event) {
   if (action === 'complete-day') return toggleCompleteDay(target);
   if (action === 'add-food' || action === 'group-quick-add') {
     group = target.dataset.group ?? defaultGroup(diary?.groups);
+    if (target.dataset.foodCategory === 'custom') return search(null,{initialCategory:'custom'});
     const shortcut = action === 'group-quick-add' ? diary.presentation.groupQuickAdd[group] ?? defaultDiaryQuickAddAction : 'food';
     if (shortcut === 'all') {
       const initialGroup = group;
@@ -705,7 +708,7 @@ function navigate(next, initialTab = 'dashboard', reportDate) {
   }
   if (next === 'foods') {
     selectTab('foods-tab');
-    library = mountLibrary({...common, openEntry: (kind, id) => edit({id, kind})});
+    library = mountLibrary({...common, onFoodLoadError: returnToDiaryWithFoodError, openEntry: (kind, id) => edit({id, kind})});
     return;
   }
   if (next === 'more') {
@@ -800,7 +803,7 @@ async function summaryAction(input) {
   if (typeof cleanup === 'function') pickerCleanup = cleanup;
 }
 
-async function search(restore = null, {applied, selected} = {}) {
+async function search(restore = null, {applied, selected, initialCategory} = {}) {
   if (!diary) return;
   if (!diary.groups.includes(group)) group = defaultGroup(diary.groups);
   show(`${header(t('diary.addFood'))}<div class="diary-picker"></div>`);
@@ -811,9 +814,10 @@ async function search(restore = null, {applied, selected} = {}) {
     return opened;
   };
   const picker = mountFoodPicker(content.querySelector('.diary-picker'), {
-    onPick: (kind, id) => {
+    initialCategory,
+    onPick: (kind, id, {source}) => {
       const snapshot = picker.snapshot();
-      return edit({id, kind, returnSearch: () => search(snapshot)});
+      return edit({id, kind, source, returnSearch: () => search(snapshot)});
     },
     onBarcode: () => searchBarcode('camera', picker.snapshot()),
     onBranded: () => searchBarcode('search', picker.snapshot()),
@@ -892,30 +896,32 @@ function searchBarcode(mode, snapshot) {
   });
 }
 
-async function edit({entry = null, id, kind, quantity, returnSearch} = {}) {
+function returnToDiaryWithFoodError() {
+  close();
+  navigate('diary');
+  foodLoadBanner.show(coreText('diary.foodLoadError'));
+}
+
+async function edit({entry = null, id, kind, source = 'library', quantity, returnSearch} = {}) {
   const itemId = id ?? entry?.foodId ?? entry?.recipeId ?? entry?.mealId;
   const itemKind = kind ?? (entry?.recipeId ? 'recipe' : entry?.mealId ? 'meal' : 'food');
   if (!itemId) {
     show(`${header(coreText('diary.entry'))}<p class="empty">${e(coreText('diary.unsupported'))}</p>`);
     return;
   }
-  const localItem = await localLibraryItem({kind: itemKind, id: itemId, entry});
-  if (localItem) {
-    foodEditor({item: localItem, entry, quantity, returnSearch});
-    return;
-  }
   show(`${header(t('diary.food'))}<p class="empty">${e(coreText('loading'))}</p>`);
-  const serial = searchId;
+  const loading = content.querySelector('.empty');
+  let item;
   try {
     const query = new URLSearchParams({kind: itemKind, id: itemId, ...(entry ? {entryId: entry.id} : {})});
-    const item = await request('/api/library/item?' + query);
-    if (serial !== searchId || !sheet.open) return;
-    foodEditor({item, entry, quantity, returnSearch});
+    item = await localLibraryItem({kind: itemKind, id: itemId, entry}) ?? await request('/api/library/item?' + query);
   } catch (error) {
-    if (serial === searchId) {
-      content.innerHTML = header(t('diary.food')) + `<p class="sheet-message">${e(error.message)}</p>`;
-    }
+    if (!loading.isConnected || error.name === 'AbortError') return;
+    if (source === 'library' && (itemKind === 'food' || itemKind === 'recipe')) returnToDiaryWithFoodError();
+    else loading.textContent = error.message;
+    return;
   }
+  if (loading.isConnected) foodEditor({item, entry, quantity, returnSearch});
 }
 
 function updateRecordDisplay(recordDisplay, {add = [], removeIds = new Set(), move = null} = {}) {

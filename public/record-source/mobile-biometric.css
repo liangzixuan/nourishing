@@ -1,4 +1,4 @@
-#sheet.mobile-biometric:not(.mobile-catalog-browser) .dialog-head{padding:16px 8px 0;display:grid;grid-template-columns:44px minmax(0,1fr) 44px;min-height:72px;gap:10px;}
+#sheet.mobile-biometric:not(.mobile-catalog-browser) .dialog-head{padding:6px 8px;display:grid;grid-template-columns:44px minmax(0,1fr) 44px;min-height:56px;gap:10px;}
 #sheet.mobile-biometric:not(.mobile-catalog-browser) .dialog-head h2{font:700 calc(20rem / 18)/1.2 Karla,Lato,sans-serif;grid-column:2;grid-row:1;overflow-wrap:anywhere;}
 #sheet.mobile-biometric:not(.mobile-catalog-browser) .dialog-head button{display:grid;place-items:center;grid-column:1;grid-row:1;width:40px;min-width:40px;min-height:44px;line-height:1;}
 .mobile-biometric .dialog-head button svg{width:24px;height:24px;}
@@ -31,7 +31,7 @@
 .mb-stool{display:block;width:114px;height:114px;margin:10px auto;object-fit:contain;}
 .mb-row:disabled{opacity:1;}
 @media(max-width:360px){#sheet.mobile-biometric .mb-row{grid-template-columns:minmax(0,1fr);gap:4px;padding-block:10px;}
-#sheet.mobile-biometric:not(.mobile-catalog-browser) .dialog-head{padding:16px 8px 0;grid-template-columns:44px minmax(0,1fr) 22px;}
+#sheet.mobile-biometric:not(.mobile-catalog-browser) .dialog-head{grid-template-columns:44px minmax(0,1fr) 22px;}
 }
 
 #sheet.mobile-biometric .mb-row[data-mb-unit],#sheet.mobile-biometric .mb-row[data-mb-group]{min-height:57px}

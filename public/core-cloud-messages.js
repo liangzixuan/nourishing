@@ -41,6 +41,7 @@ const rows={
  'more.storage':['Device storage','Stockage sur l’appareil','Gerätespeicher','Armazenamento no dispositivo'],
  'more.version':['Version','Version','Version','Versão'],
  'diary.recipeCreated':['Recipe created','Recette créée','Rezept erstellt','Receita criada'],
+ 'diary.foodLoadError':['Error loading food','Erreur lors du chargement de l’aliment','Fehler beim Laden des Lebensmittels','Erro ao carregar o alimento'],
  'diary.itemsAdded':['Items added to diary','Éléments ajoutés au journal','Einträge zum Tagebuch hinzugefügt','Itens adicionados ao diário'],
  'more.search':['Search More','Rechercher dans Plus','Mehr durchsuchen','Pesquisar em Mais'],
  'note':['Note','Note','Notiz','Nota'],

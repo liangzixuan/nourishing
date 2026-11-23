@@ -9,6 +9,11 @@ import {usesStoolScale,stoolTypes,stoolUnit} from '../offline-source/server/stoo
 
 const categories={Body:'#body',Cardio:'heart-pulse',Labs:'#labs',Mental:'health/mental-health'};
 const order={Body:['bicep-size','body-fat','body-temp-variation','body-temperature','bust-size','calf-size','chest-size','fat-free-mass','forearm-size','height','hip-size','neck-size','recovery','skeletal-muscle-mass','skin-temperature','stool','thigh-size','total-body-water','upper-arm-size','waist-size','weight','wrist-size'],Cardio:['blood-pressure','heart-rate','heart-rate-variability-hrv','oxygen-saturation-spo2','pulse-wave-velocity','respiration-rate','resting-heart-rate','v02-max'],Labs:['25-hydroxy-vitamin-d','blood-glucose','c-reactive-protein','ferritin','hdl-cholesterol','hematocrit','hemoglobin','hemoglobin-a1c','insulin','ketones-blood','ketones-breath','ketones-urine','ldl-cholesterol','oxygen-saturation-spo2','total-cholesterol','triglycerides'],Mental:['energy-level','mood','sleep','sleep-score']};
+const measurementHints={
+ 'catalog:blood-pressure':{systolic:'120',diastolic:'80'},
+ 'catalog:heart-rate':{value:'1'},
+ 'catalog:pulse-wave-velocity':{value:'1'}
+};
 const dropdownIcon='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10h10l-5 5z"/></svg>';
 const iconRoot='/record-source/biometric-icons/';
 function icon(name){
@@ -41,6 +46,7 @@ export class MobileBiometricPanel{
   root.addEventListener('submit',event=>{if(!event.target.matches('[data-form=mobile-biometric]'))return;event.preventDefault();event.stopPropagation();void this.save()},{signal:this.abort.signal});
   this.unsubscribe=session.subscribe(()=>this.update());this.update();if(!session.library&&!session.pending)void session.load();
  }
+ newHeartRate(){return !this.session.editing&&this.session.draft.metric==='catalog:heart-rate';}
  metric(){return this.session.library?.metrics.find(row=>row.key===this.session.draft.metric)}
  locked(){return this.saving||Boolean(this.session.pending)||this.session.unknown||this.session.imported||this.session.readOnly}
  header(){
@@ -62,6 +68,8 @@ export class MobileBiometricPanel{
  }
  select(key){
   if(this.locked())return;const d=this.session.draft;d.custom=key===null;d.metric=key||'';const metric=this.metric();d.unit=d.custom?'':usesStoolScale(metric)?stoolUnit:usesSleepDuration(metric)?'h':metric.selection.kind==='metric'?metric.selection.unit:metric.units[0]??'';
+  const groups=this.session.library.groups;
+  if(this.newHeartRate()&&!groups.includes(d.group))d.group=groups.includes('Uncategorized')?'Uncategorized':groups[0]??'';
   for(const field of ['name','value','systolic','diastolic','durationHours','durationMinutes','stonePounds'])d[field]='';this.freeUnit=!metric?.units.length;this.mode='detail';this.session.invalidate();this.render();this.dialog.scrollTop=0;
  }
  renderForm(){
@@ -70,7 +78,14 @@ export class MobileBiometricPanel{
   let fields=d.custom||this.session.editing&&metric?.selection.kind==='metric'?row('name',this.m('name'),'required maxlength="100"'):'';
   if(sleep)fields+=`<div class="mb-row"><strong>${e(this.m('amount'))}</strong><span class="mb-duration"><input name="durationHours" type="number" min="0" step="1" placeholder="0" aria-label="${e(this.message('hours'))}" value="${e(d.durationHours)}"><span>:</span><input name="durationMinutes" type="number" min="0" max="59" step="1" placeholder="00" aria-label="${e(this.message('minutes'))}" value="${e(d.durationMinutes)}"></span></div>`;
   else if(stool)fields+=`<button type="button" class="mb-row" data-mb-stool><strong>${e(this.message('stoolType'))}</strong><span class="mb-value">${e(d.value?this.message('stoolTypeNumber',{value:d.value}):this.message('chooseType'))}${dropdownIcon}</span></button>${d.value?`<img class="mb-stool" src="/record-source/bristol/type-${Number(d.value)}.png" alt="${e(this.message('stoolDescription.'+d.value))}">`:''}`;
-  else fields+=(d.custom?[{key:'value'}]:metric.fields).map(field=>row(field.key,compound?this.message('stones'):pair?this.m(field.key+'Value'):this.message('field.'+field.key),`${compound?'':'required'} type="text" inputmode="decimal" autocomplete="off"`,pair?d.unit:'')).join('');
+  else {
+   const hints=measurementHints[metric?.key];
+   for(const field of d.custom?[{key:'value'}]:metric.fields){
+    const label=compound?this.message('stones'):pair?this.m(field.key+'Value'):this.message('field.'+field.key);
+    const hint=hints?.[field.key];
+    fields+=row(field.key,label,`${compound?'':'required'} type="text" inputmode="decimal" autocomplete="off"${hint?` placeholder="${e(hint)}"`:''}`,pair?d.unit:'');
+   }
+  }
   if(compound)fields+=row('stonePounds',this.message('pounds'),'type="text" inputmode="decimal" placeholder="0"');
   if(!pair&&!stool){if(d.custom||this.freeUnit)fields+=row('unit',this.m('unit'),'required maxlength="30"');else fields+=`<button type="button" class="mb-row" data-mb-unit ${sleep?'disabled':''}><strong>${e(this.m('units'))}</strong><span class="mb-value">${e(sleep?this.m('hoursMinutes'):d.unit)}${sleep?'':dropdownIcon}</span></button>`}
   if(this.session.editing)fields+=row('date','Date','type="date" required');
@@ -88,8 +103,12 @@ export class MobileBiometricPanel{
   if(button.dataset.mbCategory){this.category=button.dataset.mbCategory;this.session.draft.category=this.category;this.render();this.dialog.scrollTop=0}
   if(button.dataset.mbMetric)this.select(button.dataset.mbMetric);
   if(button.hasAttribute('data-mb-custom'))this.select(null);
-  if(button.hasAttribute('data-mb-group'))this.openMenu(button,this.m('group'),[...this.session.library.groups.map(group=>({id:group,label:group})),{id:'',label:this.message('noGroup')}],this.session.draft.group,value=>this.session.draft.group=value);
-  if(button.hasAttribute('data-mb-unit')){const metric=this.metric();this.openMenu(button,this.m('units'),[...metric.units.map(unit=>({id:unit,label:unit})),...(metric.allowCustomUnit?[{id:'__custom_unit',label:this.m('otherUnit')}]:[])],this.session.draft.unit,value=>{this.freeUnit=value==='__custom_unit';this.session.draft.unit=this.freeUnit?'':value;this.session.draft.stonePounds=''})}
+  if(button.hasAttribute('data-mb-group')){
+   const choices=this.session.library.groups.map(group=>({id:group,label:group}));
+   if(!this.newHeartRate())choices.push({id:'',label:this.message('noGroup')});
+   this.openMenu(button,this.m('group'),choices,this.session.draft.group,value=>this.session.draft.group=value);
+  }
+  if(button.hasAttribute('data-mb-unit')){const metric=this.metric();this.openMenu(button,this.m('units'),[...metric.units.map(unit=>({id:unit,label:unit})),...(metric.allowCustomUnit&&!this.newHeartRate()?[{id:'__custom_unit',label:this.m('otherUnit')}]:[])],this.session.draft.unit,value=>{this.freeUnit=value==='__custom_unit';this.session.draft.unit=this.freeUnit?'':value;this.session.draft.stonePounds=''})}
   if(button.hasAttribute('data-mb-stool'))this.openMenu(button,this.message('stoolType'),stoolTypes.map(row=>({id:String(row.value),label:row.value+' · '+this.message('stoolLabel.'+row.value)})),this.session.draft.value,value=>this.session.draft.value=value);
  }
  openMenu(origin,label,items,current,choose){this.menu?.close(false);origin.setAttribute('aria-expanded','true');this.menu=new AnchoredMenu({origin,anchor:origin,placement:'row-end',label,className:'mb-menu',items:items.map(item=>({...item,selected:item.id===current})),onChoose:value=>{choose(value);this.session.invalidate();this.renderForm();this.controls()},onClose:()=>{this.menu=null;origin.setAttribute('aria-expanded','false')}})}
@@ -99,7 +118,7 @@ export class MobileBiometricPanel{
  }
  controls(){
   const s=this.session,locked=this.locked();this.root.querySelectorAll('input,button').forEach(node=>node.disabled=locked);const form=this.root.querySelector('form');if(!form)return;
-  const save=form.querySelector('[data-mb-save]'),check=form.querySelector('[data-mb-check]');save.hidden=s.unknown;save.disabled=locked||!form.checkValidity();check.hidden=!s.unknown;check.disabled=Boolean(s.pending);
+  const save=form.querySelector('[data-mb-save]'),check=form.querySelector('[data-mb-check]');save.hidden=s.unknown;check.hidden=!s.unknown;check.disabled=Boolean(s.pending);
   const unit=form.querySelector('[data-mb-unit]');if(unit&&usesSleepDuration(this.metric(),s.draft.custom))unit.disabled=true;
   const error=form.querySelector('[data-mb-error]');error.textContent=s.error;error.hidden=!s.error;const status=form.querySelector('[data-mb-status]');status.textContent=s.unknown?this.m('unknown'):s.pending?this.message(s.pending==='preview'?'preparing':s.pending==='save'?'saving':'checking'):'';status.hidden=!status.textContent;
  }

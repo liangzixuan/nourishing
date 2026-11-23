@@ -2,6 +2,23 @@ import {bottomNavigation,iconButton,escape as e,button} from './dashboard-source
 import {uiLanguage,t} from './app-language.js';
 import {coreText} from './core-cloud-messages.js';
 
+export function createStatusBanner(page,className){
+ const element=document.createElement('p');
+ element.className=className;
+ element.setAttribute('role','status');
+ page.after(element);
+ let timer;
+ function clear(){
+  clearTimeout(timer);
+  element.textContent='';
+ }
+ return {
+  show(message){clear();element.textContent=message;timer=setTimeout(clear,4500);},
+  clear,
+  dispose(){clear();element.remove();}
+ };
+}
+
 const screens={'discover-tab':'dashboard','diary-tab':'diary','foods-tab':'foods','settings-tab':'more','add-food':'add'};
 export function createAppShell({headerRoot,dateBar,navigation}){
  let selected='diary-tab';

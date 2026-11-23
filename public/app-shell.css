@@ -30,3 +30,11 @@ button,input,select,textarea{font:inherit}
 @media(max-width:600px){.sheet-header{padding-top:max(6px,env(safe-area-inset-top))}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 [hidden]{display:none!important}
+
+.diary-food-load-error{
+ position:fixed;z-index:4;left:50%;bottom:var(--dc-nav-space,70px);
+ transform:translateX(-50%);width:min(100%,560px);box-sizing:border-box;
+ margin:0;background:#ff6733;color:#220e07;font:400 calc(14rem / 18)/1.4 Lato,Arial,sans-serif;
+ pointer-events:none;
+}
+.diary-food-load-error:not(:empty){min-height:44px;display:flex;align-items:center;padding:8px 24px}

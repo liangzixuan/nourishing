@@ -17,6 +17,8 @@ test('source Suggest Food: filters, impact, ingredient review, preferences and d
  const state=initialState(),foods=fixture(),catalog=createInsightCatalog([...foods.values()]);
  state.settings.groups.push('Uncategorized','Evening meal');
  const customId=act(state,'food.save',{name:'Custom beans',serving:'Cup',grams:150,nutrients:{calories:180,protein:0,carbs:30,fat:1}}).id;
+ state.settings.carbohydratePolicy={mode:'net',netExcluded:['fiber']};
+ let lastSuggestions;
  const before=structuredClone(state),receipts=new Map(),writes=[];let lostSaveCount=null,failSave=false,failPreference=false,failPreview=false,rejectSave=false,heldOptions=null,browser,ingredientPreviews=0;
  const styles=[...readFileSync('public/diary.html','utf8').matchAll(/<link[^>]+rel="stylesheet"[^>]*>/g)].map(m=>m[0]).join('');
  const server=createServer(async(req,res)=>{const path=new URL(req.url,'http://localhost').pathname;const json=(status,value)=>{res.writeHead(status,{'Content-Type':'application/json'});res.end(JSON.stringify(value));};try{
@@ -26,7 +28,7 @@ test('source Suggest Food: filters, impact, ingredient review, preferences and d
   if(path==='/api/food-insights/options'){if(heldOptions)await heldOptions;return json(200,foodInsightOptions(state));}
   if(path==='/api/food-search')return json(200,searchCloudFoods(state,catalog,readCloudFoodSearchQuery(new URL(req.url,'http://localhost').searchParams)));
   if(req.method==='POST'){let raw='';for await(const chunk of req)raw+=chunk;const body=JSON.parse(raw);
-   if(path==='/api/food-insights/suggestions')return json(200,foodSuggestions(state,catalog,body));
+   if(path==='/api/food-insights/suggestions'){lastSuggestions=foodSuggestions(state,catalog,body);return json(200,lastSuggestions);}
    if(path==='/api/food-insights/preview'){if(failPreview){failPreview=false;return json(503,{error:'Preview interrupted'});}return json(200,previewFoodSuggestion(state,catalog,body));}
    if(path==='/api/food-insights/ingredient-preview'){ingredientPreviews++;return json(200,previewFoodInsightIngredient(state,catalog,body));}
    if(path==='/api/food-insights/resolve')return json(200,resolveFoodInsightIngredient(state,catalog,body));
@@ -67,6 +69,14 @@ test('source Suggest Food: filters, impact, ingredient review, preferences and d
   assert.equal(await page.locator('.ms-result').first().locator('[data-meal-action="review"]').textContent(),'Add to diary');assert.equal(await page.locator('.suggestion-review').count(),0);assert.deepEqual(state,before);
   await page.locator('[data-ms-options]:visible').click();await page.locator('[data-meal-action="reset"]:visible').click();assert.equal(await page.locator('[data-meal-filter="diets"]:checked').count(),0);assert.equal(await page.locator('.ms-options').isVisible(),false);
   failPreview=true;await page.locator('[data-meal-action="get"]').click();await page.locator('[data-ms-preview-retry]').first().waitFor();await page.locator('[data-ms-preview-retry]').first().click();await page.locator('.msc').first().waitFor();
+  const rounded=new Intl.NumberFormat('en',{maximumFractionDigits:0});
+  for(const [index,item] of lastSuggestions.items.entries()){
+   const {totals,carbohydrate}=item.nutrition;
+   assert.notEqual(Math.round(totals.carbs),Math.round(carbohydrate.value));
+   const expected=rounded.format(totals.calories)+' kcal, '+rounded.format(totals.protein)+' g Protein, '
+    +rounded.format(carbohydrate.value)+' g Carbs, '+rounded.format(totals.fat)+' g Fat';
+   assert.equal(await page.locator('.ms-result .ms-macros').nth(index).textContent(),expected);
+  }
   const openMealOptions=async index=>{
    const cards=page.locator('.ms-result'),choices=page.locator('.ms-options .ms-meal-options');
    assert.equal(await cards.locator('.ms-meal-options').count(),0);
