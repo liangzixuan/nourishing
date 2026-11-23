@@ -36,7 +36,7 @@ import {libraryToolsView} from './library-tools.mjs';
 import {createBackupStore} from './backup-store.mjs';
 import {profileSettingsView} from './profile-settings.mjs';
 import {snapshotsView, prepareSnapshot, SNAPSHOT_MEDIA_NAMESPACE} from './snapshots.mjs';
-import {importRecipeUrl, previewRecipeImport, prepareRecipeImportDraft, recipeImportCatalog} from './recipe-import.mjs';
+import {importRecipeUrl, previewRecipeImport, prepareRecipeImportDraft} from './recipe-import.mjs';
 import {fastingView} from './fasting.mjs';
 import {createCloudPhotoAnalyzer, measurePhotoStep} from './cloud-photo.mjs';
 import {validateStoredPhoto} from './domain/photo-images.mjs';
@@ -325,8 +325,7 @@ function buildMediaAndPhotoMethods(ctx) {
         if (head) {
           try {
             const catalog = await loadCatalogIndex({storage, head, namespace: ctx.config.endpoint + '/' + ctx.config.project});
-            const fastCatalog = recipeImportCatalog(catalog);
-            return (query, {limit}) => fastCatalog.search(query, {limit, offset: 0});
+            return (query, {limit}) => catalog.ingredientCandidates(query, limit);
           } catch {
             // Use TablesDB when the compact catalog is unavailable.
           }

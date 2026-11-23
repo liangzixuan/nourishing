@@ -5,7 +5,7 @@ import {photoAnalysis} from './domain/photo-records.mjs';
 import {MEAL_PHOTO_SCHEMA, MEAL_PHOTO_PROMPT, mealResult} from './domain/meal-photo-contract.mjs';
 import {parseIngredientLine} from './domain/recipe-ingredients.mjs';
 import {preparationFacts, mergePreparationFacts} from './domain/ingredient-preparation.mjs';
-import {matchIngredient} from './domain/recipe-matching.mjs';
+import {ingredientCatalogSearches, matchIngredient} from './domain/recipe-matching.mjs';
 
 export const CLOUD_PHOTO_MODEL = 'gemini-3.5-flash-lite';
 const PROVIDER = 'Google Gemini';
@@ -57,7 +57,9 @@ async function matchObservations(analysis, {search, foods, signal}) {
   const observations = [...analysis.observations.map((row, index) => ({...row, kind: 'observation', observationIndex: index})), ...(analysis.possibleAdditions ?? []).map((row, index) => ({...row, kind: 'possible-addition', additionIndex: index}))];
   const parsed = observations.map(ingredient), queries = new Map();
   // The source matcher owns query alternatives and ranking. Prefetch only its queries.
-  for (const item of parsed) matchIngredient(item, {foods, foodCatalog: {search(query, {limit}) { queries.set(query, {limit}); return {items: []}; }}});
+  for (const item of parsed) {
+    for (const {query, limit} of ingredientCatalogSearches(item)) queries.set(query, {limit});
+  }
   const pending = [...queries.entries()];
   for (let offset = 0; offset < pending.length; offset += 4) {
     if (signal?.aborted) throw failure('Photo recognition cancelled.', 499);

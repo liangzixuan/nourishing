@@ -20,17 +20,28 @@ function page(offset, limit) {
   if (!Number.isSafeInteger(offset) || offset < 0 || !Number.isInteger(limit) || limit < 1 || limit > 100) throw invalid('Catalog offset must be a nonnegative integer and limit must be from 1 to 100.');
 }
 
+function catalogWords(text) {
+  return text.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').match(/[\p{L}\p{N}]+/gu) || [];
+}
+
+// A leading space marks each word start for the catalog's prefix search.
+export function catalogSearchText(name) {
+  return ' ' + catalogWords(String(name)).join(' ');
+}
+
+export function matchesCatalogText(text, query) {
+  return !query.matchNone && query.words.every(term => text.includes(' ' + term));
+}
+
 export function catalogQuery(query) {
   if (typeof query !== 'string') throw invalid('Catalog query must be text.');
   const trimmed = query.trim().toLowerCase();
-  const words = trimmed.normalize('NFD').replace(/\p{M}/gu, '').match(/[\p{L}\p{N}]+/gu) || [];
+  const words = catalogWords(trimmed);
   return {trimmed, words, matchNone: Boolean(trimmed && !words.length), expression: words.map(word => `"${word}"*`).join(' AND ')};
 }
 
 export function matchesCatalogQuery(name, query) {
-  if (query.matchNone) return false;
-  const words = String(name).toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').match(/[\p{L}\p{N}]+/gu) || [];
-  return query.words.every(term => words.some(word => word.startsWith(term)));
+  return matchesCatalogText(catalogSearchText(name), query);
 }
 
 function freezeProjection(value) {

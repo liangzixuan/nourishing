@@ -5,7 +5,7 @@ import {mealSuggestionOptions,suggestMeals,previewSuggestedMeal,previewSuggested
 import {libraryItem} from './library-view.mjs';
 import {availableQuantityUnits} from './domain/quantity-units.mjs';
 import {MEAL_LIBRARY} from './domain/meal-suggestion-library.mjs';
-import {catalogQuery,matchesCatalogQuery} from './domain/usda-catalog.mjs';
+import {catalogQuery,catalogSearchText,matchesCatalogText} from './domain/usda-catalog.mjs';
 import {catalogIdentity,compactFoodSource,catalogSourceAliases} from './domain/catalog-source.mjs';
 import {catalogSourceId,foodSourceFacts} from './domain/food-catalog-identity.mjs';
 import {contentDigest} from './domain/content-digest.mjs';
@@ -28,7 +28,9 @@ export function createInsightCatalog(foods,{metadata={},sourceFactDigests={},nut
    const seen=new Set();
    for(let i=0;i<food.nutrients.length;i+=2){const key=food.nutrients[i];if(!Number.isSafeInteger(key)||key<0||key>=nutrientIds.length||seen.has(key))throw Error('Invalid compact catalog nutrient index.');seen.add(key);}
   }
-  index.set(food.id,food);search.set(food.id,[food.name,...(food.translations??[]).map(row=>row.name),...catalogSourceAliases(food.source)].join(' '));
+  index.set(food.id,food);
+  const names=[food.name,...(food.translations??[]).map(row=>row.name),...catalogSourceAliases(food.source)];
+  search.set(food.id,catalogSearchText(names.join(' ')));
   if(food.sample!==true&&food.category?.id){
    const {id,name}=food.category;
    const category=categories.get(id)??{id,name,foodCount:0,sourceNames:new Set()};
@@ -45,6 +47,13 @@ export function createInsightCatalog(foods,{metadata={},sourceFactDigests={},nut
   const entries=[];
   for(let i=0;i<food.nutrients.length;i+=2){const id=nutrientIds[food.nutrients[i]];if(!selected||selected.has(id))entries.push([id,food.nutrients[i+1]]);}
   return Object.fromEntries(entries);
+ }
+ function* matchingFoods(query){
+  const parsed=catalogQuery(query);
+  if(parsed.matchNone)return;
+  for(const food of foods){
+   if(food.sample!==true && matchesCatalogText(search.get(food.id),parsed))yield food;
+  }
  }
  const searchIndex=createCatalogSearchIndex(foods,metadata,valuesFor);
  let cachedClientIndex=null;
@@ -76,11 +85,20 @@ export function createInsightCatalog(foods,{metadata={},sourceFactDigests={},nut
   status:()=>({...metadata,available:true,foodCount:foods.length}),
   categories:()=>[...categories.values()].map(row=>({...row,sourceNames:[...row.sourceNames].sort()})).sort((a,b)=>a.name.localeCompare(b.name)||a.id.localeCompare(b.id)),
   identicalSnapshotIds(saved){return new Set(saved.filter(food=>food.readOnly===true&&catalogIdentity(food.source)&&sourceFactDigests[catalogSourceId(food)]===contentDigest(foodSourceFacts(food))).map(food=>food.id));},
+  ingredientCandidates(query,limit){
+   if(!Number.isInteger(limit)||limit<1||limit>100)invalid('Choose a candidate limit from 1 to 100.');
+   const items=[];
+   for(const food of matchingFoods(query)){
+    items.push({id:food.id,name:food.name,serving:food.serving,grams:food.grams??null,source:food.source});
+    if(items.length===limit)break;
+   }
+   return {items};
+  },
   projectInsights(selected,{query='',portions='none'}={}){
    if(!['none','first','all'].includes(portions)||!Array.isArray(selected)||!selected.length||selected.some(id=>!nutrients.some(n=>n.id===id)))invalid('Choose supported nutrient and serving options.');
-   const parsed=catalogQuery(query),ids=new Set([...selected,'calories']),needed=new Set(ids);
+   const ids=new Set([...selected,'calories']),needed=new Set(ids);
    if(ids.has('carbs')){needed.add('availableCarbs');needed.add('fiber');}
-   return foods.filter(food=>food.sample!==true&&matchesCatalogQuery(search.get(food.id),parsed)).map(food=>{
+   return Array.from(matchingFoods(query),food=>{
     const values=resolvedCarbohydrateValues(valuesFor(food,needed));
     const available=(food.portions??[]).filter(row=>typeof row.id==='string'&&row.id&&typeof row.label==='string'&&row.label&&known(row.grams)&&row.grams>0);
     return {id:food.id,name:food.name,serving:food.serving,grams:food.grams??null,...(food.milliliters!==undefined?{milliliters:food.milliliters}:{}),category:food.category??null,nutrients:Object.fromEntries([...ids].filter(id=>known(values[id])).map(id=>[id,values[id]])),portions:portions==='none'?[]:portions==='first'?available.slice(0,1):available,source:compactFoodSource(food.source)};

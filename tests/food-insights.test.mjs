@@ -8,6 +8,25 @@ import {createInsightCatalog,foodOracle,foodSuggestions,foodInsightOptions,previ
 const day='2026-11-14';
 const food=(id,name,values,extra={})=>({id,name,serving:'100 g',grams:100,nutrients:values,source:{name:'Test catalog'},...extra});
 function mealCatalog(){const map=new Map();for(const meal of MEAL_LIBRARY)for(const row of meal.ingredients)map.set(row.ref.id,food(row.ref.id,row.name,{calories:100,protein:10,carbs:10,fat:2,fiber:1},{source:{name:'USDA',datasetId:'sr-legacy-2018-04',fdcId:Number(row.ref.id.split(':').at(-1)),archiveSha256:row.archiveSha256}}));return [...map.values()];}
+test('ingredient candidates preserve catalog order, whole-word prefixes and ranking fields at the cutoff',()=>{
+ const rows=[
+  food('sample','Bean',{},{sample:true}),
+  food('middle','Soybean',{}),
+  food('translation','Haricot',{},{translations:[{name:'Red Béans'}]}),
+  food('red','Kidney bean, red',{}),
+  food('more','Red bean soup',{})
+ ];
+ delete rows[2].grams;
+ const catalog=createInsightCatalog(rows);
+ const find=(query,limit)=>catalog.ingredientCandidates(query,limit).items;
+ assert.deepEqual(find('BÉA red',2),[
+  {id:'translation',name:'Haricot',grams:null,serving:'100 g',source:{name:'Test catalog'}},
+  {id:'red',name:'Kidney bean, red',grams:100,serving:'100 g',source:{name:'Test catalog'}}
+ ]);
+ assert.deepEqual(find('bea',1).map(row=>row.id),['translation']);
+ assert.deepEqual(find('!!!',25),[]);
+ assert.deepEqual(find('',2).map(row=>row.id),['middle','translation']);
+});
 test('Oracle ranks stored facts, excludes missing and samples, keeps known zero and exact quantities',()=>{
  const state=initialState();state.foods=[];const adapter=createInsightCatalog([food('a','A',{calories:200,protein:12},{portions:[{id:'cup',label:'Cup',grams:150}]}),food('b','B',{calories:50,protein:4}),food('c','C',{calories:10}),food('d','D',{calories:10,protein:0}),food('sample','Sample',{protein:900},{sample:true})]);
  const grams=foodOracle(state,adapter,{nutrient:'protein'});assert.deepEqual(grams.items.map(r=>r.ref.id),['a','b','d']);assert.equal(grams.coverage.examined,4);assert.deepEqual(grams.items[0].sourceQuantity,{quantity:100,unit:'g'});

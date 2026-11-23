@@ -205,6 +205,17 @@ function queries(parsed, request) {
   return [...new Set(variants.filter(Boolean))].slice(0, 4);
 }
 
+function catalogSearches(requests,limit) {
+  const variants=requests.map(item=>queries(item.parsed,item.request));
+  const retrieval=[...new Set(Array.from({length:4},(_,rank)=>variants.map(list=>list[rank]).filter(Boolean)).flat())].slice(0,4);
+  return retrieval.map(query=>({query,limit:Math.min(100,Math.max(25,limit*4))}));
+}
+
+export function ingredientCatalogSearches(parsed,limit=5) {
+  if(parsed.isGroupHeader || !facts(parsed).identity.length)return [];
+  return catalogSearches(matchingRequests(parsed),limit);
+}
+
 export function matchIngredient(parsed, {foodCatalog = null, foods = [], limit = 5, supportsQuantity} = {}) {
   const request = facts(parsed), requests=matchingRequests(parsed), alternative=parsed.alternatives!==undefined;
   if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw Object.assign(new Error('Match limit must be from 1 to 100.'), {status: 400});
@@ -223,10 +234,8 @@ export function matchIngredient(parsed, {foodCatalog = null, foods = [], limit =
     candidates.set(key, {ref: {kind, id: food.id}, name: food.name, serving: food.serving, grams: food.grams, source: source(food), status: result.status, reasons: result.reasons, distance: result.distance, option:result.option,...(result.nameRelation?{nameRelation:result.nameRelation}:{})});
   };
   for (const food of foods) if(isActiveLibraryItem(food))add(food, 'library');
-  const variants=requests.map(item=>queries(item.parsed,item.request));
-  const retrieval=[...new Set(Array.from({length:4},(_,rank)=>variants.map(list=>list[rank]).filter(Boolean)).flat())].slice(0,4);
-  if (foodCatalog?.search) for (const query of retrieval) {
-    const result = foodCatalog.search(query, {offset: 0, limit: Math.min(100, Math.max(25, limit * 4))});
+  if (foodCatalog?.search) for (const {query,limit:searchLimit} of catalogSearches(requests,limit)) {
+    const result = foodCatalog.search(query, {offset: 0, limit: searchLimit});
     for (const item of result.items) add(item, 'catalog');
   }
 
