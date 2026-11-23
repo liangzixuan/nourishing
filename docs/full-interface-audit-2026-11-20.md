@@ -1175,6 +1175,20 @@ A disposable production account opened all three panes and saved two suggestions
 
 All 726 tests passed locally. CI passed 723 and skipped 3. Appwrite activated the site and three functions. All 280 checked assets matched the exact build. Both the 911-file offline inventory and the 248-file startup inventory matched. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/45087099107)
 
+### Concurrent account reads and HTTP 503s (1.1.64, released)
+
+During the 1.1.63 editor check, Appwrite recorded 23 HTTP 503 responses among 265 site requests. The browser captured three Suggested Meals responses with “The account is busy.” The Appwrite request logs supplied status codes for the other routes but did not identify their causes.
+
+On 1.1.63, starting an account request wrote a new version to the same lifecycle row as every other request for that account. Production measurement showed 12 successful reads advanced the version from 1 to 13. A controlled test overlapped registrations from separate service instances and reproduced the same 503 when the eight-second conflict retry window elapsed.
+
+Release 1.1.64 publishes a private registration for each request before reading the account’s deletion state. A request can start work only after confirming its registration is active. A deletion that wins first prevents the request from starting. A later deletion sees the registration and waits. The hourly worker can withdraw a registration that has spent an hour waiting to start. A concurrent activation prevents that withdrawal. Active work and operations with an unknown outcome retain their existing protection. The regression checks also cover lost registration and activation replies.
+
+On 1.1.64, the same 12 first-attempt reads across Diary, record options, Suggested Meals and Repeat Items returned HTTP 200. The account revision stayed at zero, and no operation markers remained. A second production account used the editor to save suggestions with and without a time, confirmed the saved entries after reload, and saved an 80 bpm Heart Rate reading. A deliberately interrupted browser read also exercised the Diary error banner and retry. Both production accounts were deleted.
+
+The production site logs recorded zero HTTP 503s across 719 requests from 2026-11-23T01:51:12Z through 2026-11-23T01:57:15Z. This window covers the concurrent reads and editor checks. The underlying network fault in the November 21 Repeat Items incident is still unknown.
+
+Release `e2166de`. All 728 tests passed locally. CI passed 725 and skipped 3. Appwrite activated the site and three functions. All 280 checked live assets matched the build. The 911-file offline and 248-file startup inventories matched. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/45095690750)
+
 ### Findings from all 333 retained states
 
 The private `.local/full-parity/reference-review-1.1.15.json` has one comparison note per reference. The retained numbers run through 335 and omit 38 and 277. Each note points to the capture used and records visible differences or limits. The index includes state 335, the final empty test day. For reference 78 the test removed the last temporary food entry and returned to the empty Diary through Foods. The reference also shows an orange “Error loading food” banner. The original trigger remains unknown. Release 1.1.63 verifies the user’s chosen recovery after a failed saved-item read. Some comparisons use older releases. Recheck a difference against current code or a matching fixture before changing the app. The behavior index links 333 retained states to at least one named flow. Each link covers the actions named in its receipt. The additional links include existing biometric, Water, Recipe, Targets and calendar tests. A fresh local check swiped a saved meal, exploded its five ingredients, canceled their selected deletion, then confirmed it and verified the unrelated entry survived reload. These counts describe the index only. A recorded Cancel check, for example, leaves Save and Delete unverified unless the receipt also exercises them.

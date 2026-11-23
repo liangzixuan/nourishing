@@ -11,7 +11,7 @@ The remaining audit continues from the release recorded below. Screen-level comp
 - Repository: `C:/Users/zixua/Documents/REA/nourishing-cloud`
 - GitHub: `https://github.com/liangzixuan/nourishing`, branch `master`.
 - Production: `https://nourishing.app`, Appwrite site and database, public account registration.
-- Verified production release **1.1.63** at `f802c5e821af3bdc574fad5401ab844650ffc720`. All 726 tests passed locally. CI passed 723 and skipped 3. Appwrite activated the site and three functions. All 280 checked assets matched the exact build. Both the 911-file offline inventory and the 248-file startup inventory matched. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/45087099107)
+- Verified production release **1.1.64** at `e2166de8cca9a641089ae15571f302456e419b85`. All 728 tests passed locally. CI passed 725 and skipped 3. Appwrite activated the site and three functions. All 280 checked live assets matched the build. The 911-file offline and 248-file startup inventories matched. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/45095690750)
 - This is a PWA for Android and iOS. Health Connect and deliberately removed native integrations are excluded. Do not restart native APK work or use Azure.
 - Product wording must say Nourishing, not Cronometer. Reference filenames and historical evidence can retain Cronometer.
 - Preserve unrelated untracked `android/` and `docs/superpowers/`. Never stage them automatically.
@@ -141,6 +141,7 @@ Keep personal screenshots, extracted text, credentials and local evidence out of
 - 1.1.2 matches the captured Light and Moderate Walking estimates and restores the default Potassium Oracle search. The audit records the exact Walking calculations, catalog ranking comparison, historical entries and remaining source limits. [1.1.2 audit](full-interface-audit-2026-11-20.md#112-walking-and-oracle-comparisons)
 - 1.1.3 adds chart units for fresh accounts, resolves previously unitless charts when exactly one measured unit is available, and adds three Single Metric sleep-stage choices. Adjust Meal exposes ingredient amounts and daily targets in the logged serving and account energy unit. [1.1.3 comparison](full-interface-audit-2026-11-20.md#113-chart-units-and-adjust-meal)
 - 1.1.4 fits standard chart menus between the header and bottom navigation. Chart pinch, rotation, Android Back and Zoom to Fit were exercised on the physical Pixel. The installed production PWA was checked separately. [1.1.4 device evidence](full-interface-audit-2026-11-20.md#114-physical-device-chart-checks)
+- 1.1.64 removes the shared revision write from account request registration. The [503 investigation and production checks](full-interface-audit-2026-11-20.md#concurrent-account-reads-and-http-503s-1164-released) cover the affected reads, the account deletion boundary and the remaining limits of the incident evidence.
 - 1.1.5 bounds concurrent background reads on a stale cache. [Incident and production verification](full-interface-audit-2026-11-20.md#repeat-items-and-background-cache-reads-115-released)
 - A one-time fast scheduled offline can expire before the first upload. The server applies its existing time validation. The November 21 browser checks cover queued history changes, starts, stops and deletion.
 
