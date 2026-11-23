@@ -1,3 +1,4 @@
+import {pushBackHandler} from './back-history.js';
 import {mountRecipeEditor} from './recipe-editor.js';
 import {mountMealEditor} from './composite-editor.js';
 import {localWorkspaceState} from './local-engine.js';
@@ -14,14 +15,14 @@ const name=(collection,row)=>collection==='notes'?row.text:collection==='biometr
 const groupIcons={time:'/shell-source/navigation/plus.svg',sort:'/diary-action-icons/sort.svg',previous:'/diary-action-icons/content-copy.svg',recipe:'/diary-action-icons/plus-circle-outline.svg',meal:'/diary-action-icons/plus-circle-outline.svg',quickAdd:'/diary-action-icons/pencil.svg',copy:'/diary-action-icons/content-copy.svg',paste:'/diary-action-icons/content-paste.svg',nutrition:'/diary-action-icons/format-list-bulleted.svg',delete:'/repeat-source/delete.svg'};
 const button=(label,action,disabled=false)=>`<button type="button" data-diary-tool="${action}" ${disabled?'disabled':''}>${label}</button>`;
 export function createDiaryTools({diary,date,show,close,header,content,render,onChange,onComplete,onReport,onShare,onMealAction,onNutrition,openEntry}){
- let selecting=false,selected=new Set(),clipboard=null;
+ let selectionBack=null,selected=new Set(),clipboard=null;
  const prepare=(input,options)=>prepareLocalDiaryReview(input,diary().revision,options);
  const rows=()=>['entries','notes','biometrics'].flatMap(collection=>(diary()?.[collection]??[]).map(row=>({collection,row})));
  const selection=()=>({date:date(),scope:'selected',records:rows().filter(({collection,row})=>selected.has(key(collection,row.id))).map(({collection,row})=>({collection,id:row.id}))});
  const all=()=>({date:date(),scope:'day'});
  const refs=source=>{if(source.scope==='selected')return rows().filter(({collection,row})=>source.records.some(ref=>ref.collection===collection&&ref.id===row.id));return rows().filter(({row})=>source.scope==='day'||row.group===source.group);};
  const groupSelection=(group,view=diary(),day=date())=>({date:day,scope:'selected',records:view.recordDisplay.groups.find(row=>row.name===group)?.records??[]});
- function reset(){selecting=false;selected.clear();}
+ function reset(){selectionBack?.release();selectionBack=null;selected.clear();}
  async function save(type,payload,revision=diary().revision,projection={}){
   const result=await queueCommand(revision,type,payload,{projection});reset();close();void onChange();return result;
  }
@@ -61,7 +62,12 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
 
  }
 
- function select(source){selecting=true;selected=new Set(refs(source).map(({collection,row})=>key(collection,row.id)));close();render();}
+ function select(source){
+  close();
+  selectionBack??=pushBackHandler(()=>{reset();render();});
+  selected=new Set(source?refs(source).map(({collection,row})=>key(collection,row.id)):[]);
+  render();
+ }
  const actions={copy:capture,paste:copy,clear,move,time,meal:source=>reusable(source,'meal'),recipe:source=>reusable(source,'recipe'),nutrition:source=>onNutrition(source),delete:remove};
  function menuSheet(label,items,choose,style=''){
   show(`<section class="diary-menu-sheet ${style}" aria-label="${e(label)}"><h2 id="sheet-title" class="diary-menu-title">${e(label)}</h2>${items.map(item=>button((item.icon?`<img src="${e(item.icon)}" alt=""><span>${e(item.label)}</span>`:e(item.label)),item.id,item.disabled)).join('')}<p role="status" class="sheet-message"></p></section>`);
@@ -87,7 +93,7 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
   actionForm(coreText('diary.groupQuickAdd'),`<div class="diary-tools-choices">${view.quickAddActions.map(({id})=>`<label><input type="radio" name="action" value="${e(id)}" ${id===current?'checked':''}><span>${e(t('shortcut.'+id))}</span></label>`).join('')}</div>`,values=>save('display.save',{diaryQuickAdd:{version:1,shortcuts:[...policy.shortcuts.filter(row=>row.group!==group),{group,action:values.action}]}}));
  }
  function menu(){
-  if(selecting)return selectionMenu();
+  if(selectionBack)return selectionMenu();
   const items=[
    {id:'complete',label:diary().completed?t('diary.reopen'):coreText('diary.completeDay')},
    {id:'report',label:coreText('diary.dailyReport')},
@@ -102,7 +108,7 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
   ];
   const icons={complete:'/diary-action-icons/check-circle.svg',report:groupIcons.nutrition,share:'/diary-action-icons/share-nodes.svg','sort-all':'/diary-action-icons/sort-time.svg',select:groupIcons.recipe,copy:groupIcons.copy,paste:groupIcons.paste,'copy-previous':'/diary-action-icons/copy-previous.svg',clear:'/diary-action-icons/clear-amounts.svg',delete:groupIcons.delete};
   menuSheet(t('nav.diary'),items.map(item=>({...item,icon:icons[item.id]})),async action=>{
-   if(action==='select'){selecting=true;selected.clear();close();render();}
+   if(action==='select')select();
    else if(action==='complete'){await onComplete();close();}
    else if(action==='report'){close();onReport();}
    else if(action==='share')onShare();
@@ -200,12 +206,12 @@ export function createDiaryTools({diary,date,show,close,header,content,render,on
   content.querySelectorAll('[data-diary-tool]').forEach(b=>b.onclick=()=>{const action=b.dataset.diaryTool;if(action==='edit')onEdit();else if(action==='select')select(source);else actions[action](source);});
  }
  return {
-  menu,groupMenu,recordMenu,reset,selection:()=>selecting?selection():null,
+  menu,groupMenu,recordMenu,reset,selection:()=>selectionBack?selection():null,
   removeRecord(collection,id){if(!diary().completed)return remove({date:date(),scope:'selected',records:[{collection,id}]});},
-  selectBox(collection,row){return selecting?`<input type="checkbox" class="diary-select" data-tool-select data-collection="${collection}" data-id="${e(row.id)}" aria-label="${e(coreText('tools.selectName',{name:name(collection,row)}))}" ${selected.has(key(collection,row.id))?'checked':''}>`:'';},
-  groupBox(group){const members=refs(groupSelection(group));return selecting?`<input type="checkbox" class="diary-select" data-tool-select-group="${e(group)}" aria-label="${e(coreText('tools.selectName',{name:group}))}" ${!members.length?'disabled':members.every(({collection,row})=>selected.has(key(collection,row.id)))?'checked':''}>`:'';},
-  selectionHeader(icons){return selecting?`<div class="diary-selection-header"><button type="button" class="icon-button" data-diary-tool="done" aria-label="${e(t('mobileFoodEditor.back'))}">${icons.back}</button><h2>${e(coreText('diary.multiSelect'))}</h2><button type="button" class="icon-button" data-diary-menu aria-label="${e(coreText('diary.selectedActions'))}">${icons.more}</button></div>`:'';},
-  toggleRow(target){if(!selecting||target.closest('input'))return false;const row=target.closest('[data-diary-record]');if(!row)return false;const k=key(row.dataset.collection,row.dataset.id);selected.has(k)?selected.delete(k):selected.add(k);render();return true;},
+  selectBox(collection,row){return selectionBack?`<input type="checkbox" class="diary-select" data-tool-select data-collection="${collection}" data-id="${e(row.id)}" aria-label="${e(coreText('tools.selectName',{name:name(collection,row)}))}" ${selected.has(key(collection,row.id))?'checked':''}>`:'';},
+  groupBox(group){const members=refs(groupSelection(group));return selectionBack?`<input type="checkbox" class="diary-select" data-tool-select-group="${e(group)}" aria-label="${e(coreText('tools.selectName',{name:group}))}" ${!members.length?'disabled':members.every(({collection,row})=>selected.has(key(collection,row.id)))?'checked':''}>`:'';},
+  selectionHeader(icons){return selectionBack?`<div class="diary-selection-header"><button type="button" class="icon-button" data-diary-tool="done" aria-label="${e(t('mobileFoodEditor.back'))}">${icons.back}</button><h2>${e(coreText('diary.multiSelect'))}</h2><button type="button" class="icon-button" data-diary-menu aria-label="${e(coreText('diary.selectedActions'))}">${icons.more}</button></div>`:'';},
+  toggleRow(target){if(!selectionBack||target.closest('input'))return false;const row=target.closest('[data-diary-record]');if(!row)return false;const k=key(row.dataset.collection,row.dataset.id);selected.has(k)?selected.delete(k):selected.add(k);render();return true;},
   change(event){const input=event.target;if(input.hasAttribute('data-tool-select')){const k=key(input.dataset.collection,input.dataset.id);input.checked?selected.add(k):selected.delete(k);render();return true;}if(input.hasAttribute('data-tool-select-group')){for(const {collection,row}of refs(groupSelection(input.dataset.toolSelectGroup))){const k=key(collection,row.id);input.checked?selected.add(k):selected.delete(k);}render();return true;}return false;},
   action(action){if(action==='done'){reset();render();return;}actions[action]?.(selection());},
   dispose(){reset();clipboard=null;}

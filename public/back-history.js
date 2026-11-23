@@ -1,72 +1,70 @@
 /**
- * Shared LIFO browser-history back stack for PWA sub-screens and modal sheets.
- * The browser reports native Back without a gesture origin or edge direction.
+ * Sub-screens and sheets share one browser history entry. The JS stack owns
+ * their order, so disposing a buried screen never removes another screen.
  */
 const stack = [];
-let nextId = 0;
-let pendingProgrammaticPops = 0;
-let listening = false;
-let batchedReleases = null;
+const marker = 'nourishing-back-stack';
+let draining = false;
+let handling = false;
 
-export function requestAppBack(){
-  if(!stack.length)return false;
-  history.back();
-  return true;
+export function hasAppBack() {
+  return stack.length > 0;
 }
 
-// Closing several owned layers for Home needs one browser traversal. Separate
-// back() calls in the same event can coalesce into a single popstate.
-export function batchBackReleases(action){
-  batchedReleases=0;
-  try{return action();}
-  finally{
-    const count=batchedReleases;
-    batchedReleases=null;
-    if(count){
-      pendingProgrammaticPops++;
-      history.go(-count);
-    }
+function atMarker() {
+  return history.state?.nourishingBack === marker;
+}
+
+function syncHistory() {
+  if (handling || draining) return;
+  if (hasAppBack()) {
+    if (!atMarker()) history.pushState({...history.state, nourishingBack: marker}, '');
+  } else if (atMarker()) {
+    // A replacement sheet can open before this traversal reaches the base.
+    // The popstate listener restores the marker for the live stack.
+    draining = true;
+    history.back();
   }
 }
 
-function ensureListener() {
-  if (listening) return;
-  listening = true;
+export function requestAppBack() {
+  const entry = stack.at(-1);
+  if (!entry) return false;
+  if (handling) return true;
+  handling = true;
+  try {
+    if (entry.onBack() !== 'keep') entry.release();
+  } finally {
+    handling = false;
+    syncHistory();
+  }
+  return true;
+}
+
+if (typeof window !== 'undefined' && window.history) {
   window.addEventListener('popstate', () => {
-    if (pendingProgrammaticPops > 0) {
-      pendingProgrammaticPops--;
-      return;
-    }
-    const entry = stack.pop();
-    if (!entry) return;
-    entry.active = false;
-    const result = entry.onBack();
-    if (result === 'keep') {
-      entry.active = true;
-      stack.push(entry);
-      history.pushState({nourishingBack: ++nextId}, '');
+    if (draining || atMarker()) {
+      draining = false;
+      syncHistory();
+    } else {
+      requestAppBack();
     }
   });
+  // A reload starts at the root even if a sheet owned the current entry.
+  syncHistory();
 }
 
 export function pushBackHandler(onBack) {
-  ensureListener();
-  const entry = {id: ++nextId, onBack, active: true};
-  stack.push(entry);
-  history.pushState({nourishingBack: entry.id}, '');
-  return {
-    release({popHistory = true} = {}) {
-      if (!entry.active) return;
-      entry.active = false;
-      const index = stack.lastIndexOf(entry);
-      if (index !== -1) stack.splice(index, 1);
-      if(batchedReleases!==null){batchedReleases++;return;}
-      if (popHistory) {
-        pendingProgrammaticPops++;
-        history.back();
-      } else {
-        history.replaceState(null, '');
-      }
+  const entry = {
+    onBack,
+    release() {
+      const index = stack.indexOf(entry);
+      if (index < 0) return;
+      stack.splice(index, 1);
+      syncHistory();
     },
   };
+  stack.push(entry);
+  syncHistory();
+  return entry;
 }

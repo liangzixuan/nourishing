@@ -46,7 +46,7 @@ test('first center swipe works in both directions after Diary to Discover remoun
 });
 
 
-test('edge gestures return to Diary, step through nested destinations and respect an editor saving',async()=>{
+test('both edges step back once, respect an editor saving and leave tab roots to the host',async()=>{
  const f=await fixture();let finishSave;
  try{
   const {page}=f;await page.goto(f.base+'/diary');await page.locator('.md-diary').waitFor();
@@ -56,12 +56,34 @@ test('edge gestures return to Diary, step through nested destinations and respec
    for(let i=1;i<=6;i++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:from.x+(to.x-from.x)*i/6,y:from.y+(to.y-from.y)*i/6}]});
    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   }
-  const home=()=>drag({x:4,y:430},{x:160,y:434});
-  const back=()=>drag({x:407,y:430},{x:240,y:434});
-  await page.locator('#discover-tab').click();await page.locator('[data-tab=charts]').click();
+  const left=()=>drag({x:4,y:430},{x:160,y:434});
+  const right=()=>drag({x:407,y:430},{x:240,y:434});
+  await page.evaluate(()=>{
+   window.backMotion=[];
+   const animate=Element.prototype.animate;
+   Element.prototype.animate=function(...args){
+    const animation=animate.apply(this,args);
+    if(animation.id==='nourishing-back-reveal'){
+     const {duration,easing}=animation.effect.getTiming();
+     window.backMotion.push({duration,easing,frames:animation.effect.getKeyframes().map(({translate,opacity})=>({translate,opacity}))});
+    }
+    return animation;
+   };
+  });
+  await page.locator('#discover-tab').click();
+  for(const control of ['shell-newsfeed','shell-settings']){
+   for(const swipe of [left,right]){
+    await page.locator('[data-discover="'+control+'"]:enabled').click();
+    await page.locator('#sheet[open]').waitFor();await swipe();await page.locator('#sheet').waitFor({state:'hidden'});
+    await page.locator('.cloud-dashboard').waitFor();
+   }
+  }
+  const reference=await page.evaluate(()=>window.backMotion.slice());
+  assert.equal(reference.length,4);assert.ok(reference.every(effect=>JSON.stringify(effect)===JSON.stringify(reference[0])));
+  await page.locator('[data-tab=charts]').click();
   await page.waitForFunction(()=>!document.documentElement.classList.contains('discover-transition'));
-  await back();await page.locator('.md-diary').waitFor();
-  await back();assert.equal(await page.locator('.md-diary').count(),1);
+  await right();await left();
+  assert.equal(await page.locator('[data-tab=charts]').getAttribute('aria-current'),'page');
   await page.locator('#settings-tab').click();await page.locator('[data-more-open=support]').click();
   await page.locator('[data-more-open=manual]').click();
   await drag({x:406,y:430},{x:377,y:431});assert.ok(await page.locator('.mm-manual-topic').count());
@@ -69,36 +91,45 @@ test('edge gestures return to Diary, step through nested destinations and respec
   await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:265,y:431}]});
   await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});assert.ok(await page.locator('.mm-manual-topic').count());
   await drag({x:407,y:540},{x:388,y:360});assert.ok(await page.locator('.mm-manual-topic').count());
-  await back();await page.locator('[data-more-open=manual]').waitFor();
-  await page.locator('[data-more-open=manual]').click();await home();await page.locator('.md-diary').waitFor();
+  await right();await page.locator('[data-more-open=manual]').waitFor();
+  assert.deepEqual(await page.evaluate(()=>window.backMotion.at(-1)),reference[0]);
+  await page.locator('[data-more-open=manual]').click();await left();await page.locator('[data-more-open=manual]').waitFor();
+  await right();await page.locator('[data-more-open=support]').waitFor();
   await page.locator('#settings-tab').click();await page.locator('[data-more-open=account]').click();
   await page.locator('[data-account-edit=name]').click();
   const editor=page.locator('.account-edit-dialog');
   await editor.getByLabel('Name',{exact:true}).fill('Unsaved');
-  await back();await editor.waitFor({state:'detached'});
+  await right();await editor.waitFor({state:'detached'});
   await page.locator('[data-account-edit=name]').filter({hasText:'Alice Example'}).click();
   await editor.getByLabel('Name',{exact:true}).fill('Saved');
   const saving=new Promise(resolve=>page.route('**/api/account/update',async route=>{
    await new Promise(done=>{finishSave=done;resolve();});await route.continue();
   }));
   await editor.getByRole('button',{name:'Save',exact:true}).click();await saving;
-  await home();assert.equal(await editor.isVisible(),true);
+  await left();assert.equal(await editor.isVisible(),true);
   finishSave();await editor.waitFor({state:'detached'});await page.locator('[data-account-edit=name]').filter({hasText:'Saved'}).waitFor();
-  await page.locator('[data-account-edit=name]').click();await home();await page.locator('.md-diary').waitFor();
+  await page.locator('[data-account-edit=name]').click();await left();await editor.waitFor({state:'detached'});await page.locator('[data-account-edit=name]').waitFor();
+  await left();await page.locator('[data-more-open=account]').waitFor();
   await page.locator('#settings-tab').click();await page.locator('#add-food').click();
-  await page.locator('[data-am=edit]').click();await back();await page.locator('[data-am=edit]').waitFor();
-  await page.locator('[data-am=edit]').click();await home();await page.locator('.md-diary').waitFor();
+  await page.locator('[data-am=edit]').click();await right();await page.locator('[data-am=edit]').waitFor();
+  await page.locator('[data-am=edit]').click();await left();await page.locator('[data-am=edit]').waitFor();await right();await page.locator('dialog[open]').waitFor({state:'detached'});
+  await page.locator('#diary-tab').click();
   await page.locator('[data-md-calendar]').click();await page.locator('[data-mdc-legend]').click();
-  await back();await page.locator('.mdc-legend').waitFor({state:'detached'});assert.equal(await page.locator('.mdc-dialog').isVisible(),true);
-  await page.locator('[data-mdc-legend]').click();await home();await page.locator('.mdc-dialog').waitFor({state:'detached'});
+  await right();await page.locator('.mdc-legend').waitFor({state:'detached'});assert.equal(await page.locator('.mdc-dialog').isVisible(),true);
+  await page.locator('[data-mdc-legend]').click();await left();await page.locator('.mdc-legend').waitFor({state:'detached'});await right();await page.locator('.mdc-dialog').waitFor({state:'detached'});
   await page.locator('#settings-tab').click();await page.locator('#add-food').click();await page.locator('[data-am=select][data-id=food]').click();
-  await page.locator('[data-mfs=options]').click();await back();await page.locator('.mfs-overlay').waitFor({state:'hidden'});
+  await page.locator('[data-mfs=options]').click();await right();await page.locator('.mfs-overlay').waitFor({state:'hidden'});
   assert.equal(await page.locator('#food-search').isVisible(),true);
-  await page.locator('[data-mfs=options]').click();await home();await page.locator('.md-diary').waitFor();
+  await page.locator('[data-mfs=options]').click();await left();await page.locator('.mfs-overlay').waitFor({state:'hidden'});assert.equal(await page.locator('#food-search').isVisible(),true);
+  await right();await page.locator('#sheet').waitFor({state:'hidden'});
   await page.locator('#settings-tab').click();await page.locator('[data-more-open=support]').click();
   await page.evaluate(()=>history.back());await page.locator('[data-more-open=support]').waitFor();
-  await page.evaluate(()=>history.back());await page.locator('.md-diary').waitFor();
-  await page.locator('#settings-tab').click();await back();await page.locator('.md-diary').waitFor();
+  await right();await left();await page.locator('.mm-primary').waitFor();
+  await page.locator('#diary-tab').click();await left();await right();await page.locator('.md-diary').waitFor();
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.locator('#settings-tab').click();await page.locator('[data-more-open=support]').click();
+  const before=await page.evaluate(()=>window.backMotion.length);await left();
+  await page.locator('[data-more-open=support]').waitFor();assert.equal(await page.evaluate(()=>window.backMotion.length),before);
   assert.equal(await page.locator('dialog[open]').count(),0);assert.deepEqual(f.errors,[]);
  }finally{finishSave?.();await f.close();}
 });

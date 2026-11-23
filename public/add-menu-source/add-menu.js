@@ -27,7 +27,7 @@ export class AddMenu {
   this.trigger=document.activeElement;this.nativeBack=event=>{event.preventDefault();this.back();};window.addEventListener('nourishing-back',this.nativeBack,true);
   this.dialog=document.createElement('dialog');this.dialog.className='am-sheet';this.dialog.setAttribute('aria-label',coreText('add.title'));
   this.dialog.addEventListener('click',event=>this.click(event));
-  this.dialog.addEventListener('cancel',event=>{event.preventDefault();if(event.detail?.destination==='home')this.close();else this.back();});
+  this.dialog.addEventListener('cancel',event=>{event.preventDefault();this.back();});
   this.dialog.addEventListener('close',()=>this.dispose());
   this.dialog.addEventListener('pointerdown',event=>this.pointerDown(event));
   this.dialog.addEventListener('pointermove',event=>this.pointerMove(event));

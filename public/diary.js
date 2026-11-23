@@ -5,8 +5,8 @@ import './pwa.js';
 import {startBackgroundWrites,onBackgroundWriteStatus} from './background-writes.js';
 import {localLibraryItem, localDiaryView} from './local-engine.js';
 import {diaryGroups,defaultDiaryGroup,defaultDiaryQuickAddAction,walkingEfforts,priorWalkingEfforts} from './local-diary-projection.js';
-import {batchBackReleases,pushBackHandler,requestAppBack} from './back-history.js';
-import {activeOverlay,bindEdgeNavigation,dismissOverlay,openOverlays} from './edge-navigation.js';
+import {hasAppBack,pushBackHandler,requestAppBack} from './back-history.js';
+import {activeOverlay,bindEdgeNavigation,dismissOverlay} from './edge-navigation.js';
 import {startDeviceSync, warmDeviceViews} from './device-sync.js';
 import {startPrivateImages} from './private-images.js';
 import {sameDiarySnapshot} from './diary-snapshot.js';
@@ -115,17 +115,13 @@ let searchId = 0;
 let group = defaultDiaryGroup;
 let selectedDiaryGroup = null;
 let sheetBackHandle = null;
-let tabBackHandle = null;
+let diaryDetailBack = null;
 let repeatsBackHandle = null;
 
 function handleSheetBack() {
   if (!sheet.open) return;
-  const event = new CustomEvent('nourishing-back', {cancelable: true});
-  window.dispatchEvent(event);
-  if (event.defaultPrevented) return sheet.open ? 'keep' : undefined;
-  if (pickerCleanup?.back?.()) return 'keep';
-  sheetBackHandle = null;
-  close({popHistory: false});
+  dismissOverlay(activeOverlay()??sheet);
+  if(sheet.open)return 'keep';
 }
 
 function show(html) {
@@ -140,14 +136,14 @@ function show(html) {
   sheet.scrollTop = 0;
 }
 
-function close({popHistory = true} = {}) {
+function close() {
   pickerCleanup?.();
   pickerCleanup = null;
   searchId++;
   if (sheetBackHandle) {
     const handle = sheetBackHandle;
     sheetBackHandle = null;
-    handle.release({popHistory});
+    handle.release();
   }
   sheet.close();
   content.replaceChildren();
@@ -193,29 +189,27 @@ function requestSheetExit(){
   if(sheet.dispatchEvent(new Event('nourishing-before-exit',{cancelable:true})))close();
 }
 
-function navigateFromEdge(destination){
-  if(!diary)return;
-  // A new dialog opened by a cancellation belongs to its owner (for example
-  // a discard confirmation). Only dismiss layers present at the gesture start.
-  const layers=openOverlays();
-  let overlay=activeOverlay();
-  while(overlay){
-    if(!layers.delete(overlay))return;
-    if(overlay===sheet&&destination==='home'){
-      requestSheetExit();
-    }else dismissOverlay(overlay,destination);
-    if(destination==='back')return;
-    overlay=activeOverlay();
+function edgeBack(){
+  const overlay=activeOverlay();
+  // A blocked save can consume Back without changing the screen.
+  const changes=new MutationObserver(()=>{});
+  changes.observe(document.body,{childList:true,subtree:true,attributes:true});
+  try{
+    if(overlay)dismissOverlay(overlay);
+    else if(window.dispatchEvent(new CustomEvent('nourishing-back',{cancelable:true})))requestAppBack();
+  }finally{
+    const changed=changes.takeRecords().length>0;
+    changes.disconnect();
+    if(changed&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+      const surface=activeOverlay()??page;
+      surface.animate([{translate:'-16px 0',opacity:.88},{translate:'0 0',opacity:1}],
+        {id:'nourishing-back-reveal',duration:160,easing:'ease-out'});
+    }
   }
-  if(destination==='back'){
-    const event=new CustomEvent('nourishing-back',{cancelable:true});
-    if(!window.dispatchEvent(event)||requestAppBack())return;
-  }
-  navigate('diary');
 }
-bindEdgeNavigation(destination=>{
-  if(destination==='home')batchBackReleases(()=>navigateFromEdge(destination));
-  else navigateFromEdge(destination);
+bindEdgeNavigation({
+  inside:()=>Boolean(activeOverlay()||hasAppBack()||dateBar.querySelector('details[open]')),
+  back:edgeBack,
 });
 
 async function load({reuseUnchanged = false, selectedDate} = {}) {
@@ -323,6 +317,8 @@ function selectTab(id) {
 
 let diaryFastingAction, diaryTargets;
 function leaveView() {
+  diaryDetailBack?.release();
+  diaryDetailBack=null;
   foodLoadBanner.clear();
   groupAddMenu?.close(false);
   groupAddMenu = null;
@@ -337,7 +333,7 @@ function leaveView() {
   diaryCalendar?.close();
   diaryTools.reset();
   if (repeatsBackHandle) {
-    repeatsBackHandle.release({popHistory: false});
+    repeatsBackHandle.release();
     repeatsBackHandle = null;
   }
   summaryPanel?.dispose();
@@ -581,7 +577,7 @@ function handleRecordRowClick(target) {
 
 async function mealAction(action,entry){
   if(action==='repeat'){
-    close({popHistory:false});openRepeatsView({mealId:entry.mealId,amount:entry.amount??1,quantity:entry.quantity,unit:entry.unit,group:entry.group,time:entry.time,startDate:entry.date});return;
+    close();openRepeatsView({mealId:entry.mealId,amount:entry.amount??1,quantity:entry.quantity,unit:entry.unit,group:entry.group,time:entry.time,startDate:entry.date});return;
   }
   if(action==='original'||action==='copy-edit'){
     navigate('foods');await library?.openItem('meal',entry.mealId,undefined,{copy:action==='copy-edit'});return;
@@ -713,20 +709,15 @@ function navigate(next, initialTab = 'dashboard', reportDate) {
     },
   };
   if (next === 'diary') {
-    if (tabBackHandle) {
-      tabBackHandle.release({popHistory: false});
-      tabBackHandle = null;
-    }
     selectTab('diary-tab');
     const reuseUnchanged = diary?.date === date;
     if (reuseUnchanged) render();
     return load({reuseUnchanged});
   }
-  if (!tabBackHandle) {
-    tabBackHandle = pushBackHandler(() => {
-      if (view === 'diary') return;
+  if (next==='nutrient-targets'||next==='water') {
+    diaryDetailBack = pushBackHandler(() => {
       if (diaryTargets?.back()||waterPanel?.back()) return 'keep';
-      tabBackHandle = null;
+      diaryDetailBack = null;
       navigate('diary');
     });
   }
@@ -1105,10 +1096,6 @@ function photoLog(initialGroup) {
       if (switchingView) {
         leaveView();
         view = 'diary';
-        if (tabBackHandle) {
-          tabBackHandle.release({popHistory: false});
-          tabBackHandle = null;
-        }
         selectTab('diary-tab');
       }
       const sameDate = payload.date === date;
@@ -1186,15 +1173,11 @@ window.addEventListener('pagehide', () => {
   diaryTools.dispose();
   loadId++;
   leaveView();
-  if (tabBackHandle) {
-    tabBackHandle.release({popHistory: false});
-    tabBackHandle = null;
-  }
   view = 'diary';
   pendingDiaryAction = null;
   clearPending();
   diary = null;
-  close({popHistory: false});
+  close();
   page.replaceChildren();
 });
 

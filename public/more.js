@@ -161,11 +161,11 @@ export function mountMore({
     });
   }
 
-  function popDestinationHistory({popHistory = true} = {}) {
+  function popDestinationHistory() {
     if (!backHandle) return;
     const handle = backHandle;
     backHandle = null;
-    handle.release({popHistory});
+    handle.release();
   }
 
   function heading(title) {
@@ -192,9 +192,9 @@ export function mountMore({
     window.scrollTo(0, scroll);
   }
 
-  function exitToHome({fromPopState = false} = {}) {
+  function exitToHome() {
     renderHome();
-    if (!fromPopState) popDestinationHistory();
+    popDestinationHistory();
   }
 
   function filter() {
@@ -445,7 +445,7 @@ export function mountMore({
       disposed = true;
       reset();
       events.abort();
-      popDestinationHistory({popHistory: false});
+      popDestinationHistory();
       document.body.classList.remove('more-mobile', 'more-destination');
     },
   };

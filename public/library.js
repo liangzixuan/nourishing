@@ -34,7 +34,7 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
   deleteDialog.dismiss();
  };
  window.addEventListener('nourishing-back',backFromDelete,{capture:true});
- const leaveCollection=({popHistory=true}={})=>{confirmation.clear();screen='home';query='';if(collectionBack){const handle=collectionBack;collectionBack=null;handle.release({popHistory});}render();};
+ const leaveCollection=()=>{confirmation.clear();screen='home';query='';if(collectionBack){const handle=collectionBack;collectionBack=null;handle.release();}render();};
  const alive=id=>!disposed&&id===serial;
  async function reload(){
   const id=++serial,{ticket}=await readDeviceCache('/api/library'),apply=value=>{if(alive(id)){data={...value,ticket};render();}};
@@ -153,5 +153,5 @@ export function mountLibrary({page,show,close,header,content,date,openEntry,onCh
    const editorMount=itemKind==='recipe'?mountRecipeEditor:mountMealEditor;const mounted=editorMount({...importOptions,onImported:prepared=>editor('recipe',null,prepared.recipe,{imported:prepared}),saved,data,draft,show,close,content,date,onSaved:savedChange,onAction:action,openEntry});if(itemKind==='recipe')recipeEditor=mounted;else mealEditor=mounted;return;
   }
  }
- render();reload();return {reload,openItem,entryAdded,dispose(){disposed=true;confirmation.dispose();serial++;window.removeEventListener('nourishing-back',backFromDelete,{capture:true});deleteDialog?.close(false);if(collectionBack){collectionBack.release({popHistory:false});collectionBack=null;}retirement.dispose();foodEditor?.dispose();mealEditor?.dispose();recipeEditor?.dispose();extrasCleanup?.();optionsSheet?.close(false);itemMenu.dispose();data=null;page.removeEventListener('click',select);headerRoot?.removeEventListener('click',select);document.body.classList.remove('foods-home-mobile','mobile-library');}};
+ render();reload();return {reload,openItem,entryAdded,dispose(){disposed=true;confirmation.dispose();serial++;window.removeEventListener('nourishing-back',backFromDelete,{capture:true});deleteDialog?.close(false);if(collectionBack){collectionBack.release();collectionBack=null;}retirement.dispose();foodEditor?.dispose();mealEditor?.dispose();recipeEditor?.dispose();extrasCleanup?.();optionsSheet?.close(false);itemMenu.dispose();data=null;page.removeEventListener('click',select);headerRoot?.removeEventListener('click',select);document.body.classList.remove('foods-home-mobile','mobile-library');}};
 }
