@@ -1245,6 +1245,14 @@ Verified production release **1.2.4** at `e06b0bedaef02489ba8cab499265cf778a8f47
 
 The installed iPad PWA showed only Bulk Delete Diary Data and Delete My Account. Searching More for Device storage returned no matches. Browser tests also covered offline Diary reload, queued edits and the automatic nutrient download.
 
+### Notifications and the More search keyboard (1.2.5, released)
+
+Verified production release **1.2.5** at `5e2838fe57bf8160d6084c65517e6d59df3f21ce`. All 16 focused local tests passed. CI passed 738 and skipped 3. Appwrite activated the site and three functions. All 300 checked live assets matched the build, along with the 914-file offline and 249-file startup inventories. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/45133087827)
+
+On the installed iPad, Allow Notifications became usable in 34 and 19 ms on two visits. The same check on 1.2.4 took 1308 and 585 ms. A disposable production account registered one Chrome push subscription, reopened the checked switch without another connection read, and disconnected. The test account was deleted.
+
+The More search tab bar hid when a touch browser viewport shrank and returned when it expanded with the query and focus intact. Production Chrome used a simulated keyboard resize. Remote focus on the physical iPad left its viewport at the same height. The Pixel was unavailable over USB.
+
 ### Findings from all 333 retained states
 
 The private `.local/full-parity/reference-review-1.1.15.json` has one comparison note per reference. The retained numbers run through 335 and omit 38 and 277. Each note points to the capture used and records visible differences or limits. The index includes state 335, the final empty test day. For reference 78 the test removed the last temporary food entry and returned to the empty Diary through Foods. The reference also shows an orange “Error loading food” banner. The original trigger remains unknown. Release 1.1.63 verifies the user’s chosen recovery after a failed saved-item read. Some comparisons use older releases. Recheck a difference against current code or a matching fixture before changing the app. The behavior index links 333 retained states to at least one named flow. Each link covers the actions named in its receipt. The additional links include existing biometric, Water, Recipe, Targets and calendar tests. A fresh local check swiped a saved meal, exploded its five ingredients, canceled their selected deletion, then confirmed it and verified the unrelated entry survived reload. These counts describe the index only. A recorded Cancel check, for example, leaves Save and Delete unverified unless the receipt also exercises them.
