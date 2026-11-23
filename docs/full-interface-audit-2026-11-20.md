@@ -1261,6 +1261,35 @@ On the Pixel 10 Pro XL, More to Account reproduced a left-edge slide before the 
 
 From the central Add menu, a typed Search Food query and Back from either side left the Add button without a visible focus ring. The browser suite also checked keyboard entry and focus return. Consecutive physical gestures on the installed release followed Dashboard Settings to Display to More and then the Android launcher, one step per swipe.
 
+### Photo Log recognition latency on the Pixel (1.2.7, released)
+
+Verified production release **1.2.7** at `684a016c211ca3c439217be7c79b5a0ee3f18756`. All 27 focused local tests passed. CI passed 740 and skipped 3. Appwrite activated the site and three functions. All 300 checked live assets matched the build, along with the 914-file offline and 249-file startup inventories. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/45139893890)
+
+Pixel 10 Pro XL, installed PWA, same approved meal image and model on each run. Measured from file selection through a painted review. Four runs before the change took 17.66 s, 9.74 s, 7.24 s, 7.78 s. The first four after deployment took 16.32 s, 9.70 s, 10.26 s, 10.30 s. Four more after deployment settled took 10.29 s, 9.38 s, 14.80 s, 9.18 s. The median went from 8.76 s to 10.27 s across all eight new scans. These runs took place in separate time windows. Server instance reuse was not observable. Analysis performed no Diary saves.
+
+| Stage | Median |
+| --- | ---: |
+| File selection to POST | 0.06 s |
+| HTTP session check | 0.04 s |
+| Request body read | 0.03 s |
+| Service account lookup | 0.00 s |
+| Recognition budget | 1.27 s |
+| Image normalization | 0.29 s |
+| Vision JPEG | 0.30 s |
+| Workspace read | 1.69 s |
+| Catalog head and index | 0.17 s |
+| Matching setup (workspace and catalog in parallel) | 1.69 s |
+| Gemini request including provider transfer | 2.37 s |
+| Matching recognized foods | 3.43 s |
+| Nutrient previews including catalog food reads | 0.30 s |
+| Headers to parsed response | 0.09 s |
+| Parsed response to painted review | 0.02 s |
+| Network and platform remainder | 1.27 s |
+
+Workspace and catalog preparation now run concurrently with the Gemini call after authorization, the quota check and image processing. The median measured overlap was 1.69 s. Parallel rows overlap and medians do not sum. The network and platform remainder includes transport and response serialization. The two releases used 1,509 input tokens per scan and returned 416 to 580 output tokens. Production CPU and process memory were not measured.
+
+Three byte-verified requests through the Pixel network took 1.94 s to 2.11 s with a median of 2.03 s. The workstation held the key and terminated TLS over USB. The test reused a warm Google connection, the Pixel-prepared image and the production prompt and schema. It timed the full Google request and response. Client attestation, matching, signing and rendering were outside that measurement. Holding all other stages fixed and substituting the warm direct median for each hosted Gemini duration gives an estimated median saving of 0.19 s before client attestation or any extra server round trip.
+
 ### Findings from all 333 retained states
 
 The private `.local/full-parity/reference-review-1.1.15.json` has one comparison note per reference. The retained numbers run through 335 and omit 38 and 277. Each note points to the capture used and records visible differences or limits. The index includes state 335, the final empty test day. For reference 78 the test removed the last temporary food entry and returned to the empty Diary through Foods. The reference also shows an orange “Error loading food” banner. The original trigger remains unknown. Release 1.1.63 verifies the user’s chosen recovery after a failed saved-item read. Some comparisons use older releases. Recheck a difference against current code or a matching fixture before changing the app. The behavior index links 333 retained states to at least one named flow. Each link covers the actions named in its receipt. The additional links include existing biometric, Water, Recipe, Targets and calendar tests. A fresh local check swiped a saved meal, exploded its five ingredients, canceled their selected deletion, then confirmed it and verified the unrelated entry survived reload. These counts describe the index only. A recorded Cancel check, for example, leaves Save and Delete unverified unless the receipt also exercises them.
