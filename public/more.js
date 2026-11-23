@@ -10,7 +10,6 @@ import {escape as e} from './html.js';
 import {mountDisplay} from './display.js';
 import {mountTargets,targetDestinations} from './targets.js';
 import {mountFasting} from './fasting.js';
-import {mountDeviceStorage} from './device-storage.js';
 import {mountBackup} from './backup.js';
 import {mountRepeats} from './repeats.js';
 import {mountProfile} from './profile-settings.js';
@@ -45,7 +44,6 @@ function settingsIndex() {
     add([], 'account', accountMessage('accountCloud.'+key), action);
   add(data,'bulk-delete',accountMessage('accountCloud.bulk.title'));
   add(data,'delete-account',accountMessage('accountCloud.bulk.account'));
-  add(data,'storage',coreText('more.storage'));
   for (const [id,label] of targetDestinations()) add([], 'targets',label,id);
   for (const [id,label] of [
     ['age',t('printDocument.stored.age')],['sex',dc('sex')],['weight',t('measurementCatalog.metric.weight')],
@@ -274,7 +272,6 @@ export function mountMore({
     if (id === 'export') return void openExport(ui);
     if (id === 'targets') return childView(id, t('mobileMore.targets'), host => mountTargets({...ui, initialScreen:option, page: host, headerRoot, onExit: exitToHome}));
     if (id === 'fasting') return childView(id, t('mobileMore.fasting'), host => mountFasting({...ui, initialSection:option, page: host, headerRoot, onBack: exitToHome}));
-    if (id === 'storage') return childView(id,coreText('more.storage'),host=>mountDeviceStorage({root:host}));
     if (id === 'backup') return childView(id, coreText('more.backup'), host => mountBackup({...ui, root: host}));
     if (id === 'repeats') {
       return childView(id, t('mobileRepeat.title'), host =>

@@ -38,7 +38,6 @@ const rows={
  'diary.selectedRecipe':['Create Recipe from Selection','Créer une recette à partir de la sélection','Rezept aus Auswahl erstellen','Criar receita com a seleção'],
  'diary.selectedMeal':['Create Meal from Selection','Créer un repas à partir de la sélection','Mahlzeit aus Auswahl erstellen','Criar refeição com a seleção'],
  'diary.selectedNutrition':['Show Nutrition Summary','Afficher le résumé nutritionnel','Nährstoffübersicht anzeigen','Mostrar resumo nutricional'],
- 'more.storage':['Device storage','Stockage sur l’appareil','Gerätespeicher','Armazenamento no dispositivo'],
  'more.version':['Version','Version','Version','Versão'],
  'diary.recipeCreated':['Recipe created','Recette créée','Rezept erstellt','Receita criada'],
  'diary.foodLoadError':['Error loading food','Erreur lors du chargement de l’aliment','Fehler beim Laden des Lebensmittels','Erro ao carregar o alimento'],

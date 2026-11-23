@@ -83,7 +83,8 @@ test('source More menu preserves search and back focus, cloud destinations and d
   assert.equal((await landing.locator('[data-account-edit=password]').innerText()).trim(),'Change Password');
   assert.equal(await page.locator('.account-preferences,[name=units],[name=timeZone]').count(),0);
   await landing.locator('[data-more-open=account-data]').click();
-  await page.locator('.account-data-menu [data-more-open=storage]').waitFor();
+  await page.locator('.account-data-menu').waitFor();
+  assert.deepEqual(await page.locator('.account-data-menu button').evaluateAll(rows=>rows.map(row=>row.dataset.moreOpen)),['bulk-delete','delete-account']);
   await page.locator('[data-more-open=delete-account]').click();
   const form=page.locator('.account-delete-page form');await form.waitFor();
   assert.equal((await form.locator('input[type=password]').boundingBox()).height,48);assert.equal((await form.locator('textarea').boundingBox()).height,120);

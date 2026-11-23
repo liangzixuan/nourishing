@@ -73,7 +73,7 @@ async function profile(knownUser=null){
   const display=await (embedded?diaryRequest('/api/display',undefined,lifetime.signal):api('/api/display',null,'GET')).catch(()=>null);if(!alive()||serial!==profileSerial)return;if(display?.settings?.appLanguage)applyAppLanguage(display.settings.appLanguage);applyTheme(display?.settings?.theme);applyFontPreferences(display?.settings);
   if(section==='delete-account'){deletion.open({inline:true});return;}
   if(section==='account-data'){
-   root.innerHTML=`<section class="mm-group account-data-menu">${moreRow('bulk-delete',m('accountCloud.bulk.title'))}${moreRow('delete-account',m('accountCloud.bulk.account'))}${moreRow('storage',coreText('more.storage'))}</section><p class="account-data-note">${m('accountCloud.bulk.accountNote')}</p>`;
+   root.innerHTML=`<section class="mm-group account-data-menu">${moreRow('bulk-delete',m('accountCloud.bulk.title'))}${moreRow('delete-account',m('accountCloud.bulk.account'))}</section><p class="account-data-note">${m('accountCloud.bulk.accountNote')}</p>`;
    return;
   }
   if(section==='bulk-delete'){
