@@ -11,12 +11,17 @@ The remaining audit continues from the release recorded below. Screen-level comp
 - Repository: `C:/Users/zixua/Documents/REA/nourishing-cloud`
 - GitHub: `https://github.com/liangzixuan/nourishing`, branch `master`.
 - Production: `https://nourishing.app`, Appwrite site and database, public account registration.
-- Verified production release **1.1.64** at `e2166de8cca9a641089ae15571f302456e419b85`. All 728 tests passed locally. CI passed 725 and skipped 3. Appwrite activated the site and three functions. All 280 checked live assets matched the build. The 911-file offline and 248-file startup inventories matched. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/45095690750)
+- Verified production release **1.2.0** at `efe73cfe69d4e66a31983d5553b0a3f15b163c3e`. All 730 tests passed locally. CI passed 727 and skipped 3. Appwrite activated the site and three functions. All 294 checked live assets matched the build, along with the 912-file offline and 248-file startup inventories. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/45100353287)
 - This is a PWA for Android and iOS. Health Connect and deliberately removed native integrations are excluded. Do not restart native APK work or use Azure.
 - Product wording must say Nourishing, not Cronometer. Reference filenames and historical evidence can retain Cronometer.
 - Preserve unrelated untracked `android/` and `docs/superpowers/`. Never stage them automatically.
 
 ## User decisions
+
+- New Diary entries default to Uncategorized. An explicit category or configured shortcut takes precedence. Keep Fasting in More and Dashboard, and omit its Diary controls and calendar marker.
+- More has no Workspace tools section. Account omits Account Preferences. Notifications contains one Allow Notifications switch for the current browser.
+- Delete Account uses the supplied mobile reference with a password, optional feedback, required acknowledgement and Delete Account button. Store optional feedback with the private deletion receipt until it expires. Omit the support prompt and contact link.
+- Use Diary as Home for page-delivered edge gestures. The left edge opens Diary. The right edge returns one level, or opens Diary from a main tab. More search uses the orange Add-button caret and opens nested settings.
 
 - If a saved food or recipe fails to open, return to the selected Diary date and show “Error loading food” above the navigation bar.
 
