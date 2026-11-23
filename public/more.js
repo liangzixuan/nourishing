@@ -1,3 +1,4 @@
+import {hideFooterWhileTyping} from './keyboard-footer.js';
 import {supportEmail} from './support-contact.js';
 import {licenseNotices} from './more-source/license-notices.js';
 import {appVersion} from './app-version.js';
@@ -127,6 +128,7 @@ export function mountMore({
 
   const events = new AbortController();
   const signal = events.signal;
+  hideFooterWhileTyping(headerRoot,'[data-more-search]',document.querySelector('.app-nav.dc-bottom'),signal);
   const root = document.createElement('section');
   root.className = 'more-page';
   page.replaceChildren(root);

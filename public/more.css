@@ -37,3 +37,5 @@
 .mm-license{padding:16px;white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}
 
 .mm-row .mm-search-parent{display:block;color:var(--muted);font-size:.85em;font-weight:400}
+
+.more-mobile .app-nav.dc-bottom[hidden]{display:none}

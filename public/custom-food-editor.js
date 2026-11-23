@@ -1,3 +1,4 @@
+import {hideFooterWhileTyping} from './keyboard-footer.js';
 import {guardSheetExit} from './edge-navigation.js';
 import {previewFoodLabel} from './local-diary-projection.js';
 import {previewLocalLibrary} from './library-local.js';
@@ -121,24 +122,7 @@ export function mountCustomFoodEditor({resource,data,draft,show,close,content,da
  root.addEventListener('toggle',event=>{if(event.target.dataset.mfSection)sections.set(event.target.dataset.mfSection,event.target.open);},{capture:true,signal});
  guardSheetExit(root,()=>saving,signal);
  const cancel=event=>{if(!alive()||event.type==='cancel'&&event.target!==dialog)return;event.preventDefault();event.stopImmediatePropagation();back();};dialog?.addEventListener('cancel',cancel,{capture:true,signal});window.addEventListener('nourishing-back',cancel,{capture:true,signal});
- // Android resizes the editor when its keyboard opens. Keep the editing area free
- // of the fixed footer until the viewport recovers, even if the input keeps focus.
- const viewport=window.visualViewport,footer=form.querySelector('.mfe-footer');
- if(viewport&&matchMedia('(pointer: coarse)').matches){
-  let fullHeight=viewport.height,width=viewport.width;
-  const updateFooter=()=>{
-   if(viewport.scale!==1)return;
-   const editing=form.contains(document.activeElement)&&document.activeElement.matches('input:not([type=checkbox]),textarea');
-   if(width!==viewport.width||!editing){
-    width=viewport.width;fullHeight=viewport.height;footer.hidden=false;return;
-   }
-   fullHeight=Math.max(fullHeight,viewport.height);
-   if(viewport.height>=fullHeight)footer.hidden=false;
-   else if(!footer.hidden&&fullHeight-viewport.height>=footer.offsetHeight)footer.hidden=true;
-  };
-  viewport.addEventListener('resize',updateFooter,{signal});
-  form.addEventListener('focusin',updateFooter,{signal});
- }
+ hideFooterWhileTyping(form,'input:not([type=checkbox]),textarea',form.querySelector('.mfe-footer'),signal);
  const observer=new MutationObserver(()=>{if(!root.isConnected)dispose();});observer.observe(content,{childList:true});
  refreshLabel(project);
  if(focusNutrition){const section=root.querySelector('[data-food-nutrition]');section.open=true;section.scrollIntoView({block:'start'});}

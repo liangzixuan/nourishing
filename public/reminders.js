@@ -1,5 +1,6 @@
 import {coreText} from './core-cloud-messages.js';
 import {accountMessage as m} from './account-cloud-messages.js';
+import {captureDeviceOwner,readDeviceCache,writeDeviceCache} from './device-cache.js';
 import {request} from './diary-api.js';
 import {escape as e} from './html.js';
 import {createReminderSchedulePanel} from './reminder-schedules.js';
@@ -7,6 +8,7 @@ import {createReminderSchedulePanel} from './reminder-schedules.js';
 const bytes=value=>Uint8Array.from(atob(value.replaceAll('-','+').replaceAll('_','/')),character=>character.charCodeAt(0));
 const sameKey=(a,b)=>a&&new Uint8Array(a).length===b.length&&new Uint8Array(a).every((value,index)=>value===b[index]);
 const pendingTests=new Map();
+const connectionPath='/api/reminders/connection';
 async function readyPushRegistration(signal,onInstalling){
  const service=navigator.serviceWorker;
  const unavailable=()=>Error(m('accountCloud.refreshNourishingThenConnectAgain'));
@@ -52,41 +54,56 @@ export function mountReminders({root,notifications=false}){
  root.innerHTML=`<section class="push-panel${notifications?' push-notifications':''}"><p role="status">${m("mobileNutrientDetail.loading")}</p><div data-push-controls></div></section>`;
  const panel=root.querySelector('.push-panel'),message=panel.querySelector('[role=status]'),controls=panel.querySelector('[data-push-controls]');
  let data,busy=false,failed=false,disposed=false,readAbort,pendingSwitch=null,localEndpoint=null,registeredHere=false,devicesOpen=false;
- const lifetime=new AbortController();
+ const lifetime=new AbortController(),owner=captureDeviceOwner();
+ let connectionKnown=false;
  const alive=()=>!disposed&&panel.isConnected;
  const supported=()=>window.isSecureContext&&'Notification'in window&&'PushManager'in window&&'serviceWorker'in navigator;
  const notify=text=>{if(alive())message.textContent=text;};
- async function refresh(){
+ async function localSubscription(){
+  const registration=await navigator.serviceWorker.getRegistration('/');
+  return registration?.pushManager?.getSubscription();
+ }
+ async function refresh({fresh=true,receipt}={}){
   if(!alive())return;
   readAbort?.abort();const controller=new AbortController();readAbort=controller;
-  const path=notifications?'/api/reminders/connection':'/api/reminders';
-  const result=await request(path,undefined,controller.signal);if(!alive())return;
-  await readConnection(result);
- }
- async function readConnection(result){
-  data=result;localEndpoint=null;registeredHere=false;
-  if(!supported())return;
-  let subscription;
-  try{
-   const registration=await navigator.serviceWorker.getRegistration('/');
-   subscription=await registration?.pushManager?.getSubscription();
-  }catch(error){if(notifications){data=null;throw error;}return;}
+  if(!notifications){
+   data=await request('/api/reminders',undefined,controller.signal);
+   if(!alive())return;
+   try{localEndpoint=supported()?(await localSubscription())?.endpoint:null;}catch{localEndpoint=null;}
+   return;
+  }
+  const subscription=supported()&&Notification.permission==='granted'?await localSubscription():null;
   if(!alive())return;
   localEndpoint=subscription?.endpoint??null;
-  if(notifications&&localEndpoint){
-   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(localEndpoint)));
-   const fingerprint=Array.from(new Uint8Array(digest),n=>n.toString(16).padStart(2,'0')).join('');
-   registeredHere=data.devices.some(device=>device.currentOrigin&&device.endpointDigest===fingerprint);
+  if(!localEndpoint){
+   registeredHere=false;connectionKnown=true;return;
   }
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(localEndpoint)));
+  const fingerprint=Array.from(new Uint8Array(digest),n=>n.toString(16).padStart(2,'0')).join('');
+  function apply(result){
+   if(!alive()||controller.signal.aborted)return;
+   data=result;registeredHere=result.devices.some(device=>device.currentOrigin&&device.endpointDigest===fingerprint);
+   connectionKnown=true;render();
+  }
+  apply(receipt??await request(connectionPath,undefined,controller.signal,{owner,fresh,onRefresh:apply,canonical:true}));
+ }
+ async function acknowledged(result){
+  if(!alive())return;
+  const cached=await readDeviceCache(connectionPath).catch(()=>({}));
+  if(owner&&owner.ownerId===cached.ticket?.ownerId&&owner.epoch===cached.ticket.epoch){
+   await writeDeviceCache(connectionPath,result,cached.ticket).catch(()=>false);
+  }
+  await refresh({receipt:result});
  }
  const schedules=createReminderSchedulePanel({getData:()=>data,refresh,notify});
  function render(){
   if(!alive())return;
   const reload=`<button type="button" data-push-reload>${m("mobileNutrientDetail.reload")}</button>`;
   if(notifications){
-   if(!data){controls.innerHTML=busy?'':reload;return;}
+   if(!connectionKnown&&failed){controls.innerHTML=reload;return;}
    const allowed=pendingSwitch??(registeredHere&&Notification.permission==='granted');
-   controls.innerHTML=`<label class="mds-row"><strong>${coreText('more.allowNotifications')}</strong><input type="checkbox" role="switch" class="dc-switch" data-notifications-enabled ${allowed?'checked':''} ${busy?'disabled':''}></label>`;
+   controls.innerHTML=`<label class="mds-row"><strong>${coreText('more.allowNotifications')}</strong><input type="checkbox" role="switch" class="dc-switch" data-notifications-enabled ${allowed?'checked':''} ${busy||!connectionKnown?'disabled':''}></label>`;
+   if(!connectionKnown)controls.querySelector('input').indeterminate=true;
    return;
   }
   if(!data){controls.innerHTML=reload;return;}
@@ -111,7 +128,7 @@ export function mountReminders({root,notifications=false}){
   if(!subscription){subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});if(!alive()){try{await subscription.unsubscribe();}catch{/* The browser retains ownership if cleanup fails. */}return;}}
   if(!alive())return;
   const result=await request('/api/reminders/subscribe',{subscription:subscription.toJSON(),label:m("privacy.browserTitle")});if(!alive())return;
-  if(notifications){await readConnection(result);return;}
+  if(notifications){await acknowledged(result);return;}
   await refresh();devicesOpen=true;notify(m("accountCloud.connectedSendATestNotification"));
  }
  controls.onclick=event=>{
@@ -141,10 +158,10 @@ export function mountReminders({root,notifications=false}){
  function toggleNotifications(input){
   if(busy||!alive())return;
   const enable=input.checked;
+  readAbort?.abort();
   pendingSwitch=enable;
   void run(async()=>{
    if(!supported())throw Error(m('accountCloud.useASupportedBrowserOrInstalledApp'));
-   if(!data?.configured)throw Error(m('accountCloud.notificationsAreUnavailable'));
    if(enable&&Notification.permission==='denied')throw Error(m('accountCloud.allowNotificationsInYourBrowserSettings'));
    // Ask from this tap, before any network or service worker read.
    if(enable&&Notification.permission!=='granted'&&await Notification.requestPermission()!=='granted')
@@ -153,6 +170,9 @@ export function mountReminders({root,notifications=false}){
    let removingSubscription;
    try{
     if(enable){
+     data=await request(connectionPath,undefined,lifetime.signal,{owner,canonical:true});
+     if(!alive())return;
+     if(!data.configured)throw Error(m('accountCloud.notificationsAreUnavailable'));
      await connect('granted');
     }else{
      const registration=await navigator.serviceWorker.getRegistration('/');
@@ -162,12 +182,12 @@ export function mountReminders({root,notifications=false}){
      removingSubscription=subscription;
      const result=await request('/api/reminders/unsubscribe',{endpoint:subscription.endpoint});
      await subscription.unsubscribe();
-     if(alive())await readConnection(result);
+     if(alive())await acknowledged(result);
     }
    }catch(error){
     // A lost reply can follow a successful registration or removal.
     if(!alive())return;
-    try{await refresh();}catch{data=null;throw error;}
+    try{await refresh();}catch{data=null;connectionKnown=false;throw error;}
     if(enable&&registeredHere)return;
     if(!enable&&!registeredHere&&removingSubscription){
      if(localEndpoint===removingSubscription.endpoint)await removingSubscription.unsubscribe();
@@ -181,10 +201,10 @@ export function mountReminders({root,notifications=false}){
  controls.oninput=capture;controls.onchange=capture;
  controls.addEventListener('toggle',event=>{if(event.target.classList.contains('push-connections'))devicesOpen=event.target.open;},true);
  controls.onsubmit=event=>{if(event.target.hasAttribute('data-reminder-form')){event.preventDefault();void run(()=>schedules.submit(event.target));}};
- const resume=()=>{if(document.visibilityState==='visible'&&!busy&&alive())void run(refresh,{loading:true});};
+ const resume=()=>{if(document.visibilityState==='visible'&&!busy&&alive())void run(refresh);};
  if(notifications)document.addEventListener('visibilitychange',resume);
  function dispose(){if(disposed)return;disposed=true;lifetime.abort();document.removeEventListener('visibilitychange',resume);readAbort?.abort();observer.disconnect();controls.onclick=controls.oninput=controls.onchange=controls.onsubmit=null;}
  const observer=new MutationObserver(()=>{if(!panel.isConnected)dispose();});observer.observe(document.body,{childList:true,subtree:true});
- void run(refresh,{loading:true});
+ void run(()=>refresh({fresh:false}),{loading:!notifications});
  return {dispose,back(){if(busy||schedules.locked)return false;if(schedules.back()){notify('');render();return true;}return false;}};
 }

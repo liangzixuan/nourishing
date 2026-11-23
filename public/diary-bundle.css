@@ -3126,6 +3126,8 @@ body.discover-mobile dialog.mee-activity-editor{
 
 .mm-row .mm-search-parent{display:block;color:var(--muted);font-size:.85em;font-weight:400}
 
+.more-mobile .app-nav.dc-bottom[hidden]{display:none}
+
 /* /diary-summary.css */
 /* These surfaces use mobile-diary.css from the source app. Keep host button resets scoped. */
 .md-selection-status{padding:16px}.md-selection-status p{margin:0}.md-selection-status button{min-height:44px;color:var(--accent)}

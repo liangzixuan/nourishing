@@ -13,7 +13,7 @@ test('notification controls require explicit permission/connect/test clicks and 
  const status=()=>({configured:true,paused,revision,publicKey,devices:[...(includeOther?[otherDevice]:[]),...(connected?[{id,label:'This browser',currentOrigin:true,endpointDigest:createHash('sha256').update(JSON.stringify('https://fcm.googleapis.com/fcm/send/browser-fixture')).digest('hex')}]:[])],limit:8});
  const server=createServer(async(req,res)=>{try{
   const path=new URL(req.url,'http://localhost').pathname;
-  if(path==='/'){res.setHeader('Content-Type','text/html');return res.end(`<link rel="stylesheet" href="/reminders.css"><button id="open">Open notifications</button><div id="sheet"></div><script type="module">import {mountReminders} from '/reminders.js';const content=document.querySelector('#sheet');document.querySelector('#open').onclick=()=>{content.innerHTML='<button data-close>Close</button><div id=host></div>';content.querySelector('[data-close]').onclick=()=>content.replaceChildren();mountReminders({root:content.querySelector('#host'),notifications:location.search==='?notifications'});};document.querySelector('#open').click();</script>`);}
+  if(path==='/'){res.setHeader('Content-Type','text/html');return res.end(`<link rel="stylesheet" href="/reminders.css"><button id="open">Open notifications</button><div id="sheet"></div><script type="module">import {mountReminders} from '/reminders.js';await(await import('/device-cache.js')).initializeDeviceCache('push-test');const content=document.querySelector('#sheet');document.querySelector('#open').onclick=()=>{content.innerHTML='<button data-close>Close</button><div id=host></div>';content.querySelector('[data-close]').onclick=()=>content.replaceChildren();mountReminders({root:content.querySelector('#host'),notifications:location.search==='?notifications'});};document.querySelector('#open').click();</script>`);}
   if(path.startsWith('/api/reminders')){
    res.setHeader('Content-Type','application/json');let input=null;if(req.method==='POST'){let raw='';for await(const chunk of req)raw+=chunk;input=JSON.parse(raw);}requests.push({path,input});
    if(path==='/api/reminders/settings'){assert.equal(input.revision,revision);paused=input.paused;revision++;return res.end(JSON.stringify(status()));}
@@ -70,7 +70,8 @@ test('notification controls require explicit permission/connect/test clicks and 
   includeOther=true;
   await page.goto(`http://127.0.0.1:${server.address().port}/?notifications`);
   const allow=page.getByRole('switch',{name:'Allow Notifications',exact:true});
-  await allow.waitFor();assert.equal(await allow.isChecked(),false);
+  const connectionReads=()=>requests.filter(r=>r.path==='/api/reminders/connection').length;
+  await allow.waitFor();assert.equal(connectionReads(),0,'permission off requires no server read');assert.equal(await allow.isChecked(),false);
   assert.equal(await page.locator('#host button,#host details,#host select').count(),0);
   assert.equal(await page.evaluate(()=>window.pushEvidence.permissions),0);
   await page.evaluate(()=>window.denyPermission=true);await allow.click();await page.getByRole('status').filter({hasText:'not allowed'}).waitFor();
@@ -82,8 +83,21 @@ test('notification controls require explicit permission/connect/test clicks and 
   try{assert.equal(await allow.isChecked(),true,'keep the requested position while saving');assert.equal(await allow.isDisabled(),true);assert.equal(await page.evaluate(()=>window.permissionWasActive),true);}finally{release();}
   await page.waitForFunction(()=>document.querySelector('[data-notifications-enabled]:checked:enabled'));
   assert.equal(connected,true);assert.equal(paused,true);
+  const readsBeforeReopen=connectionReads();
   assert.equal(await page.locator('#host button,#host details,#host select').count(),0);
   await page.getByRole('button',{name:'Close',exact:true}).click();await page.getByRole('button',{name:'Open notifications',exact:true}).click();
+  await page.waitForFunction(()=>document.querySelector('[data-notifications-enabled]:checked:enabled'));
+  assert.equal(connectionReads(),readsBeforeReopen,'reopen uses the account’s acknowledged connection');
+  await page.evaluate(async()=>{await(await import('/device-cache.js')).initializeDeviceCache('other-account');});
+  connected=false;
+  await page.getByRole('button',{name:'Close',exact:true}).click();
+  await page.getByRole('button',{name:'Open notifications',exact:true}).click();
+  await page.waitForFunction(()=>document.querySelector('[data-notifications-enabled]:not(:checked):enabled'));
+  assert.equal(connectionReads(),readsBeforeReopen+1,'a new account checks its own registration');
+  await page.evaluate(async()=>{await(await import('/device-cache.js')).initializeDeviceCache('push-test');});
+  connected=true;
+  await page.getByRole('button',{name:'Close',exact:true}).click();
+  await page.getByRole('button',{name:'Open notifications',exact:true}).click();
   await page.waitForFunction(()=>document.querySelector('[data-notifications-enabled]:checked:enabled'));
   lostMutation='remove';await allow.click();await page.waitForFunction(()=>document.querySelector('[data-notifications-enabled]:not(:checked):enabled'));
   assert.equal(connected,false);assert.equal(paused,true);assert.equal(await page.evaluate(()=>window.pushEvidence.unsubscribes),1);
