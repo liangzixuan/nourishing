@@ -1155,7 +1155,7 @@ GitHub reported an internal runner error on the first deployment attempt after t
 
 A disposable production account saved a real suggestion, reloaded the Diary, selected one food, and exited Multi Select Mode. The food positions stayed fixed. The account was deleted. A background library read returned HTTP 503 during this check. The client had an account read and a record-options read outstanding at that point. Those requests do not establish the cause. The installed iPad opened Highlighted Nutrients, entered and exited selection, and returned to the original Diary date and summary page with its wake lock held.
 
-All 726 tests passed locally. CI passed 723 and skipped 3. All 272 checked production assets matched the exact build. Appwrite activated the site, reminders and scheduler. The plan’s daily deployment quota stopped the account-cleanup upload until 2026-11-23 at 00:00 UTC. The 13 staged cleanup files, including the dependency lockfile, are byte-identical to 1.1.61. The production test account was deleted successfully. [Deployment attempt](https://github.com/liangzixuan/nourishing/actions/runs/45070248200/attempts/2)
+All 726 tests passed locally. CI passed 723 and skipped 3. Appwrite reported the site and all three functions ready. All 272 checked production assets matched the exact build. The offline and startup inventories matched across 911 and 248 paths. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/45070248200)
 
 ### Findings from all 333 retained states
 
