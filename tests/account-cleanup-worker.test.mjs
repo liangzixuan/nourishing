@@ -85,3 +85,25 @@ test('receipt cleanup stops deleting when the shared wall-time budget expires',a
  let time=now;const remove=f.db.deleteRow;f.db.deleteRow=async input=>{const result=await remove(input);if(input.tableId==='push_deliveries')time+=45000;return result;};
  const result=await runAccountCleanup({db:f.db,lifecycle,enabled:true,clock:()=>time,deletion:{step(){throw Error('No deletion jobs');}}});assert.equal(result.reminderReceiptsPruned,1);assert.equal(f.table('push_deliveries').size,3);
 });
+
+test('hourly cleanup withdraws only abandoned registrations that never started work',async()=>{
+ const f=accountFixture(),createdAt=new Date(now-2*3600000).toISOString();
+ for(const [id,state] of Object.entries({abandoned:'registering',racing:'registering',live:'active',unknown:'uncertain',fresh:'registering'})){
+  f.put('account_operations',id,{ownerId:'owner',label:'readDiary',state,createdAt:id==='fresh'?new Date(now).toISOString():createdAt,$permissions:[]});
+ }
+ const remove=f.db.deleteRow;
+ f.db.deleteRow=async input=>{
+  const result=await remove(input);
+  if(input.rowId==='racing' && input.transactionId){
+   f.beforeCommit=async()=>{
+    f.beforeCommit=null;
+    await f.db.updateRow({tableId:'account_operations',rowId:'racing',data:{state:'active'}});
+   };
+  }
+  return result;
+ };
+ const result=await runAccountCleanup({db:f.db,enabled:true,clock:()=>now,deletion:{step(){throw Error('No jobs');}}});
+ assert.equal(result.failed,0);
+ assert.deepEqual([...f.table('account_operations').keys()].sort(),['fresh','live','racing','unknown']);
+ assert.equal(f.table('account_operations').get('racing').state,'active');
+});

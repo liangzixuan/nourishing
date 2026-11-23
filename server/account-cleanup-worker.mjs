@@ -1,6 +1,6 @@
 import {pruneDiaryRemovalJobs} from './diary-range-removal-jobs.mjs';
 import {pruneExpiredReminderReceipts} from './expired-reminder-receipts.mjs';
-import {createAccountLifecycle} from './account-lifecycle.mjs';
+import {createAccountLifecycle,pruneAbandonedRegistrations} from './account-lifecycle.mjs';
 import {Query} from 'node-appwrite';
 import {pruneExpiredBackupReviews} from './expired-backup-reviews.mjs';
 const eligible=(row,now)=>['prepared','complete'].includes(row.state)&&Number.isFinite(Date.parse(row.expiresAt))&&Date.parse(row.expiresAt)<=now&&(row.state!=='complete'||row.ownerId==='');
@@ -50,6 +50,12 @@ export async function runAccountCleanup({db,deletion,lifecycle,database='nourish
    const removal=await pruneDiaryRemovalJobs({db,database,now:started,limit:maxJobs,timeLeft});
    if(removal.examined)result.diaryRemoval=removal;
    result.failed+=removal.failed;
+  }catch{result.failed++;}
+ }
+ if(timeLeft()){
+  try{
+   const pruned=await pruneAbandonedRegistrations({db,database,now:started,limit:maxPrune,timeLeft});
+   if(pruned)result.registrationsPruned=pruned;
   }catch{result.failed++;}
  }
  return result;

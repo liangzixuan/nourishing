@@ -17,41 +17,38 @@ export function createAccountLifecycle({db,database='nourishing',now=()=>Date.no
    if(row.ownerId!==owner||row.state!=='active'||row.jobId!==''||!Number.isSafeInteger(row.version))fail();
   }
  }
- async function mutate(owner,work,recover=async()=>null){
-  ownerId(owner);
-  const deadline=performance.now()+8000;
-  let backoff=80;
-  for(;;){
-   const row=await optional(()=>db.getRow(args('account_lifecycle',owner)));
-   if(!row||row.ownerId!==owner||!Number.isSafeInteger(row.version))fail();
-   const tx=await db.createTransaction({ttl:60});
-   try{
-    await db.updateRow({...args('account_lifecycle',owner),data:{version:row.version+1},transactionId:tx.$id});
-    const current=await db.getRow(args('account_lifecycle',owner));
-    if(current.version!==row.version||current.$updatedAt!==row.$updatedAt){
-     throw Object.assign(Error('Lifecycle revision changed.'),{code:409,type:'lifecycle_revision_conflict'});
-    }
-    const result=await work(row,tx.$id);await db.updateTransaction({transactionId:tx.$id,commit:true});return result;
-   }catch(error){
-    // Appwrite ends a conflicting commit itself; a second rollback returns transaction_not_ready.
-    let rolledBack=error.code===409&&error.type==='transaction_conflict';
-    if(!rolledBack)try{await db.updateTransaction({transactionId:tx.$id,rollback:true});rolledBack=true;}catch{}
-    const recovered=await recover();if(recovered)return recovered;
-    if(error.code!==409||!rolledBack||error.publicMessage)throw error;
-    // Diary preload and foreground reads register concurrently, including on different Site instances.
-    if(performance.now()>=deadline)fail('The account is busy. Please try again.',503);
-    await delay(randomInt(backoff/2,backoff+1));backoff=Math.min(640,backoff*2);
-   }
-  }
- }
  async function enter(owner,label){
+  ownerId(owner);
   if(typeof label!=='string'||!label||label.length>80)fail('Operation identity is unavailable.',503);
   const id=randomUUID(),operation={id,owner,uncertain:false,markUncertain(){this.uncertain=true;}};
-  return mutate(owner,async(row,transactionId)=>{
-   if(row.state!=='active')fail();
-   await db.createRow({...args('account_operations',id),data:{ownerId:owner,label,state:'active',createdAt:at(),reason:''},permissions:[],transactionId});
+  const marker=args('account_operations',id);
+  const registration={ownerId:owner,label,state:'registering',createdAt:at(),reason:''};
+  async function confirmed(write,state){
+   try{await write();}catch(error){
+    if(Number.isInteger(error.code)&&error.code<500&&![408,409].includes(error.code))throw error;
+    const saved=await owned(operation);
+    if(saved?.label!==label || saved.state!==state || saved.createdAt!==registration.createdAt)throw error;
+   }
+  }
+  // Publish before checking the gate. A later deletion must drain this marker;
+  // an earlier deletion makes the gate check fail before any account work starts.
+  await confirmed(()=>db.createRow({...marker,data:registration,permissions:[]}), 'registering');
+  try{
+   const gate=await optional(()=>db.getRow(args('account_lifecycle',owner)));
+   if(gate?.ownerId!==owner||gate.state!=='active'||gate.jobId!==''||!Number.isSafeInteger(gate.version))fail();
+  }catch(error){
+   // No activation was attempted. If removal is interrupted, the hourly cleanup
+   // can still recognize this registration as never having started account work.
+   await optional(()=>db.deleteRow(marker));
+   throw error;
+  }
+  try{
+   await confirmed(()=>db.updateRow({...marker,data:{state:'active'}}),'active');
    return operation;
-  },async()=>{const saved=await optional(()=>db.getRow(args('account_operations',id)));if(!saved)return null;if(saved.ownerId!==owner||saved.label!==label)fail('Operation ownership differs.',503);return operation;});
+  }catch(error){
+   await settle(operation);
+   throw error;
+  }
  }
  async function owned(operation){const row=await optional(()=>db.getRow(args('account_operations',operation.id)));if(row&&row.ownerId!==operation.owner)fail('Operation ownership differs.',503);return row;}
  async function settle(operation){
@@ -84,7 +81,33 @@ export function createAccountLifecycle({db,database='nourishing',now=()=>Date.no
  }
  async function claim(owner,jobId){
   if(typeof jobId!=='string'||!jobId||jobId.length>36)fail('Deletion identity is unavailable.',503);
-  return mutate(owner,async(row,transactionId)=>{if(row.state!=='active'&&(row.state!=='deleting'||row.jobId!==jobId))fail();await db.updateRow({...args('account_lifecycle',owner),data:{state:'deleting',jobId},transactionId});return true;},async()=>{const saved=await optional(()=>db.getRow(args('account_lifecycle',owner)));return saved?.ownerId===owner&&saved.state==='deleting'&&saved.jobId===jobId?true:null;});
+  ownerId(owner);
+  const deadline=performance.now()+8000;
+  let backoff=80;
+  for(;;){
+   const row=await optional(()=>db.getRow(args('account_lifecycle',owner)));
+   if(!row||row.ownerId!==owner||!Number.isSafeInteger(row.version))fail();
+   if(row.state==='deleting' && row.jobId===jobId)return true;
+   if(row.state!=='active')fail();
+   const tx=await db.createTransaction({ttl:60});
+   try{
+    await db.updateRow({...args('account_lifecycle',owner),data:{state:'deleting',jobId,version:row.version+1},transactionId:tx.$id});
+    const current=await db.getRow(args('account_lifecycle',owner));
+    if(current.version!==row.version||current.$updatedAt!==row.$updatedAt){
+     throw Object.assign(Error('Lifecycle revision changed.'),{code:409,type:'lifecycle_revision_conflict'});
+    }
+    await db.updateTransaction({transactionId:tx.$id,commit:true});return true;
+   }catch(error){
+    // Appwrite ends a conflicting commit itself; a second rollback returns transaction_not_ready.
+    let rolledBack=error.code===409&&error.type==='transaction_conflict';
+    if(!rolledBack)try{await db.updateTransaction({transactionId:tx.$id,rollback:true});rolledBack=true;}catch{}
+    const saved=await optional(()=>db.getRow(args('account_lifecycle',owner)));
+    if(saved?.ownerId===owner && saved.state==='deleting' && saved.jobId===jobId)return true;
+    if(error.code!==409||!rolledBack||error.publicMessage)throw error;
+    if(performance.now()>=deadline)fail('The account is busy. Please try again.',503);
+    await delay(randomInt(backoff/2,backoff+1));backoff=Math.min(640,backoff*2);
+   }
+  }
  }
  async function pending(owner){
   const page=await db.listRows({databaseId:database,tableId:'account_operations',queries:[Query.equal('ownerId',ownerId(owner)),Query.limit(100)],total:false});let active=0,uncertain=0;
@@ -96,4 +119,34 @@ export function createAccountLifecycle({db,database='nourishing',now=()=>Date.no
   const waiting=await pending(owner);if(waiting.active||waiting.more)fail();await db.deleteRow(args('account_lifecycle',owner));
  }
  return {initialize,enter,settle,hold,run,claim,pending,remove};
+}
+
+// Activation updates this exact row before work begins. If activation wins after
+// the delete is staged, Appwrite rejects the cleanup commit on the changed row.
+export async function pruneAbandonedRegistrations({db,database,now,limit,timeLeft}){
+ const cutoff=now-60*60*1000;
+ const table={databaseId:database,tableId:'account_operations'};
+ const page=await db.listRows({...table,queries:[Query.equal('state','registering'),Query.orderAsc('$createdAt'),Query.limit(limit)],total:false});
+ const expired=row=>row?.state==='registering' && Date.parse(row.createdAt)<=cutoff;
+ let pruned=0;
+ for(const row of page.rows){
+  if(!timeLeft())break;
+  if(!expired(row))continue;
+  const args={...table,rowId:row.$id};
+  const tx=await db.createTransaction({ttl:60});
+  try{
+   await db.deleteRow({...args,transactionId:tx.$id});
+   const current=await optional(()=>db.getRow(args));
+   if(!expired(current)||current.ownerId!==row.ownerId||current.$updatedAt!==row.$updatedAt){
+    await db.updateTransaction({transactionId:tx.$id,rollback:true});
+    continue;
+   }
+   await db.updateTransaction({transactionId:tx.$id,commit:true});
+   pruned++;
+  }catch(error){
+   await db.updateTransaction({transactionId:tx.$id,rollback:true}).catch(()=>{});
+   if(![404,409].includes(error.code))throw error;
+  }
+ }
+ return pruned;
 }
