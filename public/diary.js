@@ -115,6 +115,7 @@ let searchId = 0;
 let group = defaultDiaryGroup;
 let selectedDiaryGroup = null;
 let sheetBackHandle = null;
+let pointerAddTrigger = null;
 let diaryDetailBack = null;
 let repeatsBackHandle = null;
 
@@ -130,6 +131,8 @@ function show(html) {
   searchId++;
   content.innerHTML = html;
   if (!sheet.open) {
+    // Typing in the dialog can make the browser draw a keyboard ring when it restores focus.
+    pointerAddTrigger = document.activeElement?.matches('#add-food:not(:focus-visible)') ? document.activeElement : null;
     sheet.showModal();
     if (!sheetBackHandle) sheetBackHandle = pushBackHandler(handleSheetBack);
   }
@@ -146,6 +149,8 @@ function close() {
     handle.release();
   }
   sheet.close();
+  if (pointerAddTrigger && document.activeElement === pointerAddTrigger) pointerAddTrigger.blur();
+  pointerAddTrigger = null;
   content.replaceChildren();
 }
 
@@ -191,21 +196,8 @@ function requestSheetExit(){
 
 function edgeBack(){
   const overlay=activeOverlay();
-  // A blocked save can consume Back without changing the screen.
-  const changes=new MutationObserver(()=>{});
-  changes.observe(document.body,{childList:true,subtree:true,attributes:true});
-  try{
-    if(overlay)dismissOverlay(overlay);
-    else if(window.dispatchEvent(new CustomEvent('nourishing-back',{cancelable:true})))requestAppBack();
-  }finally{
-    const changed=changes.takeRecords().length>0;
-    changes.disconnect();
-    if(changed&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
-      const surface=activeOverlay()??page;
-      surface.animate([{translate:'-16px 0',opacity:.88},{translate:'0 0',opacity:1}],
-        {id:'nourishing-back-reveal',duration:160,easing:'ease-out'});
-    }
-  }
+  if(overlay)dismissOverlay(overlay);
+  else if(window.dispatchEvent(new CustomEvent('nourishing-back',{cancelable:true})))requestAppBack();
 }
 bindEdgeNavigation({
   inside:()=>Boolean(activeOverlay()||hasAppBack()||dateBar.querySelector('details[open]')),

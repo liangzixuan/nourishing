@@ -62,12 +62,8 @@ test('both edges step back once, respect an editor saving and leave tab roots to
    window.backMotion=[];
    const animate=Element.prototype.animate;
    Element.prototype.animate=function(...args){
-    const animation=animate.apply(this,args);
-    if(animation.id==='nourishing-back-reveal'){
-     const {duration,easing}=animation.effect.getTiming();
-     window.backMotion.push({duration,easing,frames:animation.effect.getKeyframes().map(({translate,opacity})=>({translate,opacity}))});
-    }
-    return animation;
+    if(this===document.querySelector('#page')||this.matches('dialog'))window.backMotion.push(this.tagName);
+    return animate.apply(this,args);
    };
   });
   await page.locator('#discover-tab').click();
@@ -78,13 +74,42 @@ test('both edges step back once, respect an editor saving and leave tab roots to
     await page.locator('.cloud-dashboard').waitFor();
    }
   }
-  const reference=await page.evaluate(()=>window.backMotion.slice());
-  assert.equal(reference.length,4);assert.ok(reference.every(effect=>JSON.stringify(effect)===JSON.stringify(reference[0])));
+  // Back after typing restores the screen without leaving a focus ring on Add.
+  for(const goBack of [left,right,()=>page.evaluate(()=>history.back())]){
+   await page.locator('#add-food').tap();
+   await page.locator('[data-am=select][data-id=food]').tap();
+   const search=page.locator('#food-search');
+   await search.tap();await search.pressSequentially('apple');
+   await goBack();await page.locator('#sheet').waitFor({state:'hidden'});
+   const plus=page.locator('#add-food');
+   assert.equal(await plus.evaluate(el=>el.matches(':focus-visible')&&getComputedStyle(el).outlineStyle!=='none'),false,'Add retained a visible focus ring');
+   await page.waitForFunction(()=>!history.state?.nourishingBack);
+  }
+  // Keyboard users can still see where focus returned after closing Search Food.
+  await page.locator('#add-food').focus();
+  await page.keyboard.press('Enter');
+  await page.locator('[data-am=select][data-id=food]').focus();await page.keyboard.press('Enter');
+  await page.locator('#food-search').pressSequentially('apple');await page.locator('[data-mfs=close]').press('Enter');
+  await page.locator('#sheet').waitFor({state:'hidden'});
+  assert.ok(await page.locator('#add-food').evaluate(el=>el.matches(':focus-visible')));
+  for(const goBack of [left,right,()=>page.evaluate(()=>history.back())]){
+   await page.locator('#settings-tab').tap();await page.locator('[data-more-open=account]').tap();
+   await page.locator('.account-landing-list').waitFor();await goBack();
+   await page.locator('.mm-primary').waitFor();
+   assert.deepEqual(await page.evaluate(()=>window.backMotion),[],'Back from Account must be immediate');
+  }
+  await page.locator('#discover-tab').click();
   await page.locator('[data-tab=charts]').click();
   await page.waitForFunction(()=>!document.documentElement.classList.contains('discover-transition'));
   await right();await left();
   assert.equal(await page.locator('[data-tab=charts]').getAttribute('aria-current'),'page');
   await page.locator('#settings-tab').click();await page.locator('[data-more-open=support]').click();
+  // Browser Back and page-delivered edge swipes must resolve the same top layer.
+  await page.locator('#add-food').tap();await page.locator('[data-am=edit]').tap();
+  await page.evaluate(()=>history.back());
+  await page.locator('[data-am=edit]').waitFor();
+  assert.ok(await page.locator('[data-more-open=manual]').isVisible(),'Support remains beneath the Add menu');
+  await right();await page.locator('.am-sheet').waitFor({state:'detached'});
   await page.locator('[data-more-open=manual]').click();
   await drag({x:406,y:430},{x:377,y:431});assert.ok(await page.locator('.mm-manual-topic').count());
   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:406,y:430}]});
@@ -92,7 +117,6 @@ test('both edges step back once, respect an editor saving and leave tab roots to
   await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});assert.ok(await page.locator('.mm-manual-topic').count());
   await drag({x:407,y:540},{x:388,y:360});assert.ok(await page.locator('.mm-manual-topic').count());
   await right();await page.locator('[data-more-open=manual]').waitFor();
-  assert.deepEqual(await page.evaluate(()=>window.backMotion.at(-1)),reference[0]);
   await page.locator('[data-more-open=manual]').click();await left();await page.locator('[data-more-open=manual]').waitFor();
   await right();await page.locator('[data-more-open=support]').waitFor();
   await page.locator('#settings-tab').click();await page.locator('[data-more-open=account]').click();

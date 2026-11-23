@@ -1,3 +1,4 @@
+import {pushBackHandler} from '../back-history.js';
 import {addMenuActions,addMenuColors,parseAddMenu} from './add-menu.mjs';
 import {escape as e,symbol} from '../dashboard-source/discover-ui.js';
 import {coreText} from '../core-cloud-messages.js';
@@ -34,8 +35,9 @@ export class AddMenu {
   this.dialog.addEventListener('pointerup',event=>this.pointerUp(event));
   this.dialog.addEventListener('pointercancel',()=>this.cancelDrag());
   document.body.append(this.dialog);this.render();this.dialog.showModal();
+  this.history=pushBackHandler(()=>{this.back();if(!this.disposed)return 'keep';});
  }
- dispose(){if(this.disposed)return;this.disposed=true;this.cancelDrag();window.removeEventListener('nourishing-back',this.nativeBack,true);this.dialog.remove();if(this.trigger?.isConnected)this.trigger.focus();}
+ dispose(){if(this.disposed)return;this.disposed=true;this.cancelDrag();window.removeEventListener('nourishing-back',this.nativeBack,true);this.dialog.remove();this.history?.release();if(this.trigger?.isConnected)this.trigger.focus();}
  close(){if(!this.busy){this.dialog.close();this.dispose();}}
  back(){if(this.busy)return;if(this.palette){this.palette=null;this.render();}else if(this.editing){this.editing=false;this.value=structuredClone(this.saved);this.render();}else this.close();}
  visible(){return this.value.order.filter(id=>this.available(id)&&!this.value.hidden.includes(id));}

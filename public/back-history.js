@@ -15,7 +15,43 @@ function atMarker() {
   return history.state?.nourishingBack === marker;
 }
 
+// Installed browsers can send a system Back as a close request before they
+// begin a visual history traversal. Native dialogs and popovers own theirs.
+const useCloseRequests = typeof window !== 'undefined' && 'CloseWatcher' in window &&
+  window.matchMedia('(display-mode: standalone)').matches;
+let closeWatcher = null;
+
+function releaseCloseWatcher() {
+  closeWatcher?.destroy();
+  closeWatcher = null;
+}
+
+function syncCloseWatcher() {
+  if (!useCloseRequests) return;
+  if (!hasAppBack() || document.querySelector('dialog[open],:popover-open')) {
+    releaseCloseWatcher();
+    return;
+  }
+  if (closeWatcher) return;
+  closeWatcher = new CloseWatcher();
+  closeWatcher.onclose = () => {
+    closeWatcher = null;
+    requestAppBack();
+  };
+}
+
+if (useCloseRequests) {
+  document.addEventListener('beforetoggle', event => {
+    if (!event.target.matches('dialog,[popover]')) return;
+    if (event.newState === 'open') releaseCloseWatcher();
+  }, true);
+  document.addEventListener('toggle', event => {
+    if (event.target.matches('dialog,[popover]')) syncCloseWatcher();
+  }, true);
+}
+
 function syncHistory() {
+  syncCloseWatcher();
   if (handling || traversing) return;
   if (hasAppBack()) {
     if (!atMarker()) history.pushState({...history.state, nourishingBack: marker}, '');

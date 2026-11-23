@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {chromium} from 'playwright-core';
 import {CHROME_EXECUTABLE} from './_chrome.mjs';
 
-const origin = 'http://back-history.test';
+const origin = 'https://back-history.test';
 const app = `<button id="activate">Activate app</button>
 <script type="module">
   import {pushBackHandler, requestAppBack, hasAppBack} from '/back-history.js';
@@ -13,7 +13,7 @@ const app = `<button id="activate">Activate app</button>
   window.layer = name => back.pushBackHandler(() => {calls.push(name)});
 </script>`;
 
-async function openApp(t) {
+async function openApp(t, {standalone = false} = {}) {
   const browser = await chromium.launch({executablePath: CHROME_EXECUTABLE, headless: true});
   t.after(() => browser.close());
   const page = await browser.newPage();
@@ -24,6 +24,12 @@ async function openApp(t) {
     if (path === '/back-history.js') return route.fulfill({contentType: 'text/javascript', body: source});
     return route.fulfill({contentType: 'text/html', body: path === '/app' ? app : '<a href="/app">Open app</a>'});
   });
+  if (standalone) {
+    await page.addInitScript(() => {
+      const match = window.matchMedia.bind(window);
+      window.matchMedia = query => match(query === '(display-mode: standalone)' ? 'all' : query);
+    });
+  }
   await page.goto(origin + '/previous');
   await page.getByRole('link').click();
   await page.locator('#activate').click();
@@ -130,5 +136,37 @@ test('disposing all owners restores the root before browser Back, including afte
   await page.evaluate(() => {layer('before reload');});
   await page.reload();
   await page.waitForFunction(() => window.back && !back.hasAppBack() && !history.state?.nourishingBack);
+  await backLeavesApp(page);
+});
+
+test('installed close requests step through a native dialog and nested menus before releasing the root', async t => {
+  const page = await openApp(t, {standalone: true});
+  assert.ok(await page.evaluate(() => matchMedia('(display-mode: standalone)').matches && 'CloseWatcher' in window));
+  await page.evaluate(() => {
+    let detail = true;
+    back.pushBackHandler(() => {
+      calls.push(detail ? 'detail' : 'menu');
+      if (detail) {
+        detail = false;
+        return 'keep';
+      }
+    });
+  });
+  await page.locator('#activate').click();
+  await page.evaluate(() => {
+    const dialog = document.createElement('dialog');
+    document.body.append(dialog);
+    dialog.addEventListener('toggle', event => { window.dialogState = event.newState; });
+    dialog.showModal();
+  });
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => window.dialogState === 'closed');
+  assert.deepEqual(await page.evaluate(() => calls), []);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => calls.length === 1);
+  assert.deepEqual(await page.evaluate(() => calls), ['detail']);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !history.state?.nourishingBack);
+  assert.deepEqual(await page.evaluate(() => calls), ['detail', 'menu']);
   await backLeavesApp(page);
 });
