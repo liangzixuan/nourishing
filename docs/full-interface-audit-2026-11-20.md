@@ -1251,7 +1251,15 @@ Verified production release **1.2.5** at `5e2838fe57bf8160d6084c65517e6d59df3f21
 
 On the installed iPad, Allow Notifications became usable in 34 and 19 ms on two visits. The same check on 1.2.4 took 1308 and 585 ms. A disposable production account registered one Chrome push subscription, reopened the checked switch without another connection read, and disconnected. The test account was deleted.
 
-The More search tab bar hid when a touch browser viewport shrank and returned when it expanded with the query and focus intact. Production Chrome used a simulated keyboard resize. Remote focus on the physical iPad left its viewport at the same height. The Pixel was unavailable over USB.
+The More search tab bar hid when a touch browser viewport shrank and returned when it expanded with the query and focus intact. Production Chrome used a simulated keyboard resize. Remote focus on the physical iPad left its viewport at the same height. The Pixel was unavailable over USB. The user subsequently confirmed the More search keyboard fix on their Pixel.
+
+### Immediate Back gestures and Search Food focus (1.2.6, released)
+
+Verified production release **1.2.6** at `49de6e8448816ef1cee2e9176d9157fe97002c85`. All 20 focused local tests passed. CI passed 739 and skipped 3. Appwrite activated the site and three functions. All 300 checked live assets matched the build, along with the 914-file offline and 249-file startup inventories. [CI and deployment](https://github.com/liangzixuan/nourishing/actions/runs/45136797374)
+
+On the Pixel 10 Pro XL, More to Account reproduced a left-edge slide before the fix. The right edge dismissed Account immediately. On the deployed build, both physical gestures returned directly to More. In recordings started 1 and 54 physical pixels from each edge, the Account heading switched to the More heading without intermediate sliding frames.
+
+From the central Add menu, a typed Search Food query and Back from either side left the Add button without a visible focus ring. The browser suite also checked keyboard entry and focus return. Consecutive physical gestures on the installed release followed Dashboard Settings to Display to More and then the Android launcher, one step per swipe.
 
 ### Findings from all 333 retained states
 
