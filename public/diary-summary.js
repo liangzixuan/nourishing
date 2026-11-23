@@ -6,7 +6,7 @@ import {scoreName} from './diary-summary-source/score-labels.js';
 import {watchDiarySelection} from './diary-selection-nutrition.js';
 import {waterWidgetMarkup} from './water.js';
 
-const labels=()=>({energy:coreText('diary.energy'),consumed:t('mobileDiary.consumed'),expenditure:t('mobileDiary.expenditure'),remaining:t('mobileDiary.remaining'),macros:coreText('diary.macros'),highlights:coreText('diary.highlights'),scores:t('mobileScoreSettings.title'),summary:coreText('diary.daily'),selected:t('mobileNutrientDetail.selection'),previous:coreText('diary.previousSummary'),next:coreText('diary.nextSummary')});
+const labels=()=>({showCard:name=>coreText('diary.showSummaryCard',{name}),energy:coreText('diary.energy'),consumed:t('mobileDiary.consumed'),expenditure:t('mobileDiary.expenditure'),remaining:t('mobileDiary.remaining'),macros:coreText('diary.macros'),highlights:coreText('diary.highlights'),scores:t('mobileScoreSettings.title'),summary:coreText('diary.daily'),selected:t('mobileNutrientDetail.selection'),previous:coreText('diary.previousSummary'),next:coreText('diary.nextSummary')});
 const icons=Object.fromEntries(Object.entries({check:'check_circle',back:'chevron_left',chevron:'chevron_right',plus:'add',more:'more_vert'}).map(([key,name])=>[key,diarySymbol(name)]));
 const nutrientName=row=>nutrientDisplayName(row,uiLanguage());
 let macroMode=null;
@@ -36,5 +36,5 @@ export function mountDiarySummary({root,diary,onAction,selection,onGroupSelect})
   if(action==='toggle-macro-display'){macroMode=(macroMode??facts.diaryDisplay?.policy.macroDisplay??'consumed')==='remaining'?'consumed':'remaining';panel.update(summaryMarkup(diary,facts,chartSummary),chartSummary);return;}
   if(actions.has(action)){event.preventDefault();onAction({action,id:button.dataset.id,kind:button.dataset.kind,anchor:button,amount:button.dataset.amount?Number(button.dataset.amount):undefined});}
  },{signal:controller.signal});
- return {context(){return ready?{entryIds:facts.scope==='selection'?facts.selectedEntryIds:null,chartSummary}:null;},dispose(){disposed=true;controller.abort();selected?.dispose();panel.dispose();}};
+ return {context(){return ready?{entryIds:facts.scope==='selection'?facts.selectedEntryIds:null,chartSummary,diaryDisplay:facts.diaryDisplay}:null;},dispose(){disposed=true;controller.abort();selected?.dispose();panel.dispose();}};
 }

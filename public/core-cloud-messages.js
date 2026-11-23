@@ -116,6 +116,7 @@ const rows={
  'burned':['Burned','Dépensées','Verbrannt','Gastas'],
  'charts.manage':['Manage Charts','Gérer les graphiques','Diagramme verwalten','Gerenciar gráficos'],
  'cycle.title':['Cycle Tracking','Suivi du cycle','Zyklus verfolgen','Acompanhamento do ciclo'],
+ 'diary.showSummaryCard':['Show {{name}}','Afficher {{name}}','{{name}} anzeigen','Mostrar {{name}}'],
  'diary.targetsSummary':['Targets Summary','Résumé des objectifs','Zielübersicht','Resumo das metas'],
  'diary.templates':['Macro Scheduler Templates','Modèles de planification des macros','Vorlagen für den Makro-Zeitplan','Modelos de programação de macros'],
  'diary.scheduledFor':['Scheduled for {{day}}','Prévu pour {{day}}','Geplant für {{day}}','Programado para {{day}}'],

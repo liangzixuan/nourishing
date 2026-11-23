@@ -75,7 +75,7 @@ export function mobileDiarySummary({summary,facts,settings,unit,language,labels,
  if(settings.showScores!==false)pages.push({id:'scores',title:labels.scores,body:`<div class="md-summary-heading">${button(e(labels.scores)+icons.chevron,'choose-scores')}</div><div class="md-highlights" data-md-rows="${Math.max(1,Math.ceil(scores.length/2))}">${scores.map(row=>button(`<span><strong>${e(scoreName(row))}</strong></span><small>${row.value===null?'—':number(row.value,language,0)+'%'}</small><progress value="${row.value??0}" max="100" aria-label="${e(scoreName(row))}"></progress>`,'score-details',`class="md-target md-score" data-id="${e(row.id)}"`)).join('')}</div>`});
  if(!pages.length)return '';
  const index=Math.min(mobileDiarySession.page,pages.length-1);
- return `<section class="md-summary" data-md-summary aria-label="${e(labels.summary)}">${selected?`<div class="md-scope">${e(labels.selected)}</div>`:''}<div class="md-summary-track">${pages.map((page,i)=>`<div class="md-summary-page" data-md-page="${i}" data-md-page-id="${page.id}" ${i!==index?'inert':''}>${page.body}</div>`).join('')}</div><div class="md-pagination"><button type="button" data-md-step="-1" aria-label="${e(labels.previous)}">${icons.back}</button>${pages.map((page,i)=>`<button type="button" data-md-dot="${i}" aria-label="${e(page.title)}" aria-pressed="${i===index}"><span></span></button>`).join('')}<button type="button" data-md-step="1" aria-label="${e(labels.next)}">${icons.chevron}</button></div><p class="md-chart-error" role="status"></p></section>`;
+ return `<section class="md-summary" data-md-summary aria-label="${e(labels.summary)}">${selected?`<div class="md-scope">${e(labels.selected)}</div>`:''}<div class="md-summary-track">${pages.map((page,i)=>`<div class="md-summary-page" data-md-page="${i}" data-md-page-id="${page.id}" ${i!==index?'inert aria-hidden="true"':''}>${page.body}</div>`).join('')}</div><div class="md-pagination"><button type="button" data-md-step="-1" aria-label="${e(labels.previous)}">${icons.back}</button>${pages.map((page,i)=>`<button type="button" data-md-dot="${i}" aria-label="${e(labels.showCard?.(page.title)??page.title)}" aria-pressed="${i===index}"><span></span></button>`).join('')}<button type="button" data-md-step="1" aria-label="${e(labels.next)}">${icons.chevron}</button></div><p class="md-chart-error" role="status"></p></section>`;
 }
 
 export class MobileDiary {
@@ -114,7 +114,11 @@ export class MobileDiary {
   const pages=this.root.querySelectorAll('[data-md-page]');
   if(!pages[index])return;
   mobileDiarySession.page=index;
-  pages.forEach((page,i)=>page.inert=i!==index);
+  pages.forEach((page,i)=>{
+   page.inert=i!==index;
+   if(page.inert)page.setAttribute('aria-hidden','true');
+   else page.removeAttribute('aria-hidden');
+  });
   this.root.querySelectorAll('[data-md-dot]').forEach((dot,i)=>dot.setAttribute('aria-pressed',String(i===index)));
  }
  restorePage(){

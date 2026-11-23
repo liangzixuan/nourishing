@@ -770,11 +770,13 @@ function openCustomWaterSheet() {
 }
 
 function showTargetsSummary(initialId) {
-  openDiaryTargetsSummary({diary, today:today(), initialId, show, close, content, onOpen(screen, id) {
+  const selection = summaryPanel?.context();
+  const targetDiary = selection?.entryIds ? {...diary, summary:{...selection.chartSummary, diaryDisplay:selection.diaryDisplay}} : diary;
+  openDiaryTargetsSummary({diary:targetDiary, today:today(), initialId, show, close, content, onOpen(screen, id) {
     const returnToSummary = () => { showTargetsSummary(id); return true; };
     if (screen === 'report') { close(); navigate('discover', 'report', date); return; }
     if (screen === 'sources') {
-      const panel = openNutrientDetail({nutrient:id, date, show, content,
+      const panel = openNutrientDetail({nutrient:id, date, entryIds:selection?.entryIds ?? null, show, content,
         header:title => header(title).replace('data-close', 'data-return-targets'),
         onReport:day => { close(); navigate('discover', 'report', day); },
       });
