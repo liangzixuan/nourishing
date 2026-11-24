@@ -71,9 +71,9 @@ test('lookupBarcode supports fdcId directly and falls back to USDA Branded on Op
   };
 
   // Barcode fallback: OFF 404 -> USDA Branded match by GTIN/UPC
-  const fallbackReview = await lookupBarcode(state, {code: '060265217003'}, {...context, fetchImpl});
+  const fallbackReview = await lookupBarcode(state, {code: '0602652170003'}, {...context, fetchImpl});
   assert.equal(fallbackReview.resource.source.provider, 'usda-branded');
-  assert.equal(fallbackReview.resource.barcode, '060265217003');
+  assert.equal(fallbackReview.resource.barcode, '0602652170003');
 
   // Direct fdcId lookup + preview + atomic log using named portion
   const directReview = await lookupBarcode(state, {fdcId: 2345678}, {...context, fetchImpl});
@@ -109,7 +109,7 @@ test('searchBranded merges USDA Branded and Open Food Facts, deduplicates barcod
           assert.deepEqual(body.langs, ['fr', 'en']);
           return Response.json({
             hits: [
-              {code: '060265217003', product_name: 'Duplicate Kind Bar', brands: 'KIND'},
+              {code: '0602652170003', product_name: 'Duplicate Kind Bar', brands: 'KIND'},
               {code: '0099988877766', product_name: 'Another Branded Bar', brands: 'Other'},
             ],
             count: 2,
