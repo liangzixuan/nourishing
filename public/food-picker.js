@@ -8,6 +8,7 @@ import {prepareFoodMultiReview} from './local-diary-projection.js';
 import {formatMessage} from './food-search-source/message-format.js';
 import {localFoodSearch} from './local-search.js';
 import {hasCatalogNutrition,localCatalogNutritionFood} from './local-catalog-nutrition.js';
+import {escape as e} from './html.js';
 import {MobileFoodSearch} from './food-search-source/mobile-food-search.js';
 export function multiReviewer(ownerId,{requireTicket=true}={}){
  const opened=readDeviceCache('/api/diary');
@@ -40,11 +41,44 @@ export function multiReviewer(ownerId,{requireTicket=true}={}){
  };
 }
 /** Shared source search surface. The third callback argument identifies the selected corpus. */
-export function mountFoodPicker(root,{onPick,onClose,allowMeals=true,allowRecipes=true,excludeRecipe=null,onBarcode,onBranded,multi=null,restore=null,initialCategory,prepareCatalogDetails=false}){
+export function mountFoodPicker(root,{onPick,onClose,allowMeals=true,allowRecipes=true,excludeRecipe=null,onBarcode,onBranded,onBrandedPick=null,multi=null,restore=null,initialCategory,prepareCatalogDetails=false}){
  root.classList.add('food-picker-host');
  // The search view can append pages. Prepare the latest requested page, with
  // at most one read in flight. A tap on an earlier page selects its own batch.
- let latest=null,reading=null;
+ let latest=null,reading=null,brandedTimer=null,brandedAbort=null,brandedQuery='';
+ let brandedSection=null;
+ function clearBrandedLive(){
+  clearTimeout(brandedTimer);brandedTimer=null;
+  brandedAbort?.abort();brandedAbort=null;brandedQuery='';
+  if(brandedSection){brandedSection.hidden=true;brandedSection.replaceChildren();}
+ }
+ function updateBrandedLive(category,rawQuery){
+  if(!onBrandedPick||!brandedSection)return;
+  const q=(rawQuery??'').trim();
+  if(category!=='brands'||q.length<2){clearBrandedLive();return;}
+  if(q===brandedQuery)return;
+  clearTimeout(brandedTimer);brandedAbort?.abort();brandedQuery=q;
+  brandedSection.hidden=false;
+  brandedSection.innerHTML=`<h3 class="mfs-branded-heading">${e(fc('brandedFoods'))}</h3><div class="mfs-status">${e(formatMessage(uiLanguage(),'mobileSearch.loading'))}</div>`;
+  brandedTimer=setTimeout(async()=>{
+   brandedAbort=new AbortController();const signal=brandedAbort.signal;
+   try{
+    const result=await request('/api/branded/search',{q,page:1,lang:uiLanguage()},signal);
+    if(signal.aborted||!brandedSection.isConnected)return;
+    const rows=result.items??[];
+    brandedSection.innerHTML=`<h3 class="mfs-branded-heading">${e(fc('brandedFoods'))}</h3>`+(rows.length
+     ?rows.map(item=>{
+       const badge=item.provider==='usda-branded'?'USDA':'OFF';
+       const sub=[item.brands,item.barcode].filter(Boolean).join(' · ');
+       return `<button type="button" class="mfs-result mfs-branded-item" ${item.fdcId?`data-live-fdc="${e(item.fdcId)}"`:''} ${item.barcode?`data-live-barcode="${e(item.barcode)}"`:''}><span class="mfs-description"><strong>${e(item.name)}</strong><span class="mfs-serving">${e(sub)}</span></span><span class="mfs-source" title="${e(item.source??'')}">${e(badge)}</span></button>`;
+      }).join('')
+     :`<div class="mfs-status">${e(fc('noProducts'))}</div>`);
+   }catch(error){
+    if(signal.aborted||!brandedSection.isConnected||error.name==='AbortError')return;
+    brandedSection.innerHTML=`<h3 class="mfs-branded-heading">${e(fc('brandedFoods'))}</h3><div class="mfs-status">${e(error.message)}</div>`;
+   }
+  },350);
+ }
  function prepare(items,generation){
   if(!prepareCatalogDetails)return null;
   const ids=items.filter(row=>row.kind==='catalog').map(row=>row.id).sort();
@@ -79,7 +113,7 @@ export function mountFoodPicker(root,{onPick,onClose,allowMeals=true,allowRecipe
   return onPick(kind,row.id,meta);
  }
  const search=new MobileFoodSearch({root,initialCategory,language:uiLanguage(),request:(path,{signal,body}={})=>request(path,body?JSON.parse(body):null,signal),onScan:onBarcode,multi:multi?{...multi,onReview:multiReviewer(multi.ownerId,{requireTicket:Boolean(multi.onQueue)})}:null,restore:restore??multi?.restore,
-  fetchPage:async(params,signal)=>{params.set('allowMeals',String(allowMeals));params.set('allowRecipes',String(allowRecipes));if(excludeRecipe)params.set('excludeRecipe',excludeRecipe);const local=await localFoodSearch(params);const page=local??await request('/api/food-search?'+params,null,signal);
+  fetchPage:async(params,signal)=>{params.set('allowMeals',String(allowMeals));params.set('allowRecipes',String(allowRecipes));if(excludeRecipe)params.set('excludeRecipe',excludeRecipe);if(Number(params.get('offset')||0)===0)updateBrandedLive(params.get('category'),params.get('q'));const local=await localFoodSearch(params);const page=local??await request('/api/food-search?'+params,null,signal);
    if(!signal.aborted)prepare(page.items,page.catalogGeneration);
    return page;},
   onPick:pick,
@@ -87,7 +121,18 @@ export function mountFoodPicker(root,{onPick,onClose,allowMeals=true,allowRecipe
  });
  const restored=restore??multi?.restore;
  if(restored?.search?.result)prepare(restored.search.result.items,restored.search.result.catalogGeneration);
+ if(onBrandedPick){
+  brandedSection=document.createElement('section');brandedSection.className='mfs-branded-live';brandedSection.hidden=true;
+  brandedSection.addEventListener('click',event=>{
+   const btn=event.target.closest('.mfs-branded-item');if(!btn)return;
+   event.preventDefault();event.stopPropagation();
+   const target=btn.dataset.liveFdc?{fdcId:Number(btn.dataset.liveFdc)}:{barcode:btn.dataset.liveBarcode};
+   onBrandedPick(target,search.snapshot());
+  });
+  root.querySelector('.mfs-content').append(brandedSection);
+  updateBrandedLive(search.filters.category,root.querySelector('#food-search')?.value??'');
+ }
  if(onBranded){const button=document.createElement('button');button.type='button';button.dataset.pickerBranded='';button.textContent=fc("searchBranded");button.onclick=onBranded;root.querySelector('.mfs-content').append(button);}
- const dispose=()=>{latest=null;search.dispose();root.classList.remove('food-picker-host');};
+ const dispose=()=>{clearBrandedLive();latest=null;search.dispose();root.classList.remove('food-picker-host');};
  Object.assign(dispose,{snapshot:()=>search.snapshot(),ready:search.multi?.ready??Promise.resolve(),applyEntry:(entry,label)=>search.multi?.applyEntry(entry,label)??false,returnFromDetail:()=>search.multi?.returnFromDetail(),select:(row,entry)=>search.multi?.select(row,entry)??false});return dispose;
 }

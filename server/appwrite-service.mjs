@@ -444,13 +444,15 @@ function buildLibraryAndSearchMethods(ctx) {
       const {owner} = await data(secret);
       validateBarcodeLookup(input);
       await takeBrandedBudget(new TablesDB(elevated()), {database: config.database, owner, operation: 'product'});
-      return readView(secret, state => lookupBarcode(state, input, {owner, reviewSecret: process.env.PHOTO_REVIEW_SECRET}));
+      const usdaApiKey = process.env.USDA_FDC_API_KEY || 'DEMO_KEY';
+      return readView(secret, state => lookupBarcode(state, input, {owner, reviewSecret: process.env.PHOTO_REVIEW_SECRET, usdaApiKey}));
     },
     brandedSearch: async (secret, input) => {
       const {owner} = await data(secret);
       validateBrandedSearch(input);
       await takeBrandedBudget(new TablesDB(elevated()), {database: config.database, owner, operation: 'search'});
-      return searchBranded(input);
+      const usdaApiKey = process.env.USDA_FDC_API_KEY || 'DEMO_KEY';
+      return searchBranded(input, {usdaApiKey});
     },
     barcodePreview: async (secret, input) => {
       const {owner} = await data(secret);

@@ -160,13 +160,15 @@ export function parseOpenFoodFactsProduct(product, barcode) {
 }
 
 /** Explicit full-text search; hits contain identity only. Selected labels are fetched afresh. */
-export async function searchOpenFoodFacts(query,{page=1,pageSize=20,fetchImpl=fetch}={}){
+export async function searchOpenFoodFacts(query,{page=1,pageSize=20,lang='en',fetchImpl=fetch}={}){
   if(typeof query!=='string'||query.trim().length<2||query.length>200)throw providerError('Enter a product or brand name from 2 to 200 characters.',400);
   if(!Number.isSafeInteger(page)||page<1||!Number.isInteger(pageSize)||pageSize<1||pageSize>25)throw providerError('Use a positive search page and page size from 1 to 25.',400);
   const words=query.match(/[\p{L}\p{N}]+/gu)||[];if(!words.length)throw providerError('Enter words from a product or brand name.',400);
+  const code=typeof lang==='string'?lang.toLowerCase().split('-')[0]:'en';
+  const langs=['en','fr','de','pt'].includes(code)&&code!=='en'?[code,'en']:['en'];
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),TIMEOUT_MS);timer.unref?.();
   try{
-    const response=await fetchImpl('https://search.openfoodfacts.org/search',{method:'POST',redirect:'error',signal:controller.signal,headers:{'User-Agent':USER_AGENT,Accept:'application/json','Content-Type':'application/json'},body:JSON.stringify({q:words.join(' '),page,page_size:pageSize,fields:['code','product_name','brands'],langs:['en']})});
+    const response=await fetchImpl('https://search.openfoodfacts.org/search',{method:'POST',redirect:'error',signal:controller.signal,headers:{'User-Agent':USER_AGENT,Accept:'application/json','Content-Type':'application/json'},body:JSON.stringify({q:words.join(' '),page,page_size:pageSize,fields:['code','product_name','brands'],langs})});
     if(!response.ok){await response.body?.cancel().catch(()=>{});throw providerError(response.status===429?'Open Food Facts search is rate limited. Wait before searching again.':`Open Food Facts search returned HTTP ${response.status}. Try again later.`);}
     const data=await readBoundedJson(response,controller);if(!Array.isArray(data.hits)||data.hits.length>pageSize||data.timed_out===true)throw providerError('Open Food Facts returned an incomplete or invalid search page. Try again later.');
     const items=[];let omitted=0;const identities=new Set();

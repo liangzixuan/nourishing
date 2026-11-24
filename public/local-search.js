@@ -89,6 +89,59 @@ async function writeStoredCatalog(data) {
   });
 }
 
+const INDEX_SCHEMA = 2;
+const fold = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const isWordChar = code => (code >= 48 && code <= 57) || (code >= 97 && code <= 122);
+
+function wordBoundaryIndex(text, word, from = 0) {
+  let idx = text.indexOf(word, from);
+  while (idx !== -1) {
+    if (idx === 0 || !isWordChar(text.charCodeAt(idx - 1))) return idx;
+    idx = text.indexOf(word, idx + 1);
+  }
+  return -1;
+}
+
+function relevanceScore(nameFold, words) {
+  if (!words.length) return 0;
+  let score = 0;
+  let prev = -1;
+  let inOrder = true;
+  let firstMatch = Infinity;
+  let nameHits = 0;
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    const bIdx = wordBoundaryIndex(nameFold, word);
+    if (bIdx !== -1) {
+      nameHits++;
+      score -= 30;
+      const end = bIdx + word.length;
+      if (end === nameFold.length || !isWordChar(nameFold.charCodeAt(end))) score -= 12;
+      if (i === 0 && bIdx === 0) score -= 45;
+      if (bIdx < firstMatch) firstMatch = bIdx;
+      if (bIdx <= prev) inOrder = false;
+      prev = bIdx;
+    } else {
+      const sIdx = nameFold.indexOf(word);
+      if (sIdx !== -1) {
+        nameHits++;
+        score -= 10;
+        if (sIdx < firstMatch) firstMatch = sIdx;
+        if (sIdx <= prev) inOrder = false;
+        prev = sIdx;
+      } else {
+        inOrder = false;
+        score += 20;
+      }
+    }
+  }
+  if (words.length > 1 && inOrder) score -= 20;
+  if (nameHits === words.length) score -= 15;
+  if (firstMatch < Infinity) score += Math.min(firstMatch, 60) * 0.5;
+  score += Math.min(nameFold.length, 120) * 0.2;
+  return score;
+}
+
 function hydrateCatalog(raw) {
   if (!raw || raw.version !== 1 || !Array.isArray(raw.rows)) return null;
   const sources = raw.sources ?? [];
@@ -97,8 +150,8 @@ function hydrateCatalog(raw) {
     const [id, name, serving, srcIdx, catIdx, priority, aliases] = tuple;
     const src = sources[srcIdx] ?? {};
     const catId = categories[catIdx] ?? '';
-    const nameFold = String(name).toLowerCase();
-    const searchFold = aliases ? nameFold + ' ' + String(aliases).toLowerCase() : nameFold;
+    const nameFold = fold(name);
+    const searchFold = aliases ? nameFold + ' ' + fold(aliases) : nameFold;
     return {
       id,
       kind: 'catalog',
@@ -114,7 +167,7 @@ function hydrateCatalog(raw) {
       searchFold,
     };
   });
-  return {generation: raw.generation ?? '', datasets: raw.datasets ?? [], rows};
+  return {generation: raw.generation ?? '', schema: raw.schema ?? 1, datasets: raw.datasets ?? [], rows};
 }
 
 async function ensureMemoryCatalog() {
@@ -135,7 +188,7 @@ export function warmLocalCatalogIndex(generation) {
   warmPromise = (async () => {
     try {
       const existing = await ensureMemoryCatalog();
-      if (existing && (!generation || existing.generation === generation)) return existing;
+      if (existing && existing.schema === INDEX_SCHEMA && (!generation || existing.generation === generation)) return existing;
       const response = await fetch('/api/catalog/search-index', {credentials: 'same-origin', cache: 'no-store'});
       if (!response.ok) return null;
       const raw = await response.json();
@@ -158,17 +211,20 @@ function localDatabase(food) {
     ? food.source.datasetId
     : food.source?.name === 'Open Food Facts'
       ? 'open-food-facts'
-      : 'custom';
+      : food.source?.provider === 'usda-branded'
+        ? 'usda-branded'
+        : 'custom';
 }
 
 function categoryFlags(food, kind) {
   const tags = new Set(food.tags ?? []);
   const identified = kind === 'foods' && catalogIdentity(food.source) !== null;
+  const externalBranded = food.source?.name === 'Open Food Facts' || food.source?.provider === 'usda-branded';
   return {
     common: identified,
-    custom: !identified && food.source?.name !== 'Open Food Facts',
+    custom: !identified && !externalBranded,
     supplements: food.classification === 'supplement' || food.categoryId === 'SUPPLEMENTS' || tags.has('Supplement'),
-    brands: tags.has('Brand') || Boolean(food.barcode) || Boolean(food.source?.brands?.trim()),
+    brands: tags.has('Brand') || externalBranded || Boolean(food.barcode) || Boolean(food.source?.brands?.trim()),
     restaurants: food.categoryId === 'RESTAURANT_FOODS' || tags.has('Restaurant'),
     beverages: food.categoryId === 'BEVERAGES',
   };
@@ -193,6 +249,7 @@ function compareRows(sort, a, b) {
   return (
     a.tier - b.tier ||
     b.frequency - a.frequency ||
+    a.rank - b.rank ||
     a.priority - b.priority ||
     a.nameFold.localeCompare(b.nameFold) ||
     a.identity.localeCompare(b.identity)
@@ -224,7 +281,7 @@ export async function localFoodSearch(params) {
   if (!copy?.snapshot?.state) return null;
   const state = offlineEffectiveState(copy);
 
-  const trimmed = q.trim().toLowerCase();
+  const trimmed = fold(q.trim());
   const words = trimmed ? trimmed.split(/[^a-z0-9]+/i).filter(Boolean) : [];
   const dbFilter = databases.length ? new Set(databases) : null;
 
@@ -259,7 +316,7 @@ export async function localFoodSearch(params) {
       if (!datasets.has(database)) {
         datasets.set(database, {
           id: database,
-          name: database === 'custom' ? 'Custom' : database === 'open-food-facts' ? 'Open Food Facts' : item.source?.dataset || database,
+          name: database === 'custom' ? 'Custom' : database === 'open-food-facts' ? 'Open Food Facts' : database === 'usda-branded' ? 'USDA Branded' : item.source?.dataset || database,
         });
       }
       const catIdRef = kind === 'foods' && item.readOnly ? catalogIdentity(item.source)?.id : null;
@@ -276,14 +333,15 @@ export async function localFoodSearch(params) {
       if (category === 'beverages' && !flags.beverages) continue;
       if (dbFilter && !dbFilter.has(database)) continue;
 
-      const nameFold = (item.name ?? '').toLowerCase();
+      const nameFold = fold(item.name);
       if (words.length) {
         const hay = [
           nameFold,
-          ...(item.translations ?? []).map(t => (t.name ?? '').toLowerCase()),
-          ...catalogSourceAliases(item.source).map(s => s.toLowerCase()),
-          (item.barcode ?? '').toLowerCase(),
-          (item.source?.brands ?? '').toLowerCase(),
+          ...(item.translations ?? []).map(t => fold(t.name)),
+          ...catalogSourceAliases(item.source).map(s => fold(s)),
+          fold(item.barcode),
+          fold(item.source?.brands),
+          fold(catalogIdentity(item.source)?.value ?? item.source?.fdcId ?? ''),
         ].join(' ');
         if (!matchesWords(hay, words)) continue;
       }
@@ -294,6 +352,7 @@ export async function localFoodSearch(params) {
         identity: kind + ':' + item.id,
         nameFold,
         tier: !trimmed ? 2 : nameFold === trimmed ? 0 : nameFold.startsWith(trimmed) ? 1 : 2,
+        rank: relevanceScore(nameFold, words),
         priority: -1,
         frequency: use?.frequency ?? 0,
         recent: use?.recent ?? 0,
@@ -305,7 +364,7 @@ export async function localFoodSearch(params) {
           grams: item.grams ?? null,
           ...(item.milliliters !== undefined ? {milliliters: item.milliliters} : {}),
           source: src,
-          sourceType: catalogIdentity(src)?.provider ?? (src?.name === 'Open Food Facts' ? 'open-food-facts' : 'custom'),
+          sourceType: catalogIdentity(src)?.provider ?? (src?.name === 'Open Food Facts' ? 'open-food-facts' : src?.provider === 'usda-branded' ? 'usda-branded' : 'custom'),
           database,
           favorite,
         },
@@ -326,6 +385,7 @@ export async function localFoodSearch(params) {
         identity: row.identity,
         nameFold: row.nameFold,
         tier: !trimmed ? 2 : row.nameFold === trimmed ? 0 : row.nameFold.startsWith(trimmed) ? 1 : 2,
+        rank: relevanceScore(row.nameFold, words),
         priority: row.priority,
         frequency: 0,
         recent: 0,

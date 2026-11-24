@@ -5,7 +5,7 @@ import {isActiveLibraryItem} from './domain/library-status.mjs';
 import {recipeAncestors} from './domain/resource-dependencies.mjs';
 import {parseFoodSearchOptions,searchFoodIndex,foodSearchCategories,foodSearchSorts} from './domain/food-search-index.mjs';
 
-const localDatabase=food=>catalogIdentity(food.source)?food.source.datasetId:food.source?.name==='Open Food Facts'?'open-food-facts':'custom';
+const localDatabase=food=>catalogIdentity(food.source)?food.source.datasetId:food.source?.name==='Open Food Facts'?'open-food-facts':food.source?.provider==='usda-branded'?'usda-branded':'custom';
 const singular={foods:'food',recipes:'recipe',meals:'meal'};
 const reference={foodId:'foods',recipeId:'recipes',mealId:'meals'};
 /** Restrict the search corpus before pagination; ingredient lists cannot contain meals or cycles. */
@@ -16,8 +16,8 @@ export function searchLibraryIngredients(state,foodCatalog,parameters){
  return searchWorkspaceFoods({...state,meals:[],recipes:state.recipes.filter(row=>!ids.has(row.id))},foodCatalog,readFoodSearchQuery(params));
 }
 function categoryFacts(food,kind){
- const tags=new Set(food.tags??[]),identified=kind==='foods'&&catalogIdentity(food.source)!==null;
- return {common:identified?1:0,custom:identified||food.source?.name==='Open Food Facts'?0:1,supplements:food.classification==='supplement'||food.categoryId==='SUPPLEMENTS'||tags.has('Supplement'),brands:tags.has('Brand')||Boolean(food.barcode)||Boolean(food.source?.brands?.trim()),restaurants:food.categoryId==='RESTAURANT_FOODS'||tags.has('Restaurant'),beverages:food.categoryId==='BEVERAGES'};
+ const tags=new Set(food.tags??[]),identified=kind==='foods'&&catalogIdentity(food.source)!==null,externalBranded=food.source?.name==='Open Food Facts'||food.source?.provider==='usda-branded';
+ return {common:identified?1:0,custom:identified||externalBranded?0:1,supplements:food.classification==='supplement'||food.categoryId==='SUPPLEMENTS'||tags.has('Supplement'),brands:tags.has('Brand')||externalBranded||Boolean(food.barcode)||Boolean(food.source?.brands?.trim()),restaurants:food.categoryId==='RESTAURANT_FOODS'||tags.has('Restaurant'),beverages:food.categoryId==='BEVERAGES'};
 }
 
 /** One owner for mobile search membership, source identity and personal usage. */
@@ -33,7 +33,7 @@ export function searchWorkspaceFoods(state,foodCatalog,input={}){
  for(const kind of ['foods','recipes','meals'])for(const item of state[kind]??[]){
   if(!isActiveLibraryItem(item))continue;
   const database=kind==='foods'?localDatabase(item):'custom';
-  if(!datasets.has(database))datasets.set(database,{id:database,name:database==='custom'?'Custom':database==='open-food-facts'?'Open Food Facts':item.source.dataset||database});
+  if(!datasets.has(database))datasets.set(database,{id:database,name:database==='custom'?'Custom':database==='open-food-facts'?'Open Food Facts':database==='usda-branded'?'USDA Branded':item.source.dataset||database});
   const flags=categoryFacts(item,kind),favorite=favorites.has(singular[kind]+':'+item.id);
   const compact={id:item.id,kind,name:item.name,serving:item.serving??null,grams:item.grams??null,...(item.milliliters!==undefined?{milliliters:item.milliliters}:{}),source:compactFoodSource(item.source),database,favorite,knownNutrients:kind==='foods'?Object.values(item.nutrients??{}).filter(Number.isFinite).length:null};
   all.push({item,kind,identity:kind+':'+item.id,database,compact,...flags,favorite,...(usage.get(kind+':'+item.id)??{frequency:0,recent:0})});
@@ -48,7 +48,7 @@ export function searchWorkspaceFoods(state,foodCatalog,input={}){
  }).map(({item,...row})=>({...row,restaurants:row.restaurants?1:0,catalogId:row.kind==='foods'&&identical.has(item.id)?catalogIdentity(item.source).id:null,nameFold:item.name.toLowerCase(),tier:item.name.toLowerCase()===parsed.trimmed?0:item.name.toLowerCase().startsWith(parsed.trimmed)?1:2}));
  const query={options,libraryRows,excludedCatalogIds};
  const result=foodCatalog?.searchWorkspace?foodCatalog.searchWorkspace(options.query,query):searchFoodIndex(null,parsed,query);
- const items=result.items.map(row=>({...row,sourceType:catalogIdentity(row.source)?.provider??(row.source?.name==='Open Food Facts'?'open-food-facts':'custom')}));
+ const items=result.items.map(row=>({...row,sourceType:catalogIdentity(row.source)?.provider??(row.source?.name==='Open Food Facts'?'open-food-facts':row.source?.provider==='usda-branded'?'usda-branded':'custom')}));
  return {version:1,...result,items,options,databases:[...datasets.values()],categories:foodSearchCategories,sorts:foodSearchSorts,identicalSnapshotsDeduplicated:excludedCatalogIds.length};
 }
 

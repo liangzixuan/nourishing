@@ -859,6 +859,7 @@ async function search(restore = null, {applied, selected, initialCategory} = {})
     },
     onBarcode: () => searchBarcode('camera', picker.snapshot()),
     onBranded: () => searchBarcode('search', picker.snapshot()),
+    onBrandedPick: (item, snapshot) => searchBarcode('lookup', snapshot, item),
     multi: {
       ownerId: account.id,
       defaults: restore?.defaults ?? {date, group, time: new Date().toTimeString().slice(0, 5)},
@@ -916,10 +917,11 @@ async function search(restore = null, {applied, selected, initialCategory} = {})
   picker.returnFromDetail();
 }
 
-function searchBarcode(mode, snapshot) {
+function searchBarcode(mode, snapshot, initialLookup = null) {
   const returnToSearch = () => search(snapshot);
   pickerCleanup = openBarcode({
     mode,
+    initialLookup,
     show,
     close,
     returnToPicker: returnToSearch,

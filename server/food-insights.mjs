@@ -60,6 +60,7 @@ export function createInsightCatalog(foods,{metadata={},sourceFactDigests={},nut
  function clientSearchIndex(){
   if(cachedClientIndex)return cachedClientIndex;
   const sources=[],sourceMap=new Map(),catIds=[],catMap=new Map(),rows=[];
+  const priorities=new Map((metadata.datasets??[]).map((row,index)=>[row.id,index]));
   for(const food of foods){
    if(food.sample===true)continue;
    const src=compactFoodSource(food.source);
@@ -69,12 +70,13 @@ export function createInsightCatalog(foods,{metadata={},sourceFactDigests={},nut
    const catId=food.category?.id??'';
    let catIdx=catMap.get(catId);
    if(catIdx===undefined){catIdx=catIds.length;catMap.set(catId,catIdx);catIds.push(catId);}
-   const aliases=[...(food.translations??[]).map(r=>r.name),...catalogSourceAliases(food.source)].filter(Boolean).join(' ');
-   const priority=src?.datasetId==='usda-foundation'?0:src?.datasetId==='usda-sr-legacy'?1:2;
+   const identity=catalogIdentity(food.source);
+   const aliases=[...(food.translations??[]).map(r=>r.name),...catalogSourceAliases(food.source),...(identity?[String(identity.value)]:[])].filter(Boolean).join(' ');
+   const priority=priorities.get(src?.datasetId)??priorities.size;
    rows.push([food.id,food.name,food.serving??'',srcIdx,catIdx,priority,aliases]);
   }
   const datasets=(metadata.datasets??[]).filter(d=>d.foodCount>0).map(({id,name})=>({id,name}));
-  cachedClientIndex={version:1,generation:metadata.generation??'',datasets,sources,categories:catIds,rows};
+  cachedClientIndex={version:1,schema:2,generation:metadata.generation??'',datasets,sources,categories:catIds,rows};
   return cachedClientIndex;
  }
  return {

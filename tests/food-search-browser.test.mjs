@@ -19,6 +19,7 @@ test('source food search categories, options, debounce, paging and child selecti
    if(detailPages.length===1)await firstRead;
    res.setHeader('Content-Type','application/json');return res.end(JSON.stringify({foods:foods.filter(row=>ids.includes(row.id))}));
   }
+  if(path==='/api/branded/search'){res.setHeader('Content-Type','application/json');return res.end(JSON.stringify({items:[{fdcId:2345678,barcode:'602652170003',name:'KIND Almond Bar',brands:'KIND',provider:'usda-branded',source:'USDA Branded Foods'}],nextPage:null}));}
   if(path==='/api/food-search'){queries.push(url.search);const result=searchCloudFoods(state,catalog,readCloudFoodSearchQuery(url.searchParams));if(url.searchParams.get('q')==='apple')await new Promise(resolve=>setTimeout(resolve,600));res.setHeader('Content-Type','application/json');return res.end(JSON.stringify(result));}
   if(path==='/'){res.setHeader('Content-Type','text/html');return res.end(`<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/mobile-theme.css"><link rel="stylesheet" href="/diary.css"><link rel="stylesheet" href="/app-shell.css"><link rel="stylesheet" href="/food-search-source/mobile-food-search.css"></head><body class="discover-mobile dark"><dialog id="sheet" open><div id="sheet-content"><header class="sheet-header"><button data-close>Close</button><h2>Add Food</h2></header><div id="picker"></div></div></dialog><script type="module">import {mountFoodPicker} from '/food-picker.js';window.mount=(options={})=>{window.cleanup?.();window.cleanup=mountFoodPicker(document.querySelector('#picker'),{onPick:(kind,id,meta)=>window.picked={kind,id,meta},onBarcode:()=>window.scanned=true,...options});};window.mount();document.querySelector('[data-close]').onclick=()=>{window.closed=true;window.cleanup();};</script></body></html>`);}
   if(!/^\/[a-zA-Z0-9/_.-]+\.(?:js|mjs|css|woff2)$/.test(path)||path.includes('..'))return res.writeHead(404).end();res.setHeader('Content-Type',path.endsWith('.css')?'text/css':path.endsWith('.woff2')?'font/woff2':'text/javascript');res.end(readFileSync(new URL('../public'+path,import.meta.url)));
@@ -61,6 +62,12 @@ test('source food search categories, options, debounce, paging and child selecti
   await page.waitForFunction(id=>window.openedFood===id,foods[60].id);
   assert.deepEqual(detailPages[1],[foods[59].id,foods[60].id]);
   assert.equal(detailPages.length,2);
+  await page.evaluate(()=>window.mount({onBrandedPick:(target)=>{window.brandedPicked=target;}}));
+  await page.locator('[data-mfs-category=brands]').click();
+  await input.fill('kind');
+  await page.locator('.mfs-branded-item').first().waitFor();
+  await page.locator('.mfs-branded-item').first().click();
+  assert.deepEqual(await page.evaluate(()=>window.brandedPicked),{fdcId:2345678});
   assert.deepEqual(errors,[]);
  }finally{releaseFirst();await browser?.close();catalog.disposeSearch();await new Promise(resolve=>server.close(resolve));}
 });
