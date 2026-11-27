@@ -82,5 +82,5 @@ export {fastingRecordLabel} from './domain/fasting-view.mjs';
 export {prepareFoodMultiReview} from './domain/food-multi-review.mjs';
 
 export {checkLocalReviewSave} from './domain/signed-review-time.mjs';
-export {applyTargetPolicyToState,applyMealSuggestionPreferenceLocal} from './local-target-policy.mjs';
+export {applyTargetPolicyToState,applyMealSuggestionPreferenceLocal} from './local-target-policy-write.mjs';
 export {changeCoachPreferences,coachPreferencesView} from './domain/coach-preferences.mjs';

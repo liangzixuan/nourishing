@@ -14,12 +14,12 @@ import {applyWriteToState,projectSavedDefinition} from './write-projection.js';
 import {diaryGroups,defaultDiaryGroup,projectLocalDiary,createDisplayView,projectDiaryCalendar,libraryItems,usesNutrientTargets,projectNutrientTargetResponse,coachPreferencesView} from './local-diary-projection.js';
 import {offlineFailure} from './offline-errors.js';
 
-const listeners=new Set();
-let running=null,started=false,timer,retryDelay=1000;
+const runtime=(globalThis[Symbol.for('nourishing.backgroundWrites')]??={listeners:new Set(),running:null,started:false,timer:null,retryDelay:1000});
+const listeners=runtime.listeners;
 const emit=value=>{for(const listener of listeners)listener(value);};
 const changed=()=>window.dispatchEvent(new Event('nourishing-local-changed'));
 const restored=()=>Object.assign(offlineFailure('restored'),{status:409});
-export const isBackgroundWritesRunning=()=>started;
+export const isBackgroundWritesRunning=()=>runtime.started;
 async function verifiedSnapshot(owner,ticket){
  const snapshot=await request('/api/offline');
  if(snapshot?.version!==1||snapshot.identity?.ownerId!==owner||typeof snapshot.identity.generation!=='string'||!snapshot.identity.generation||!snapshot.state||typeof snapshot.state!=='object'||Array.isArray(snapshot.state))throw Error('The saved diary version could not be verified. Retry to sync this change.');
@@ -49,12 +49,12 @@ export async function queueBackgroundWrite(path,body,projection={},ownerTicket,o
  const row=await persistBackgroundWrite(ticket,{path,method:options.method,body,projection,operationId:options.operationId});
  changed();schedule();return {ok:true,queued:true,requestId:row.command.operationId,revision:body.revision};
 }
-function schedule(delay=50){clearTimeout(timer);timer=setTimeout(()=>void flushBackgroundWrites().catch(()=>{}),typeof delay==='number'?delay:50);}
-function retryLater(){if(started&&navigator.onLine!==false){schedule(retryDelay);retryDelay=Math.min(retryDelay*2,30000);}}
+function schedule(delay=50){clearTimeout(runtime.timer);runtime.timer=setTimeout(()=>void flushBackgroundWrites().catch(()=>{}),typeof delay==='number'?delay:50);}
+function retryLater(){if(runtime.started&&navigator.onLine!==false){schedule(runtime.retryDelay);runtime.retryDelay=Math.min(runtime.retryDelay*2,30000);}}
 export function startBackgroundWrites(){
- if(started)return;started=true;
+ if(runtime.started)return;runtime.started=true;
  window.addEventListener('online',schedule);
-  window.addEventListener('nourishing-local-changed',schedule);
+ window.addEventListener('nourishing-local-changed',schedule);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();});
  schedule();
 }
@@ -90,7 +90,7 @@ async function prepareQueuedPhoto(row,ticket){
  return updated;
 }
 export async function flushBackgroundWrites(){
- if(running)return running;
+ if(runtime.running)return runtime.running;
  const drain=async()=>{
   let copy=await readWriteCopy();if(!copy||copy.locked)return;
   const owner=copy.ownerId,epoch=copy.ticket.epoch;
@@ -108,7 +108,7 @@ export async function flushBackgroundWrites(){
     if(row.transport?.accountWrite){
      const result=await sendAccountWrite(row.transport,copy.ticket);
      await acknowledgeBackgroundWrite(copy.ticket,id,result);
-     retryDelay=1000;emit({saved:true,result,requestId:id});changed();
+     runtime.retryDelay=1000;emit({saved:true,result,requestId:id});changed();
      window.dispatchEvent(new Event('nourishing-data-changed'));
      continue;
     }
@@ -162,7 +162,7 @@ export async function flushBackgroundWrites(){
      await changeBackgroundWrite(copy.ticket,id,(_current,next)=>Object.assign(next,acceptOfflineReceipt(next,row,result,{snapshotRefreshed})));
     }
     revision=result.revision??null;
-    retryDelay=1000;emit({saved:true,result,requestId:id});changed();
+    runtime.retryDelay=1000;emit({saved:true,result,requestId:id});changed();
     window.dispatchEvent(new Event('nourishing-data-changed'));
    }catch(error){
     const permanent=error.status>=400&&error.status<500&&![401,408,429].includes(error.status);
@@ -183,8 +183,8 @@ export async function flushBackgroundWrites(){
   }
  };
  if(navigator.onLine===false)return;
- running=(navigator.locks?navigator.locks.request('nourishing-offline-sync',drain):drain()).catch(error=>{emit({error,retry:flushBackgroundWrites});retryLater();throw error;}).finally(()=>{running=null;});
- return running;
+ runtime.running=(navigator.locks?navigator.locks.request('nourishing-offline-sync',drain):drain()).catch(error=>{emit({error,retry:flushBackgroundWrites});retryLater();throw error;}).finally(()=>{runtime.running=null;});
+ return runtime.running;
 }
 
 export async function overlayPendingResponse(path,value,nutrientTargetRevision){

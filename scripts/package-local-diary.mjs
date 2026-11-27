@@ -2,7 +2,10 @@ import {fileURLToPath} from 'node:url';
 import {rolldown} from 'rolldown';
 const browserNodeShims={
  name:'browser-node-shims',
- resolveId(source){if(source==='node:crypto'||source==='node:util')return '\0'+source;},
+ resolveId(source){
+  if(source==='./cycle-view.mjs')return fileURLToPath(new URL('../server/local-cycle-view.mjs',import.meta.url));
+  if(source==='node:crypto'||source==='node:util')return '\0'+source;
+ },
  load(id){
   if(id==='\0node:crypto')return 'export const randomUUID=()=>globalThis.crypto.randomUUID();';
   if(id==='\0node:util')return 'export function isDeepStrictEqual(a,b){return JSON.stringify(a)===JSON.stringify(b);}';
