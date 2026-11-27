@@ -126,21 +126,25 @@ test('both edges step back once, respect an editor saving and leave tab roots to
   await right();await editor.waitFor({state:'detached'});
   await page.locator('[data-account-edit=name]').filter({hasText:'Alice Example'}).click();
   await editor.getByLabel('Name',{exact:true}).fill('Saved');
+  let updateDone=Promise.resolve();
   await page.route('**/api/account/update',async route=>{
-   await new Promise(done=>{finishSave=done;});await route.continue();
+   updateDone=new Promise(done=>{finishSave=done;}).then(()=>route.continue().catch(()=>{}));
+   await updateDone;
   });
   await editor.getByRole('button',{name:'Save',exact:true}).click();
   await editor.waitFor({state:'detached'});
   await page.locator('[data-account-edit=name]').filter({hasText:'Saved'}).waitFor();
-  finishSave?.();finishSave=null;await page.unroute('**/api/account/update');
+  finishSave?.();finishSave=null;await updateDone;await page.unroute('**/api/account/update');
   await page.locator('[data-account-edit=password]').click();
   await editor.getByLabel('Current password',{exact:true}).fill('current-password');
+  let reauthDone=Promise.resolve();
   const verifying=new Promise(resolve=>page.route('**/api/account/reauthenticate',async route=>{
-   await new Promise(done=>{finishSave=done;resolve();});await route.continue();
+   reauthDone=new Promise(done=>{finishSave=done;resolve();}).then(()=>route.continue().catch(()=>{}));
+   await reauthDone;
   }));
   await editor.getByRole('button',{name:'Continue',exact:true}).click();await verifying;
   await left();assert.equal(await editor.isVisible(),true);
-  finishSave?.();finishSave=null;await page.unroute('**/api/account/reauthenticate');
+  finishSave?.();finishSave=null;await reauthDone;await page.unroute('**/api/account/reauthenticate');
   await editor.getByLabel('New password',{exact:true}).waitFor();
   await left();await editor.waitFor({state:'detached'});
   await page.locator('[data-account-edit=name]').click();await left();await editor.waitFor({state:'detached'});await page.locator('[data-account-edit=name]').waitFor();

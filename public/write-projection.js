@@ -81,7 +81,10 @@ export function applyWriteToState(state,row,result){
  if(type==='day.complete'){state.settings.completedDays=(state.settings.completedDays??[]).filter(day=>day!==p.date);if(p.completed)state.settings.completedDays.push(p.date);}
  if(row.projection?.diarySettings)Object.assign(state.settings,row.projection.diarySettings);
  if(type==='pauseLife.save')state.settings.pauseLife=structuredClone(p.policy);
- if(type==='dashboard.widgets')state.settings.dashboard={...state.settings.dashboard,version:1,widgets:{...state.settings.dashboard?.widgets,...p.patch}};
+ if(type==='dashboard.widgets'){
+  const base=state.settings.dashboard??{widgets:{},weightMetric:null};
+  state.settings.dashboard={widgets:{energy:true,weight:true,fasting:true,nutrition:true,coach:true,streaks:true,sleep:true,glucose:false,cycle:false,...base.widgets,...p.patch},weightMetric:base.weightMetric??null};
+ }
  if(type==='dashboard.preferences')state.settings.discover={...state.settings.discover,version:1,...p.patch};
  if(type==='addMenu.save')state.settings.addMenu=structuredClone(p.addMenu);
  if(type==='cycle.display')state.settings.cycleDisplay=structuredClone(p.policy);

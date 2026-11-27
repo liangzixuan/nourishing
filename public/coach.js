@@ -5,7 +5,7 @@ import {carbohydrateDisplayLabel,carbohydrateControlDescription} from './report-
 import {uiLanguage,t} from './app-language.js';
 import {request,queueCommand} from './diary-api.js';
 import {readDeviceCache} from './device-cache.js';
-import {isBackgroundWritesRunning,flushBackgroundWrites} from './background-writes.js';
+import {isBackgroundWritesRunning,flushBackgroundWrites,onBackgroundWriteStatus} from './background-writes.js';
 import {localCoachView} from './local-engine.js';
 import {coachPreferencesView} from './local-diary-projection.js';
 import {escape as e} from './html.js';
@@ -25,7 +25,11 @@ export function openCoach({date,show,close,header,content,onChange=async()=>{},o
  const number=value=>Number.isFinite(value)?value.toLocaleString(uiLanguage(),{maximumFractionDigits:2}):'—';
  const amount=(value,unit)=>`${number(displayValue(value,unit,data.energyUnit))} ${displayUnit(unit,data.energyUnit)}`;
  const observer=new MutationObserver(()=>{if(!root.isConnected)dispose();});observer.observe(content,{childList:true,subtree:true});
- function dispose(){if(disposed)return;disposed=true;life.abort();readController?.abort();mutation?.dispose();observer.disconnect();}
+ const unsubscribeWrites=onBackgroundWriteStatus(event=>{
+  if(!event.discarded||!alive()||editor)return;
+  void localCoachView().then(local=>{if(local&&alive()&&!editor){data={...data,...local};render();}});
+ });
+ function dispose(){if(disposed)return;disposed=true;life.abort();readController?.abort();mutation?.dispose();unsubscribeWrites();observer.disconnect();}
  function facts(){return result?`<section class="coach-results" aria-label="${e(dc('recordedFacts'))}"><div class="coach-result-heading"><h2>${e(dc('recordedFacts'))}</h2><span>${e(result.date)}</span></div>${result.facts.map(fact=>fact.kind==='energy'?`<article><h3>${e(dc('energyBalance'))}</h3><dl>${[['expenditure',dc('estimatedExpenditure')],['target',dc('intakeTarget')],['remaining',t('energyReport.remaining')],['balance',dc('balance')]].map(([key,label])=>`<div><dt>${label}</dt><dd>${e(amount(fact[key],'kcal'))}</dd></div>`).join('')}</dl></article>`:`<article><h3>${e(fact.kind==='recorded-water'?dc('drinkingWater'):fact.kind==='tracked-carbohydrate'?carbohydrateDisplayLabel(fact.definition,uiLanguage()):nutrientDisplayName({id:fact.nutrient,name:fact.name},uiLanguage()))}</h3><strong class="coach-value">${e(amount(fact.value,fact.unit))}</strong><span>${e(dc('targetAmount',{amount:amount(fact.target,fact.unit)}))}</span>${fact.coverage&&!fact.coverage.complete?`<small>${e(dc('partialFoods',fact.coverage))}</small>`:''}</article>`).join('')}</section><details class="coach-details"><summary>${e(dc('detailsLimits'))}</summary>${result.observations.map(row=>`<p>${e(row.text)}${row.carbohydrateDefinition!==undefined?' '+e(carbohydrateControlDescription(row.carbohydrateDefinition,uiLanguage())):''}${row.reasonCodes?.length?' '+row.reasonCodes.map(code=>e(t('energyGuidance.reason.'+code))).join(' '):''}</p>`).join('')}${result.limitations.map(text=>`<p>${e(text)}</p>`).join('')}</details>`:'';}
  function preferences(){return `<form class="coach-preferences" data-coach-preferences ${setupStep?'data-first-use':''}><header class="sheet-header coach-editor-header"><button type="button" data-coach-cancel>${e(t('common.cancel'))}</button><h2 id="sheet-title">${e(setupStep?t('discover.getStarted'):dc('goalsPreferences'))}</h2><button type="submit">${e(setupStep?t('discover.next'):t('common.save'))}</button></header><div class="coach-editor-body">${setupStep?`<p>${e(dc('coachIntro'))}</p>`: ''}${[['goals',t('coach.preferencesGoals')],['dietaryPreferences',t('discover.coach.dietaryPreferences')]].map(([key,label])=>{const chosen=coachChoices(editor[key]),all=[...new Set([...data.choices[key],...chosen])];return `<section class="coach-chip-section"><h3>${label} <span data-coach-count="${key}">(${chosen.length||t('settings.none')})</span></h3><div class="coach-chips">${all.map(value=>`<button type="button" data-choice="${key}" data-value="${e(value)}" aria-pressed="${chosen.includes(value)}">${e(choiceLabel(value))}</button>`).join('')}</div></section>`;}).join('')}<section class="coach-chip-section"><label for="coach-notes">${e(dc(setupStep?'coachNotesInstructions':'otherNotes'))}</label><textarea id="coach-notes" aria-label="${e(t('clients.notes'))}" name="notes" maxlength="2000" rows="3" ${setupStep?`placeholder="${e(dc('coachNotesExample'))}"`:''}>${e(editor.notes)}</textarea></section><small>${e(dc('preferencesTargets'))}</small></div></form>`;}
  function render(){
@@ -109,7 +113,17 @@ export function openCoach({date,show,close,header,content,onChange=async()=>{},o
   if(button.hasAttribute('data-coach-cancel')){if(setupStep){dispose();close();}else{editor=null;render();}return;}
   if(button.hasAttribute('data-coach-back')){setupStep='choices';understood=false;render();return;}
   if(button.dataset.choice){const key=button.dataset.choice;button.setAttribute('aria-pressed',String(button.getAttribute('aria-pressed')!=='true'));editor[key]=updateCoachChoices(editor[key],[...root.querySelectorAll(`[data-choice="${key}"][aria-pressed=true]`)].map(node=>node.dataset.value));root.querySelector(`[data-coach-count="${key}"]`).textContent='('+(coachChoices(editor[key]).length||t('settings.none'))+')';return;}
-  if(button.hasAttribute('data-coach-edit')){editor=structuredClone(data.preferences);render();}
+  if(button.hasAttribute('data-coach-edit')){
+   if(isBackgroundWritesRunning()){
+    void localCoachView().then(local=>{
+     if(!alive()||editor)return;
+     if(local)data={...data,...local};
+     editor=structuredClone(data.preferences);render();
+    });
+    return;
+   }
+   editor=structuredClone(data.preferences);render();
+  }
   else if(button.hasAttribute('data-coach-retry'))void(retry==='load'?load():ask());
   else if(button.dataset.question){question=questionLabel({'Daily summary':'overview',Protein:'protein',Carbs:'carbs',Water:'water'}[button.dataset.question]);void ask();}
   else if(button.hasAttribute('data-coach-report')){dispose();close();onReport?.(selectedDate);}

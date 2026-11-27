@@ -104,6 +104,13 @@ export async function flushBackgroundWrites(){
    if(!copy||copy.locked||copy.ownerId!==owner||copy.ticket.epoch!==epoch||!await currentPrivateResponseTicket(copy.ticket))return;
    let row=copy.pending[0];if(!row)return;
    const id=row.command.operationId;
+   if(!row.transport?.accountWrite&&!snapshotChecked){
+    ({snapshotRefreshed,revision}=await verifiedSnapshot(owner,copy.ticket));
+    snapshotChecked=true;
+    copy=await readWriteCopy();
+    if(!copy||copy.locked||copy.ownerId!==owner||copy.ticket.epoch!==epoch||!await currentPrivateResponseTicket(copy.ticket))return;
+    row=copy.pending.find(item=>item.command.operationId===id);if(!row)continue;
+   }
    try{
     if(row.transport?.accountWrite){
      const result=await sendAccountWrite(row.transport,copy.ticket);
@@ -111,13 +118,6 @@ export async function flushBackgroundWrites(){
      runtime.retryDelay=1000;emit({saved:true,result,requestId:id});changed();
      window.dispatchEvent(new Event('nourishing-data-changed'));
      continue;
-    }
-    if(!snapshotChecked){
-     ({snapshotRefreshed,revision}=await verifiedSnapshot(owner,copy.ticket));
-     snapshotChecked=true;
-     copy=await readWriteCopy();
-     if(!copy||copy.locked||copy.ownerId!==owner||copy.ticket.epoch!==epoch||!await currentPrivateResponseTicket(copy.ticket))return;
-     row=copy.pending.find(item=>item.command.operationId===id);if(!row)continue;
     }
     if(row.command.generation!==copy.snapshot?.identity.generation)throw restored();
     let result;
