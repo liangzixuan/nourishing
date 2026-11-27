@@ -1,4 +1,4 @@
-import {updateFavoriteList,applyFastingChange,prepareDiaryRecordUpdate,storeChartDefinition} from './local-diary-projection.js';
+import {updateFavoriteList,applyFastingChange,prepareDiaryRecordUpdate,storeChartDefinition,applyTargetPolicyToState,applyMealSuggestionPreferenceLocal,changeCoachPreferences} from './local-diary-projection.js';
 // Serializable local effects for acknowledged and pending background commands.
 import {removeLibraryItem,applyProfileSettingsProjection,projectDiaryBulkWrite,copiedDiaryRecords} from './local-diary-projection.js';
 import {diaryGroupSlots,editDiaryGroupSlot,renameDiaryGroup} from './local-group-rename.js';
@@ -41,6 +41,15 @@ export function applyWriteToState(state,row,result){
  for(const food of row.projection?.foods??[])if(!(state.foods??[]).some(item=>item.id===food.id))replace('foods',structuredClone(food));
  if(type==='favorite.set')state.settings.favorites=updateFavoriteList(state.settings.favorites??[],{kind:p.kind,id:p.id},p.enabled);
  if(type.startsWith('profileSettings.')){const record=applyProfileSettingsProjection(state,row.command,id);if(record)record._pending=!result;}
+ if(type.startsWith('targetPolicy.')){try{applyTargetPolicyToState(state,row.command,{today:row.projection?.today??new Date().toLocaleDateString('en-CA')});}catch{/* Server validation remains authoritative. */}}
+ if(type==='coach.preferences'){try{changeCoachPreferences(state,p);state.settings.coachStarted=true;}catch{if(p?.preferences){state.settings.coachPreferences=structuredClone(p.preferences);state.settings.coachStarted=true;}}}
+ if(type==='foodSuggestion.preference'){try{applyMealSuggestionPreferenceLocal(state,p);}catch{/* Server validation remains authoritative. */}}
+ if((type==='text.log'||type==='repeat.apply')&&!result?.records?.entries&&row.projection?.entries){
+  row.projection.entries.forEach((item,index)=>replace('entries',{...item,id:`${row.command.operationId}-${index}`,_pending:!result}));
+ }
+ if(type==='food.copy'&&!result?.records?.foods&&row.projection?.foods?.[0]){
+  replace('foods',{...structuredClone(row.projection.foods[0]),id:result?.item?.id??row.command.operationId,_pending:!result});
+ }
  if(type==='entry.add'&&!result?.records?.entries){
   if(p.mealId&&state.settings.alwaysExpandMeals===true){
    for(const [index,child] of expandedDiarySources(state,{...p,id:row.command.operationId}).entries())replace('entries',{...child,id:`${row.command.operationId}-${index}`,_pending:!result});

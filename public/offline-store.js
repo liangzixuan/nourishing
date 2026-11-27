@@ -68,15 +68,19 @@ export async function queueOffline(copy,type,payload,preview,foodVersion,operati
 
 // Online and offline edits share this account-owned outbox. A snapshot is optional
 // during the first launch; a command must never wait for a full workspace download.
-export async function persistBackgroundWrite(expected,{path,body,projection={}}){
+export async function persistBackgroundWrite(expected,{path,method,body,projection={},operationId}){
  return transact(({active,copy,accounts})=>{
   assertTicket(active,copy,expected);
   if(active.cacheLocked)throw offlineFailure('signInFirst');
   const next=copy??{ownerId:active.ownerId,snapshot:null,pending:[],locked:false,revision:0};
-  body=remapWriteReferences(structuredClone(body),next.recordIds??{});projection=remapWriteReferences(structuredClone(projection),next.recordIds??{});
-  remapDiaryReviewIdentities(projection.diaryReview,next.recordIds??{});
-  const prior=next.pending.find(row=>row.command.operationId===body.requestId);
-  if(prior){if(JSON.stringify(prior.transport)!==JSON.stringify({path,body}))throw Error('This save has changed.');return prior;}
+  const accountWrite=path==='/api/account/update'||path==='/api/profile';
+  const opId=operationId??body.requestId??crypto.randomUUID();
+  body=accountWrite?structuredClone(body):remapWriteReferences(structuredClone(body),next.recordIds??{});
+  projection=accountWrite?structuredClone(projection):remapWriteReferences(structuredClone(projection),next.recordIds??{});
+  if(!accountWrite)remapDiaryReviewIdentities(projection.diaryReview,next.recordIds??{});
+  const transport={path,...(method?{method}:{}),body:structuredClone(body),...(accountWrite?{accountWrite:true}:{})};
+  const prior=next.pending.find(row=>row.command.operationId===opId);
+  if(prior){if(JSON.stringify(prior.transport)!==JSON.stringify(transport))throw Error('This save has changed.');return prior;}
   if(body.type==='scoreDisplay.change'||body.type==='diaryDisplay.save'){
    if(!next.snapshot?.state)throw offlineFailure('copyChanged');
    projection.diarySettings=prepareDiaryDisplayCommand(offlineEffectiveState(next),body).payload;
@@ -85,7 +89,8 @@ export async function persistBackgroundWrite(expected,{path,body,projection={}})
  const createdAt=new Date(signedReview?reviewTimeAtSave():Date.now());
   if(path==='/api/photos/save')checkLocalReviewSave('photo.log',body,active.ownerId,createdAt.getTime());
   if(path==='/api/barcode/save')checkLocalReviewSave('barcode.log',body.payload,active.ownerId,createdAt.getTime());
-  const row={command:{ownerId:active.ownerId,generation:next.snapshot?.identity.generation??null,operationId:body.requestId,type:body.type??(path==='/api/snapshots/save'?'snapshot.add':path==='/api/note-photos/save'?'note.photo.save':'photo.log'),payload:body.payload??body},transport:{path,body:structuredClone(body)},preview:{},projection:structuredClone(projection),status:'pending',error:null,createdAt:createdAt.toISOString()};
+  const type=body.type??(path==='/api/account/update'?'account.name':path==='/api/profile'?'account.profile':path==='/api/snapshots/save'?'snapshot.add':path==='/api/note-photos/save'?'note.photo.save':'photo.log');
+  const row={command:{ownerId:active.ownerId,generation:next.snapshot?.identity.generation??null,operationId:opId,type,payload:body.payload??body},transport,preview:{},projection:structuredClone(projection),status:'pending',error:null,createdAt:createdAt.toISOString()};
   // A photo deleted before its first send has no server record to remove.
   // Once attempted, keep both writes so an uncertain receipt resolves first.
   const draft=body.type==='snapshot.delete'&&next.pending.find(item=>item.command.type==='snapshot.add'&&item.command.operationId===body.payload.id&&!item.attempted);
@@ -112,6 +117,13 @@ export async function acknowledgeBackgroundWrite(expected,id,result){
  return transact(({active,copy,accounts,responses})=>{
   assertTicket(active,copy,expected);if(!copy)return;
   const row=copy.pending.find(item=>item.command.operationId===id);if(!row)return;
+  if(row.transport?.accountWrite){
+   copy.pending=copy.pending.filter(item=>item.command.operationId!==id);
+   for(const [path,value]of Object.entries(row.projection?.responses??{})){
+    responses.put({path,value:structuredClone(value),savedAt:Date.now()});
+   }
+   copy.revision++;accounts.put(copy);return;
+  }
   const identities=writeReceiptIdentities(row,result);
   if(copy.snapshot?.state)applyWriteToState(copy.snapshot.state,row,result);
   copy.recordIds={...copy.recordIds,...identities};
@@ -187,7 +199,6 @@ export async function invalidatePrivateResponsePaths(expected,shouldDrop,{staleO
  return responseTransaction(({active,meta,responses,lru,done})=>{
   if(!sameSession(active,expected)){done(null);return;}
   if(staleOnly){
-   active.cacheRevision=(active.cacheRevision??0)+1;meta.put(active,'active');
    const targets=lru.filter(row=>shouldDrop(row.path));
    if(!targets.length){done(cacheTicket(active));return;}
    let remaining=targets.length;

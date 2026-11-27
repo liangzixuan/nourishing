@@ -3,6 +3,7 @@ import {uiLanguage,t} from './app-language.js';
 import {offlineCopy,currentPrivateResponseTicket} from './offline-store.js';
 import {offlineEffectiveState} from './offline-model.js';
 import {fastingView} from './local-diary-projection.js';
+import {localFastingView} from './local-engine.js';
 import {request,queueCommand} from './diary-api.js';
 import {readDeviceCache} from './device-cache.js';
 import {onBackgroundWriteStatus} from './background-writes.js';
@@ -39,11 +40,24 @@ export function mountFasting({page,headerRoot,onBack,onChange=async()=>{},initia
   controller?.abort();controller=new AbortController();const signal=controller.signal,id=++sequence;loading=true;
   if(data&&!more&&!silent)root.querySelector('fieldset.dc-dialog-body')?.setAttribute('disabled','');
   if(!data)root.innerHTML=`<p class="empty" role="status">${t('mobileNutrientDetail.loading')}</p>`;else root.querySelector('[data-fh-list-more]')?.setAttribute('disabled','');
+  let hadLocal=false;
+  const finishOpen=async()=>{
+   loading=false;if(!onActionClose)render();
+   if(initialAction){const action=initialAction;initialAction=null;if(action==='new'||action==='quick')openQuick();else if(action==='end')confirmEnd();else if(action==='edit-fast-start'||action==='edit-fast-goal'){const active=data.active;if(!active||!activeId||active.id!==activeId||action==='edit-fast-goal'&&active.goalHours===null){await changed();return true;}editor=openActiveFastTime({active,field:action==='edit-fast-start'?'start':'goal',context:()=>data,onClose:onActionClose,onSaved:changed});}else if(action==='edit-active-fast'){if(!data.active||activeId&&data.active.id!==activeId){onActionClose?.();return true;}const active=data.history.rows.find(row=>row.id===data.active.id)??data.active;openEditor('history',active);}else if(action==='start-now')startNow(data.schedules.filter(row=>row.enabled&&row.nextStart).sort((a,b)=>a.nextStart.localeCompare(b.nextStart))[0]);}
+  };
   try{
+   if(!more&&!data){
+    const firstQuery={limit:Math.min(100,loadedCount)};
+    const cached=await readDeviceCache('/api/fasting?'+new URLSearchParams(firstQuery)).catch(()=>({}));
+    if(cached.ticket&&cached.value===undefined){
+     const local=await localFastingView(firstQuery);
+     if(local&&alive()&&id===sequence){data=local;hadLocal=true;await finishOpen();}
+    }
+   }
    if(more){const next=await readPage({offset:data.history.rows.length,limit:25,revision:data.history.revision},signal);if(!alive()||id!==sequence)return false;data={...next,history:{...next.history,rows:[...data.history.rows,...next.history.rows]}};loadedCount=data.history.rows.length;}
-   else{const next=await readPage({limit:Math.min(100,loadedCount)},signal);while(next.history.rows.length<Math.min(loadedCount,next.history.total)){const extra=await readPage({offset:next.history.rows.length,limit:Math.min(100,loadedCount-next.history.rows.length),revision:next.history.revision},signal);next.history.rows.push(...extra.history.rows);}if(!alive()||id!==sequence)return false;data=next;for(const key of selected)if(!data.history.rows.some(row=>row.id===key))selected.delete(key);}
-   loading=false;if(!onActionClose)render();if(initialAction){const action=initialAction;initialAction=null;if(action==='new'||action==='quick')openQuick();else if(action==='end')confirmEnd();else if(action==='edit-fast-start'||action==='edit-fast-goal'){const active=data.active;if(!active||!activeId||active.id!==activeId||action==='edit-fast-goal'&&active.goalHours===null){await changed();return true;}editor=openActiveFastTime({active,field:action==='edit-fast-start'?'start':'goal',context:()=>data,onClose:onActionClose,onSaved:changed});}else if(action==='edit-active-fast'){if(!data.active||activeId&&data.active.id!==activeId){onActionClose?.();return true;}const active=data.history.rows.find(row=>row.id===data.active.id)??data.active;openEditor('history',active);}else if(action==='start-now')startNow(data.schedules.filter(row=>row.enabled&&row.nextStart).sort((a,b)=>a.nextStart.localeCompare(b.nextStart))[0]);}return true;
-  }catch(error){if(!alive()||id!==sequence||error.name==='AbortError')return false;loading=false;root.hidden=false;status(error.message,retry);return false;}finally{if(alive()&&id===sequence){loading=false;root.querySelector('[data-fh-list-more]')?.removeAttribute('disabled');}}
+   else{const next=await readPage({limit:Math.min(100,loadedCount)},signal);while(next.history.rows.length<Math.min(loadedCount,next.history.total)){const extra=await readPage({offset:next.history.rows.length,limit:Math.min(100,loadedCount-next.history.rows.length),revision:next.history.revision},signal);next.history.rows.push(...extra.history.rows);}if(!alive()||id!==sequence)return false;if(hadLocal&&(editor||quick||deletion)){data={...data,revision:next.revision};return true;}data=next;for(const key of selected)if(!data.history.rows.some(row=>row.id===key))selected.delete(key);}
+   await finishOpen();return true;
+  }catch(error){if(!alive()||id!==sequence||error.name==='AbortError'||hadLocal)return hadLocal;loading=false;root.hidden=false;status(error.message,retry);return false;}finally{if(alive()&&id===sequence){loading=false;root.querySelector('[data-fh-list-more]')?.removeAttribute('disabled');}}
  }
  function renderHeader(){if(headerRoot){headerRoot.classList.add('fasting-heading');headerRoot.innerHTML=`<header class="dc-dialog-header"><button type="button" class="dc-button dc-icon" data-fasting-back aria-label="${t('discover.back')}">${symbol('arrow_back')}</button><h1>${t('capabilities.fasting.name')}</h1>${fastingHelpLink(uiLanguage())}</header>`;headerRoot.querySelector('[data-fasting-back]').onclick=()=>onBack?.();}}
  function render(){

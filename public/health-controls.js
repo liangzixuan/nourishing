@@ -3,6 +3,7 @@ import {uiLanguage,t} from './app-language.js';
 import {escape as e} from './html.js';
 import {request,command,queueCommand} from './diary-api.js';
 import {readDeviceCache} from './device-cache.js';
+import {isBackgroundWritesRunning} from './background-writes.js';
 import {renderGlucoseTimelineView,bindGlucoseTimelineInteractions} from './health-source/public/glucose-timeline.js';
 const field=(label,input)=>`<label class="field-row"><span>${label}</span>${input}</label>`;
 const select=(name,label,value,options)=>field(label,`<select name="${name}" aria-label="${label}">${options.map(([id,text])=>`<option value="${e(id)}" ${id===value?'selected':''}>${e(text)}</option>`).join('')}</select>`);
@@ -28,6 +29,13 @@ export async function openGlucose(ui,range={from:start(ui.date()),to:ui.date()})
   form.onsubmit=async event=>{event.preventDefault();const values=Object.fromEntries(new FormData(form)),band=values.low!==''||values.high!=='';
    if(band&&(values.low===''||values.high==='')){form.querySelector('[role=status]').textContent=dc('bothLimits');return;}
    const policy=values.glucose?{version:1,glucose:{type:values.glucose},insulin:values.insulin?{type:values.insulin,unit:'U'}:null,displayUnit:values.unit,range:band?{low:Number(values.low),high:Number(values.high)}:null}:null;
+   if(isBackgroundWritesRunning()){
+    const {ticket}=await readDeviceCache('/api/diary').catch(()=>({}));
+    if(ticket){
+     await save(form,()=>queueCommand(capture.revision,'glucose.settings',{policy},{ticket}),async()=>{Promise.resolve().then(()=>onChange?.()).catch(()=>{});if(form.isConnected)void openGlucose(ui,range);});
+     return;
+    }
+   }
    await save(form,()=>command(capture.revision,'glucose.settings',{policy}),async()=>{await onChange?.();if(form.isConnected)await openGlucose(ui,range);});
   };
  };

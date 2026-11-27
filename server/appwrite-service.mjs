@@ -695,7 +695,7 @@ function buildDiaryAndViewMethods(ctx) {
       const {owner, repository} = await data(secret);
       const [state, profile] = await Promise.all([
         readStateEnsured(owner, repository),
-        ensureProfile(secret, await resolveAccount(secret)),
+        ensureProfile(secret, {$id: owner}),
       ]);
       return reportView(state, options, {timeZone: profile.timeZone});
     },

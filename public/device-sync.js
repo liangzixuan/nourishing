@@ -49,27 +49,31 @@ export function warmDeviceViews(date,{delay=500,force=false}={}){
  if(!force&&warmedDate===date)return;warmedDate=date;
  clearTimeout(warmTimer);warmQueue=[];
  const from=new Date(date+'T12:00:00Z');from.setUTCDate(from.getUTCDate()-6);
- const paths=[
+ const firstPaths=[
   '/api/diary?date='+shiftDate(date,-1),
-  '/api/diary?date='+shiftDate(date,1),
-  '/api/display',
-  '/api/library',
-  '/api/library/favorites',
-  '/api/records/options?'+new URLSearchParams({date}),
-  '/api/records/exercise-catalog',
   '/api/dashboard?'+new URLSearchParams({date}),
-  '/api/profile-settings?'+new URLSearchParams({date}),
-  '/api/targets?'+new URLSearchParams({date}),
-  '/api/fasting?limit=25',
-  '/api/reminders',
-  '/api/repeats?'+new URLSearchParams({date}),
+  '/api/diary?date='+shiftDate(date,1),
   '/api/charts?'+new URLSearchParams({to:date}),
   '/api/snapshots',
+  '/api/display',
+  '/api/profile-settings?'+new URLSearchParams({date}),
+  '/api/target-policies?'+new URLSearchParams({date}),
+  '/api/fasting?limit=25',
+  '/api/library',
+  '/api/library/favorites',
+ ];
+ const laterPaths=[
+  '/api/targets?'+new URLSearchParams({date}),
+  '/api/records/options?'+new URLSearchParams({date}),
+  '/api/records/exercise-catalog',
+  '/api/reminders',
+  '/api/repeats?'+new URLSearchParams({date}),
   '/api/nutrition-report?'+new URLSearchParams({from:from.toISOString().slice(0,10),to:date,dayFilter:'nonempty',includeToday:true,includeSupplements:true}),
  ];
+ const warm=path=>()=>request(path,undefined,undefined,{waitForRefresh:true,canonical:true});
  // Replacing queued work leaves in-flight reads in their existing slots.
  warmTimer=setTimeout(()=>{
-  warmQueue=[preparePublicCatalog,...paths.map(path=>()=>request(path,undefined,undefined,{waitForRefresh:true,canonical:true}))];
+  warmQueue=[...firstPaths.map(warm),preparePublicCatalog,...laterPaths.map(warm)];
   while(warmWorkers<2&&warmQueue.length)void runWarmWorker();
  },delay);
 }

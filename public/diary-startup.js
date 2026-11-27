@@ -3,6 +3,7 @@ import {request} from './diary-api.js';
 import {resumeDeviceCache,resumeOfflineDeviceCache,bindDeviceCacheSession,hasCurrentDeviceCache,readDeviceCache} from './device-cache.js';
 import {rememberOfflineAccount,lockCurrentOffline} from './offline-session.js';
 import {accountDisplayKey,cacheAccountDisplay} from './account-display.js';
+import {overlayPendingResponse} from './background-writes.js';
 
 export async function openDiarySession({onAccount=()=>{}}={}){
  const offlineShell=document.querySelector('meta[name="nourishing-offline-shell"]');
@@ -52,10 +53,12 @@ export async function openDiarySession({onAccount=()=>{}}={}){
     await lockCurrentOffline(ticket);document.querySelector('#page')?.replaceChildren();document.querySelector('#sheet-content')?.replaceChildren();location.replace('/login');
     return;
    }
-   await cacheAccountDisplay(account,ticket);
-   if(await hasCurrentDeviceCache(ticket))onAccount(account);
+   const projected=await overlayPendingResponse(accountDisplayKey,account);
+   await cacheAccountDisplay(projected,ticket);
+   if(await hasCurrentDeviceCache(ticket))onAccount(projected);
   }).catch(()=>{}); // A 401 already locks and clears through the request owner.
-  return cached.value?.id===ticket.ownerId?cached.value:{id:ticket.ownerId};
+  const initial=cached.value?.id===ticket.ownerId?await overlayPendingResponse(accountDisplayKey,cached.value):{id:ticket.ownerId};
+  return initial;
  }
  const account=await verify();await rememberOfflineAccount(account);return account;
 }

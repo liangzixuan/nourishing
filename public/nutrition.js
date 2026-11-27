@@ -14,6 +14,8 @@ import {mountFasting,openFastingAction} from './fasting.js';
 import {mountCharts} from './charts.js';
 import {escape as e} from './html.js';
 import {request} from './diary-api.js';
+import {readDeviceCache} from './device-cache.js';
+import {localNutritionReportView} from './local-engine.js';
 import {openPrintReport} from './print-report.js';
 const offset=(date,days)=>{const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10);};
 export function mountNutrition({page,headerRoot,date,show,close,header,content,onChange,onDiary,onSuggest,initialTab='dashboard',reportDate,dashboardPosition={top:0}}){
@@ -39,8 +41,21 @@ export function mountNutrition({page,headerRoot,date,show,close,header,content,o
  async function loadReport(panel,onReady){
   cancelReport();const id=serial,controller=new AbortController();reportController=controller;
   panel.setAttribute('aria-busy','true');if(data)renderReport(panel);else panel.innerHTML=`<p class="empty">${t('mobileNutrientDetail.loading')}</p>`;
-  try{const apply=result=>{if(!alive()||serial!==id||tab!=='report')return;data=result;renderReport(panel);onReady?.();};apply(await request('/api/nutrition-report?'+new URLSearchParams(reportOptions),undefined,controller.signal,{onRefresh:result=>{if(!document.querySelector('dialog[open]'))apply(result);}}));}
-  catch(error){if(alive()&&serial===id&&!controller.signal.aborted){panel.innerHTML=`<p class="sheet-message" role="status">${e(error.message)}</p><button class="more-results" data-retry>${t('mobileSuggest.retry')}</button>`;panel.querySelector('[data-retry]').onclick=()=>loadReport(panel,onReady);onReady?.(false);}}
+  let hadLocal=false;
+  try{
+   const apply=result=>{if(!alive()||serial!==id||tab!=='report')return;data=result;renderReport(panel);onReady?.();};
+   const path='/api/nutrition-report?'+new URLSearchParams(reportOptions);
+   if(!data){
+    const cached=await readDeviceCache(path).catch(()=>({}));
+    if(cached.ticket&&cached.value===undefined){
+     const local=await localNutritionReportView(reportOptions);
+     if(local&&alive()&&serial===id&&tab==='report'){apply(local);panel.removeAttribute('aria-busy');hadLocal=true;}
+    }
+   }
+   const result=await request(path,undefined,controller.signal,{onRefresh:result=>{if(!document.querySelector('dialog[open]'))apply(result);}});
+   if(!hadLocal||!document.querySelector('dialog[open]'))apply(result);
+  }
+  catch(error){if(alive()&&serial===id&&!controller.signal.aborted&&!hadLocal){panel.innerHTML=`<p class="sheet-message" role="status">${e(error.message)}</p><button class="more-results" data-retry>${t('mobileSuggest.retry')}</button>`;panel.querySelector('[data-retry]').onclick=()=>loadReport(panel,onReady);onReady?.(false);}}
   finally{if(panel.isConnected&&serial===id)panel.removeAttribute('aria-busy');}
  }
  function discover(){fastingBack?.release();fastingBack=null;rememberDashboard();finishLoading?.();let resolveReady;const ready=new Promise(resolve=>{resolveReady=resolve;});finishLoading=resolveReady;cancelReport();dashboard?.dispose();dashboard=null;snapshots?.dispose();snapshots=null;charts?.dispose();charts=null;fasting?.dispose();fasting=null;mobileReport?.dispose();mobileReport=null;
@@ -70,7 +85,18 @@ export function mountNutrition({page,headerRoot,date,show,close,header,content,o
  function renderReport(panel){
   mobileReport?.dispose();
   mobileReport=mountMobileReport({root:panel,value:data,rangeSelection,onApply:async (options,signal)=>{
-   const id=++serial,result=await request('/api/nutrition-report?'+new URLSearchParams(options),undefined,signal);
+   const id=++serial,path='/api/nutrition-report?'+new URLSearchParams(options);
+   const cached=await readDeviceCache(path).catch(()=>({}));
+   if(cached.ticket&&cached.value===undefined){
+    const local=await localNutritionReportView(options);
+    if(local){
+     if(signal.aborted||!alive()||serial!==id||tab!=='report')throw Error(dc('reportClosed'));
+     data=local;reportOptions={...local.report.options};
+     void request(path,undefined,undefined,{canonical:true}).catch(()=>{});
+     return local;
+    }
+   }
+   const result=await request(path,undefined,signal);
    if(signal.aborted||!alive()||serial!==id||tab!=='report')throw Error(dc('reportClosed'));
    data=result;reportOptions={...result.report.options};return result;
   },onPrint:options=>openPrintReport({initialOptions:options,show,header,content})});

@@ -1,7 +1,9 @@
 import {guardSheetExit} from './edge-navigation.js';
 import {uiLanguage,t} from './app-language.js';
 import {fc} from './food-cloud-messages.js';
-import {request,command} from './diary-api.js';
+import {request,command,queueCommand} from './diary-api.js';
+import {readDeviceCache} from './device-cache.js';
+import {isBackgroundWritesRunning} from './background-writes.js';
 import {escape as e} from './html.js';
 import {foodEditorFields,readFoodEditorFields} from './food-editor-fields.js';
 /** An unsaved custom copy. Source metadata never comes from the form. */
@@ -20,7 +22,19 @@ export function mountFoodCopy({selection,show,content,onCancel,onSaved}){
   content.innerHTML=heading+`<form class="entry-form library-editor food-copy-editor"><label class="field-row"><span>${e(t("settings.name"))}</span><input name="name" value="${e(draft.name)}" maxlength="500" required></label>${foodEditorFields(draft,view.nutrients)}<p class="sheet-message" role="status"></p><footer class="entry-actions"><button type="button" data-copy-cancel>${e(t("common.cancel"))}</button><button type="submit" class="primary">${e(t("mobileFoodEditor.save"))}</button></footer></form>`;
   const form=content.querySelector('form'),status=form.querySelector('[role=status]');
   form.onsubmit=async event=>{event.preventDefault();if(busy||!form.reportValidity())return;busy=true;status.textContent='';const changes=readFoodEditorFields(form,view.nutrients,draft);content.querySelectorAll('button,input,textarea').forEach(el=>el.disabled=true);
-   try{const result=await command(view.revision,'food.copy',{selection:view.selection,sourceFingerprint:view.sourceFingerprint,changes});if(alive())await onSaved(result);}
+   try{
+    if(isBackgroundWritesRunning()){
+     const {ticket}=await readDeviceCache('/api/diary').catch(()=>({}));
+     if(ticket){
+      const requestId=crypto.randomUUID();
+      const projectedFood={...structuredClone(draft),...structuredClone(changes),id:requestId,readOnly:false};
+      const result=await queueCommand(view.revision,'food.copy',{selection:view.selection,sourceFingerprint:view.sourceFingerprint,changes},{ticket,requestId,projection:{foods:[projectedFood]}});
+      if(alive())await onSaved(result);
+      return;
+     }
+    }
+    const result=await command(view.revision,'food.copy',{selection:view.selection,sourceFingerprint:view.sourceFingerprint,changes});if(alive())await onSaved(result);
+   }
    catch(error){if(alive()&&form.isConnected)status.textContent=error.message;}
    finally{busy=false;if(alive()&&form.isConnected)content.querySelectorAll('button,input,textarea').forEach(el=>el.disabled=false);}
   };

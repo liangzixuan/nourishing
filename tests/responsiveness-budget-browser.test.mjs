@@ -22,6 +22,7 @@ import {diaryStoreFixture} from './fixtures/diary-store.mjs';
 import {dashboardView} from '../server/dashboard-view.mjs';
 import {chartSurfaceView} from '../server/dashboard-pinned-charts.mjs';
 import {reportView, targetView} from '../server/nutrition-views.mjs';
+import {targetPolicyView, previewTargetPolicy} from '../server/target-policy-view.mjs';
 import {displayView} from '../server/display-settings.mjs';
 import {profileSettingsView} from '../server/profile-settings.mjs';
 import {fastingView} from '../server/fasting.mjs';
@@ -74,22 +75,32 @@ async function createFixture({nutritionPack=false}={}) {
   const repository = createDataRepository(data.db, 'fixture');
   const clock = {now: new Date(), timeZone: 'UTC', asOf: new Date().toISOString()};
   let apiDelayMs = 0;
+  let accountName = 'Fixture User';
   const apiHits = [];
   const staticHits = [];
 
   const service = {
     current: async () => ({
       id: 'fixture',
-      name: 'Fixture User',
+      name: accountName,
       email: 'fixture@example.com',
       emailVerified: true,
       profile: {timeZone: 'UTC', units: 'metric'},
     }),
+    updateAccount: async (_, input) => {
+      if (input.kind === 'name') accountName = input.name;
+      return {
+        ok: true,
+        account: {id: 'fixture', name: accountName, email: 'fixture@example.com', emailVerified: true},
+      };
+    },
     readDiary: async (_, day) => repository.diaryFromState(state, day, clock),
     offlineSnapshot: async () => projectOfflineSnapshot(state, {ownerId: 'fixture', generation: 'gen-1'}),
     display: async () => displayView(state),
     profileSettings: async (_, day) => profileSettingsView(state, day),
     targets: async (_, day) => targetView(state, day),
+    targetPolicies: async (_, day) => targetPolicyView(state, day, {today}),
+    previewTargetPolicy: async (_, input) => previewTargetPolicy(state, input, {today}),
     fasting: async (_, input) => fastingView(state, clock, input),
     repeats: async (_, day) => repeatView(state, day),
     reminders: async () => ({supported: false, enabled: false, subscribed: false, schedules: []}),
@@ -618,6 +629,88 @@ test('core Diary, Photo Log, and More interactions respond instantly under 1500m
       await page.locator('#sheet [data-close]').click();
       await page.locator('#sheet').waitFor({state: 'hidden'});
     });
+
+    // 10. Cold-cache Discover tabs (after clearing response cache while keeping local snapshot, like reopening after update) render in < 800ms under 1500ms API latency.
+    await page.evaluate(async () => {
+      const {invalidateDeviceCachePaths} = await import('/device-cache.js');
+      await invalidateDeviceCachePaths(
+        path => /^\/api\/(?:dashboard|charts|nutrition-report|snapshots|display|profile-settings|target-policies|fasting|repeats)(?:\?|$)/.test(path),
+      );
+    });
+    const settleDiscover = () => page.waitForFunction(() => !document.documentElement.classList.contains('discover-transition'));
+    await settleDiscover();
+    await timed('Cold-cache Discover -> Charts opens from local snapshot', async () => {
+      await page.locator('[data-tab="charts"]').click();
+      await page.locator('[data-manage]').waitFor();
+    });
+    await settleDiscover();
+    await timed('Cold-cache Discover -> Report opens from local snapshot', async () => {
+      await page.locator('[data-tab="report"]').click();
+      await page.locator('.mobile-report-toolbar').waitFor();
+    });
+    await settleDiscover();
+    await timed('Cold-cache Discover -> Snapshots opens from local snapshot', async () => {
+      await page.locator('[data-tab="snapshots"]').click();
+      await page.locator('[data-snapshot-add]').waitFor();
+    });
+    await settleDiscover();
+    await timed('Cold-cache Discover -> Dashboard opens from local snapshot', async () => {
+      await page.locator('[data-tab="dashboard"]').click();
+      await page.locator('.dc-summary').waitFor();
+    });
+
+    // 11. Cold-cache More menus (Account, Profile, Display, Targets, Fasting) all open in < 800ms under 1500ms API latency.
+    await timed('Open More -> Account without blocking on /api/display', async () => {
+      await page.locator('#settings-tab').click();
+      await page.locator('[data-more-open="account"]').click();
+      await page.locator('[data-account-edit="name"]').waitFor();
+    });
+
+    // 12. Account -> Edit Name saves locally in < 800ms (no "Saving..." hang) and syncs silently in background.
+    await timed('Account -> Edit Name saves and closes immediately under 1500ms latency', async () => {
+      await page.locator('[data-account-edit="name"]').click();
+      const dialog = page.locator('.account-edit-dialog');
+      await dialog.getByLabel('Name', {exact: true}).fill('Instant Name');
+      await dialog.getByRole('button', {name: 'Save', exact: true}).click();
+      await dialog.waitFor({state: 'detached'});
+      await page.locator('[data-account-edit="name"]').filter({hasText: 'Instant Name'}).waitFor();
+    });
+    await page.locator('[data-more-back]').click();
+    assert.equal(await page.locator('.mm-identity').textContent(), 'Instant Name');
+
+    await timed('Cold-cache More -> Profile opens from local snapshot', async () => {
+      await page.locator('[data-more-open="profile"]').click();
+      await page.locator('.profile-card').waitFor();
+    });
+    await page.locator('[data-more-back]').click();
+    await timed('Cold-cache More -> Display opens from local snapshot', async () => {
+      await page.locator('[data-more-open="display"]').click();
+      await page.locator('[data-display-open="theme"]').waitFor();
+    });
+    await page.locator('[data-more-back]').click();
+    await timed('Cold-cache More -> Targets -> Energy Expenditure opens from local snapshot', async () => {
+      await page.locator('[data-more-open="targets"]').click();
+      await page.locator('[data-mt-open="expenditure"]').click();
+      await page.locator('[data-mee-ready]').waitFor();
+    });
+    await page.locator('[data-mt-back]').click();
+    await timed('Cold-cache More -> Targets -> Macro & Energy opens from local snapshot', async () => {
+      await page.locator('[data-mt-open="macros"]').click();
+      await page.locator('[data-mte-ready]').waitFor();
+    });
+    await page.locator('[data-mt-back]').click();
+    await page.locator('[data-mt-back]').click();
+    await timed('Cold-cache More -> Fasting opens from local snapshot', async () => {
+      await page.locator('[data-more-open="fasting"]').click();
+      await page.locator('[data-fast-section="history"]').waitFor();
+    });
+
+    // Wait for background account update to reach the server asynchronously.
+    f.setApiDelay(0);
+    await page.evaluate(async () => {
+      await (await import('/background-writes.js')).flushBackgroundWrites();
+    });
+    assert.ok(f.apiHits.some(h => h.method === 'POST' && h.path === '/api/account/update'), 'Queued account name synced in background');
 
     assert.deepEqual(f.errors, []);
   } finally {

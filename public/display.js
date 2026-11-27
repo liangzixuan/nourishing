@@ -1,5 +1,6 @@
 import {onBackgroundWriteStatus} from './background-writes.js';
-import {localWorkspaceState} from './local-engine.js';
+import {localWorkspaceState,localDisplayView,localDashboardView} from './local-engine.js';
+import {readDeviceCache} from './device-cache.js';
 import {editDiaryGroupSlot} from './local-group-rename.js';
 import {renderDashboardSettings} from './dashboard-settings.js';
 import {streakSettingsMarkup} from './dashboard-source/discover-settings-ui.js';
@@ -19,7 +20,10 @@ export function mountDisplay({root,headerRoot,initialSetting,onChange=async()=>{
  let disposed=false,view,controller,child;const navigation={screen:'home'};const abort=new AbortController();
  const alive=()=>!disposed&&root.isConnected;
  const stopStatus=onBackgroundWriteStatus(event=>{if(event.saved&&alive()&&view)view={...view,revision:event.result.revision??view.revision};});
- async function load(){child?.dispose();child=null;controller?.dispose();controller=null;root.textContent=coreText('loading');try{view=await request('/api/display',undefined,abort.signal);if(!alive())return;applyAppLanguage(view.settings.appLanguage);applyFontPreferences(view.settings);controller=new MobileDisplay({root,settings:view.settings,summaryNutrients:view.summaryNutrients,quickAddActions:view.quickAddActions,navigation,onTitle:title=>{if(headerRoot)headerRoot.innerHTML=moreBackHeader(title);},onSave:save,onReload:load,onDestination:destination});
+ async function load(){child?.dispose();child=null;controller?.dispose();controller=null;root.textContent=coreText('loading');
+  const mount=value=>{
+   view=value;applyAppLanguage(view.settings.appLanguage);applyFontPreferences(view.settings);
+   controller=new MobileDisplay({root,settings:view.settings,summaryNutrients:view.summaryNutrients,quickAddActions:view.quickAddActions,navigation,onTitle:title=>{if(headerRoot)headerRoot.innerHTML=moreBackHeader(title);},onSave:save,onReload:load,onDestination:destination});
    if(initialSetting){
     const {screen,control,section}=initialSetting;initialSetting=null;
     if(screen==='dashboard'){destination(screen,{control,section});return;}
@@ -31,7 +35,19 @@ export function mountDisplay({root,headerRoot,initialSetting,onChange=async()=>{
      root.querySelector('[data-display-toggle="'+CSS.escape(control)+'"]')?.focus();
     }
    }
-  }catch(error){if(!alive())return;root.replaceChildren();const status=document.createElement('p');status.className='mds-status';status.setAttribute('role','status');status.textContent=error.message;const retry=document.createElement('button');retry.className='mds-row';retry.textContent=coreText('retry');retry.onclick=load;root.append(status,retry);}}
+  };
+  let hadLocal=false;
+  try{
+   const cached=await readDeviceCache('/api/display').catch(()=>({}));
+   if(cached.ticket&&cached.value===undefined){
+    const local=await localDisplayView();
+    if(local&&alive()){mount(local);hadLocal=true;}
+   }
+   const next=await request('/api/display',undefined,abort.signal);
+   if(!alive())return;
+   if(hadLocal){if(view&&next?.revision)view={...view,revision:next.revision};return;}
+   mount(next);
+  }catch(error){if(!alive()||hadLocal)return;root.replaceChildren();const status=document.createElement('p');status.className='mds-status';status.setAttribute('role','status');status.textContent=error.message;const retry=document.createElement('button');retry.className='mds-row';retry.textContent=coreText('retry');retry.onclick=load;root.append(status,retry);}}
  function destination(id,option){if(!['pauseLife','dashboard','water'].includes(id))return;controller?.dispose();controller=null;if(id==='dashboard'){openDashboardSettings(option);return;}if(id==='water'){if(headerRoot)headerRoot.innerHTML=moreBackHeader(waterText('settings'));child=mountWaterSettings({root,settings:view.settings,groups:view.settings.groups,onSave:save});return;}if(headerRoot)headerRoot.innerHTML=moreBackHeader(t('mobileDisplay.pauseLife'));child=mountPauseLife({root,onChange});}
  function openDashboardSettings({control,section}={}){
   let active=true,dashboard,screen=section??'settings',saving=Promise.resolve();const path='/api/dashboard?'+new URLSearchParams({date:date()});
@@ -48,7 +64,26 @@ export function mountDisplay({root,headerRoot,initialSetting,onChange=async()=>{
    if(screen==='settings')renderDashboardSettings({host,data:dashboard,onSave:change,onStreak:()=>{screen='streak';render();}});
    else{host.innerHTML=streakSettingsMarkup(dashboard.streaks,dashboard.dashboard.widgets.streaks,uiLanguage())+'<p role="alert"></p>';host.querySelector('[data-widget]').onchange=event=>void change('dashboard.widgets',{patch:{streaks:event.target.checked}}).catch(error=>host.querySelector('[role=alert]').textContent=error.message);host.querySelector('form').onsubmit=event=>event.preventDefault();host.querySelector('[data-discover=reset-streak]').onclick=async()=>{const form=host.querySelector('form');if(!form.reportValidity())return;try{await change('dashboard.streakReset',{count:Number(form.elements.count.value)});if(current())render();}catch(error){if(current())host.querySelector('[role=alert]').textContent=error.message;}};}
   }
-  root.textContent=coreText('loading');void request(path,undefined,abort.signal).then(value=>{dashboard=value;render();if(current()&&control){const key=CSS.escape(control);root.querySelector('[data-widget="'+key+'"],[data-pref="'+key+'"]')?.focus();}}).catch(error=>{if(current())root.textContent=error.message;});
+  root.textContent=coreText('loading');
+  (async()=>{
+   let hadLocal=false;
+   const applyDashboard=value=>{
+    if(!current())return;
+    dashboard=value;render();
+    if(control){const key=CSS.escape(control);root.querySelector('[data-widget="'+key+'"],[data-pref="'+key+'"]')?.focus();}
+   };
+   try{
+    const cached=await readDeviceCache(path).catch(()=>({}));
+    if(cached.ticket&&cached.value===undefined){
+     const local=await localDashboardView(date());
+     if(local&&current()){applyDashboard(local);hadLocal=true;}
+    }
+    const next=await request(path,undefined,abort.signal);
+    if(!current())return;
+    if(hadLocal){if(dashboard&&next?.revision)dashboard.revision=next.revision;return;}
+    applyDashboard(next);
+   }catch(error){if(current()&&!hadLocal)root.textContent=error.message;}
+  })();
  }
  async function save(patch,type='display.save'){
   let settings={...view.settings,...structuredClone(patch)};

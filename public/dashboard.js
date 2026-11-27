@@ -13,6 +13,7 @@ import {mountChartDetail} from './chart-detail.js';
 import {dashboardHealthCardsMarkup,openDashboardHealthCard} from './dashboard-health-cards.js';
 import {request,command,queueCommand} from './diary-api.js';
 import {readDeviceCache,writeDeviceCache} from './device-cache.js';
+import {localDashboardView} from './local-engine.js';
 import {onBackgroundWriteStatus} from './background-writes.js';
 import {navigationEdge} from './edge-navigation.js';
 import {escape as e,card,button as b,iconButton as ib,symbol as icon,ranges,widgets,chartMarkup} from './dashboard-source/discover-ui.js';
@@ -160,6 +161,7 @@ export function mountDashboard({root,date,show,close,header,content,onChange,onR
  async function load({fresh=false,silent=false}={}){
   const id=++generation,startedSerial=editSerial;
   controller?.abort();controller=new AbortController();
+  let hadLocal=false;
   try{
    const apply=next=>{
     if(!alive()||id!==generation||startedSerial!==editSerial)return;
@@ -170,10 +172,18 @@ export function mountDashboard({root,date,show,close,header,content,onChange,onR
     render();
     onReady?.();
    };
-   const next=await request(dashboardPath(),undefined,controller.signal,{fresh,onRefresh:refreshed=>{if(!modalOpen())apply(refreshed);}});
-   apply(next);
+   const path=dashboardPath();
+   if(!fresh&&!data){
+    const cached=await readDeviceCache(path).catch(()=>({}));
+    if(cached.ticket&&cached.value===undefined){
+     const local=await localDashboardView(date());
+     if(local&&alive()&&id===generation&&startedSerial===editSerial){apply(local);hadLocal=true;}
+    }
+   }
+   const next=await request(path,undefined,controller.signal,{fresh,onRefresh:refreshed=>{if(!modalOpen())apply(refreshed);}});
+   if(!hadLocal||!modalOpen())apply(next);
   }catch(error){
-   if(alive()&&!controller.signal.aborted&&id===generation&&!silent){failure(error);onReady?.(false);}
+   if(alive()&&!controller.signal.aborted&&id===generation&&!silent&&!hadLocal){failure(error);onReady?.(false);}
   }
  }
  function updatePtr(height,state,dragging=false){

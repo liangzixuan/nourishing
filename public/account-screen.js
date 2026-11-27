@@ -4,6 +4,7 @@ import {accountDisplay,accountDisplayKey,cacheAccountDisplay} from './account-di
 import {cachedRead} from './device-requests.js';
 import {request as diaryRequest} from './diary-api.js';
 import {readDeviceCache,invalidateDeviceCache} from './device-cache.js';
+import {queueBackgroundWrite,isBackgroundWritesRunning,overlayPendingResponse} from './background-writes.js';
 import {applyAppLanguage,uiLanguage,resolveBrowserLanguage} from './app-language.js';
 import {requestErrorMessage} from './request-error.js';
 import {accountMessage as m} from './account-cloud-messages.js';
@@ -25,7 +26,8 @@ const token={userId:params.get('userId'),secret:params.get('secret')};
 if(!embedded&&location.search)history.replaceState(null,'',location.pathname);
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function api(path,body,method='POST',signal){
- const ticket=method!=='GET'&&path!=='/api/account/reauthenticate'?(await readDeviceCache('/api/diary').catch(()=>({}))).ticket:null;
+ const wipe=method!=='GET'&&!['/api/account/reauthenticate','/api/account/update','/api/profile'].includes(path);
+ const ticket=wipe?(await readDeviceCache('/api/diary').catch(()=>({}))).ticket:null;
  if(ticket)await invalidateDeviceCache(ticket).catch(()=>{});
  try{return await accountNetwork(path,body,method,signal);}finally{if(ticket)await invalidateDeviceCache(ticket).catch(()=>{});}
 }
@@ -59,18 +61,30 @@ function verification(){
 }
 async function profile(knownUser=null){
   const serial=++profileSerial;
-  let user;try{user=knownUser?.id?knownUser:embedded?await cachedRead(accountDisplayKey,async signal=>{
+  let user;try{user=knownUser?.id?knownUser:embedded?await overlayPendingResponse(accountDisplayKey,await cachedRead(accountDisplayKey,async signal=>{
     const value=await api('/api/account',null,'GET',signal);
     const {ticket}=await readDeviceCache(accountDisplayKey);
     if(ticket&&ticket.ownerId!==value.id)throw new DOMException('Account changed.','AbortError');
     return accountDisplay(value);
-  },lifetime.signal,{onRefresh:value=>{if(alive()&&!bulk&&section!=='delete-account'&&serial===profileSerial&&!root.querySelector('dialog[open]')&&!root.querySelector('form:focus-within'))void profile(value);}}):await api('/api/account',null,'GET');}catch(error){if(!alive()||serial!==profileSerial)return;if(error.status===401){await lockCurrentOffline();if(!await deletion.recover())accountForm('login');return;}root.innerHTML=`<h1>${m("mobileMore.account")}</h1>${notice()}<button id="retry">${m("mobileSuggest.retry")}</button>`;message(error.message,true);root.querySelector('#retry').onclick=profile;return;}
+  },lifetime.signal,{onRefresh:async value=>{const projected=await overlayPendingResponse(accountDisplayKey,value);if(alive()&&!bulk&&section!=='delete-account'&&serial===profileSerial&&!root.querySelector('dialog[open]')&&!root.querySelector('form:focus-within'))void profile(projected);}})):await api('/api/account',null,'GET');}catch(error){if(!alive()||serial!==profileSerial)return;if(error.status===401){await lockCurrentOffline();if(!await deletion.recover())accountForm('login');return;}root.innerHTML=`<h1>${m("mobileMore.account")}</h1>${notice()}<button id="retry">${m("mobileSuggest.retry")}</button>`;message(error.message,true);root.querySelector('#retry').onclick=profile;return;}
   if(!alive()||serial!==profileSerial)return;
   if(!embedded)await rememberOfflineAccount(user);
   else if(knownUser){const {ticket}=await readDeviceCache(accountDisplayKey);await cacheAccountDisplay(user,ticket);}
   if(!alive()||serial!==profileSerial)return;
   onIdentity(accountDisplay(user));
-  const display=await (embedded?diaryRequest('/api/display',undefined,lifetime.signal):api('/api/display',null,'GET')).catch(()=>null);if(!alive()||serial!==profileSerial)return;if(display?.settings?.appLanguage)applyAppLanguage(display.settings.appLanguage);applyTheme(display?.settings?.theme);applyFontPreferences(display?.settings);
+  const applyDisplay=display=>{
+   if(!alive()||serial!==profileSerial||!display?.settings)return;
+   if(display.settings.appLanguage)applyAppLanguage(display.settings.appLanguage);
+   applyTheme(display.settings.theme);applyFontPreferences(display.settings);
+  };
+  if(embedded){
+   void diaryRequest('/api/display',undefined,lifetime.signal).then(applyDisplay).catch(()=>{});
+  }else{
+   const display=await api('/api/display',null,'GET').catch(()=>null);
+   if(!alive()||serial!==profileSerial)return;
+   if(display?.settings?.appLanguage)applyAppLanguage(display.settings.appLanguage);
+   applyTheme(display?.settings?.theme);applyFontPreferences(display?.settings);
+  }
   if(section==='delete-account'){deletion.open({inline:true});return;}
   if(section==='account-data'){
    root.innerHTML=`<section class="mm-group account-data-menu">${moreRow('bulk-delete',m('accountCloud.bulk.title'))}${moreRow('delete-account',m('accountCloud.bulk.account'))}</section><p class="account-data-note">${m('accountCloud.bulk.accountNote')}</p>`;
@@ -95,13 +109,35 @@ async function profile(knownUser=null){
   }else{
     root.innerHTML=`<h1>${m("mobileMore.account")}</h1>${installButton()}<section class="card account-identity">${identityRows}${verification}</section>${preferences}${notice()}${signout}<button type="button" class="delete-account" id="delete-account">${m("accountCloud.deleteAccount")}</button>`;
   }
-  editor?.dispose();editor=createAccountEditor({root,request:api,onSaved:async identity=>{await profile({...user,...identity});message(m("accountCloud.saved"));}});
+  const onQueueName=embedded&&isBackgroundWritesRunning()?async name=>{
+   const {ticket}=await readDeviceCache(accountDisplayKey);
+   if(!ticket||ticket.ownerId!==user.id)return null;
+   const next=accountDisplay({...user,name});
+   await queueBackgroundWrite('/api/account/update',{kind:'name',name},{responses:{[accountDisplayKey]:next}},ticket);
+   await cacheAccountDisplay(next,ticket);
+   return next;
+  }:null;
+  editor?.dispose();editor=createAccountEditor({root,request:api,onQueueName,onSaved:async identity=>{await profile({...user,...identity});message(m("accountCloud.saved"));}});
   for(const button of root.querySelectorAll('[data-account-edit]'))button.onclick=()=>editor.open(button.dataset.accountEdit,user,button);
   refreshInstallButton();
   const form=root.querySelector(':scope > form');
   if(form)form.elements.units.value=user.profile.units;
   if(!embedded){const diaryLink=document.createElement('a');diaryLink.href='/diary';diaryLink.textContent='‹ '+m('accountCloud.backToDiary');diaryLink.className='links';root.prepend(diaryLink);}
-  if(form)form.onsubmit=e=>{e.preventDefault();busy(form,async()=>{await api('/api/profile',Object.fromEntries(new FormData(form)),'PUT');message(m("accountCloud.saved"));});};
+  if(form)form.onsubmit=e=>{e.preventDefault();busy(form,async()=>{
+   const body=Object.fromEntries(new FormData(form));
+   if(isBackgroundWritesRunning()){
+    const {ticket}=await readDeviceCache(accountDisplayKey);
+    if(ticket&&ticket.ownerId===user.id){
+     const next=accountDisplay({...user,profile:{...user.profile,...body}});
+     await queueBackgroundWrite('/api/profile',body,{responses:{[accountDisplayKey]:next}},ticket,{method:'PUT'});
+     await cacheAccountDisplay(next,ticket);
+     user={...user,profile:{...user.profile,...body}};
+     message(m("accountCloud.saved"));
+     return;
+    }
+   }
+   await api('/api/profile',body,'PUT');message(m("accountCloud.saved"));
+  });};
   const verify=root.querySelector('#verify');if(verify)verify.onclick=()=>busy(verify.parentElement,async()=>{await api('/api/auth/verification',{});message(m("accountCloud.verificationEmailSent"));});
   root.querySelector('#delete-account')?.addEventListener('click',deletion.open);
   root.querySelector('#signout').onclick=()=>busy(root,async()=>{if(!await leaveOfflineAccount(root))return;await disconnectCurrentPush();await api('/api/auth/logout',{});user=null;root.replaceChildren();location.replace('/login');});

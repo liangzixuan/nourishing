@@ -2,7 +2,11 @@ import {nutrientDisplayName} from './report-source/public/nutrient-language.js';
 import {chartMetricLabel} from './charts-source-view.js';
 import {dc} from './discover-cloud-messages.js';
 import {uiLanguage,t} from './app-language.js';
-import {request} from './diary-api.js';
+import {request,queueCommand} from './diary-api.js';
+import {readDeviceCache} from './device-cache.js';
+import {isBackgroundWritesRunning} from './background-writes.js';
+import {localProfileSettingsView,localWorkspaceView} from './local-engine.js';
+import {applyProfileSettingsProjection,projectProfileSettings} from './local-diary-projection.js';
 import {escape as e} from './html.js';
 import {openProfileEditor,profileSexLabel} from './profile-editor.js';
 import {ensureDeviceSnapshot} from './device-sync.js';
@@ -21,7 +25,24 @@ export function mountProfile({page,headerRoot,initialField,...ui}){
  let disposed=false,data,editor;const abort=new AbortController(),root=document.createElement('section');root.className='profile-page';page.replaceChildren(root);
  const alive=()=>!disposed&&root.isConnected,date=()=>typeof ui.date==='function'?ui.date():ui.date;
  if(headerRoot)headerRoot.innerHTML=moreBackHeader(t('settings.profile'));
- async function load(fresh=false){root.setAttribute('aria-busy','true');try{const apply=value=>{if(alive()){data=value;render();if(initialField){const field=initialField;initialField=null;editField(field);}}};apply(await request('/api/profile-settings?date='+encodeURIComponent(date()),null,abort.signal,{fresh,onRefresh:value=>{if(!editor)apply(value);}}));}catch(error){if(alive()){root.innerHTML='<p class="empty" role="status">'+e(error.message)+`</p><button class="profile-retry" data-profile-reload>${t('mobileSuggest.retry')}</button>`;}}finally{if(alive())root.setAttribute('aria-busy','false');}}
+ async function load(fresh=false){
+  root.setAttribute('aria-busy','true');
+  const path='/api/profile-settings?date='+encodeURIComponent(date());
+  let hadLocal=false;
+  try{
+   const apply=value=>{if(alive()){data=value;render();if(initialField){const field=initialField;initialField=null;editField(field);}}};
+   if(!fresh&&!data){
+    const cached=await readDeviceCache(path).catch(()=>({}));
+    if(cached.ticket&&cached.value===undefined){
+     const local=await localProfileSettingsView(date());
+     if(local&&alive()){apply(local);root.setAttribute('aria-busy','false');hadLocal=true;}
+    }
+   }
+   const value=await request(path,null,abort.signal,{fresh,onRefresh:value=>{if(!editor)apply(value);}});
+   if(!hadLocal||!editor)apply(value);
+  }catch(error){if(alive()&&!hadLocal){root.innerHTML='<p class="empty" role="status">'+e(error.message)+`</p><button class="profile-retry" data-profile-reload>${t('mobileSuggest.retry')}</button>`;}}
+  finally{if(alive())root.setAttribute('aria-busy','false');}
+ }
  const changed=async next=>{if(next){data=next;if(alive())render();void ui.onChange?.();return;}await ui.onChange?.();if(alive())await load(true);};
  function render(){
   const {demographics:d,measurements:m,bmi}=data.profile;
@@ -36,9 +57,22 @@ export function mountProfile({page,headerRoot,initialField,...ui}){
 
 export async function openProfileSettings({date,show,close,header,content,onChange=async()=>{},initialScreen,onDone}){
  const selectedDate=typeof date==='function'?date():date;let data;
- const read=async()=>{data=await request('/api/profile-settings?date='+encodeURIComponent(selectedDate));};
+ const path='/api/profile-settings?date='+encodeURIComponent(selectedDate);
+ const read=async()=>{data=await request(path);};
+ const openInitial=()=>({energy:energyEditor,references:referenceEditor,body:bodyEditor}[initialScreen]??menu)();
  show(`${header(dc('profileBody'))}<p class="empty">${t('mobileNutrientDetail.loading')}</p>`);const loading=content.lastElementChild;
- try{await read();if(loading.isConnected)({energy:energyEditor,references:referenceEditor,body:bodyEditor}[initialScreen]??menu)();}catch(error){if(loading.isConnected)loading.textContent=error.message;}
+ try{
+  const cached=await readDeviceCache(path).catch(()=>({}));
+  if(cached.ticket&&cached.value===undefined){
+   const local=await localProfileSettingsView(selectedDate);
+   if(local&&loading.isConnected){
+    data=local;openInitial();
+    void read().catch(()=>{});
+    return;
+   }
+  }
+  await read();if(loading.isConnected)openInitial();
+ }catch(error){if(loading.isConnected)loading.textContent=error.message;}
  function menu(){
   show(`${header(dc('profileBody'))}<section class="profile-summary"><strong>${display(data.effectiveEnergy.components.resting)}${data.effectiveEnergy.components.resting===null?'':' kcal'}</strong><span>${t('energySummary.resting')}</span></section><div class="profile-menu">${[["energy",dc('bodyActivity')],['references',dc('nutrientReferences')],['body',dc('useMeasurements')]].map(([key,label])=>`<button type="button" data-profile="${key}">${label}<span>›</span></button>`).join('')}</div>`);
   content.querySelectorAll('[data-profile]').forEach(button=>button.onclick=()=>({energy:energyEditor,references:referenceEditor,body:bodyEditor})[button.dataset.profile]());
@@ -47,7 +81,24 @@ export async function openProfileSettings({date,show,close,header,content,onChan
   show(`${header(title)}<form class="profile-form">${html}<p class="sheet-message" role="status"></p><footer class="entry-actions"><button type="button" data-back>${t('discover.back')}</button><button type="submit" class="primary">${t('common.save')}</button></footer></form>`);
   const form=content.querySelector('form');let pending=null,conflict=false;form.querySelector('[data-back]').onclick=onDone?close:menu;
   form.onsubmit=async event=>{event.preventDefault();if(form.dataset.saving)return;form.dataset.saving='yes';const status=form.querySelector('[role=status]');status.replaceChildren();form.querySelectorAll('button').forEach(button=>button.disabled=true);
-   try{if(!pending){const action=build(form);pending={requestId:crypto.randomUUID(),revision:data.revision,type:action.type,payload:structuredClone(action.payload)};}for(const input of form.querySelectorAll('input,select'))input.disabled=true;await request('/api/workspace/command',pending);await onChange();await read();if(form.isConnected)(onDone??menu)();}
+   try{
+    if(!pending){const action=build(form);pending={requestId:crypto.randomUUID(),revision:data.revision,type:action.type,payload:structuredClone(action.payload)};}
+    if(isBackgroundWritesRunning()){
+     const {ticket}=await readDeviceCache(path).catch(()=>({}));
+     const local=ticket?await localWorkspaceView():null;
+     if(ticket&&local){
+      const candidate=structuredClone(local.state);
+      applyProfileSettingsProjection(candidate,pending,pending.requestId);
+      const next=projectProfileSettings(candidate,selectedDate,data.revision);
+      await queueCommand(pending.revision,pending.type,pending.payload,{ticket,requestId:pending.requestId,projection:{responses:{[path]:next}}});
+      data=next;pending=null;
+      Promise.resolve().then(()=>onChange()).catch(()=>{});
+      if(form.isConnected)(onDone??menu)();
+      return;
+     }
+    }
+    for(const input of form.querySelectorAll('input,select'))input.disabled=true;await request('/api/workspace/command',pending);await onChange();await read();if(form.isConnected)(onDone??menu)();
+   }
    catch(error){if(error.status>=400&&error.status<500&&error.status!==408)pending=null;conflict=error.status===409;if(form.isConnected){status.textContent=error.message;if(conflict){const reload=document.createElement('button');reload.type='button';reload.textContent=dc('reloadSettings');reload.dataset.profileReload='';reload.onclick=async()=>{try{await onChange();await read();if(form.isConnected)(onDone??menu)();}catch(error){if(form.isConnected)status.textContent=error.message;}};status.append(reload);}}}
    finally{delete form.dataset.saving;form.querySelectorAll('button').forEach(button=>button.disabled=conflict&&button.type==='submit');for(const input of form.querySelectorAll('input,select'))input.disabled=Boolean(pending)||conflict;form.querySelector('[type=submit]').textContent=pending?t('mobileSuggest.retry'):t('common.save');}
   };return form;

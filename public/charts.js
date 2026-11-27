@@ -8,7 +8,7 @@ import {request,queueCommand} from './diary-api.js';
 import {readDeviceCache} from './device-cache.js';
 import {appendShellNavigation} from './app-shell.js';
 import {saveChartDefinition} from './custom-chart-editor.js';
-import {localWorkspaceState} from './local-engine.js';
+import {localWorkspaceState,localChartsView} from './local-engine.js';
 import {chartCardMarkup,mountChartPlots,validateChartView} from './chart-presentation.js';
 import {chartArrow,chartTitle} from './charts-source-view.js';
 import {openChartDefinition} from './chart-editor.js';
@@ -22,8 +22,21 @@ export function mountCharts({page,date,show,close,header,content,onChange,onRead
  const ui={show:showSheet,close,header,content,onChange,afterSave:()=>alive()?load():undefined,openDetail:detail,onEditor:editor=>{customEditor=editor;detailHost=editor.element;}};
  async function load(){
   const id=++serial;root.setAttribute('aria-busy','true');
-  try{const apply=next=>{if(!alive()||id!==serial)return;data=validateChartView(next);render();onReady?.();};const next=await request('/api/charts?'+new URLSearchParams({to:date()}),undefined,undefined,{onRefresh:next=>{if(!document.querySelector('dialog[open]'))apply(next);}});apply(next);}
-  catch(error){if(alive()&&id===serial){plots?.dispose();root.innerHTML=`<p class="sheet-message" role="status">${e(error.message)}</p><button type="button" class="more-results" data-retry>${t('mobileSuggest.retry')}</button>`;root.querySelector('[data-retry]').onclick=load;onReady?.(false);}}
+  let hadLocal=false;
+  try{
+   const apply=next=>{if(!alive()||id!==serial)return;data=validateChartView(next);render();onReady?.();};
+   const path='/api/charts?'+new URLSearchParams({to:date()});
+   if(!data){
+    const cached=await readDeviceCache(path).catch(()=>({}));
+    if(cached.ticket&&cached.value===undefined){
+     const local=await localChartsView({to:date()});
+     if(local&&alive()&&id===serial){apply(local);root.removeAttribute('aria-busy');hadLocal=true;}
+    }
+   }
+   const next=await request(path,undefined,undefined,{onRefresh:next=>{if(!document.querySelector('dialog[open]'))apply(next);}});
+   if(!hadLocal||!document.querySelector('dialog[open]'))apply(next);
+  }
+  catch(error){if(alive()&&id===serial&&!hadLocal){plots?.dispose();root.innerHTML=`<p class="sheet-message" role="status">${e(error.message)}</p><button type="button" class="more-results" data-retry>${t('mobileSuggest.retry')}</button>`;root.querySelector('[data-retry]').onclick=load;onReady?.(false);}}
   finally{if(alive()&&id===serial)root.removeAttribute('aria-busy');}
  }
  function render(){
@@ -69,21 +82,28 @@ export function mountCharts({page,date,show,close,header,content,onChange,onRead
    if(chart){const resume=resumeAt('[data-manage-chart="'+CSS.escape(id)+'"]');openChartDefinition(chart,data,{...ui,onBack:resume,afterDelete:resume});}
    else detail(id);
   });
-  host.querySelectorAll('[data-chart-visible]').forEach(input=>input.onchange=async()=>{
-   const previous=!input.checked,resume=resumeAt('[data-chart-visible="'+CSS.escape(input.dataset.chartVisible)+'"]');host.querySelectorAll('button,input').forEach(control=>control.disabled=true);
-   try{const id=input.dataset.chartVisible;
-    if(id.startsWith('custom:')){
-     const {_awaitingPlot,...definition}=data.saved.find(chart=>chart.id===id.slice(7));
-     await saveChartDefinition({type:'chart.save',payload:{...definition,visible:input.checked},requestId:crypto.randomUUID(),revision:data.revision},data,await owner);
-     await load();if(host.isConnected)resume();void onChange?.();return;
+  let toggleQueue=Promise.resolve();
+  host.querySelectorAll('[data-chart-visible]').forEach(input=>input.onchange=()=>{
+   const id=input.dataset.chartVisible,checked=input.checked,previous=!checked;
+   toggleQueue=toggleQueue.then(async()=>{
+    try{
+     if(id.startsWith('custom:')){
+      const {_awaitingPlot,...definition}=data.saved.find(chart=>chart.id===id.slice(7));
+      await saveChartDefinition({type:'chart.save',payload:{...definition,visible:checked},requestId:crypto.randomUUID(),revision:data.revision},data,await owner);
+      await load();
+      Promise.resolve().then(()=>onChange?.()).catch(()=>{});
+      return;
+     }
+     const action={type:'chart.display',payload:{id,patch:{visible:checked}}};
+     const state=await localWorkspaceState();if(!state)throw Error(dc('loadingChart'));
+     const {projectLocalChart}=await import('./local-chart-projection.js'),next=await projectLocalChart(state,action,data);
+     await queueCommand(data.revision,action.type,action.payload,{ticket:await owner,projection:{responses:{['/api/charts?'+new URLSearchParams({to:date()})]:next},chartState:next.localChartState}});
+     if(alive()){data=next;render();}
+     Promise.resolve().then(()=>onChange?.()).catch(()=>{});
+    }catch(error){
+     if(host.isConnected){input.checked=previous;host.querySelector('[role=status]').textContent=error.message;}
     }
-    const action={type:'chart.display',payload:{id,patch:{visible:input.checked}}};
-    const state=await localWorkspaceState();if(!state)throw Error(dc('loadingChart'));
-    const {projectLocalChart}=await import('./local-chart-projection.js'),next=await projectLocalChart(state,action,data);
-    await queueCommand(data.revision,action.type,action.payload,{ticket:await owner,projection:{responses:{['/api/charts?'+new URLSearchParams({to:date()})]:next},chartState:next.localChartState}});
-    if(alive()){data=next;render();if(host.isConnected)resume();}void onChange?.();}
-   catch(error){if(host.isConnected){input.checked=previous;host.querySelector('[role=status]').textContent=error.message;}}
-   finally{host.querySelectorAll('button,input').forEach(control=>control.disabled=false);}
+   });
   });
  }
  const stopStatus=onBackgroundWriteStatus(event=>{if(alive()&&(event.result?.records?.charts||event.discarded))void load();});

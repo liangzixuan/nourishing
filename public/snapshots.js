@@ -41,15 +41,25 @@ export function mountSnapshots({root,date,onChange=async()=>{},onReady}){
  async function load(){
   const serial=++readSerial;
   const apply=result=>{if(!alive()||serial!==readSerial)return;rows=result.items;revision=result.revision;render();message(rejected);onReady?.();};
-  message(m('loading'));
+  if(!rows.length)message(m('loading'));
+  let hadLocal=false;
   try{
-   const current=(await readDeviceCache('/api/snapshots')).ticket;
+   const cached=await readDeviceCache('/api/snapshots');
+   const current=cached.ticket;
    if(!alive()||serial!==readSerial)return;
    if(ticket&&(!current||ticket.ownerId!==current.ownerId||ticket.epoch!==current.epoch)){rows=[];render();return;}
    ticket=current;
-   apply(await request('/api/snapshots',undefined,abort.signal,{onRefresh:result=>{if(!document.querySelector('dialog[open]'))apply(result);}}));
+   if(!rows.length&&ticket&&cached.value===undefined){
+    const copy=await readWriteCopy().catch(()=>null);
+    if(copy&&!copy.locked&&copy.ownerId===ticket.ownerId&&copy.ticket.epoch===ticket.epoch&&(copy.snapshot||copy.pending.length)){
+     apply(projectSnapshotList({items:copy.snapshot?.state?.progressSnapshots??[],revision:copy.snapshot?.revision},copy));
+     hadLocal=true;
+    }
+   }
+   const result=await request('/api/snapshots',undefined,abort.signal,{onRefresh:result=>{if(!document.querySelector('dialog[open]'))apply(result);}});
+   if(!hadLocal||!document.querySelector('dialog[open]'))apply(result);
   }catch(error){
-   if(!alive()||serial!==readSerial||error.name==='AbortError')return;
+   if(!alive()||serial!==readSerial||error.name==='AbortError'||hadLocal)return;
    const copy=(!error.status||error.status>=500)?await readWriteCopy().catch(()=>null):null;
    if(ticket&&copy&&!copy.locked&&copy.ownerId===ticket.ownerId&&copy.ticket.epoch===ticket.epoch&&(copy.snapshot||copy.pending.length)){
     apply(projectSnapshotList({items:copy.snapshot?.state?.progressSnapshots??[],revision:copy.snapshot?.revision},copy));

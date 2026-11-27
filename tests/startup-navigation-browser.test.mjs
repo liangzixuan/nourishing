@@ -19,7 +19,7 @@ async function fixture({updates=false}={}){
  const state=initialState(),data=diaryStoreFixture(state),repository=createDataRepository(data.db,'fixture'),clock={now:new Date(),timeZone:'UTC'};
  let hold=null,denied=false,omitDocumentCookie=false,base,handle;
  const names={alice:'Alice Example',bob:'Bob Example'},identity=id=>({id,name:names[id],email:id+'@example.com',emailVerified:true,profile:{timeZone:'UTC',units:'metric'}});
- const service={current:async secret=>{await hold;if(denied)throw {code:401};return identity(secret);},display:async()=>({settings:{theme:'dark'}}),updateAccount:async(id,input)=>{names[id]=input.name;return {ok:true,account:identity(id)};},readDiary:async(_,day)=>repository.diary(day,clock),dashboard:async(_,date)=>dashboardView(state,{date},clock),charts:async(_,input)=>chartSurfaceView(state,input,clock),nutritionReport:async(_,input)=>reportView(state,input,clock),snapshots:async()=>({items:[]})};
+ const service={current:async secret=>{await hold;if(denied)throw {code:401};return identity(secret);},display:async()=>({settings:{theme:'dark'}}),reauthenticateAccount:async()=>{},updateAccount:async(id,input)=>{names[id]=input.name;return {ok:true,account:identity(id)};},readDiary:async(_,day)=>repository.diary(day,clock),dashboard:async(_,date)=>dashboardView(state,{date},clock),charts:async(_,input)=>chartSurfaceView(state,input,clock),nutritionReport:async(_,input)=>reportView(state,input,clock),snapshots:async()=>({items:[]})};
  const assets=await pwaFixtureAssets();
  const server=createServer(async(req,res)=>{if(updates&&req.url==='/offline-assets.js'){res.writeHead(200,{'Content-Type':'text/javascript','Cache-Control':'no-store'});return res.end('self.NOURISHING_OFFLINE='+JSON.stringify({...manifest,cache:manifest.cache+'-test-'+releaseVersion})+';');}if(updates&&req.url==='/diary-bundle.js'){assetHits++;await assetHold;}const requestHeaders={...req.headers};if(omitDocumentCookie&&req.url==='/diary')delete requestHeaders.cookie;const response=await handle(new Request(base+req.url,{method:req.method,headers:requestHeaders,...(req.method==='GET'?{}:{body:req,duplex:'half'})}));res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));});await new Promise(r=>server.listen(0,'127.0.0.1',r));base='http://127.0.0.1:'+server.address().port;handle=createWebHandler({config:{origin:base},service,assets});
  const browser=await chromium.launch({executablePath:CHROME_EXECUTABLE,headless:true}),context=await browser.newContext({viewport:{width:412,height:915},isMobile:true,hasTouch:true,extraHTTPHeaders:{Cookie:'__Host-nourishing_session=alice'}}),page=await context.newPage();page.setDefaultTimeout(8000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -126,12 +126,23 @@ test('both edges step back once, respect an editor saving and leave tab roots to
   await right();await editor.waitFor({state:'detached'});
   await page.locator('[data-account-edit=name]').filter({hasText:'Alice Example'}).click();
   await editor.getByLabel('Name',{exact:true}).fill('Saved');
-  const saving=new Promise(resolve=>page.route('**/api/account/update',async route=>{
+  await page.route('**/api/account/update',async route=>{
+   await new Promise(done=>{finishSave=done;});await route.continue();
+  });
+  await editor.getByRole('button',{name:'Save',exact:true}).click();
+  await editor.waitFor({state:'detached'});
+  await page.locator('[data-account-edit=name]').filter({hasText:'Saved'}).waitFor();
+  finishSave?.();finishSave=null;await page.unroute('**/api/account/update');
+  await page.locator('[data-account-edit=password]').click();
+  await editor.getByLabel('Current password',{exact:true}).fill('current-password');
+  const verifying=new Promise(resolve=>page.route('**/api/account/reauthenticate',async route=>{
    await new Promise(done=>{finishSave=done;resolve();});await route.continue();
   }));
-  await editor.getByRole('button',{name:'Save',exact:true}).click();await saving;
+  await editor.getByRole('button',{name:'Continue',exact:true}).click();await verifying;
   await left();assert.equal(await editor.isVisible(),true);
-  finishSave();await editor.waitFor({state:'detached'});await page.locator('[data-account-edit=name]').filter({hasText:'Saved'}).waitFor();
+  finishSave?.();finishSave=null;await page.unroute('**/api/account/reauthenticate');
+  await editor.getByLabel('New password',{exact:true}).waitFor();
+  await left();await editor.waitFor({state:'detached'});
   await page.locator('[data-account-edit=name]').click();await left();await editor.waitFor({state:'detached'});await page.locator('[data-account-edit=name]').waitFor();
   await left();await page.locator('[data-more-open=account]').waitFor();
   await page.locator('#settings-tab').click();await page.locator('#add-food').click();

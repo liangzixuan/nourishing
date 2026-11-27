@@ -27,13 +27,15 @@ function invalidationPrefixes(path,body){
  if(path.startsWith('/api/snapshots'))return SNAPSHOT_PREFIXES;
  if(path==='/api/workspace/command'&&typeof body?.type==='string'){
   const type=body.type;
-  if(/^(?:entry|note|biometric|water|day|records|photo|barcode)\./.test(type))return DIARY_PREFIXES;
-  if(/^(?:display|pauseLife)\./.test(type))return DISPLAY_PREFIXES;
+  if(/^(?:entry|note|biometric|water|day|records|photo|barcode|text|meal)\./.test(type))return DIARY_PREFIXES;
+  if(/^(?:display|pauseLife|scoreDisplay|diaryDisplay|diary|group)\./.test(type))return DISPLAY_PREFIXES;
   if(/^dashboard\./.test(type))return ['/api/dashboard','/api/display'];
   if(type==='addMenu.save')return ['/api/diary','/api/display'];
   if(type==='cycle.display')return ['/api/cycle','/api/diary','/api/dashboard'];
   if(type==='glucose.settings')return ['/api/glucose-timeline','/api/dashboard'];
-  if(/^(?:profile|target|targets|targetPolicy|nutrient-target|nutrientTarget|energy|weight-goal|macro)\./.test(type))return TARGET_PREFIXES;
+  if(/^(?:profile|profileSettings|target|targets|targetPolicy|nutrient-target|nutrientTarget|energy|weight-goal|macro)\./.test(type))return TARGET_PREFIXES;
+  if(/^coach\./.test(type))return ['/api/coach/preferences'];
+  if(/^foodSuggestion\./.test(type))return ['/api/food-insights/'];
   if(/^(?:fast|fasting)\./.test(type))return FASTING_PREFIXES;
   if(/^(?:food|recipe|meal|favorite|library|selection)\./.test(type))return LIBRARY_PREFIXES;
   if(/^chart\./.test(type))return ['/api/charts','/api/dashboard'];

@@ -1,5 +1,8 @@
 import {dc} from './discover-cloud-messages.js';
-import {request} from './diary-api.js';
+import {request,queueCommand} from './diary-api.js';
+import {readDeviceCache,writeDeviceCache} from './device-cache.js';
+import {isBackgroundWritesRunning} from './background-writes.js';
+import {localTargetPolicyView,localPreviewTargetPolicy,localAccountClock} from './local-engine.js';
 import {parseEnergyExpenditure} from './report-source/server/energy-policy.mjs';
 import {validateExpenditureBreakdown} from './report-source/server/expenditure-breakdown.mjs';
 const digest=/^[a-f0-9]{64}$/;
@@ -16,17 +19,59 @@ export class TargetControlScreen{
  capture(value){return capture(value,this.date);}
  action(change){return {type:'targetPolicy.expenditure',payload:{expenditure:change.expenditure}};}
  async previewChange(change,signal){
-  const action=this.action(change),value=await request('/api/target-policies/preview',{date:this.date,...action},signal);const view=this.capture(value.view);
+  const action=this.action(change);
+  if(isBackgroundWritesRunning()){
+   const {ticket}=await readDeviceCache('/api/diary').catch(()=>({}));
+   if(ticket){
+    const local=await localPreviewTargetPolicy({date:this.date,...action});
+    if(local){
+     const view=this.capture(local.view);
+     return {...view,baseRevision:this.saved.revision,action,_rawView:local.view,_ticket:ticket};
+    }
+   }
+  }
+  const value=await request('/api/target-policies/preview',{date:this.date,...action},signal);const view=this.capture(value.view);
   if(value.revision!==this.saved.revision)throw Object.assign(Error(dc('targetsChanged')),{status:409});return {...view,baseRevision:value.revision,action};
  }
  async commitReviewed(view){
   if(this.disposed||this.session.pending)return;if(view.baseRevision!==this.saved.revision)throw Object.assign(Error(dc('targetsChanged')),{status:409});
+  if(view._ticket&&isBackgroundWritesRunning()){
+   const path='/api/target-policies?'+new URLSearchParams({date:this.date});
+   const {baseRevision,action,_rawView,_ticket,...captured}=view;
+   const clock=await localAccountClock();
+   this.saved=captured;this.energyUnit=captured.energyUnit;this.busy=false;this.error='';this.reset();this.render();
+   await queueCommand(baseRevision,action.type,action.payload,{ticket:_ticket,projection:{today:clock.today,responses:_rawView?{[path]:_rawView}:{}}});
+   if(_rawView)void writeDeviceCache(path,_rawView,_ticket).catch(()=>false);
+   Promise.resolve().then(()=>this.onSaved?.()).catch(()=>{});
+   if(this.disposed)this.session.listener?.('saved');
+   return;
+  }
   this.session.pending={phase:'saving',body:{requestId:crypto.randomUUID(),revision:view.baseRevision,...structuredClone(view.action)}};await this.commit();
  }
  async load(){
   this.readController?.abort();const controller=new AbortController();this.readController=controller;this.busy=true;this.error='';this.render();
-  try{const value=this.capture(await request('/api/target-policies?'+new URLSearchParams({date:this.date}),undefined,controller.signal,{onRefresh:value=>this.refreshCapture?.(value)}));if(this.disposed||controller.signal.aborted)return;this.saved=value;this.energyUnit=value.energyUnit;this.reset();}
-  catch(error){if(!this.disposed&&!controller.signal.aborted)this.error=error.message;}
+  const path='/api/target-policies?'+new URLSearchParams({date:this.date});
+  let hadLocal=false;
+  try{
+   if(!this.saved){
+    const cached=await readDeviceCache(path).catch(()=>({}));
+    if(cached.ticket&&cached.value===undefined){
+     const local=await localTargetPolicyView(this.date);
+     if(local&&!this.disposed&&!controller.signal.aborted){
+      this.saved=this.capture(local);this.energyUnit=this.saved.energyUnit;this.busy=false;this.reset();this.render();hadLocal=true;
+     }
+    }
+   }
+   const raw=await request(path,undefined,controller.signal,{onRefresh:value=>this.refreshCapture?.(value)});
+   if(this.disposed||controller.signal.aborted)return;
+   if(hadLocal){
+    if(this.refreshCapture)this.refreshCapture(raw);
+    else if(!this.busy&&!this.session.pending&&!document.querySelector('dialog[open]')){this.saved=this.capture(raw);this.energyUnit=this.saved.energyUnit;this.render();}
+   }else{
+    const value=this.capture(raw);this.saved=value;this.energyUnit=value.energyUnit;this.reset();
+   }
+  }
+  catch(error){if(!this.disposed&&!controller.signal.aborted&&!hadLocal)this.error=error.message;}
   finally{if(!this.disposed&&this.readController===controller){this.busy=false;this.render();}}
  }
  async perform(change,popup){

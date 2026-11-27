@@ -4,7 +4,9 @@ import {fc} from './food-cloud-messages.js';
 import {mobileRepeatsHeader,mobileRepeatsMarkup,MobileRepeatList,mobileRepeatForm,MobileRepeatEditor} from './repeat-source/mobile-repeats.js';
 import {icon} from './repeat-source/icons.js';
 import {request,command,queueCommand} from './diary-api.js';
-import {localLibraryItem} from './local-engine.js';
+import {readDeviceCache} from './device-cache.js';
+import {isBackgroundWritesRunning} from './background-writes.js';
+import {localLibraryItem,localRepeatView,localWorkspaceState} from './local-engine.js';
 import {escape as e} from './html.js';
 import {openBarcode} from './barcode.js';
 import {mountFoodPicker} from './food-picker.js';
@@ -35,13 +37,28 @@ export function mountRepeats({page, show, close, header, content, date, headerRo
   async function reload({fresh=false}={}) {
     const id = ++serial;
     if(!data)root.innerHTML = `<p class="empty">${e(t("mobileNutrientDetail.loading"))}</p>`;
+    const url = path();
+    let hadLocal = false;
     try {
       const apply=result=>{if(alive()&&id===serial){data={...result,groups:diaryGroups(result.groups)};render();}};
-      const result = await request('/api/repeats?' + new URLSearchParams({date: date()}),undefined,undefined,{fresh,onRefresh:apply});
+      if (!fresh && !data) {
+        const cached = await readDeviceCache(url).catch(() => ({}));
+        if (cached.ticket && cached.value === undefined) {
+          const local = await localRepeatView(date());
+          if (local && alive() && id === serial) { apply(local); hadLocal = true; }
+        }
+      }
+      const result = await request(url,undefined,undefined,{fresh,onRefresh:apply});
       if (!alive() || id !== serial) return;
-      data = {...result,groups:diaryGroups(result.groups)};
-      render();return true;
+      if (!hadLocal || !editorController && !detailForm) {
+        data = {...result,groups:diaryGroups(result.groups)};
+        render();
+      } else {
+        data = {...result,groups:diaryGroups(result.groups)};
+      }
+      return true;
     } catch (error) {
+      if (hadLocal) return true;
       if (alive() && id === serial) {
         root.innerHTML = `<p class="sheet-message" role="status">${e(error.message)}</p><button type="button" class="more-results">${e(t("mobileSuggest.retry"))}</button>`;
         root.querySelector('button').onclick = reload;
@@ -159,7 +176,25 @@ export function mountRepeats({page, show, close, header, content, date, headerRo
       try{
        if(type!=='repeat.apply'){
         const requestId=crypto.randomUUID(),next=project(type,captured,requestId,item);
-        await queueCommand(revision,type,captured,{requestId,projection:{responses:{[path()]:next}}});data=next;if(alive())render();if(panel.isConnected)close();void onChange();return;
+        await queueCommand(revision,type,captured,{requestId,projection:{responses:{[path()]:next}}});data=next;if(alive())render();if(panel.isConnected)close();Promise.resolve().then(()=>onChange()).catch(()=>{});return;
+       }
+       if(isBackgroundWritesRunning()){
+        const {ticket}=await readDeviceCache(path()).catch(()=>({}));
+        if(ticket){
+         const appliedIds=new Set((captured.items??[]).map(row=>row.id));
+         const state=await localWorkspaceState().catch(()=>null);
+         const entries=(state?.repeats??[]).filter(row=>appliedIds.has(row.id)).map(r=>{
+          const ref=r.recipeId?{recipeId:r.recipeId}:r.mealId?{mealId:r.mealId}:{foodId:r.foodId};
+          const qty=r.quantity!==undefined?{quantity:r.quantity,unit:r.unit,...(r.portionId?{portionId:r.portionId}:{})}:{amount:r.amount??1};
+          return {...ref,...qty,date:captured.date,group:r.group,time:r.time,repeatId:r.id};
+         });
+         const next=structuredClone(data);
+         next.preview.items=next.preview.items.filter(row=>!appliedIds.has(row.id));
+         await queueCommand(revision,type,captured,{ticket,projection:{entries,responses:{[path()]:next}}});
+         data=next;if(alive())render();if(panel.isConnected)close();
+         Promise.resolve().then(()=>onChange()).catch(()=>{});
+         return;
+        }
        }
        if(!committed){await command(revision,type,captured);committed=true;}await onChange();if(panel.isConnected)close();if(alive())await reload();
       }

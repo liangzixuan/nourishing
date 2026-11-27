@@ -1,6 +1,8 @@
 import {uiLanguage,t} from './app-language.js';
 import {fc,foodQuantityUnit} from './food-cloud-messages.js';
-import {request} from './diary-api.js';
+import {request,queueCommand} from './diary-api.js';
+import {readDeviceCache} from './device-cache.js';
+import {isBackgroundWritesRunning} from './background-writes.js';
 import {escape as e} from './html.js';
 import {mountFoodPicker} from './food-picker.js';
 import {quantityFields,quantityValue} from './quantity.js';
@@ -52,6 +54,20 @@ export function mountTextLog({show,close,header,content,date,groups,initialGroup
   body.querySelector('[data-save]').onclick=async()=>{
    if(pendingSave)return;pendingSave=true;const status=body.querySelector('[role=status]'),save=body.querySelector('[data-save]');body.querySelectorAll('button,input,select').forEach(b=>b.disabled=true);
    saveEnvelope??={revision,type:'text.log',requestId:crypto.randomUUID(),payload:{originalText,date:diaryDate,time,group,rows:rows.map(row=>({foodId:row.foodId,...row.quantity,...(row.lineIndex!==undefined?{lineIndex:row.lineIndex}:{}),confirmed:true}))}};
+   if(isBackgroundWritesRunning()){
+    const {ticket}=await readDeviceCache('/api/diary').catch(()=>({}));
+    if(ticket){
+     try{
+      const entries=rows.map(row=>({foodId:row.foodId,...row.quantity,date:diaryDate,time,group}));
+      await queueCommand(saveEnvelope.revision,saveEnvelope.type,saveEnvelope.payload,{ticket,requestId:saveEnvelope.requestId,projection:{entries}});
+      saveEnvelope=null;
+      if(alive()){dispose();close();}
+      Promise.resolve().then(()=>onChange()).catch(()=>{});
+      return;
+     }catch(error){if(alive()&&status.isConnected){status.textContent=error.message;body.querySelectorAll('button,input,select').forEach(b=>b.disabled=false);}return;}
+     finally{pendingSave=false;}
+    }
+   }
    let committed=false;
    try{const result=await request('/api/workspace/command',saveEnvelope);if(result.ok!==true)throw Error(fc("saveUnconfirmedShort"));committed=true;saveEnvelope=null;await onChange();if(alive()){dispose();close();}}
    catch(error){if(alive()&&status.isConnected){

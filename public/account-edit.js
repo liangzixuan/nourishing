@@ -6,7 +6,7 @@ const label=key=>m('accountCloud.'+key);
 const passwordField=(name,text,autocomplete)=>`<label>${text}<input name="${name}" type="password" autocomplete="${autocomplete}" minlength="8" maxlength="256" required></label>`;
 
 /** Credentials stay in the open dialog and the provider requests that consume them. */
-export function createAccountEditor({root,request,onSaved}){
+export function createAccountEditor({root,request,onSaved,onQueueName}){
  let dialog=null,disposed=false,cleanup=null;
  function remove(){
   if(!dialog)return;
@@ -25,7 +25,7 @@ export function createAccountEditor({root,request,onSaved}){
   const forget=()=>{confirmedPassword='';confirmedSession='';};
   const clearInputs=()=>form.querySelectorAll('input[type=password]').forEach(input=>{input.value='';});
   cleanup=()=>{lifetime.abort();forget();clearInputs();form.reset();};
-  const close=()=>{if(saving)return;remove();trigger?.focus();};
+  const close=()=>{if(saving||verifying)return;remove();trigger?.focus();};
   const controls=()=>{if(!alive())return;for(const element of form.elements)element.disabled=saving||verifying||uncertain;cancel.disabled=saving;checkButton.disabled=saving;};
   function render(){
    current.dataset.stage=gate?'confirm':kind;
@@ -73,8 +73,18 @@ export function createAccountEditor({root,request,onSaved}){
   form.onsubmit=async event=>{
    event.preventDefault();if(saving||verifying||uncertain||!form.reportValidity())return;
    if(gate){await verify();return;}
-   if(!navigator.onLine){status.textContent=label('reconnectEdit');return;}
    const values=Object.fromEntries(new FormData(form));
+   if(kind==='name'&&onQueueName){
+    const trimmed=values.name?.trim();
+    if(!trimmed){status.textContent=label('enterName');return;}
+    saving=true;controls();
+    try{
+     const queued=await onQueueName(trimmed);
+     if(queued){saving=false;await complete(queued);return;}
+    }catch(error){if(alive())status.textContent=error.message;return;}
+    finally{saving=false;if(alive())controls();}
+   }
+   if(!navigator.onLine){status.textContent=label('reconnectEdit');return;}
    if(kind==='password'&&values.password!==values.confirmPassword){status.textContent=label('newPasswordsDoNotMatch');clearInputs();form.elements.password.focus();return;}
    let body={kind,name:values.name?.trim()};
    if(kind==='email'){email=values.email.trim();body={kind,email,password:confirmedPassword,confirmedSession};}
