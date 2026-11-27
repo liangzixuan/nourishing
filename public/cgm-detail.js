@@ -66,7 +66,8 @@ export function mountCgmDetail(view,ui){
    try{
     const result=await queueCommand(view.revision,'chart.display',{id:'cgm',patch:structuredClone(patch)},{ticket});
     queued.add(result.requestId);
-    void ui.afterSave?.();void ui.onChange?.();
+    Promise.resolve().then(()=>ui.afterSave?.()).catch(()=>{});
+    Promise.resolve().then(()=>ui.onChange?.()).catch(()=>{});
    }catch(failure){
     if(alive()){card=previous;error=failure.message;render();}
    }

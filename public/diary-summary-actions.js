@@ -39,7 +39,7 @@ export function openDiarySummaryAction({action,id,anchor,diary,date=diary.date,s
  }
  async function changeEnergyDisplay(mode){
   await saveSettings('display.save',{diaryEnergyDisplay:mode});
-  void onChange?.();
+  Promise.resolve().then(()=>onChange?.()).catch(()=>{});
  }
  if(action==='toggle-energy-display'){
   void changeEnergyDisplay(diary.summary.energy.display==='balance'?'remaining':'balance')
@@ -111,7 +111,7 @@ export function openDiarySummaryAction({action,id,anchor,diary,date=diary.date,s
   root.insertAdjacentHTML('beforeend',button(t('mobileScoreSettings.title'),'data-ds-scores class="ds-primary"'));
   root.querySelector('[data-ds-scores]').onclick=()=>openDiarySummaryAction({action:'choose-scores',diary,date,show,close,header,content,onChange,onTargets,onReport,navigation,ownerTicket:owner});
   const form=root.querySelector('form');form.onsubmit=async event=>{event.preventDefault();const controls=form.elements,highlighted=Array.from({length:8},(_,index)=>controls['highlight-'+index].value).filter(Boolean);root.querySelector('[data-error]').textContent='';form.querySelector('fieldset').disabled=true;
-   try{await saveSettings('diaryDisplay.save',{showEnergy:controls.showEnergy.checked,showMacros:controls.showMacros.checked,showWater:controls.showWater.checked,diaryDisplay:{version:1,highlighted,showHighlights:controls.showHighlights.checked,macroDisplay:controls.macroDisplay.value}});if(!root.isConnected)return;close();void onChange?.();}catch(error){if(root.isConnected){root.querySelector('[data-error]').textContent=error.message;form.querySelector('fieldset').disabled=false;}}
+   try{await saveSettings('diaryDisplay.save',{showEnergy:controls.showEnergy.checked,showMacros:controls.showMacros.checked,showWater:controls.showWater.checked,diaryDisplay:{version:1,highlighted,showHighlights:controls.showHighlights.checked,macroDisplay:controls.macroDisplay.value}});if(!root.isConnected)return;close();Promise.resolve().then(()=>onChange?.()).catch(()=>{});}catch(error){if(root.isConnected){root.querySelector('[data-error]').textContent=error.message;form.querySelector('fieldset').disabled=false;}}
   };return true;
  }
  if(action==='choose-scores'){
@@ -147,7 +147,7 @@ export function openDiarySummaryAction({action,id,anchor,diary,date=diary.date,s
     if(root.isConnected){display=previousDisplay;slot=previousSlot;render();root.querySelector('[data-error]').textContent=error.message;}
     return;
    }
-   try{void onChange?.();}catch{/* The durable change is already available to the next local read. */}
+   Promise.resolve().then(()=>onChange?.()).catch(()=>{/* The durable change is already available to the next local read. */});
   };
   root.onclick=event=>{if(busy)return;const target=event.target.closest('button');if(!target)return;if(target.dataset.discover){close();document.querySelector(`.app-nav [data-discover="${target.dataset.discover}"]`)?.click();return;}if(target.hasAttribute('data-help')){help=!help;render();}else if(target.hasAttribute('data-slot')){help=false;slot=target.dataset.slot==='add'?'add':Number(target.dataset.slot);render();}else if(target.hasAttribute('data-back')){if(!backToList())close();}else if(target.hasAttribute('data-choice'))void save(slot==='add'?{kind:'add',scoreId:target.dataset.choice}:{kind:'replace',index:slot,scoreId:target.dataset.choice});else if(target.hasAttribute('data-remove'))void save({kind:'remove',index:slot});};render();return true;
  }

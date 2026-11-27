@@ -113,7 +113,7 @@ export function mountFasting({page,headerRoot,onBack,onChange=async()=>{},initia
       const body={revision:data.revision,type:'fasting.settings',payload:structuredClone(payload),requestId:crypto.randomUUID()};
       const fastingChange=prepareFastingWrite(data,body);
       await queueCommand(data.revision,'fasting.settings',body.payload,{ticket,requestId:body.requestId,projection:{fastingChange,fastingContext:{timeZone:data.timeZone,schedulerReady:data.schedulerReady}}});
-      void onChange();
+      Promise.resolve().then(()=>onChange()).catch(()=>{});
      }catch(error){
       if(alive()){data.settings=previous;render();status(error.message);}
      }

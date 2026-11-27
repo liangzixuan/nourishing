@@ -225,7 +225,7 @@ export function mountDashboard({root,date,show,close,header,content,onChange,onR
    try{
     await queueCommand(data.revision,type,payload,{ticket,projection:{responses:{[path]:snapshot}}});
     void writeDeviceCache(path,snapshot,ticket).catch(()=>false);
-    void onChange?.();
+    Promise.resolve().then(()=>onChange?.()).catch(()=>{});
     if(needsRefresh){
      if(modalOpen())pendingRefresh=true;
      else void load({fresh:true,silent:true});
@@ -242,7 +242,7 @@ export function mountDashboard({root,date,show,close,header,content,onChange,onR
    try{
     const result=await command(data.revision,type,payload);
     if(result?.revision&&data)data.revision=result.revision;
-    void onChange?.();
+    Promise.resolve().then(()=>onChange?.()).catch(()=>{});
     if(needsRefresh&&serial===editSerial){
      if(modalOpen())pendingRefresh=true;
      else await load({fresh:true,silent:true});
@@ -312,7 +312,6 @@ export function mountDashboard({root,date,show,close,header,content,onChange,onR
    ptrGesture.pulling=true;
   }
   ptrGesture.dy=Math.max(0,dy);
-  if(ptrGesture.dy>0&&event.cancelable)event.preventDefault();
   const height=Math.min(60,ptrGesture.dy*0.48);
   updatePtr(height,ptrGesture.dy>=ptrThreshold?'ready':'pull',true);
  }
@@ -330,7 +329,7 @@ export function mountDashboard({root,date,show,close,header,content,onChange,onR
  }
  function ptrCancel(){ptrGesture=null;if(!ptrRefreshing)updatePtr(0,'idle',false);}
  root.addEventListener('touchstart',ptrStart,{passive:true,signal:ptrAbort.signal});
- root.addEventListener('touchmove',ptrMove,{passive:false,signal:ptrAbort.signal});
+ root.addEventListener('touchmove',ptrMove,{passive:true,signal:ptrAbort.signal});
  root.addEventListener('touchend',ptrEnd,{passive:true,signal:ptrAbort.signal});
  root.addEventListener('touchcancel',ptrCancel,{passive:true,signal:ptrAbort.signal});
 

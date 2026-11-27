@@ -500,7 +500,7 @@ function openAddMenu() {
       const {ticket} = await readDeviceCache('/api/diary');
       if (ticket) {
         await queueCommand(diary.revision, 'addMenu.save', {addMenu: value}, {ticket});
-        void load({reuseUnchanged: true});
+        void load({reuseUnchanged: true}).catch(() => {});
       } else {
         await command(diary.revision, 'addMenu.save', {addMenu: value});
         await load();
