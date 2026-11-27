@@ -3,8 +3,10 @@ import {uiLanguage,t} from './app-language.js';
 import {offlineCopy,currentPrivateResponseTicket} from './offline-store.js';
 import {offlineEffectiveState} from './offline-model.js';
 import {fastingView} from './local-diary-projection.js';
-import {request} from './diary-api.js';
+import {request,queueCommand} from './diary-api.js';
+import {readDeviceCache} from './device-cache.js';
 import {onBackgroundWriteStatus} from './background-writes.js';
+import {prepareFastingWrite} from './fasting-source/device.js';
 import {fastingScreenMarkup,fastingHistoryMarkup,fastingHelpLink} from './fasting-source/discover-fasting.js';
 import {escape as e,symbol,button as b} from './fasting-source/ui.js';
 import {WheelColumn} from './fasting-source/mobile-datetime-picker.js';
@@ -33,9 +35,9 @@ export function mountFasting({page,headerRoot,onBack,onChange=async()=>{},initia
   try{return await request('/api/fasting?'+new URLSearchParams(query),null,signal);}
   catch(error){if(signal.aborted||error.status||!copy?.fastingContext||copy.locked||!await currentPrivateResponseTicket(copy.ticket))throw error;return local();}
  }
- async function reload({more=false,retry=()=>reload()}={}){
+ async function reload({more=false,silent=false,retry=()=>reload()}={}){
   controller?.abort();controller=new AbortController();const signal=controller.signal,id=++sequence;loading=true;
-  if(data&&!more)root.querySelector('fieldset.dc-dialog-body')?.setAttribute('disabled','');
+  if(data&&!more&&!silent)root.querySelector('fieldset.dc-dialog-body')?.setAttribute('disabled','');
   if(!data)root.innerHTML=`<p class="empty" role="status">${t('mobileNutrientDetail.loading')}</p>`;else root.querySelector('[data-fh-list-more]')?.setAttribute('disabled','');
   try{
    if(more){const next=await readPage({offset:data.history.rows.length,limit:25,revision:data.history.revision},signal);if(!alive()||id!==sequence)return false;data={...next,history:{...next.history,rows:[...data.history.rows,...next.history.rows]}};loadedCount=data.history.rows.length;}
@@ -97,9 +99,32 @@ export function mountFasting({page,headerRoot,onBack,onChange=async()=>{},initia
  root.addEventListener('click',event=>{if(!data||settingMutation?.blocked)return;const button=event.target.closest('button');if(!button)return;const action=button.dataset.discover;
   if(action==='schedule-fast')openEditor();else if(action==='past-fast')openEditor('past');else if(action==='edit-schedule')openEditor('schedule',data.schedules.find(row=>row.id===button.dataset.id),button.dataset.scheduleField);else if(action?.startsWith('history-'))openEditor('history',data.history.rows.find(row=>row.id===button.dataset.id),button.dataset.historyField);else if(action==='start-scheduled')startNow(data.schedules.find(row=>row.id===button.dataset.id));else if(action?.startsWith('timer-'))changeSetting({timerDirection:action.slice(6)});else if(button.hasAttribute('data-fh-list-more')){if(!loading)void reload({more:true});}else if(button.hasAttribute('data-fh-list-delete'))deleteRecords([button.dataset.fhListDelete]);else if(button.hasAttribute('data-fh-list-delete-selected'))deleteRecords([...selected]);},{signal:events.signal});
  root.addEventListener('change',event=>{if(!data||settingMutation?.blocked)return;const node=event.target;if(node.dataset.pref){const map={fastingEnabled:'enabled',fasting:'showDashboard',askToStopFast:'askToStopFast'};changeSetting({[map[node.dataset.pref]]:node.checked});return;}if(node.matches('[data-fh-list-all]')){if(node.checked&&data.history.rows.length>100){node.checked=false;status(dc('fastSelectionLimit'));return;}data.history.rows.forEach(row=>node.checked?selected.add(row.id):selected.delete(row.id));}else if(node.dataset.fhListSelect){if(node.checked&&selected.size===100){node.checked=false;status(dc('fastSelectionLimit'));return;}node.checked?selected.add(node.dataset.fhListSelect):selected.delete(node.dataset.fhListSelect);}else return;renderHistory();},{signal:events.signal});
- function changeSetting(payload){settingMutation?.dispose();settingMutation=fastingMutation({revision:()=>data.revision,context:()=>data,host:root,onSaved:async()=>{settingMutation.dispose();settingMutation=null;await changed();},onReload:async()=>{settingMutation.dispose();settingMutation=null;await reload();}});void settingMutation.run('fasting.settings',payload);}
+ const ownerTicket=readDeviceCache('/api/diary').then(cached=>cached.ticket).catch(()=>null);
+ let settingQueue=Promise.resolve();
+ function changeSetting(payload){
+  const previous=structuredClone(data.settings);
+  void ownerTicket.then(ticket=>{
+   if(!alive()||!data)return;
+   if(ticket){
+    Object.assign(data.settings,payload);
+    render();
+    settingQueue=settingQueue.then(async()=>{
+     try{
+      const body={revision:data.revision,type:'fasting.settings',payload:structuredClone(payload),requestId:crypto.randomUUID()};
+      const fastingChange=prepareFastingWrite(data,body);
+      await queueCommand(data.revision,'fasting.settings',body.payload,{ticket,requestId:body.requestId,projection:{fastingChange,fastingContext:{timeZone:data.timeZone,schedulerReady:data.schedulerReady}}});
+      void onChange();
+     }catch(error){
+      if(alive()){data.settings=previous;render();status(error.message);}
+     }
+    });
+    return;
+   }
+   settingMutation?.dispose();settingMutation=fastingMutation({revision:()=>data.revision,context:()=>data,host:root,onSaved:async()=>{settingMutation.dispose();settingMutation=null;await changed();},onReload:async()=>{settingMutation.dispose();settingMutation=null;await reload();}});void settingMutation.run('fasting.settings',payload);
+  });
+ }
  function back(event){if(!alive())return;event.preventDefault();event.stopImmediatePropagation();if(editor){editor.back();return;}if(deletion){closeDelete();return;}if(quick){if(!quickMutation?.busy){closeQuick();onActionClose?.();}return;}(onActionClose??onBack)?.();}
- const stopStatus=onBackgroundWriteStatus(event=>{if(alive()&&(event.result?.fastingChange||event.result?.fastingSchedule||event.discarded))void reload();});
+ const stopStatus=onBackgroundWriteStatus(event=>{if(!alive())return;if(event.saved&&event.result?.revision&&data)data.revision=event.result.revision;if(event.result?.fastingSchedule||event.discarded||(event.result?.fastingChange&&!event.result.fastingChange.settings))void reload({silent:true});});
  window.addEventListener('nourishing-back',back,{capture:true,signal:events.signal});renderHeader();void reload();
  return {reload,dispose(){disposed=true;stopStatus();sequence++;controller?.abort();events.abort();editor?.dispose();deleteMutation?.dispose();deletion?.close();quickWheel?.dispose();quickMutation?.dispose();quick?.close();quick?.remove();settingMutation?.dispose();headerRoot?.classList.remove('fasting-heading');}};
 }

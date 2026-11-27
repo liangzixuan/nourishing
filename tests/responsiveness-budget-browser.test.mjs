@@ -579,6 +579,41 @@ test('core Diary, Photo Log, and More interactions respond instantly under 1500m
       await page.waitForFunction(orig => document.querySelector('#diary-date')?.getAttribute('data-date') === orig, initialDate);
     });
 
+    // 9. Discover -> Dashboard first card switch (Consumed <-> Remaining) and Dashboard Settings toggles run in < 800ms under 1500ms API latency.
+    await timed('Switch to Discover tab', async () => {
+      await page.locator('#discover-tab').click();
+      await page.locator('.dc-summary').waitFor();
+    });
+    await timed('Switch Dashboard summary card to Remaining average', async () => {
+      await page.locator('[data-discover="switch-report"]').click();
+      await page.locator('.dc-summary-caption').filter({hasText: 'Remaining average'}).waitFor();
+    });
+    await timed('Switch Dashboard summary card back to Consumed average', async () => {
+      await page.locator('[data-discover="switch-report"]').click();
+      await page.locator('.dc-summary-caption').filter({hasText: 'Consumed average'}).waitFor();
+    });
+    await timed('Toggle Dashboard Settings instantly and retain state across close/reopen', async () => {
+      await page.getByRole('button', {name: 'Dashboard Settings', exact: true}).click();
+      const news = page.locator('[data-pref="newsVisible"]');
+      const energy = page.locator('[data-widget="energy"]');
+      await news.waitFor();
+      const initialNews = await news.isChecked();
+      const initialEnergy = await energy.isChecked();
+      await news.click();
+      assert.equal(await energy.isDisabled(), false, 'Toggling one switch must not grey out other controls');
+      await energy.click();
+      assert.equal(await news.isChecked(), !initialNews);
+      assert.equal(await energy.isChecked(), !initialEnergy);
+      await page.locator('#sheet [data-close]').click();
+      await page.locator('#sheet').waitFor({state: 'hidden'});
+      await page.getByRole('button', {name: 'Dashboard Settings', exact: true}).click();
+      await news.waitFor();
+      assert.equal(await news.isChecked(), !initialNews, 'Reopening Dashboard Settings must keep toggled news state');
+      assert.equal(await energy.isChecked(), !initialEnergy, 'Reopening Dashboard Settings must keep toggled energy state');
+      await page.locator('#sheet [data-close]').click();
+      await page.locator('#sheet').waitFor({state: 'hidden'});
+    });
+
     assert.deepEqual(f.errors, []);
   } finally {
     await f.close();

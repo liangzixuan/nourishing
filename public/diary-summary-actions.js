@@ -39,13 +39,11 @@ export function openDiarySummaryAction({action,id,anchor,diary,date=diary.date,s
  }
  async function changeEnergyDisplay(mode){
   await saveSettings('display.save',{diaryEnergyDisplay:mode});
-  await onChange?.();
+  void onChange?.();
  }
  if(action==='toggle-energy-display'){
-  anchor.disabled=true;
   void changeEnergyDisplay(diary.summary.energy.display==='balance'?'remaining':'balance')
-   .catch(error=>{const status=anchor.closest('.md-summary')?.querySelector('[role=status]');if(status)status.textContent=error.message;})
-   .finally(()=>{anchor.disabled=false;});
+   .catch(error=>{const status=anchor.closest('.md-summary')?.querySelector('[role=status]');if(status)status.textContent=error.message;});
   return true;
  }
  if(action==='mobile-diary-energy'){
@@ -88,15 +86,22 @@ export function openDiarySummaryAction({action,id,anchor,diary,date=diary.date,s
   root.querySelector('[data-ds-report]').onclick=()=>{close();onReport?.(date);};
   const controls=root.querySelector('.ds-energy-mode');
   controls.onclick=async event=>{
-   const choice=event.target.closest('[data-mode]');if(!choice||controls.disabled||choice.dataset.mode===mode)return;
-   controls.disabled=true;
+   const choice=event.target.closest('[data-mode]');if(!choice||choice.dataset.mode===mode)return;
+   const previous=mode;
+   mode=choice.dataset.mode;
+   root.querySelector('[role=status]').textContent='';
+   root.querySelector('[data-budget]').innerHTML=budget(mode);
+   controls.querySelectorAll('[data-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.mode===mode)));
+   draw();
    try{
-    await changeEnergyDisplay(choice.dataset.mode);
-    if(!root.isConnected)return;
-    mode=choice.dataset.mode;root.querySelector('[data-budget]').innerHTML=budget(mode);
-    controls.querySelectorAll('[data-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.mode===mode)));draw();
-   }catch(error){root.querySelector('[role=status]').textContent=error.message;}
-   finally{controls.disabled=false;}
+    await changeEnergyDisplay(mode);
+   }catch(error){
+    if(root.isConnected){
+     mode=previous;root.querySelector('[data-budget]').innerHTML=budget(mode);
+     controls.querySelectorAll('[data-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.mode===mode)));
+     draw();root.querySelector('[role=status]').textContent=error.message;
+    }
+   }
   };
   draw();return ()=>rings.clear();
  }
@@ -106,7 +111,7 @@ export function openDiarySummaryAction({action,id,anchor,diary,date=diary.date,s
   root.insertAdjacentHTML('beforeend',button(t('mobileScoreSettings.title'),'data-ds-scores class="ds-primary"'));
   root.querySelector('[data-ds-scores]').onclick=()=>openDiarySummaryAction({action:'choose-scores',diary,date,show,close,header,content,onChange,onTargets,onReport,navigation,ownerTicket:owner});
   const form=root.querySelector('form');form.onsubmit=async event=>{event.preventDefault();const controls=form.elements,highlighted=Array.from({length:8},(_,index)=>controls['highlight-'+index].value).filter(Boolean);root.querySelector('[data-error]').textContent='';form.querySelector('fieldset').disabled=true;
-   try{await saveSettings('diaryDisplay.save',{showEnergy:controls.showEnergy.checked,showMacros:controls.showMacros.checked,showWater:controls.showWater.checked,diaryDisplay:{version:1,highlighted,showHighlights:controls.showHighlights.checked,macroDisplay:controls.macroDisplay.value}});if(!root.isConnected)return;close();await onChange?.();}catch(error){if(root.isConnected){root.querySelector('[data-error]').textContent=error.message;form.querySelector('fieldset').disabled=false;}}
+   try{await saveSettings('diaryDisplay.save',{showEnergy:controls.showEnergy.checked,showMacros:controls.showMacros.checked,showWater:controls.showWater.checked,diaryDisplay:{version:1,highlighted,showHighlights:controls.showHighlights.checked,macroDisplay:controls.macroDisplay.value}});if(!root.isConnected)return;close();void onChange?.();}catch(error){if(root.isConnected){root.querySelector('[data-error]').textContent=error.message;form.querySelector('fieldset').disabled=false;}}
   };return true;
  }
  if(action==='choose-scores'){
@@ -131,18 +136,18 @@ export function openDiarySummaryAction({action,id,anchor,diary,date=diary.date,s
    const main=mobileScoreOrder.map(id=>scores.find(row=>row.id===id)).filter(Boolean),extra=scores.filter(row=>!mobileScoreOrder.includes(row.id));root.innerHTML=`<header class="sheet-header"><button type="button" class="icon-button" data-back aria-label="${e(t('mobileDisplay.back'))}"><img src="/more-source/icons/chevron-left.svg" alt=""></button><h2 id="sheet-title">${e(t('mobileScoreSettings.title'))}</h2>${slot===null?button('<img src="/report-mobile-source/score-icons/help-circle-outline.svg" alt="">',`data-help aria-label="${e(t('mobileScoreSettings.help'))}" aria-expanded="${help}"`):'<span></span>'}</header>${help?`<p class="mss-hint">${e(dc('scoreHelp'))}</p>`:''}<fieldset ${busy?'disabled':''}>${slot===null?`${switchRow(t('mobileScoreSettings.show'),'showScores',display.show)}<h3>${e(t('mobileScoreSettings.selected'))}</h3><section class="ds-list">${display.selected.map((id,index)=>button(`<span>${e(scoreName(scores.find(row=>row.id===id)))}</span><img src="/more-source/icons/chevron-right.svg" alt="">`,`data-slot="${index}"`)).join('')}${display.selected.length<8?button(t('mobileScoreSettings.add'),'data-slot="add"'):''}</section><p class="mss-hint">${e(t('mobileScoreSettings.hint'))}</p>`:`<section class="ds-list">${main.map(choice).join('')}</section>${extra.length?`<details class="mss-other"><summary>${e(t('mobileScoreSettings.other'))}</summary><section class="ds-list">${extra.map(choice).join('')}</section></details>`:''}${slot!=='add'&&display.selected.length>1?button(t('mobileScoreSettings.remove'),'data-remove class="ds-primary"'):''}`}<p data-error role="alert"></p></fieldset><nav class="dc-bottom" aria-label="${e(t('discover.nav.main'))}">${bottomNavigation(navigation,uiLanguage())}</nav>`;
    root.querySelector('[name=showScores]')?.addEventListener('change',event=>save({kind:'show',show:event.target.checked}));};
   const save=async change=>{
-   if(busy)return;
-   busy=true;render();
+   const previousDisplay=display,previousSlot=slot;
+   let desired;
+   try{desired=changeScoreDisplay(display,change);}
+   catch(error){if(root.isConnected)root.querySelector('[data-error]').textContent=error.message;return;}
+   display=desired;slot=null;render();
    try{
-    const desired=changeScoreDisplay(display,change);
-    await saveSettings('scoreDisplay.change',{base:display,change});
-    if(!root.isConnected)return;
-    display=desired;slot=null;busy=false;render();
+    await saveSettings('scoreDisplay.change',{base:previousDisplay,change});
    }catch(error){
-    if(root.isConnected){busy=false;render();root.querySelector('[data-error]').textContent=error.message;}
+    if(root.isConnected){display=previousDisplay;slot=previousSlot;render();root.querySelector('[data-error]').textContent=error.message;}
     return;
    }
-   try{await onChange?.();}catch{/* The durable change is already available to the next local read. */}
+   try{void onChange?.();}catch{/* The durable change is already available to the next local read. */}
   };
   root.onclick=event=>{if(busy)return;const target=event.target.closest('button');if(!target)return;if(target.dataset.discover){close();document.querySelector(`.app-nav [data-discover="${target.dataset.discover}"]`)?.click();return;}if(target.hasAttribute('data-help')){help=!help;render();}else if(target.hasAttribute('data-slot')){help=false;slot=target.dataset.slot==='add'?'add':Number(target.dataset.slot);render();}else if(target.hasAttribute('data-back')){if(!backToList())close();}else if(target.hasAttribute('data-choice'))void save(slot==='add'?{kind:'add',scoreId:target.dataset.choice}:{kind:'replace',index:slot,scoreId:target.dataset.choice});else if(target.hasAttribute('data-remove'))void save({kind:'remove',index:slot});};render();return true;
  }

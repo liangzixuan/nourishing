@@ -73,11 +73,14 @@ test('Discover headers route Newsfeed and settings per tab; source Report render
   await page.route('**/api/workspace/command',route=>route.fulfill({status:503,json:{error:'Summary unavailable. Try again.'}}),{times:1});
   await switchMode.click();await page.getByRole('alert').filter({hasText:'Summary unavailable'}).waitFor();assert.equal(await macros.count(),1);
   state.settings.completedDays=['2026-11-05'];
-  for(const widget of ['Expenditure','Energy Budget','Macro Targets','Highlighted Nutrients','Nutrition Scores','Consumed']){
-   await switchMode.click();await summary.locator('.dc-summary-caption').filter({hasText:widget}).waitFor();
+  for(const widget of ['Remaining','Consumed']){
+   const saved=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/workspace/command');
+   await switchMode.click();
+   await summary.locator('.dc-summary-caption').filter({hasText:widget+' average'}).waitFor();
+   await saved;
    assert.equal(state.settings.discover.reportWidget,widget);assert.equal(state.settings.discover.reportRange,'custom');
-   if(widget==='Macro Targets')await snapshotSummary('targets');
   }
+  await page.evaluate(()=>window.panel.reload());await summary.locator('.dc-summary-number').filter({hasText:'0.0 kcal'}).waitFor();
   assert.equal(await summary.locator('.dc-summary-number').innerText(),'0.0 kcal');
   assert.deepEqual(await macros.locator('span').allTextContents(),Array(3).fill('Added when logged - 0.0 g'));
   await snapshotSummary('known-zero');state.settings.completedDays=[];

@@ -72,6 +72,11 @@ export function applyWriteToState(state,row,result){
  if(type==='day.complete'){state.settings.completedDays=(state.settings.completedDays??[]).filter(day=>day!==p.date);if(p.completed)state.settings.completedDays.push(p.date);}
  if(row.projection?.diarySettings)Object.assign(state.settings,row.projection.diarySettings);
  if(type==='pauseLife.save')state.settings.pauseLife=structuredClone(p.policy);
+ if(type==='dashboard.widgets')state.settings.dashboard={...state.settings.dashboard,version:1,widgets:{...state.settings.dashboard?.widgets,...p.patch}};
+ if(type==='dashboard.preferences')state.settings.discover={...state.settings.discover,version:1,...p.patch};
+ if(type==='addMenu.save')state.settings.addMenu=structuredClone(p.addMenu);
+ if(type==='cycle.display')state.settings.cycleDisplay=structuredClone(p.policy);
+ if(type==='glucose.settings')state.settings.glucoseTimeline=structuredClone(p.policy);
  if(type==='display.save'||type==='preferences.patch')Object.assign(state.settings,p);
  if(type==='group.editSlot'&&state.settings.groups&&diaryGroupSlots(state.settings)[p.slot-1]===p.from)editDiaryGroupSlot(state,p);
  if(type==='group.rename'&&state.settings.groups?.includes(p.from))renameDiaryGroup(state,p);
@@ -124,6 +129,26 @@ export function projectSavedDefinition(path,view,row,receipt){
  }
  if(type==='chart.delete'&&/^\/api\/dashboard(?:\?|$)/.test(path)&&view?.pinnedCharts){
   return {...view,pinnedCharts:projectSavedDefinition('/api/charts',view.pinnedCharts,row,receipt)};
+ }
+ if(/^\/api\/dashboard(?:\?|$)/.test(path)&&view?.dashboard?.widgets){
+  if(type==='dashboard.widgets'){
+   const next=structuredClone(view);
+   Object.assign(next.dashboard.widgets,payload.patch);
+   if(next.capture?.settings?.widgets)Object.assign(next.capture.settings.widgets,payload.patch);
+   return next;
+  }
+  if(type==='dashboard.preferences'){
+   const next=structuredClone(view);
+   Object.assign(next.preferences,payload.patch);
+   if(payload.patch?.reportWidget&&next.summaries?.[payload.patch.reportWidget])next.summary=structuredClone(next.summaries[payload.patch.reportWidget]);
+   return next;
+  }
+  if(type==='dashboard.streakReset'){
+   const next=structuredClone(view);
+   if(next.streaks)next.streaks={...next.streaks,current:payload.count};
+   if(next.capture?.cards?.streaks)next.capture.cards.streaks={...next.capture.cards.streaks,current:payload.count};
+   return next;
+  }
  }
  if(!/^\/api\/charts(?:\?|$)/.test(path)||!view?.saved)return view;
  if(type==='chart.delete'){

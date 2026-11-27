@@ -496,8 +496,15 @@ function openAddMenu() {
     preferences: diary.presentation?.settings?.addMenu,
     includeFast: view !== 'diary',
     onSave: async value => {
-      await command(diary.revision, 'addMenu.save', {addMenu: value});
-      await load();
+      if (diary.presentation?.settings) diary.presentation.settings.addMenu = structuredClone(value);
+      const {ticket} = await readDeviceCache('/api/diary');
+      if (ticket) {
+        await queueCommand(diary.revision, 'addMenu.save', {addMenu: value}, {ticket});
+        void load({reuseUnchanged: true});
+      } else {
+        await command(diary.revision, 'addMenu.save', {addMenu: value});
+        await load();
+      }
     },
     onSelect: kind => runAddAction(kind),
   });

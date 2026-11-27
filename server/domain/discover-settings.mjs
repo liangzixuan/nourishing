@@ -6,7 +6,7 @@ export function parseDiscoverSettings(input){
   if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(key=>!Object.hasOwn(discoverDefaults,key)))fail();
   const value={...discoverDefaults,...input};if(value.version!==1)fail();
   for(const key of ['reportRange','energyRange','weightRange'])if(!ranges.includes(value[key]))fail();
-  if(!['Consumed','Expenditure','Energy Budget','Macro Targets','Highlighted Nutrients','Nutrition Scores'].includes(value.reportWidget))fail();
+  if(!['Consumed','Remaining','Expenditure','Energy Budget','Macro Targets','Highlighted Nutrients','Nutrition Scores'].includes(value.reportWidget))fail();
   if(!['Consumed','Expenditure','Balance'].includes(value.energyShow))fail();
   for(const [key,defaultValue]of Object.entries(discoverDefaults))if(typeof defaultValue==='boolean'&&typeof value[key]!=='boolean')fail();
   if(!['up','down'].includes(value.timerDirection))fail();

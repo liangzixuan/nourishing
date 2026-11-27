@@ -2,7 +2,9 @@ import {guardSheetExit} from './edge-navigation.js';
 import {escape as e} from './html.js';
 import {uiLanguage} from './app-language.js';
 import {dc} from './discover-cloud-messages.js';
-import {request,command} from './diary-api.js';
+import {request,command,queueCommand} from './diary-api.js';
+import {readDeviceCache} from './device-cache.js';
+import {onBackgroundWriteStatus} from './background-writes.js';
 import {chartCardMarkup,mountChartPlots,validateChartView} from './chart-presentation.js';
 import {chartArrow,chartSeriesLabel} from './charts-source-view.js';
 import {chartTimeBounds} from './chart-rendering-source.js';
@@ -27,7 +29,9 @@ export function cgmDetailCards(card){
 export function mountCgmDetail(view,ui){
  const {show,content,close}=ui;
  show('<section class="cgm-detail"></section>');const root=content.querySelector('.cgm-detail'),dialog=content.closest('dialog'),abort=new AbortController();
- let card=view.cards.find(row=>row.id==='cgm'),screen='detail',plots=null,picker=null,disposed=false,busy=false,error='',pending=null,detailScroll=0,settingsScroll=0,statsOpen=[];
+ let card=view.cards.find(row=>row.id==='cgm'),screen='detail',plots=null,picker=null,disposed=false,busy=false,error='',pending=null,detailScroll=0,settingsScroll=0,statsOpen=[],editSerial=0;
+ const ownerTicket=readDeviceCache('/api/diary').then(cached=>cached.ticket).catch(()=>null);
+ const queued=new Set();
  const alive=()=>!disposed&&root.isConnected,scrollHost=()=>dialog??content;
  const pick=(key,label,value)=>`<button type="button" class="mcl-row" data-cgm-pick="${key}"><strong>${e(label)}</strong><span>${e(value)}${chartArrow}</span></button>`;
  const toggle=(key,label)=>`<label class="mcl-row"><strong>${e(label)}</strong><input type="checkbox" class="chart-visibility" role="switch" data-cgm-setting="${key}" aria-label="${e(label)}" ${card.settings[key]?'checked':''}></label>`;
@@ -52,7 +56,23 @@ export function mountCgmDetail(view,ui){
   if(alive()){view=next;card=next.cards[0];}
  }
  async function save(patch){
-  if(busy||!alive()||pending&&patch)return;
+  if(!alive())return;
+  const ticket=await ownerTicket;
+  if(ticket&&patch){
+   const previous=structuredClone(card);
+   editSerial++;error='';
+   card={...card,settings:{...card.settings,...structuredClone(patch)}};
+   render();
+   try{
+    const result=await queueCommand(view.revision,'chart.display',{id:'cgm',patch:structuredClone(patch)},{ticket});
+    queued.add(result.requestId);
+    void ui.afterSave?.();void ui.onChange?.();
+   }catch(failure){
+    if(alive()){card=previous;error=failure.message;render();}
+   }
+   return;
+  }
+  if(busy||pending&&patch)return;
   if(patch)pending={patch:structuredClone(patch),revision:view.revision,saved:false};
   if(!pending)return;busy=true;error='';render();
   try{
@@ -63,6 +83,14 @@ export function mountCgmDetail(view,ui){
    if(failure.status===409){pending=null;try{await refresh();}catch{error+=' '+dc('reloadLatestChart');}}
   }finally{busy=false;if(alive())render();}
  }
+ const stopStatus=onBackgroundWriteStatus(event=>{
+  if(!alive())return;
+  if(event.saved&&queued.delete(event.requestId)){
+   view={...view,revision:event.result.revision??view.revision};
+   const serial=editSerial;
+   void refresh().then(()=>{if(alive()&&serial===editSerial)render();}).catch(()=>{});
+  }
+ });
  function popup(key,anchor){
   const unit=key==='primaryUnit',axis=card.axisUnits.find(row=>row.key==='primaryUnit');
   const choices=unit?axis.choices.map(value=>({value,label:value})):[{value:'null',label:m('none')},...card.capture.comparisonOptions.map(row=>({value:JSON.stringify(row.metric),label:chartSeriesLabel(row)+(row.unit?' ('+row.unit+')':'')}))];
@@ -97,5 +125,5 @@ export function mountCgmDetail(view,ui){
  const handleBack=event=>{if(!alive()||picker)return;if(screen!=='detail'||busy){event.preventDefault();event.stopImmediatePropagation();back();}};
  dialog?.addEventListener('cancel',handleBack,{capture:true,signal:abort.signal});window.addEventListener('nourishing-back',handleBack,{capture:true,signal:abort.signal});
  render();
- return {element:root,dispose(){disposed=true;abort.abort();picker?.close();plots?.dispose();}};
+ return {element:root,dispose(){disposed=true;stopStatus();abort.abort();picker?.close();plots?.dispose();}};
 }

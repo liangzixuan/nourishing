@@ -46,9 +46,23 @@ test('dashboard exposes saved health widgets, opens details and follows diary da
   assert.equal(await page.locator('body').getAttribute('data-visited'),'diary');
   await page.locator('[data-discover=health-glucose]').click();await page.locator('[data-health-date]').click();assert.equal(await page.locator('body').getAttribute('data-diary-date'),date);
   await page.locator('[data-discover=coach]').click();assert.equal(await page.locator('body').getAttribute('data-coach'),'opened');
-  await page.getByRole('button',{name:'Dashboard Settings',exact:true}).click();await page.getByRole('switch',{name:'Show Glucose',exact:true}).uncheck();await page.locator('[data-health-card=glucose]').waitFor({state:'detached'});
+  await page.getByRole('button',{name:'Dashboard Settings',exact:true}).click();
+  const glucoseSwitch=page.getByRole('switch',{name:'Show Glucose',exact:true});
+  const uncheckDone=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/workspace/command');
+  await glucoseSwitch.uncheck();
+  await page.locator('[data-health-card=glucose]').waitFor({state:'detached'});
+  assert.equal(await glucoseSwitch.isDisabled(),false);
+  await uncheckDone;
   assert.equal(writes.length,1);assert.equal(writes[0].type,'dashboard.widgets');assert.deepEqual(writes[0].payload,{patch:{glucose:false}});
-  await page.getByRole('switch',{name:'Show Glucose',exact:true}).check();await page.locator('[data-health-card=glucose]').waitFor();assert.equal(writes.length,2);
+  // Closing and reopening Dashboard Settings retains the toggled state immediately.
+  await page.evaluate(()=>{document.querySelector('#sheet').innerHTML='';});
+  await page.getByRole('button',{name:'Dashboard Settings',exact:true}).click();
+  assert.equal(await page.getByRole('switch',{name:'Show Glucose',exact:true}).isChecked(),false);
+  const checkDone=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/workspace/command');
+  await page.getByRole('switch',{name:'Show Glucose',exact:true}).check();
+  await page.locator('[data-health-card=glucose]').waitFor();
+  await checkDone;
+  assert.equal(writes.length,2);
   assert.deepEqual(errors,[]);
  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
 });

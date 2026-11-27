@@ -32,6 +32,20 @@ test('widget and news patches retain unrelated account preferences and hidden st
 test('dashboard capture is read-only and imported measurements retain evidence',()=>{
  const state=initialState();state.biometrics=[{id:'weight',date,type:'weight',value:75,unit:'kg',source:{provider:'fixture',recordId:'source'}}];const before=structuredClone(state);dashboardView(state,{date},context);assert.deepEqual(state,before);
 });
+test('dashboard provides both Consumed and Remaining average summaries',()=>{
+ const state=initialState();
+ state.foods=[{id:'f1',name:'Oats',serving:'100 g',grams:100,nutrients:{calories:400,protein:20,carbs:60,fat:10}}];
+ act(state,'entry.add',{foodId:'f1',date,group:'Breakfast',amount:1});
+ const view=dashboardView(state,{date},context);
+ assert.equal(view.summaries.Consumed.energy,400);
+ assert.equal(view.summaries.Consumed.rows.find(r=>r.id==='protein').mean,20);
+ assert.equal(view.summaries.Remaining.energy,1600);
+ assert.equal(view.summaries.Remaining.rows.find(r=>r.id==='protein').mean,80);
+ run(state,'dashboard.preferences',{patch:{reportWidget:'Remaining'}});
+ const remaining=dashboardView(state,{date},context);
+ assert.equal(remaining.summary.widget,'Remaining');
+ assert.equal(remaining.summary.energy,1600);
+});
 test('copied dashboard presentation modules match recorded provenance',async()=>{
  const manifest=JSON.parse(await readFile(new URL('../docs/dashboard-ui-source.json',import.meta.url)));
  for(const row of manifest.files){const bytes=await readFile(new URL('../'+row.target,import.meta.url));assert.equal(createHash('sha256').update(bytes).digest('hex'),row.sha256,row.target);}

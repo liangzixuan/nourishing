@@ -1998,6 +1998,11 @@ html[data-nourishing-native] [data-nourishing-health-connect]{display:inline-fle
  width:56px!important;min-width:56px;height:28px;min-height:28px!important;max-height:28px!important;
 }
 :is(.dc-dashboard-settings,.dc-dashboard-extras) .dc-switch::after{width:22px;height:22px;}
+.dc-ptr{display:flex;align-items:center;justify-content:center;gap:8px;overflow:hidden;height:0;opacity:0;color:var(--muted);font:600 .85rem/1.2 Karla,Lato,sans-serif;transition:height .18s ease,opacity .18s ease;}
+.dc-ptr[data-dragging=true]{transition:none;}
+.dc-ptr[data-state=refreshing] .dc-ptr-icon{animation:dc-ptr-spin .8s linear infinite;}
+.dc-ptr-icon{display:inline-block;font-size:1.1rem;line-height:1;}
+@keyframes dc-ptr-spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
 
 /* /streak-source/fonts.css */
 @font-face {

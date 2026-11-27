@@ -788,7 +788,10 @@ const rows=[
 ["moreObservations", "{{count}} more observations", "{{count}} observations supplémentaires", "{{count}} weitere Beobachtungen", "Mais {{count}} observações"],
 ["chartNoData", "No data available", "Aucune donnée disponible", "Keine Daten verfügbar", "Nenhum dado disponível"],
 ["cycleReload", "Refresh the chart to load its cycle data.", "Actualisez le graphique pour charger les données du cycle.", "Diagramm aktualisieren, um die Zyklusdaten zu laden.", "Atualize o gráfico para carregar os dados do ciclo."],
-["suggestFood", "Suggest food", "Suggérer des aliments", "Lebensmittel vorschlagen", "Sugerir alimentos"]
+["suggestFood", "Suggest food", "Suggérer des aliments", "Lebensmittel vorschlagen", "Sugerir alimentos"],
+["pullToRefresh", "Pull down to refresh", "Tirer pour actualiser", "Zum Aktualisieren nach unten ziehen", "Puxe para atualizar"],
+["releaseToRefresh", "Release to refresh", "Relâcher pour actualiser", "Zum Aktualisieren loslassen", "Solte para atualizar"],
+["refreshing", "Refreshing…", "Actualisation…", "Wird aktualisiert…", "Atualizando…"]
 ];
 export const discoverMessages=Object.fromEntries(['en','fr','de','pt-BR'].map((language,i)=>[language,Object.fromEntries(rows.map(([key,...values])=>[key,values[i]]))]));
 export const dc=createUITranslator(discoverMessages);
