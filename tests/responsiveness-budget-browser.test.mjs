@@ -603,6 +603,22 @@ test('core Diary, Photo Log, and More interactions respond instantly under 1500m
       await page.locator('[data-discover="switch-report"]').click();
       await page.locator('.dc-summary-caption').filter({hasText: 'Consumed average'}).waitFor();
     });
+    const from14 = new Date(Date.parse(f.today + 'T12:00:00Z') - 13 * 86400000).toISOString().slice(0, 10);
+    const expected14 = `${from14} - ${f.today}`;
+    await timed('Change Dashboard report summary date range to Last 14 days instantly', async () => {
+      await page.locator('[data-discover="report-period"]').click();
+      await page.locator('#sheet [name="range"]').selectOption('14');
+      await page.locator('#sheet .primary').click();
+      await page.locator('#sheet').waitFor({state: 'hidden'});
+      await page.locator('[data-discover="report-period"]').filter({hasText: expected14}).waitFor();
+    });
+    await timed('Dashboard summary date range persists across view switch', async () => {
+      await page.locator('[data-discover="switch-report"]').click();
+      await page.locator('.dc-summary-caption').filter({hasText: 'Remaining average'}).waitFor();
+      assert.ok((await page.locator('[data-discover="report-period"]').textContent()).includes(expected14));
+      await page.locator('[data-discover="switch-report"]').click();
+      await page.locator('.dc-summary-caption').filter({hasText: 'Consumed average'}).waitFor();
+    });
     let initialNews, initialEnergy;
     await timed('Toggle Dashboard Settings switches instantly without disabling controls', async () => {
       await page.getByRole('button', {name: 'Dashboard Settings', exact: true}).click();
@@ -657,6 +673,7 @@ test('core Diary, Photo Log, and More interactions respond instantly under 1500m
     await timed('Cold-cache Discover -> Dashboard opens from local snapshot', async () => {
       await page.locator('[data-tab="dashboard"]').click();
       await page.locator('.dc-summary').waitFor();
+      assert.ok((await page.locator('[data-discover="report-period"]').textContent()).includes(expected14));
     });
 
     // 11. Cold-cache More menus (Account, Profile, Display, Targets, Fasting) all open in < 800ms under 1500ms API latency.

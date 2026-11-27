@@ -13,7 +13,7 @@ import {mountChartDetail} from './chart-detail.js';
 import {dashboardHealthCardsMarkup,openDashboardHealthCard} from './dashboard-health-cards.js';
 import {request,command,queueCommand} from './diary-api.js';
 import {readDeviceCache,writeDeviceCache} from './device-cache.js';
-import {localDashboardView} from './local-engine.js';
+import {localDashboardView,localDashboardPatch} from './local-engine.js';
 import {onBackgroundWriteStatus} from './background-writes.js';
 import {navigationEdge} from './edge-navigation.js';
 import {escape as e,card,button as b,iconButton as ib,symbol as icon,ranges,widgets,chartMarkup} from './dashboard-source/discover-ui.js';
@@ -109,7 +109,7 @@ export async function openDashboardNews({show,close,content,date,news}){
 
 export function mountDashboard({root,date,show,close,header,content,onChange,onReport,onFasting,onWeight,onConnect,onCoach,onDiary,onHealth,onReady}){
  let data,disposed=false,generation=0,charts=[],pinnedPlots,cgmDetail,chartDetail,controller,clockTimer,refreshTimer,clockStart=0;
- let editSerial=0,writeQueue=Promise.resolve(),pendingRefresh=false,pendingRender=false,ptrRefreshing=false,ptrGesture=null;
+ let editSerial=0,writeQueue=Promise.resolve(),pendingRefresh=false,pendingRender=false,refreshAfterRequestId=null,ptrRefreshing=false,ptrGesture=null;
  const ownerTicket=readDeviceCache('/api/diary').then(cached=>cached.ticket).catch(()=>null);
  const dashboardPath=()=>'/api/dashboard?'+new URLSearchParams({date:date()});
  const modalOpen=()=>Boolean(content.querySelector('.dashboard-panel')||document.querySelector('dialog[open],[aria-modal="true"]'));
@@ -230,26 +230,50 @@ export function mountDashboard({root,date,show,close,header,content,onChange,onR
   const previous=structuredClone(data);
   const serial=++editSerial;
   const path=dashboardPath();
-  applyLocalDashboardPatch(data,type,payload);
-  if(document.querySelector('dialog[open]'))pendingRender=true;
-  else render();
+  if(!needsRefresh){
+   applyLocalDashboardPatch(data,type,payload);
+   if(document.querySelector('dialog[open]'))pendingRender=true;
+   else render();
+  }
   const ticket=await ownerTicket;
   if(ticket){
-   const snapshot=structuredClone(data);
-   try{
-    await queueCommand(data.revision,type,payload,{ticket,projection:{responses:{[path]:snapshot}}});
-    void writeDeviceCache(path,snapshot,ticket).catch(()=>false);
-    Promise.resolve().then(()=>onChange?.()).catch(()=>{});
-    if(needsRefresh){
-     if(modalOpen())pendingRefresh=true;
-     else void load({fresh:true,silent:true});
+   let projected=null;
+   if(needsRefresh){
+    try{
+     projected=await localDashboardPatch(date(),type,payload,data);
+    }catch(error){
+     failure(error,host);
+     return false;
     }
+    if(serial===editSerial){
+     if(projected){
+      data=projected;
+      clockStart=performance.now()-Math.max(0,Date.now()-(Date.parse(projected.capture.calendar.asOf)||Date.now()));
+     }else{
+      applyLocalDashboardPatch(data,type,payload);
+     }
+     if(document.querySelector('dialog[open]'))pendingRender=true;
+     else render();
+    }
+   }
+   const hasFreshProjection=!needsRefresh||Boolean(projected);
+   const snapshot=hasFreshProjection?structuredClone(projected??data):null;
+   try{
+    const queued=await queueCommand(previous.revision,type,payload,{ticket,projection:snapshot?{responses:{[path]:snapshot}}:{}});
+    if(snapshot)void writeDeviceCache(path,snapshot,ticket).catch(()=>false);
+    Promise.resolve().then(()=>onChange?.()).catch(()=>{});
+    if(needsRefresh)refreshAfterRequestId=queued.requestId;
     return true;
    }catch(error){
     if(serial===editSerial){data=previous;render();}
     failure(error,host);
     return false;
    }
+  }
+  if(needsRefresh){
+   applyLocalDashboardPatch(data,type,payload);
+   if(document.querySelector('dialog[open]'))pendingRender=true;
+   else render();
   }
   // Standalone/online-only fallback (no device cache ticket): serialize writes without disabling controls.
   const work=writeQueue.then(async()=>{
@@ -350,6 +374,11 @@ export function mountDashboard({root,date,show,close,header,content,onChange,onR
  const stopStatus=onBackgroundWriteStatus(event=>{
   if(!alive()||!data)return;
   if(event.saved&&event.result?.revision)data.revision=event.result.revision;
+  if((event.saved&&refreshAfterRequestId&&event.requestId===refreshAfterRequestId)||event.discarded){
+   refreshAfterRequestId=null;
+   if(modalOpen())pendingRefresh=true;
+   else void load({fresh:true,silent:true});
+  }
  });
  const resume=()=>{if(alive()&&document.visibilityState==='visible'&&!modalOpen()&&!ptrRefreshing)void load({silent:true});};
  document.addEventListener('visibilitychange',resume);refreshTimer=setInterval(resume,60000);

@@ -1,5 +1,5 @@
 import {onBackgroundWriteStatus} from './background-writes.js';
-import {localWorkspaceState,localDisplayView,localDashboardView} from './local-engine.js';
+import {localWorkspaceState,localDisplayView,localDashboardView,localDashboardPatch} from './local-engine.js';
 import {readDeviceCache} from './device-cache.js';
 import {editDiaryGroupSlot} from './local-group-rename.js';
 import {renderDashboardSettings} from './dashboard-settings.js';
@@ -54,10 +54,14 @@ export function mountDisplay({root,headerRoot,initialSetting,onChange=async()=>{
   child={dispose(){active=false;},back(){if(screen==='streak'){screen='settings';render();return true;}return false;}};
   const current=()=>active&&alive();
   function change(type,payload){const work=saving.then(async()=>{
-   const next=structuredClone(dashboard);
-   if(type==='dashboard.widgets')Object.assign(next.dashboard.widgets,payload.patch);
-   if(type==='dashboard.preferences')Object.assign(next.preferences,payload.patch);
-   if(type==='dashboard.streakReset'){next.streaks={...next.streaks,current:payload.count};next.capture.cards.streaks={...next.capture.cards.streaks,current:payload.count};}
+   const needsProject=type==='dashboard.widgets'&&Object.values(payload.patch??{}).some(Boolean);
+   const projected=needsProject?await localDashboardPatch(date(),type,payload,dashboard).catch(()=>null):null;
+   const next=projected??structuredClone(dashboard);
+   if(!projected){
+    if(type==='dashboard.widgets')Object.assign(next.dashboard.widgets,payload.patch);
+    if(type==='dashboard.preferences')Object.assign(next.preferences,payload.patch);
+    if(type==='dashboard.streakReset'){next.streaks={...next.streaks,current:payload.count};next.capture.cards.streaks={...next.capture.cards.streaks,current:payload.count};}
+   }
    await queueCommand(dashboard.revision,type,payload,{projection:{responses:{[path]:next}}});dashboard=next;void onChange();
   });saving=work.catch(()=>{});return work;}
   function render(){if(!current())return;if(headerRoot)headerRoot.innerHTML=moreBackHeader(t(screen==='streak'?'discover.title.streak-settings':'discover.title.dashboard-settings'));root.innerHTML='<div class="dashboard-panel"></div>';const host=root.firstElementChild;

@@ -6,6 +6,7 @@ import {remapWriteReferences} from './write-identities.js';
 
 import {offlineCopy} from './offline-store.js';
 import {offlineEffectiveState} from './offline-model.js';
+import {applyWriteToState} from './write-projection.js';
 import {readDeviceCache} from './device-cache.js';
 import {accountDisplayKey} from './account-display.js';
 import {calculateSelectionNutrition} from './report-source/server/nutrition.mjs';
@@ -127,6 +128,34 @@ export async function localDashboardView(date) {
     const [clock, {projectLocalDashboard}] = await Promise.all([localAccountClock(), import('./local-chart-projection.js')]);
     return {...projectLocalDashboard(view.state, {date}, clock, view.revision), _local: true};
   } catch { return null; }
+}
+
+export async function localDashboardPatch(date, type, payload, current) {
+  const view = await localWorkspaceView();
+  if (!view?.revision) return null;
+  const candidate = structuredClone(view.state);
+  applyWriteToState(candidate, {command: {type, payload, operationId: 'local-preview'}});
+  const [clock, {projectLocalDashboard}] = await Promise.all([localAccountClock(), import('./local-chart-projection.js')]);
+  try {
+    const projected = projectLocalDashboard(candidate, {date}, clock, current?.revision ?? view.revision);
+    if (current) {
+      if (current.news) projected.news = structuredClone(current.news);
+      if (type !== 'dashboard.streakReset' && current.streaks && !candidate.loggingStreaks) {
+        projected.streaks = structuredClone(current.streaks);
+        if (projected.capture?.cards?.streaks && current.capture?.cards?.streaks) {
+          projected.capture.cards.streaks = structuredClone(current.capture.cards.streaks);
+        }
+      }
+      if (!Object.hasOwn(candidate, 'cycleRecords') && current.health?.cycle && projected.dashboard?.widgets?.cycle) {
+        projected.health = {...projected.health, cycle: structuredClone(current.health.cycle)};
+        if (current.capture?.cards?.cycle) projected.capture.cards.cycle = structuredClone(current.capture.cards.cycle);
+      }
+    }
+    return {...projected, _local: true};
+  } catch (error) {
+    if (error?.status >= 400 && error?.status < 500) throw error;
+    return null;
+  }
 }
 
 export async function localChartsView(input) {
