@@ -108,14 +108,17 @@ export async function openDashboardNews({show,close,content,date,news}){
 
 export function mountDashboard({root,date,show,close,header,content,onChange,onReport,onFasting,onWeight,onConnect,onCoach,onDiary,onHealth,onReady}){
  let data,disposed=false,generation=0,charts=[],pinnedPlots,cgmDetail,chartDetail,controller,clockTimer,refreshTimer,clockStart=0;
- let editSerial=0,writeQueue=Promise.resolve(),pendingRefresh=false,ptrRefreshing=false,ptrGesture=null;
+ let editSerial=0,writeQueue=Promise.resolve(),pendingRefresh=false,pendingRender=false,ptrRefreshing=false,ptrGesture=null;
  const ownerTicket=readDeviceCache('/api/diary').then(cached=>cached.ticket).catch(()=>null);
  const dashboardPath=()=>'/api/dashboard?'+new URLSearchParams({date:date()});
  const modalOpen=()=>Boolean(content.querySelector('.dashboard-panel')||document.querySelector('dialog[open],[aria-modal="true"]'));
  const detailObserver=new MutationObserver(()=>{
   if(chartDetail&&!chartDetail.element.isConnected){chartDetail.dispose();chartDetail=null;}
   if(cgmDetail&&!cgmDetail.element.isConnected){cgmDetail.dispose();cgmDetail=null;}
-  if(pendingRefresh&&!modalOpen()){pendingRefresh=false;void load({fresh:true,silent:true});}
+  if(!modalOpen()){
+   if(pendingRender&&data){pendingRender=false;render();}
+   if(pendingRefresh){pendingRefresh=false;void load({fresh:true,silent:true});}
+  }
  });detailObserver.observe(content,{childList:true});
  const language=uiLanguage(),message=(key,values)=>formatMessage(language,'discover.'+key,values),alive=()=>!disposed&&root.isConnected;
  function destroyCharts(){pinnedPlots?.dispose();pinnedPlots=null;for(const chart of charts)chart.destroy();charts=[];}
@@ -218,7 +221,8 @@ export function mountDashboard({root,date,show,close,header,content,onChange,onR
   const serial=++editSerial;
   const path=dashboardPath();
   applyLocalDashboardPatch(data,type,payload);
-  render();
+  if(document.querySelector('dialog[open]'))pendingRender=true;
+  else render();
   const ticket=await ownerTicket;
   if(ticket){
    const snapshot=structuredClone(data);
@@ -285,7 +289,7 @@ export function mountDashboard({root,date,show,close,header,content,onChange,onR
  }
  function rangeSettings(kind){const p=data.preferences,key=['edit-report','report-period'].includes(kind)?'reportRange':kind+'Range',title=kind==='report-period'?t('discover.title.date-range'):kind==='edit-report'?message('summary.title'):kind==='energy'?t('activity.energy'):t('measurementCatalog.metric.weight'),from=p.customFrom??data.summary.range.from,to=p.customTo??date(),editWidgets=['Consumed','Remaining',...widgets.filter(w=>w!=='Consumed')];
   const host=modal(title,`<form class="entry-form"><label class="field-row"><span>${t('discover.title.date-range')}</span><select name="range" aria-label="${t('discover.title.date-range')}">${ranges.map(([value,label])=>option(value,message('range.'+value),p[key])).join('')}</select></label><div data-custom-range ${p[key]==='custom'?'':'hidden'}><label class="field-row"><span>${t('recordCleanup.from')}</span><input type="date" name="from" aria-label="${t('recordCleanup.from')}" value="${e(from)}" required></label><label class="field-row"><span>${t('recordCleanup.to')}</span><input type="date" name="to" aria-label="${t('recordCleanup.to')}" value="${e(to)}" required></label></div>${kind==='edit-report'?`<label class="field-row"><span>${message('summary.widget')}</span><select name="widget" aria-label="${message('summary.widget')}">${editWidgets.map(value=>option(value,summaryWidgetLabel(value),p.reportWidget)).join('')}</select></label>`:kind==='report-period'?'':kind==='energy'?`<label class="field-row"><span>${t('chartControls.show')}</span><select name="show" aria-label="${t('chartControls.show')}">${['Consumed','Expenditure','Balance'].map(value=>option(value,message('energy.'+value),p.energyShow)).join('')}</select></label>`:`<label class="field-row"><span>${message('weight.goalTarget')}</span><input type="checkbox" name="target" ${p.weightTarget?'checked':''}></label><label class="field-row"><span>${message('weight.zoom')}</span><input type="checkbox" name="zoom" ${p.weightZoom?'checked':''}></label>`}<footer class="entry-actions"><button class="primary">${t('common.save')}</button></footer></form>`);
-  const form=host.querySelector('form');form.elements.range.onchange=()=>host.querySelector('[data-custom-range]').hidden=form.elements.range.value!=='custom';form.onsubmit=async event=>{event.preventDefault();const values=Object.fromEntries(new FormData(form)),patch={[key]:values.range,...(values.range==='custom'?{customFrom:values.from,customTo:values.to}:{}),...(kind==='report-period'?{}:kind==='edit-report'?{reportWidget:values.widget}:kind==='energy'?{energyShow:values.show}:{weightTarget:form.elements.target.checked,weightZoom:form.elements.zoom.checked})};if(await save('dashboard.preferences',{patch},host)){close();if(pendingRefresh){pendingRefresh=false;void load({fresh:true,silent:true});}}};
+  const form=host.querySelector('form');form.elements.range.onchange=()=>host.querySelector('[data-custom-range]').hidden=form.elements.range.value!=='custom';form.onsubmit=async event=>{event.preventDefault();const values=Object.fromEntries(new FormData(form)),patch={[key]:values.range,...(values.range==='custom'?{customFrom:values.from,customTo:values.to}:{}),...(kind==='report-period'?{}:kind==='edit-report'?{reportWidget:values.widget}:kind==='energy'?{energyShow:values.show}:{weightTarget:form.elements.target.checked,weightZoom:form.elements.zoom.checked})};if(await save('dashboard.preferences',{patch},host)){close();if(pendingRender&&data){pendingRender=false;render();}if(pendingRefresh){pendingRefresh=false;void load({fresh:true,silent:true});}}};
  }
  async function actionHandler(action){if(action.startsWith('health-')&&onHealth)return onHealth(action.slice(7));if(action.startsWith('health-'))return openDashboardHealthCard(action.slice(7),data.health,{show,header,content,onDiary,close});if(action==='share-streak')openStreakShare(data.capture.cards.streaks??data.streaks,{show,header,content,language});else if(action==='settings')settings();else if(action==='newsfeed')return openDashboardNews({show,close,content,date,news:data?.news});else if(action==='switch-report'){const nextMode=nextWidget(data.summary.widget);if(await save('dashboard.preferences',{patch:{reportWidget:nextMode}},root)&&alive())root.querySelector('[data-discover=switch-report]')?.focus({preventScroll:true});}else if(['energy','weight','edit-report','report-period'].includes(action))rangeSettings(action);else if(action==='streak-stats')streakStats();else if(action==='streak-settings')streakSettings();else if(action==='sleep-data')modal(t('measurementCatalog.metric.sleep'),discoverSleepDetails(data.capture.cards.sleep,language));else if(action==='dismiss-sleep')await save('dashboard.preferences',{patch:{sleepPrompt:false}},root);else if(action==='dismiss-sleep-promo')await save('dashboard.preferences',{patch:{sleepPromotion:false}},root);else if(action==='report')onReport?.();else if(['fasting','new-fast','end-fast','start-now','edit-active-fast','edit-fast-start','edit-fast-goal'].includes(action))onFasting?.(action,data.capture.cards.fasting?.active?.id);else if(action==='weight-log')onWeight?.();else if(action==='connect')onConnect?.();else if(action==='coach')onCoach?.();}
 

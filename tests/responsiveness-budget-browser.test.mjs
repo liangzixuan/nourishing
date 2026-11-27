@@ -592,18 +592,23 @@ test('core Diary, Photo Log, and More interactions respond instantly under 1500m
       await page.locator('[data-discover="switch-report"]').click();
       await page.locator('.dc-summary-caption').filter({hasText: 'Consumed average'}).waitFor();
     });
-    await timed('Toggle Dashboard Settings instantly and retain state across close/reopen', async () => {
+    let initialNews, initialEnergy;
+    await timed('Toggle Dashboard Settings switches instantly without disabling controls', async () => {
       await page.getByRole('button', {name: 'Dashboard Settings', exact: true}).click();
       const news = page.locator('[data-pref="newsVisible"]');
       const energy = page.locator('[data-widget="energy"]');
       await news.waitFor();
-      const initialNews = await news.isChecked();
-      const initialEnergy = await energy.isChecked();
+      initialNews = await news.isChecked();
+      initialEnergy = await energy.isChecked();
       await news.click();
       assert.equal(await energy.isDisabled(), false, 'Toggling one switch must not grey out other controls');
       await energy.click();
       assert.equal(await news.isChecked(), !initialNews);
       assert.equal(await energy.isChecked(), !initialEnergy);
+    });
+    await timed('Close and reopen Dashboard Settings retaining toggled state', async () => {
+      const news = page.locator('[data-pref="newsVisible"]');
+      const energy = page.locator('[data-widget="energy"]');
       await page.locator('#sheet [data-close]').click();
       await page.locator('#sheet').waitFor({state: 'hidden'});
       await page.getByRole('button', {name: 'Dashboard Settings', exact: true}).click();
